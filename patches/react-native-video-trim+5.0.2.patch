@@ -707,6 +707,8 @@ index 1c94327..fab59a2 100644
 +                             (long)outputWidth,
 +                             (long)outputHeight];
 +
++    NSString *encoder = @"libx264";
++
 +    NSMutableArray *cmds = [NSMutableArray arrayWithObjects:
 +        @"-y",
 +        @"-ss", [NSString stringWithFormat:@"%.3f", trimStartSeconds],
@@ -715,7 +717,7 @@ index 1c94327..fab59a2 100644
 +        @"-vf", videoFilter,
 +        @"-map", @"0:v:0",
 +        @"-map", @"0:a?",
-+        @"-c:v", @"libx264",
++        @"-c:v", encoder,
 +        @"-preset", @"faster",
 +        @"-pix_fmt", @"yuv420p",
 +        @"-b:v", [NSString stringWithFormat:@"%.0f", options.videoBitrate()],
@@ -728,6 +730,21 @@ index 1c94327..fab59a2 100644
 +        outputURL.absoluteString,
 +        nil];
 +
++    NSString *debugCommand = [cmds componentsJoinedByString:@" "];
++    NSMutableArray<NSString *> *logMessages = [NSMutableArray array];
++    const NSUInteger maxLogMessages = 40;
++    const NSUInteger maxLogMessageLength = 400;
++    NSLog(@"[VideoTrim] exportEditedVideo start encoder=%@ input=%@ trimStart=%.3f trimDuration=%.3f crop=%@ output=%ldx%ld bitrate=%.0f command=%@",
++          encoder,
++          inputURL.absoluteString,
++          trimStartSeconds,
++          trimDurationSeconds,
++          NSStringFromCGRect(cropRect),
++          (long)outputWidth,
++          (long)outputHeight,
++          options.videoBitrate(),
++          debugCommand);
++
 +    [FFmpegKit executeWithArgumentsAsync:cmds
 +                      withCompleteCallback:^(FFmpegSession *session) {
 +        SessionState state = [session getState];
@@ -735,22 +752,52 @@ index 1c94327..fab59a2 100644
 +        if ([ReturnCode isSuccess:returnCode]) {
 +            AVAsset *outputAsset = [AVAsset assetWithURL:outputURL];
 +            AVAssetTrack *outputTrack = [[outputAsset tracksWithMediaType:AVMediaTypeVideo] firstObject];
-+            CGSize outputPresentationSize = CGSizeApplyAffineTransform(outputTrack.naturalSize, outputTrack.preferredTransform);
++            CGSize outputPresentationSize = CGSizeZero;
++            if (outputTrack) {
++                outputPresentationSize = CGSizeApplyAffineTransform(outputTrack.naturalSize, outputTrack.preferredTransform);
++            }
++            NSInteger resolvedWidth = (NSInteger)fabs(outputPresentationSize.width);
++            NSInteger resolvedHeight = (NSInteger)fabs(outputPresentationSize.height);
++            if (resolvedWidth <= 0 || resolvedHeight <= 0) {
++                resolvedWidth = (NSInteger)outputWidth;
++                resolvedHeight = (NSInteger)outputHeight;
++            }
 +            NSDictionary *result = @{
 +                @"outputPath": outputURL.absoluteString,
 +                @"duration": @(CMTimeGetSeconds(outputAsset.duration) * 1000.0),
-+                @"width": @((NSInteger)fabs(outputPresentationSize.width)),
-+                @"height": @((NSInteger)fabs(outputPresentationSize.height))
++                @"width": @(resolvedWidth),
++                @"height": @(resolvedHeight)
 +            };
 +            resolve(result);
 +        } else {
-+            NSString *errorMessage = [NSString stringWithFormat:@"Command failed with state %@ and rc %@.%@",
++            __block NSString *logOutput = @"";
++            @synchronized (logMessages) {
++                logOutput = logMessages.count > 0 ? [logMessages componentsJoinedByString:@"\n"] : @"";
++            }
++            NSString *errorMessage = [NSString stringWithFormat:@"Command failed with state %@ and rc %@. command=%@ stack=%@ logs=%@",
 +                                      [FFmpegKitConfig sessionStateToString:state],
 +                                      returnCode,
-+                                      [session getFailStackTrace] ?: @""];
++                                      debugCommand,
++                                      [session getFailStackTrace] ?: @"",
++                                      logOutput];
++            NSLog(@"[VideoTrim] exportEditedVideo failed %@", errorMessage);
 +            reject(@"EXPORT_EDITED_VIDEO_FAILED", errorMessage, nil);
 +        }
-+    } withLogCallback:nil withStatisticsCallback:nil];
++    } withLogCallback:^(Log *log) {
++        NSString *message = [log getMessage] ?: @"";
++        if (message.length > 0) {
++            NSString *trimmedMessage = message;
++            if (trimmedMessage.length > maxLogMessageLength) {
++                trimmedMessage = [[trimmedMessage substringToIndex:maxLogMessageLength] stringByAppendingString:@"..."];
++            }
++            @synchronized (logMessages) {
++                if (logMessages.count >= maxLogMessages) {
++                    [logMessages removeObjectAtIndex:0];
++                }
++                [logMessages addObject:trimmedMessage];
++            }
++        }
++    } withStatisticsCallback:nil];
 +}
 +
  - (void)trimWithViewController:(VideoTrimmerViewController *)viewController 
@@ -956,14 +1003,3 @@ index e8fcab0..25c3878 100644
 -//# sourceMappingURL=index.js.map
 \ No newline at end of file
 +//# sourceMappingURL=index.js.map
-diff --git a/node_modules/react-native-video-trim/ios/VideoTrim.mm b/node_modules/react-native-video-trim/ios/VideoTrim.mm
-index 28f48b0..675a0f3 100644
---- a/node_modules/react-native-video-trim/ios/VideoTrim.mm
-+++ b/node_modules/react-native-video-trim/ios/VideoTrim.mm
-@@ -528,7 +528,7 @@ - (void)exportEditedVideo:(nonnull NSString *)url options:(JS::NativeVideoTrim::
-         @"-map", @"0:a?",
--        @"-c:v", @"libx264",
-+        @"-c:v", @"h264_videotoolbox",
-         @"-preset", @"faster",
-         @"-pix_fmt", @"yuv420p",
-         @"-b:v", [NSString stringWithFormat:@"%.0f", options.videoBitrate()],

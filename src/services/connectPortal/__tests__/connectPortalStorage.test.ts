@@ -41,7 +41,7 @@ const createApiClient = (overrides?: Partial<any>) => {
         endDate: payload.endDate || '2026-05-01',
         startTime: payload.startTime || '7:00 PM',
         endTime: payload.endTime || '',
-        isOnline: false,
+        isOnline: payload.isOnline === true,
         externalEventUrl: payload.externalEventUrl || '',
         locationQuery: '',
         venueName: payload.venueName || 'Venue',
@@ -151,10 +151,17 @@ describe('connectPortalStorage', () => {
     });
 
     const publishedRecord = await api.publishDraftEvent(draft.id);
+    const publishPayload = (apiClient.publishEvent as jest.Mock).mock.calls[0]?.[0];
 
     const userRecords = await api.getUserRecords();
     expect(userRecords).toHaveLength(0);
     expect(apiClient.publishEvent).toHaveBeenCalled();
+    expect(publishPayload).toMatchObject({
+      externalEventUrl: '',
+      startDate: '2026-05-01',
+    });
+    expect(publishPayload).not.toHaveProperty('isSingleDayEvent');
+    expect(publishPayload).not.toHaveProperty('onlineEventUrl');
     expect(publishedRecord?.id).toBe('published-1');
 
     const publicListItems = await api.getPublicGoListItems();
@@ -162,6 +169,37 @@ describe('connectPortalStorage', () => {
 
     const publicMapItems = await api.getPublicGoMapItems();
     expect(publicMapItems.some((item) => item.id === publishedRecord?.id)).toBe(true);
+  });
+
+  it('maps online draft links to externalEventUrl when publishing', async () => {
+    const storage = createMemoryStorage();
+    const apiClient = createApiClient();
+    const api = createConnectPortalStorage({
+      storage,
+      apiClient: apiClient as any,
+      now: jest.fn().mockReturnValue('2026-03-14T12:00:00.000Z'),
+      createId: jest.fn().mockReturnValue('draft-online'),
+    });
+
+    const draft = await api.createDraftEvent({
+      title: 'Virtual Prayer Gathering',
+      startDate: '2026-05-01',
+      endDate: '2026-05-01',
+      isOnline: true,
+      onlineEventUrl: 'https://example.com/join',
+      venueName: 'Online Event',
+      address: 'Online',
+      ticketType: 'free',
+      paymentOption: 'external',
+    });
+
+    const publishedRecord = await api.publishDraftEvent(draft.id);
+
+    const publishPayload = (apiClient.publishEvent as jest.Mock).mock.calls[0]?.[0];
+    expect(publishPayload.externalEventUrl).toBe('https://example.com/join');
+    expect(publishPayload).not.toHaveProperty('onlineEventUrl');
+
+    expect(publishedRecord?.id).toBe('published-1');
   });
 
   it('round-trips external-link drafts and resumes them at review', async () => {

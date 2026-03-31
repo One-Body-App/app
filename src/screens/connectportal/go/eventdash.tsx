@@ -26,10 +26,10 @@ import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import { useConnectPalette } from '../shared';
 import { borderRadius } from '@/src/styles/outlines';
 import {
-  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
-  APP_HEADER_ROW_HEIGHT,
+  CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  CONNECT_HEADER_ROW_HEIGHT,
   APP_HEADER_ROW_OFFSET,
-  APP_HEADER_SIDE_WIDTH,
+  CONNECT_HEADER_SIDE_WIDTH,
 } from '@/src/styles/headerLayout';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventDash'>;
@@ -404,20 +404,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
     marginTop: APP_HEADER_ROW_OFFSET,
     paddingHorizontal: 4,
     paddingVertical: 8,
   },
   headerBackButton: {
-    width: APP_HEADER_SIDE_WIDTH,
+    width: CONNECT_HEADER_SIDE_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerAndroidTitleWrap: {
     flex: 1,
     justifyContent: 'center',
-    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+    paddingLeft: CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerCenter: {
     flex: 1,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik-Bold',
   },
   headerSpacer: {
-    width: APP_HEADER_SIDE_WIDTH,
+    width: CONNECT_HEADER_SIDE_WIDTH,
   },
   scrollContent: {
     paddingHorizontal: 16,

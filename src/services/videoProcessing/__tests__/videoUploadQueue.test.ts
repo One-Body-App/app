@@ -164,6 +164,53 @@ describe('videoUploadQueue', () => {
     ]);
   });
 
+  it('notifies subscribers when the item moves through terminal queue states', async () => {
+    const storage = createMemoryStorage();
+    const transitions: PendingVideoUpload['status'][] = [];
+    let lastStatus: PendingVideoUpload['status'] | undefined;
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported.mp4',
+        processedDuration: 12_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo: jest.fn(async () => 'mux_upload_subscriber'),
+      createWatchPost: jest.fn(async () => undefined),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    const unsubscribe = queue.subscribe((items) => {
+      const status = items[0]?.status;
+      if (!status || status === lastStatus) {
+        return;
+      }
+      lastStatus = status;
+      transitions.push(status);
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+    unsubscribe();
+
+    expect(transitions).toEqual([
+      'queued',
+      'moderating',
+      'compressing',
+      'uploading',
+      'posting',
+      'complete',
+    ]);
+  });
+
   it('retries retryable upload failures and completes when a later retry succeeds', async () => {
     const storage = createMemoryStorage();
     let uploadAttempts = 0;
@@ -397,6 +444,49 @@ describe('videoUploadQueue', () => {
     expect(uploadVideo).not.toHaveBeenCalled();
     expect(createWatchPost).not.toHaveBeenCalled();
     expect(deleteFile).toHaveBeenCalledWith('file:///tmp/exported-invalid-dimensions.mp4');
+  });
+
+  it('notifies subscribers when processing fails before upload', async () => {
+    const storage = createMemoryStorage();
+    const transitions: PendingVideoUpload['status'][] = [];
+    let lastStatus: PendingVideoUpload['status'] | undefined;
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => {
+        throw new Error('Command failed with state COMPLETED and rc 1.');
+      }),
+      uploadVideo: jest.fn(async () => 'mux_upload_never_called'),
+      createWatchPost: jest.fn(async () => undefined),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    const unsubscribe = queue.subscribe((items) => {
+      const status = items[0]?.status;
+      if (!status || status === lastStatus) {
+        return;
+      }
+      lastStatus = status;
+      transitions.push(status);
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+    unsubscribe();
+
+    expect(transitions).toEqual(['queued', 'moderating', 'compressing', 'failed']);
+    expect(queue.getItems()[0]).toEqual(
+      expect.objectContaining({
+        status: 'failed',
+        failureCode: 'processing',
+      })
+    );
   });
 
   it('fails locally when export duration exceeds the selected trim tolerance', async () => {

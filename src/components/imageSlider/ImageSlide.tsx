@@ -10,6 +10,7 @@ type SliderResizeMode = 'contain' | 'cover';
 function ImageSlide({
   image,
   setImageModalIndexVisible,
+  onImagePress,
   height,
   width,
   index,
@@ -17,7 +18,8 @@ function ImageSlide({
   frameBackgroundColor = Colors.containFrame,
 }: {
   image: ImageForSlider;
-  setImageModalIndexVisible: (item: number) => void;
+  setImageModalIndexVisible?: (item: number) => void;
+  onImagePress?: (item: number) => void;
   width: number;
   height: number;
   index: number;
@@ -27,7 +29,12 @@ function ImageSlide({
   const safeWidth = Number.isFinite(width) && width > 0 ? width : 0;
   const safeHeight = Number.isFinite(height) && height > 0 ? height : safeWidth;
   const openImage = () => {
-    setImageModalIndexVisible(index);
+    if (onImagePress) {
+      onImagePress(index);
+      return;
+    }
+
+    setImageModalIndexVisible?.(index);
   };
 
   return (

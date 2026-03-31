@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -278,6 +278,8 @@ const getPrimaryCategory = (item: InboxNotification): Exclude<CategoryKey, 'all'
 function NotificationScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(dark, colors, insets.top);
@@ -363,7 +365,7 @@ function NotificationScreen({ navigation }: Props) {
         }
 
         if (didServerFetchFail) {
-          toast.show('Unable to load server notifications right now.', {
+          toastRef.current.show('Unable to load server notifications right now.', {
             type: 'danger',
             placement: 'top',
           });
@@ -435,7 +437,7 @@ function NotificationScreen({ navigation }: Props) {
         setRefreshing(false);
       }
     },
-    [logNotificationDebug, token, toast]
+    [logNotificationDebug, token]
   );
 
   useEffect(() => {

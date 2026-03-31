@@ -29,22 +29,22 @@ import { HapticService } from '@/src/services/haptic';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { Typography } from '@/src/styles';
 import {
-  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   APP_HEADER_BACKGROUND_DARK,
   APP_HEADER_BACKGROUND_LIGHT,
   APP_HEADER_BORDER_DARK,
   APP_HEADER_BORDER_LIGHT,
-  APP_HEADER_CONTENT_GAP,
   APP_HEADER_CONTROL_SIZE,
   APP_HEADER_HORIZONTAL_INSET,
-  APP_HEADER_ROW_HEIGHT,
   APP_HEADER_ROW_OFFSET,
-  APP_HEADER_SIDE_WIDTH,
   APP_HEADER_TITLE_FONT_FAMILY,
   APP_HEADER_TITLE_FONT_SIZE,
   APP_HEADER_TITLE_FONT_WEIGHT,
   APP_HEADER_TITLE_LETTER_SPACING,
   APP_HEADER_TITLE_LINE_HEIGHT,
+  CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  CONNECT_HEADER_CONTENT_GAP,
+  CONNECT_HEADER_ROW_HEIGHT,
+  CONNECT_HEADER_SIDE_WIDTH,
 } from '@/src/styles/headerLayout';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -2250,7 +2250,7 @@ const styles = StyleSheet.create({
     backgroundColor: APP_HEADER_BACKGROUND_LIGHT,
     paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
     paddingBottom: spacing.x5,
-    gap: APP_HEADER_CONTENT_GAP,
+    gap: CONNECT_HEADER_CONTENT_GAP,
     borderBottomWidth: 1,
     borderBottomColor: APP_HEADER_BORDER_LIGHT,
   },
@@ -2264,12 +2264,12 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
     transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   chromeSideSlot: {
-    width: APP_HEADER_SIDE_WIDTH,
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    width: CONNECT_HEADER_SIDE_WIDTH,
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2291,8 +2291,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: Platform.OS === 'android' ? 'flex-start' : 'center',
     justifyContent: 'center',
-    minHeight: APP_HEADER_ROW_HEIGHT,
-    ...(Platform.OS === 'android' ? { paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT } : {}),
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
+    ...(Platform.OS === 'android'
+      ? { paddingLeft: CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT }
+      : {}),
   },
   titleText: {
     fontSize: APP_HEADER_TITLE_FONT_SIZE,

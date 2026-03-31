@@ -222,7 +222,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          Let&apos;s build community together.
+          Let&apos;s create your event.
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
           Start by sharing the basic details of your gathering to help believers in your area find

@@ -145,9 +145,9 @@ const styles = StyleSheet.create({
     paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
-    fontFamily: 'Rubik-Medium',
-    fontSize: 20,
-    fontWeight: '500',
+    fontFamily: 'Rubik-Bold',
+    fontSize: 24,
+    fontWeight: '700',
     color: OBPalette.grays.black,
     textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontFamily: 'OpenSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
     color: '#FFFFFF',
   },
 });

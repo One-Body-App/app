@@ -11,8 +11,14 @@ export const getProfileDisplayName = (profile: User) => {
 };
 
 export const getProfileRoleLabel = (profile: User) => {
+  const organizationRole =
+    profile.profile?.organizationCategory && profile.profile?.organizationSubType
+      ? `${profile.profile.organizationCategory} - ${profile.profile.organizationSubType}`
+      : profile.profile?.organizationSubType || profile.profile?.organizationCategory || '';
+
   const roleName =
     profile.profile?.whatIDo?.name ||
+    organizationRole ||
     profile.profile?.typeOfOrganization?.organizationType ||
     profile.profile?.typeOfOrganization?.name ||
     '';

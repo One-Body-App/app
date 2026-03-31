@@ -3,6 +3,7 @@ import { TextInput, View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
+import { navigateWithinCurrentNavigator } from '@/src/navigator/navigateWithinCurrentNavigator';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
@@ -26,7 +27,7 @@ function OnboardingLocation({ navigation, route }: Props) {
   const inputRefContactPhoneNumber = useRef<TextInput>(null);
   const submit = () => {
     if (contactName !== '' && contactEmail !== '') {
-      navigation.navigate('OnboardingInterests', {
+      navigateWithinCurrentNavigator(navigation, 'OnboardingInterests', {
         ...route.params,
 
         organizationContactName: contactName,

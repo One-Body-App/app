@@ -103,4 +103,22 @@ describe('profileUtils', () => {
 
     expect(getProfileRoleLabel(profile)).toBe('');
   });
+
+  it('prefers the organization category and subtype label for organization roles', () => {
+    const profile = createUser({
+      accountType: AccountType.organization,
+      profile: {
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+        location: {},
+        organizationCategory: 'Ministry',
+        organizationSubType: 'Food Bank',
+        typeOfOrganization: {
+          organizationType: 'Non-Profit',
+        } as any,
+      },
+    });
+
+    expect(getProfileRoleLabel(profile)).toBe('Ministry - Food Bank');
+  });
 });

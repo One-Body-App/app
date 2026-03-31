@@ -60,6 +60,10 @@ import {
   shouldOpenHeaderPicker,
   shouldOpenPhotoPicker,
 } from './mediaHelpers';
+import {
+  buildOrganizationCategoryGroups,
+  getOrganizationCategoryForType,
+} from '@/src/utils/organizationCategories';
 
 type Props = CompositeScreenProps<
   StackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
@@ -82,6 +86,8 @@ type EditProfileDTO = {
   contactName?: string;
   contactPhoneNumber?: string;
   organizationSize?: OrganizationSize;
+  organizationCategory?: string;
+  organizationSubType?: string;
 
   gender?: string;
   whatIDo?: string;
@@ -135,8 +141,12 @@ function EditProfile({ navigation, route }: Props) {
   const [isValidWebsite, setIsValidWebsite] = useState<boolean | null>(null);
   const [bio, setBio] = useState<string>(user?.bio ?? '');
   const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
-  const [organizationType, setOrganizationType] = useState<OrganizationType | null>(
-    user?.profile.typeOfOrganization ? user?.profile.typeOfOrganization : null
+  const [selectedOrganizationCategory, setSelectedOrganizationCategory] = useState<string>(
+    user?.profile.organizationCategory ??
+      getOrganizationCategoryForType(user?.profile.typeOfOrganization ?? null)
+  );
+  const [selectedOrganizationTypeId, setSelectedOrganizationTypeId] = useState<string>(
+    user?.profile.typeOfOrganization?._id ?? ''
   );
 
   const [organizationContactName, setOrganizationContactName] = useState<string>(
@@ -503,6 +513,14 @@ function EditProfile({ navigation, route }: Props) {
 
   const selectedWhatIDo = whatIDoList.filter((type) => type._id === whatIDo);
   const selectedWhatIDoName = selectedWhatIDo.length > 0 ? selectedWhatIDo[0].name : '';
+  const organizationCategoryGroups = buildOrganizationCategoryGroups(organizationTypes);
+  const selectedOrganizationCategoryGroup = organizationCategoryGroups.find(
+    (group) => group.value === selectedOrganizationCategory
+  );
+  const selectedOrganizationType =
+    organizationTypes.find((type) => type._id === selectedOrganizationTypeId) ?? null;
+  const selectedOrganizationTypeName =
+    selectedOrganizationType?.organizationType ?? selectedOrganizationType?.name ?? 'Select';
 
   const selectedChurchType = churchTypes.filter((type) => type.churchType === churchType);
   const selectedChurchTypeName =
@@ -521,6 +539,67 @@ function EditProfile({ navigation, route }: Props) {
   } else if (selectedChurchSubType.length > 0) {
     selectedChurchSubTypeName = selectedChurchSubType[0].churchType;
   }
+
+  useEffect(() => {
+    if (user?.accountType !== 'organization' || organizationCategoryGroups.length === 0) {
+      return;
+    }
+
+    const fallbackCategory =
+      user?.profile.organizationCategory ||
+      getOrganizationCategoryForType(user?.profile.typeOfOrganization ?? null) ||
+      organizationCategoryGroups[0]?.value ||
+      '';
+
+    if (!selectedOrganizationCategory) {
+      setSelectedOrganizationCategory(fallbackCategory);
+      return;
+    }
+
+    const categoryExists = organizationCategoryGroups.some(
+      (group) => group.value === selectedOrganizationCategory
+    );
+
+    if (!categoryExists && fallbackCategory) {
+      setSelectedOrganizationCategory(fallbackCategory);
+    }
+  }, [organizationCategoryGroups, selectedOrganizationCategory, user]);
+
+  useEffect(() => {
+    if (user?.accountType !== 'organization' || !selectedOrganizationCategory) {
+      return;
+    }
+
+    const currentGroup = organizationCategoryGroups.find(
+      (group) => group.value === selectedOrganizationCategory
+    );
+
+    if (!currentGroup || currentGroup.subtypes.length === 0) {
+      if (selectedOrganizationTypeId) {
+        setSelectedOrganizationTypeId('');
+      }
+      return;
+    }
+
+    const hasSelectedSubtype = currentGroup.subtypes.some(
+      (item) => item.organizationTypeId === selectedOrganizationTypeId
+    );
+
+    if (hasSelectedSubtype) {
+      return;
+    }
+
+    const savedTypeId = user?.profile.typeOfOrganization?._id;
+    const savedSubtype = user?.profile.organizationSubType;
+    const nextSubtype =
+      currentGroup.subtypes.find(
+        (item) => item.organizationTypeId === savedTypeId || item.label === savedSubtype
+      ) ?? currentGroup.subtypes[0];
+
+    if (nextSubtype?.organizationTypeId) {
+      setSelectedOrganizationTypeId(nextSubtype.organizationTypeId);
+    }
+  }, [organizationCategoryGroups, selectedOrganizationCategory, selectedOrganizationTypeId, user]);
 
   const websiteRef = useRef<TextInput>(null);
   const urlRegex = /^[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/i;
@@ -756,32 +835,44 @@ function EditProfile({ navigation, route }: Props) {
                   wrapperStyle={{ marginTop: spacing.x16 }}
                 />
               ) : (
-                <StyledSelect
-                  items={organizationTypes.map((item) => {
-                    return {
-                      text: item.organizationType ?? item.name ?? '',
-                      value: item._id,
-                    };
-                  })}
-                  label="Type"
-                  selectedItem={organizationType?._id}
-                  btnText={
-                    !organizationType
-                      ? 'Select'
-                      : (organizationType.organizationType ?? organizationType.name ?? 'Select')
-                  }
-                  modalTitle="Select one"
-                  onChange={(_id) => {
-                    const newOrganizationType = organizationTypes.filter(
-                      (item) => item._id === _id
-                    );
+                <>
+                  <StyledSelect
+                    items={organizationCategoryGroups.map((item) => {
+                      return {
+                        text: item.label,
+                        value: item.value,
+                      };
+                    })}
+                    label="Category"
+                    selectedItem={selectedOrganizationCategory}
+                    btnText={selectedOrganizationCategory || 'Select'}
+                    modalTitle="Select organization category"
+                    onChange={(value) => {
+                      setSelectedOrganizationCategory(value);
+                      setSelectedOrganizationTypeId('');
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x16 }}
+                    showAllWithoutSearch
+                  />
 
-                    if (newOrganizationType && newOrganizationType.length > 0) {
-                      setOrganizationType(newOrganizationType[0]);
-                    }
-                  }}
-                  wrapperStyle={{ marginTop: spacing.x16 }}
-                />
+                  <StyledSelect
+                    items={(selectedOrganizationCategoryGroup?.subtypes ?? []).map((item) => {
+                      return {
+                        text: item.label,
+                        value: item.organizationTypeId,
+                      };
+                    })}
+                    label="Subtype"
+                    selectedItem={selectedOrganizationTypeId}
+                    btnText={selectedOrganizationTypeName}
+                    modalTitle="Select organization subtype"
+                    onChange={(value) => {
+                      setSelectedOrganizationTypeId(value);
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x16 }}
+                    showAllWithoutSearch
+                  />
+                </>
               )}
               {user?.isInfluencer === true || user?.accountType === 'organization' ? (
                 <StyledTextInput
@@ -1115,11 +1206,18 @@ function EditProfile({ navigation, route }: Props) {
                     data.contactPhoneNumber = organizationContactPhone;
                   if (organizationSize && user?.accountType === 'organization')
                     data.organizationSize = organizationSize;
+                  if (selectedOrganizationCategory && user?.accountType === 'organization')
+                    data.organizationCategory = selectedOrganizationCategory;
 
                   if (gender) data.gender = gender;
                   if (whatIDo) data.whatIDo = whatIDo;
-                  if (organizationType && organizationType._id)
-                    data.typeOfOrganization = organizationType?._id;
+                  if (selectedOrganizationType && selectedOrganizationType._id) {
+                    data.typeOfOrganization = selectedOrganizationType._id;
+                    data.organizationSubType =
+                      selectedOrganizationType.organizationType ||
+                      selectedOrganizationType.name ||
+                      '';
+                  }
                   if (website) data.website = website;
                   if (imageObject) data.photo = imageObject;
                   if (headerImageObject) data.headerImage = headerImageObject;

@@ -38,6 +38,8 @@ type QueueDependencies = {
   log: (message: string, payload?: Record<string, unknown>) => void;
 };
 
+type VideoUploadQueueListener = (items: PendingVideoUpload[]) => void;
+
 type VideoUploadQueue = {
   hydrate: () => Promise<PendingVideoUpload[]>;
   enqueue: (
@@ -50,6 +52,7 @@ type VideoUploadQueue = {
   resume: () => Promise<void>;
   getItems: () => PendingVideoUpload[];
   waitForIdle: () => Promise<void>;
+  subscribe: (listener: VideoUploadQueueListener) => () => void;
 };
 
 class QueueError extends Error {
@@ -309,9 +312,17 @@ export const createVideoUploadQueue = (
   let items: PendingVideoUpload[] = [];
   let hasHydrated = false;
   let processingPromise: Promise<void> | null = null;
+  const listeners = new Set<VideoUploadQueueListener>();
 
   const serializeItemsForStorage = (value: PendingVideoUpload[]) =>
     JSON.stringify(value.filter((item) => ACTIVE_QUEUE_STATUSES.has(item.status)));
+
+  const notifyListeners = () => {
+    const snapshot = cloneItems(items);
+    listeners.forEach((listener) => {
+      listener(snapshot);
+    });
+  };
 
   const persist = async () => {
     await dependencies.storage.setItem(
@@ -346,16 +357,20 @@ export const createVideoUploadQueue = (
       dependencies.log(logMessage, { id, ...updates });
     }
     await persist();
+    notifyListeners();
   };
 
   const hydrate = async () => {
     if (hasHydrated) {
-      return cloneItems(items);
+      const snapshot = cloneItems(items);
+      notifyListeners();
+      return snapshot;
     }
 
     const stored = await dependencies.storage.getItem(VIDEO_UPLOAD_QUEUE_STORAGE_KEY);
     if (!stored) {
       hasHydrated = true;
+      notifyListeners();
       return [];
     }
 
@@ -383,7 +398,9 @@ export const createVideoUploadQueue = (
     }
 
     hasHydrated = true;
-    return cloneItems(items);
+    const snapshot = cloneItems(items);
+    notifyListeners();
+    return snapshot;
   };
 
   const handleFailure = async (item: PendingVideoUpload, error: unknown) => {
@@ -622,6 +639,7 @@ export const createVideoUploadQueue = (
 
     items = [...items, item];
     await persist();
+    notifyListeners();
     if (options?.startImmediately !== false) {
       ensureProcessing().catch(() => undefined);
     }
@@ -633,6 +651,7 @@ export const createVideoUploadQueue = (
     const normalized = items.map(normalizePendingItemForResume);
     items = normalized;
     await persist();
+    notifyListeners();
     await ensureProcessing();
   };
 
@@ -642,6 +661,14 @@ export const createVideoUploadQueue = (
     await processingPromise;
   };
 
+  const subscribe = (listener: VideoUploadQueueListener) => {
+    listeners.add(listener);
+    listener(cloneItems(items));
+    return () => {
+      listeners.delete(listener);
+    };
+  };
+
   return {
     hydrate,
     enqueue,
@@ -649,6 +676,7 @@ export const createVideoUploadQueue = (
     resume,
     getItems,
     waitForIdle,
+    subscribe,
   };
 };
 
@@ -665,6 +693,8 @@ export const startPendingVideoUploads = () => defaultQueue.start();
 export const resumePendingVideoUploads = () => defaultQueue.resume();
 export const getPendingVideoUploadsSnapshot = () => defaultQueue.getItems();
 export const waitForPendingVideoUploadsIdle = () => defaultQueue.waitForIdle();
+export const subscribePendingVideoUploads = (listener: VideoUploadQueueListener) =>
+  defaultQueue.subscribe(listener);
 
 export {
   MAX_RETRY_COUNT,

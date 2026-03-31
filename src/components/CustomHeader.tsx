@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { View, TouchableOpacity, Platform, StyleSheet, StatusBar } from 'react-native';
+import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -31,7 +31,6 @@ export default function CustomHeader({
   const navigation = useNavigation();
   const canGoBack = navigation.canGoBack?.() ?? false;
   const { dark } = useTheme();
-  const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
   const resolvedContentHeight = contentHeight ?? APP_HEADER_ROW_HEIGHT;
   const iconSize = 30;
   const sideSlotStyle = {
@@ -59,26 +58,31 @@ export default function CustomHeader({
 
   return (
     <View
+      testID="custom-header"
       style={[
         styles.container,
         {
           backgroundColor: Platform.OS === 'android' ? androidBackgroundColor : 'transparent',
           borderBottomColor: Platform.OS === 'android' ? androidBorderColor : 'transparent',
-          height: resolvedContentHeight + statusBarHeight,
-          paddingTop: statusBarHeight,
+          height: resolvedContentHeight,
         },
       ]}
     >
       <View style={[styles.headerRow, headerRowStyle]}>
-        {leftElement ? <View style={sideSlotStyle}>{leftElement}</View> : null}
+        <View testID="custom-header-left-slot" style={sideSlotStyle}>
+          {leftElement}
+        </View>
         <FastImage
+          testID="custom-header-logo"
           style={[styles.logo, Platform.OS === 'android' ? styles.logoAndroid : null]}
           resizeMode={FastImage.resizeMode.contain}
           source={dark ? logoWhite : logoHeader}
         />
       </View>
       {/* Spacer/right slot to keep logo centered */}
-      <View style={sideSlotStyle}>{rightElement}</View>
+      <View testID="custom-header-right-slot" style={sideSlotStyle}>
+        {rightElement}
+      </View>
     </View>
   );
 }

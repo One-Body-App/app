@@ -6,8 +6,6 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import ImageView from 'react-native-image-viewing';
-import { isArray } from 'lodash';
 import { decode } from 'html-entities';
 
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE } from '@/services/constants';
@@ -33,10 +31,19 @@ import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import ImageSlider from '../imageSlider/ImageSlider';
-import { ImageForSlider } from '../imageSlider/types';
+import type { ImageForSlider } from '../imageSlider/types';
 import CustomVideo from '../CustomVideo';
 import UniversalVideoCard from '@/src/components/video/UniversalVideoCard';
 import { resolveVideoMetadata } from '@/src/components/video/universalVideoLayout';
+import {
+  buildImageInfoSeeds,
+  buildImageViewerSources,
+  buildSliderImages,
+  extractRepostSourceMedia,
+  extractTopLevelPostMedia,
+  resolveFeedMultiImageHeightMode,
+  resolveImageDimensions,
+} from './socialMediaHelpers';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -45,8 +52,6 @@ type ScreenNavigationProp = CompositeNavigationProp<
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
   >
 >;
-
-type Media = { type: string; url: string };
 
 type LinkData = {
   description?: string;
@@ -69,6 +74,40 @@ const COMMON_TLDS = ['.com', '.net', '.info', '.org', '.io'];
 
 const FEED_MEDIA_RADIUS = 12;
 const CONTAIN_FRAME_BACKGROUND = Colors.containFrame;
+const LINK_PREVIEW_TIMEOUT_MS = 5000;
+const LINK_PREVIEW_MAX_BYTES = 262144;
+const MAX_LINK_PREVIEW_CACHE_ENTRIES = 50;
+const linkPreviewCache = new Map<string, LinkPreview>();
+
+const touchCachedLinkPreview = (url: string, entry: LinkPreview) => {
+  linkPreviewCache.delete(url);
+  linkPreviewCache.set(url, entry);
+};
+
+const pruneCachedLinkPreview = () => {
+  while (linkPreviewCache.size > MAX_LINK_PREVIEW_CACHE_ENTRIES) {
+    const oldestKey = linkPreviewCache.keys().next().value;
+    if (!oldestKey) {
+      return;
+    }
+    linkPreviewCache.delete(oldestKey);
+  }
+};
+
+const getCachedLinkPreview = (url: string) => {
+  const cached = linkPreviewCache.get(url);
+  if (!cached) {
+    return undefined;
+  }
+
+  touchCachedLinkPreview(url, cached);
+  return cached;
+};
+
+const cacheLinkPreview = (url: string, preview: LinkPreview) => {
+  touchCachedLinkPreview(url, preview);
+  pruneCachedLinkPreview();
+};
 
 const stripTrailingPunctuation = (url: string) => url.replace(/[^A-Za-z0-9/?#&=._~:-]+$/g, '');
 
@@ -172,17 +211,13 @@ const buildLinkPreview = (url: string, html: string): LinkPreview => {
   };
 };
 
-const toSafeNumber = (value: unknown, fallback = 1) => {
-  let parsed: number;
-  if (typeof value === 'string') {
-    parsed = parseFloat(value);
-  } else if (typeof value === 'number') {
-    parsed = value;
-  } else {
-    parsed = Number(value);
-  }
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-};
+const buildFallbackLinkPreview = (url: string): LinkPreview => ({
+  url,
+  title: url,
+  siteName: undefined,
+  description: undefined,
+  imageUrl: undefined,
+});
 
 const toPositiveNumber = (value: unknown) => {
   let parsed: number;
@@ -220,8 +255,61 @@ const normalizeSourceIdForNavigation = (
   return normalized || sourceId.trim();
 };
 
+const useResolvedImageInfo = (urls: string[], enabled: boolean) => {
+  const [imageInfo, setImageInfo] = useState(() => buildImageInfoSeeds(urls));
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const nextImageInfo = buildImageInfoSeeds(urls);
+    if (nextImageInfo.length === 0) {
+      setImageInfo([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setImageInfo((previous) => buildImageInfoSeeds(urls, previous));
+
+    if (!enabled) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    nextImageInfo.forEach((imageItem) => {
+      if (imageItem.width !== 4 || imageItem.height !== 5) {
+        return;
+      }
+
+      resolveImageDimensions(imageItem.url).then((resolvedImage) => {
+        if (!isMounted || !resolvedImage || resolvedImage.width <= 0 || resolvedImage.height <= 0) {
+          return;
+        }
+
+        setImageInfo((previous) =>
+          previous.map((previousItem) => {
+            if (previousItem.url !== imageItem.url) {
+              return previousItem;
+            }
+
+            return resolvedImage;
+          })
+        );
+      });
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [enabled, urls]);
+
+  return imageInfo;
+};
+
 type SocialItemProps = {
   visible?: boolean;
+  contentWidth?: number;
   itemData: SocialPost;
   postType?: PostType;
   socialPostviewStyle?: StyleProp<ViewStyle>;
@@ -243,15 +331,19 @@ type SocialItemProps = {
   editPost?: (postId: string) => void;
   fromSavedPosts?: boolean;
   originFeedType?: string;
+  onOpenImages?: (images: { uri: string }[], index: number) => void;
 };
 
 const areSocialItemPropsEqual = (prev: SocialItemProps, next: SocialItemProps) => {
   return (
     prev.itemData === next.itemData &&
+    prev.contentWidth === next.contentWidth &&
     prev.visible === next.visible &&
     prev.index === next.index &&
     prev.postType === next.postType &&
     prev.fromSavedPosts === next.fromSavedPosts &&
+    prev.originFeedType === next.originFeedType &&
+    prev.onOpenImages === next.onOpenImages &&
     prev.socialPostviewStyle === next.socialPostviewStyle
   );
 };
@@ -261,6 +353,7 @@ function SocialItem({
   postType = PostType.social,
   socialPostviewStyle,
   visible,
+  contentWidth,
   index,
   onShowDismissCard,
   parentRefreshContent,
@@ -268,23 +361,15 @@ function SocialItem({
   editPost,
   fromSavedPosts,
   originFeedType,
+  onOpenImages,
   onCommentsPress,
   onOpenVideoPress,
   onTelemetryEvent,
 }: SocialItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
-  const [media, setMedia] = useState<Media[]>([]);
-  const [imageInfo, setImageInfo] = useState<
-    {
-      url: string;
-      height: number;
-      width: number;
-    }[]
-  >([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const [videoAspectByUrl, setVideoAspectByUrl] = useState<Record<string, number>>({});
-  const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const [width, setWidth] = useState<number>();
   const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
   const [resolvedSourceSnapshot, setResolvedSourceSnapshot] =
@@ -302,16 +387,20 @@ function SocialItem({
   const isQuoteRepost = repostMeta?.repostType === 'quote';
   const isPlainRepost = repostMeta?.repostType === 'repost';
   const isWatchPost = postType === PostType.watch;
+  const isRowVisible = visible ?? true;
   const isPrimaryHomeFeed =
     originFeedType === 'connected' || originFeedType === 'forYou' || originFeedType === 'foryou';
+  const resolvedContentWidth =
+    typeof contentWidth === 'number' && contentWidth > 0 ? contentWidth : (width ?? 0);
+  const feedMultiImageHeightMode = resolveFeedMultiImageHeightMode(isPrimaryHomeFeed);
 
   let profileUrl = '';
   profileUrl = itemData?.permalink || '';
 
   useEffect(() => {
-    setIsPlaying(visible ?? false);
-    if (!visible && !isMuted) setIsMuted(true);
-  }, [isMuted, visible]);
+    setIsPlaying(isRowVisible);
+    if (!isRowVisible && !isMuted) setIsMuted(true);
+  }, [isMuted, isRowVisible]);
 
   useEffect(() => {
     setInlineCommentCount(itemData.commentNumber ?? itemData.comments?.length ?? 0);
@@ -323,89 +412,16 @@ function SocialItem({
     itemData._id,
   ]);
 
+  const media = useMemo(() => extractTopLevelPostMedia(itemData), [itemData]);
+  const topLevelImageUrls = useMemo(
+    () => media.filter((item) => item.type === 'photo' && item.url).map((item) => item.url),
+    [media]
+  );
+  const imageInfo = useResolvedImageInfo(topLevelImageUrls, isRowVisible);
+
   useEffect(() => {
-    let isMounted = true;
     setVideoAspectByUrl({});
-    let mediaItems: Media[] = [];
-
-    if (itemData?.mediaUrl) {
-      mediaItems = [
-        {
-          type: itemData.mediaType ?? '',
-          url: itemData.mediaUrl,
-        },
-      ];
-    } else if (itemData?.attachments && itemData?.attachments.length > 0) {
-      itemData.attachments.forEach((attachment) => {
-        if (attachment.type === 'photo' || attachment.type === 'video') {
-          mediaItems.push({
-            type: attachment.type,
-            url: attachment.url,
-          });
-        }
-      });
-    } else if (isArray(itemData.images) && itemData.images && itemData.images.length > 0) {
-      itemData.images.forEach((attachment) => {
-        mediaItems.push({
-          type: 'photo',
-          url: attachment,
-        });
-      });
-    }
-
-    if (mediaItems.length > 0) {
-      setMedia(mediaItems);
-      const photoMedia = mediaItems.filter((item) => item.type === 'photo' && item.url);
-      if (photoMedia.length > 0) {
-        setImageInfo((previous) =>
-          photoMedia.map((item) => {
-            const existing = previous.find((previousItem) => previousItem.url === item.url);
-            if (existing && existing.width > 0 && existing.height > 0) {
-              return existing;
-            }
-            return {
-              url: item.url,
-              width: 4,
-              height: 5,
-            };
-          })
-        );
-
-        photoMedia.forEach((photoItem) => {
-          Image.getSize(
-            photoItem.url,
-            (resolvedWidth, resolvedHeight) => {
-              if (!isMounted || resolvedWidth <= 0 || resolvedHeight <= 0) {
-                return;
-              }
-              setImageInfo((previous) => {
-                return previous.map((imageItem) => {
-                  if (imageItem.url !== photoItem.url) {
-                    return imageItem;
-                  }
-                  return {
-                    ...imageItem,
-                    width: resolvedWidth,
-                    height: resolvedHeight,
-                  };
-                });
-              });
-            },
-            () => undefined
-          );
-        });
-      } else {
-        setImageInfo([]);
-      }
-    } else {
-      setMedia([]);
-      setImageInfo([]);
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [itemData]);
+  }, [media, itemData.id, itemData.postId, itemData._id]);
 
   const linkAttachment = useMemo(
     () => itemData?.attachments?.find((attachment) => attachment.type === 'link'),
@@ -462,36 +478,76 @@ function SocialItem({
     if (attachmentLinkData?.url || !safeContentUrl) {
       setLinkPreview(null);
     } else {
-      setLinkPreview({
-        url: safeContentUrl,
-        title: safeContentUrl,
-        siteName: undefined,
-        description: undefined,
-        imageUrl: undefined,
-      });
+      const cachedPreview = getCachedLinkPreview(safeContentUrl);
+      if (cachedPreview) {
+        setLinkPreview(cachedPreview);
+        if (!isRowVisible) {
+          return () => {
+            isActive = false;
+            controller.abort();
+          };
+        }
+      } else if (!isRowVisible) {
+        setLinkPreview(buildFallbackLinkPreview(safeContentUrl));
+        return () => {
+          isActive = false;
+          controller.abort();
+        };
+      }
+
+      const fallbackPreview = buildFallbackLinkPreview(safeContentUrl);
+      setLinkPreview(fallbackPreview);
 
       const loadPreview = async () => {
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, LINK_PREVIEW_TIMEOUT_MS);
+
         try {
           const response = await fetch(safeContentUrl, {
             method: 'GET',
             headers: {
+              Accept: 'text/html,application/xhtml+xml',
+              Range: `bytes=0-${LINK_PREVIEW_MAX_BYTES - 1}`,
               'User-Agent': 'Mozilla/5.0 (compatible; OneBodyApp/1.0)',
             },
             signal: controller.signal,
           });
 
-          const html = await response.text();
+          if (!response.ok) {
+            throw new Error('Preview fetch failed');
+          }
+
+          const resolvedUrl = response.url || safeContentUrl;
+          if (!isSafeHttpUrl(resolvedUrl)) {
+            throw new Error('Unsafe preview redirect');
+          }
+
+          const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+          if (
+            !contentType.includes('text/html') &&
+            !contentType.includes('application/xhtml+xml')
+          ) {
+            throw new Error('Unsupported preview response type');
+          }
+
+          const contentLength = Number(response.headers.get('content-length') ?? '0');
+          if (Number.isFinite(contentLength) && contentLength > LINK_PREVIEW_MAX_BYTES) {
+            throw new Error('Preview response too large');
+          }
+
+          const html = (await response.text()).slice(0, LINK_PREVIEW_MAX_BYTES);
           if (!isActive) return;
-          setLinkPreview(buildLinkPreview(safeContentUrl, html));
+
+          const nextPreview = buildLinkPreview(resolvedUrl, html);
+          cacheLinkPreview(safeContentUrl, nextPreview);
+          setLinkPreview(nextPreview);
         } catch {
           if (!isActive) return;
-          setLinkPreview({
-            url: safeContentUrl,
-            title: safeContentUrl,
-            siteName: undefined,
-            description: undefined,
-            imageUrl: undefined,
-          });
+          cacheLinkPreview(safeContentUrl, fallbackPreview);
+          setLinkPreview(fallbackPreview);
+        } finally {
+          clearTimeout(timeoutId);
         }
       };
 
@@ -502,7 +558,7 @@ function SocialItem({
       isActive = false;
       controller.abort();
     };
-  }, [attachmentLinkData?.url, safeContentUrl]);
+  }, [attachmentLinkData?.url, isRowVisible, safeContentUrl]);
 
   const linkCardData: LinkData | null = useMemo(() => {
     if (attachmentLinkData?.url && isSafeHttpUrl(attachmentLinkData.url)) {
@@ -543,7 +599,7 @@ function SocialItem({
 
     setResolvedSourceSnapshot(sourceSnapshotSeed);
 
-    if (!isRepostSourceSnapshotMissing(repostMeta)) {
+    if (!isRepostSourceSnapshotMissing(repostMeta) || !isRowVisible) {
       return () => {
         isActive = false;
       };
@@ -561,7 +617,7 @@ function SocialItem({
     return () => {
       isActive = false;
     };
-  }, [repostMeta, sourceSnapshotSeed, token]);
+  }, [isRowVisible, repostMeta, sourceSnapshotSeed, token]);
 
   const sourceSnapshot = resolvedSourceSnapshot ?? sourceSnapshotSeed;
 
@@ -596,46 +652,14 @@ function SocialItem({
   const sourceDescription = sourceSnapshot?.sourceDescription?.trim() ?? '';
   const sourceContent =
     sourceSnapshot?.sourceContent?.trim() ?? sourceSnapshot?.sourceContentSnippet?.trim() ?? '';
-  const sourceMediaType = sourceSnapshot?.sourceMediaType?.toLowerCase() ?? '';
-  const sourceMediaUrl = sourceSnapshot?.sourceMediaUrl?.trim() ?? '';
-
-  const sourceImageUrls = useMemo(() => {
-    if (!sourceSnapshot) {
-      return [] as string[];
-    }
-
-    const urls = [...sourceSnapshot.sourceImages];
-
-    if (sourceSnapshot.sourceImage && !urls.includes(sourceSnapshot.sourceImage)) {
-      urls.unshift(sourceSnapshot.sourceImage);
-    }
-
-    if (sourceMediaUrl && !sourceMediaType.startsWith('video') && !urls.includes(sourceMediaUrl)) {
-      urls.push(sourceMediaUrl);
-    }
-
-    return Array.from(
-      new Set(urls.map((value) => value.trim()).filter((value) => value.length > 0))
-    );
-  }, [sourceMediaType, sourceMediaUrl, sourceSnapshot]);
-
-  const sourceVideoUrls = useMemo(() => {
-    if (!sourceSnapshot) {
-      return [] as string[];
-    }
-
-    const urls = [...sourceSnapshot.sourceVideos];
-
-    if (sourceMediaUrl && sourceMediaType.startsWith('video') && !urls.includes(sourceMediaUrl)) {
-      urls.push(sourceMediaUrl);
-    }
-
-    return Array.from(
-      new Set(urls.map((value) => value.trim()).filter((value) => value.length > 0))
-    );
-  }, [sourceMediaType, sourceMediaUrl, sourceSnapshot]);
-
-  const sourceGifUrl = sourceSnapshot?.sourceGif?.url?.trim() ?? '';
+  const sourceMedia = useMemo(() => extractRepostSourceMedia(sourceSnapshot), [sourceSnapshot]);
+  const sourceImageInfo = useResolvedImageInfo(sourceMedia.imageUrls, isRowVisible);
+  const sourceSliderImages = useMemo(
+    () => buildSliderImages(sourceImageInfo, sourceMedia.gif),
+    [sourceImageInfo, sourceMedia.gif]
+  );
+  const sourceVideoUrls = sourceMedia.videoUrls;
+  const sourceGifUrl = sourceMedia.gif?.url?.trim() ?? '';
   const shouldShowSourceHeader = Boolean(
     sourceSnapshot?.sourceAuthorName || sourceMetaLine || sourceSnapshot?.sourceAuthorProfileImage
   );
@@ -646,13 +670,24 @@ function SocialItem({
         sourceTitle ||
         sourceDescription ||
         sourceLink ||
-        sourceImageUrls.length > 0 ||
+        sourceSliderImages.length > 0 ||
         sourceVideoUrls.length > 0 ||
         sourceGifUrl)
   );
+  const sourceLinkCardImage = sourceMedia.primaryImageUrl;
+  const sourceCardMediaWidth = resolvedContentWidth
+    ? Math.max(resolvedContentWidth - spacing.x20, 0)
+    : 0;
+  const handleOpenImages = useCallback(
+    (viewerImages: ImageForSlider[], selectedIndex: number) => {
+      if (selectedIndex < 0 || viewerImages.length < 1) {
+        return;
+      }
 
-  const sourceLinkCardImage =
-    sourceImageUrls[0] || sourceSnapshot?.sourceImage || sourceMediaUrl || '';
+      onOpenImages?.(buildImageViewerSources(viewerImages), selectedIndex);
+    },
+    [onOpenImages]
+  );
 
   const postId = itemData.postId ?? itemData.id ?? itemData._id;
   const { playBackId } = itemData as SocialPost & { playBackId?: string };
@@ -801,26 +836,10 @@ function SocialItem({
     }
   });
 
-  const images: ImageForSlider[] = [];
-  if (imageInfo && imageInfo.length > 0) {
-    for (let i = 0; i < imageInfo.length; i++) {
-      images.push({
-        ...imageInfo[i],
-        type: 'image',
-      });
-    }
-  }
-
-  if (itemData.gif) {
-    images.push({
-      url: itemData.gif.url,
-      width: toSafeNumber(itemData.gif.data.images.original.width),
-      height: toSafeNumber(itemData.gif.data.images.original.height),
-      id: itemData.gif.id,
-      gifAspectRatio: toSafeNumber(itemData.gif.aspectRatio),
-      type: 'gif',
-    });
-  }
+  const images = useMemo(
+    () => buildSliderImages(imageInfo, itemData.repost ? undefined : itemData.gif),
+    [imageInfo, itemData.gif, itemData.repost]
+  );
 
   return (
     <>
@@ -887,9 +906,13 @@ function SocialItem({
       >
         <View
           style={{ flexGrow: 1 }}
-          onLayout={({ nativeEvent }) => {
-            setWidth(nativeEvent.layout.width);
-          }}
+          onLayout={
+            contentWidth
+              ? undefined
+              : ({ nativeEvent }) => {
+                  setWidth(nativeEvent.layout.width);
+                }
+          }
         >
           {shouldRenderPrimaryText ? (
             <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
@@ -926,7 +949,7 @@ function SocialItem({
                           sourceContent ||
                           sourceTitle ||
                           sourceDescription ||
-                          sourceImageUrls.length > 0 ||
+                          sourceSliderImages.length > 0 ||
                           sourceVideoUrls.length > 0 ||
                           sourceGifUrl
                             ? spacing.x8
@@ -1025,7 +1048,7 @@ function SocialItem({
                           textStyle={{
                             color: colors.text,
                             marginBottom:
-                              sourceImageUrls.length > 0 ||
+                              sourceSliderImages.length > 0 ||
                               sourceVideoUrls.length > 0 ||
                               sourceGifUrl ||
                               sourceLink
@@ -1035,19 +1058,31 @@ function SocialItem({
                         />
                       ) : null}
 
-                      {sourceImageUrls.map((url) => (
-                        <FastImage
-                          key={url}
+                      {sourceSliderImages.length > 0 && sourceCardMediaWidth > 0 ? (
+                        <View
                           style={{
-                            width: '100%',
-                            aspectRatio: 16 / 9,
-                            borderRadius: FEED_MEDIA_RADIUS,
-                            marginBottom: spacing.x8,
+                            marginBottom:
+                              sourceVideoUrls.length > 0 || sourceLink ? spacing.x16 : spacing.x8,
                           }}
-                          resizeMode="cover"
-                          source={{ uri: url }}
-                        />
-                      ))}
+                        >
+                          <ImageSlider
+                            width={sourceCardMediaWidth}
+                            images={sourceSliderImages}
+                            minAspectRatio={9 / 16}
+                            maxAspectRatio={1}
+                            multiImageHeightMode={feedMultiImageHeightMode}
+                            imageResizeMode="cover"
+                            frameBackgroundColor="transparent"
+                            onImagePress={(selectedIndex) => {
+                              onTelemetryEvent?.('media_open', {
+                                mediaType: 'image',
+                                sourceType: sourceSnapshot?.sourceType,
+                              });
+                              handleOpenImages(sourceSliderImages, selectedIndex);
+                            }}
+                          />
+                        </View>
+                      ) : null}
 
                       {sourceVideoUrls.map((videoUrl) => (
                         <View
@@ -1073,19 +1108,6 @@ function SocialItem({
                         </View>
                       ))}
 
-                      {sourceGifUrl ? (
-                        <FastImage
-                          style={{
-                            width: '100%',
-                            aspectRatio: 16 / 9,
-                            borderRadius: FEED_MEDIA_RADIUS,
-                            marginBottom: spacing.x8,
-                          }}
-                          resizeMode="cover"
-                          source={{ uri: sourceGifUrl }}
-                        />
-                      ) : null}
-
                       {sourceLink ? (
                         <View
                           style={{
@@ -1096,7 +1118,9 @@ function SocialItem({
                             overflow: 'hidden',
                           }}
                         >
-                          {sourceLinkCardImage ? (
+                          {sourceLinkCardImage &&
+                          sourceSliderImages.length < 1 &&
+                          sourceVideoUrls.length < 1 ? (
                             <FastImage
                               style={{
                                 width: '100%',
@@ -1250,7 +1274,7 @@ function SocialItem({
                         videoWidth: itemData.videoWidth,
                         videoHeight: itemData.videoHeight,
                       }}
-                      containerWidth={width ?? 1}
+                      containerWidth={resolvedContentWidth || 1}
                       controls={false}
                       paused={!isPlaying}
                       muted={isMuted}
@@ -1306,41 +1330,23 @@ function SocialItem({
             })}
 
           {images.length > 0 ? (
-            <>
-              {imageModalIndexVisible > -1 ? (
-                <ImageView
-                  images={images.map((item) => ({ uri: item.url }))}
-                  presentationStyle="overFullScreen"
-                  imageIndex={imageModalIndexVisible}
-                  visible
-                  onRequestClose={() => {
-                    setImageModalIndexVisible(-1);
-                  }}
-                />
-              ) : null}
-
-              <ImageSlider
-                width={width ?? 0}
-                images={images}
-                minAspectRatio={isPrimaryHomeFeed ? 9 / 16 : undefined}
-                maxAspectRatio={isPrimaryHomeFeed ? 1 : undefined}
-                multiImageHeightMode={isPrimaryHomeFeed ? 'animated' : 'fixed'}
-                imageResizeMode={isPrimaryHomeFeed ? 'cover' : 'contain'}
-                frameBackgroundColor={isPrimaryHomeFeed ? 'transparent' : Colors.containFrame}
-                setImageModalIndexVisible={(selectedIndex) => {
-                  if (selectedIndex > -1) {
-                    onTelemetryEvent?.('media_open', {
-                      mediaType: 'image',
-                    });
-                  }
-                  if (handleCommentsPress) {
-                    handleCommentsPress();
-                    return;
-                  }
-                  setImageModalIndexVisible(selectedIndex);
-                }}
-              />
-            </>
+            <ImageSlider
+              width={resolvedContentWidth}
+              images={images}
+              minAspectRatio={isPrimaryHomeFeed ? 9 / 16 : undefined}
+              maxAspectRatio={isPrimaryHomeFeed ? 1 : undefined}
+              multiImageHeightMode={feedMultiImageHeightMode}
+              imageResizeMode={isPrimaryHomeFeed ? 'cover' : 'contain'}
+              frameBackgroundColor={isPrimaryHomeFeed ? 'transparent' : Colors.containFrame}
+              setImageModalIndexVisible={(selectedIndex) => {
+                if (selectedIndex > -1) {
+                  onTelemetryEvent?.('media_open', {
+                    mediaType: 'image',
+                  });
+                }
+                handleOpenImages(images, selectedIndex);
+              }}
+            />
           ) : null}
         </View>
       </BaseItem>

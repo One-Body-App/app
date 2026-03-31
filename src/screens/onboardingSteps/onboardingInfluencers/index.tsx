@@ -209,6 +209,15 @@ function OnboardingInfluencers({ route }: Props) {
     [getInfluencerId, selectedInfluencers]
   );
 
+  const showErrorToast = useCallback(
+    (message: string) => {
+      toast.show(message, {
+        type: 'danger',
+      });
+    },
+    [toast]
+  );
+
   return (
     <OnboardingStepsLayout
       buttonText={selectedInfluencers.length > 0 ? 'Next' : 'Skip'}
@@ -218,6 +227,12 @@ function OnboardingInfluencers({ route }: Props) {
           enableVibrateFallback: true,
           ignoreAndroidSystemSettings: false,
         });
+
+        if (!token) {
+          showErrorToast('Your session expired. Please sign in again.');
+          return;
+        }
+
         if (selectedInfluencers.length > 0) {
           await addFollowing();
         }
@@ -243,22 +258,48 @@ function OnboardingInfluencers({ route }: Props) {
             })
           );
         } else {
+          let missingOrgMessage: string | null = null;
+
+          if (!route.params.selectedOrganizationCategory) {
+            missingOrgMessage = 'Organization category is required';
+          } else if (!route.params.selectedOrganizationType) {
+            missingOrgMessage = 'Organization type is required';
+          } else if (!route.params.selectedOrganizationSubType) {
+            missingOrgMessage = 'Organization subtype is required';
+          } else if (!route.params.organizationName) {
+            missingOrgMessage = 'Organization name is required';
+          } else if (!route.params.organizationContactName) {
+            missingOrgMessage = 'Organization contact name is required';
+          } else if (!route.params.organizationContactEmail) {
+            missingOrgMessage = 'Organization contact email is required';
+          } else if (
+            route.params.longitude == null ||
+            route.params.latitude == null ||
+            !route.params.address
+          ) {
+            missingOrgMessage = 'Organization location is required';
+          }
+
+          if (missingOrgMessage) {
+            showErrorToast(missingOrgMessage);
+            return;
+          }
+
           const data: Record<string, any> = {
+            organizationCategory: route.params.selectedOrganizationCategory,
+            organizationSubType: route.params.selectedOrganizationSubType,
             typeOfOrganization: route.params.selectedOrganizationType,
             contactEmail: route.params.organizationContactEmail,
             companyName: route.params.organizationName,
             contactName: route.params.organizationContactName,
             contactPhoneNumber: route.params.organizationContactPhoneNumber,
             markProfileCompleted: true,
-          };
-
-          if (route.params.longitude && route.params.latitude && route.params.address) {
-            data.location = {
+            location: {
               longitude: route.params.longitude,
               latitude: route.params.latitude,
               address: route.params.address,
-            };
-          }
+            },
+          };
 
           dispatch(orgprofileUpdate({ data, token }));
         }

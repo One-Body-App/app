@@ -15,6 +15,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
@@ -94,6 +95,7 @@ import TrendingTopicsBubbles, {
   TrendingTopicBubbleItem,
   mapTrendingTopicResponse,
 } from './TrendingTopicsBubbles';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'Explore'>,
@@ -334,6 +336,8 @@ const dedupeResults = (results: ExploreSearchResult[]) => {
 
 function Explore({ navigation }: Props) {
   const dispatch = useDispatch();
+  const { width } = useWindowDimensions();
+  const { imageViewer, openImages } = useSharedImageViewer();
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const headerRowHeight = APP_HEADER_ROW_HEIGHT;
@@ -356,6 +360,7 @@ function Explore({ navigation }: Props) {
   const headerChevronColor = dark ? colors.text : Colors.primary.brand;
   const shouldUseBlurHeader = Platform.OS === 'ios';
   const canGoBack = navigation.canGoBack();
+  const socialItemContentWidth = Math.max(width - spacing.x16 * 2 - 14, 0);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData as User | null);
@@ -1125,7 +1130,13 @@ function Explore({ navigation }: Props) {
       if (result.kind === 'social') {
         return (
           <View style={styles.searchRowSpacing}>
-            <SocialItem itemData={result.item} originFeedType="forYou" />
+            <SocialItem
+              itemData={result.item}
+              originFeedType="forYou"
+              visible
+              contentWidth={socialItemContentWidth}
+              onOpenImages={openImages}
+            />
           </View>
         );
       }
@@ -1228,8 +1239,10 @@ function Explore({ navigation }: Props) {
       dark,
       handleOpenConnectPortal,
       handleOpenWatchPost,
+      openImages,
       primaryTextColor,
       secondaryTextColor,
+      socialItemContentWidth,
       surfaceBorderColor,
       surfaceCardColor,
       styles,
@@ -1984,6 +1997,7 @@ function Explore({ navigation }: Props) {
       ) : (
         browseContent
       )}
+      {imageViewer}
     </View>
   );
 }

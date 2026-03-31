@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Image, RefreshControl, Text, View, useWindowDimensions } from 'react-native';
 import { SceneRendererProps } from 'react-native-tab-view';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
@@ -14,6 +14,8 @@ import { OpenURLButton } from '@/services/constants';
 import Button from '../Button';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
+import { spacing } from '@/src/styles/spacing';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 
 function InstagramFlatlist({
   currentUser,
@@ -84,73 +86,81 @@ function InstagramFlatlist({
   ]);
   const { colors } = useTheme();
   const [isScrollEnable, setIsScrollEnable] = useState(true);
+  const { width } = useWindowDimensions();
+  const { imageViewer, openImages } = useSharedImageViewer();
+  const socialItemContentWidth = Math.max(width - spacing.x16 * 2 - 14, 0);
 
   if (instagramPosts.length) {
     return (
-      <FlatList
-        data={instagramPosts}
-        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-        contentContainerStyle={{ marginTop: getHeight(1) }}
-        showsHorizontalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-        scrollEnabled={isScrollEnable}
-        renderItem={({ item, index }) => (
-          <SocialItem
-            index={index}
-            onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-            visible={
-              visibleItemsIndex && visibleItemsIndex.length > 0
-                ? visibleItemsIndex?.indexOf(index) > -1
-                : false
-            }
-            itemData={item}
-            socialPostviewStyle={{ backgroundColor: colors.card }}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        onScroll={(e) => {
-          if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
-        }}
-        refreshControl={
-          <RefreshControl
-            enabled
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setIsEndOfList(false);
-              setRefreshing(true);
-              setPage(1);
-            }}
-          />
-        }
-        ListFooterComponent={() => {
-          return (
-            <Button
-              text="View more on Instagram"
-              // btnStyle={{
-              //   ...GeneralStyle.btn,
-              //   marginHorizontal: 20,
-              //   // backgroundColor: colors.background,
-              // }}
-              btnTextStyle={{
-                marginHorizontal: 20,
-                color: '#70747D',
-                fontSize: 14,
-              }}
-              onPress={() => {
-                OpenURLButton(
-                  `https://instagram.com/${currentUser.influencerProfile?.instagramHandler}`,
-                  true
-                );
+      <>
+        <FlatList
+          data={instagramPosts}
+          viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+          contentContainerStyle={{ marginTop: getHeight(1) }}
+          showsHorizontalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+          scrollEnabled={isScrollEnable}
+          renderItem={({ item, index }) => (
+            <SocialItem
+              index={index}
+              contentWidth={socialItemContentWidth}
+              onOpenImages={openImages}
+              onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+              visible={
+                visibleItemsIndex && visibleItemsIndex.length > 0
+                  ? visibleItemsIndex?.indexOf(index) > -1
+                  : false
+              }
+              itemData={item}
+              socialPostviewStyle={{ backgroundColor: colors.card }}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          onScroll={(e) => {
+            if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
+          }}
+          refreshControl={
+            <RefreshControl
+              enabled
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setIsEndOfList(false);
+                setRefreshing(true);
+                setPage(1);
               }}
             />
-          );
-        }}
-        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
-        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
-      />
+          }
+          ListFooterComponent={() => {
+            return (
+              <Button
+                text="View more on Instagram"
+                // btnStyle={{
+                //   ...GeneralStyle.btn,
+                //   marginHorizontal: 20,
+                //   // backgroundColor: colors.background,
+                // }}
+                btnTextStyle={{
+                  marginHorizontal: 20,
+                  color: '#70747D',
+                  fontSize: 14,
+                }}
+                onPress={() => {
+                  OpenURLButton(
+                    `https://instagram.com/${currentUser.influencerProfile?.instagramHandler}`,
+                    true
+                  );
+                }}
+              />
+            );
+          }}
+          removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+          initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+          maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+          updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+          windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
+        />
+        {imageViewer}
+      </>
     );
   }
   return null;

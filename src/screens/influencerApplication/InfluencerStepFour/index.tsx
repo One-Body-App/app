@@ -1,6 +1,5 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ImageBackground,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -12,7 +11,6 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
-import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomModal from '@/src/components/CustomModal';
 import { SettingsStackParamsList } from '@/src/navigator/types';
@@ -79,64 +77,70 @@ function CreatorStepFour({ navigation, route }: Props) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
 
-  const palette: ScreenPalette = dark
-    ? {
-        screen: colors.background,
-        surface: colors.card,
-        surfaceAlt: '#121A1D',
-        border: 'rgba(255, 255, 255, 0.08)',
-        subtleBorder: 'rgba(255, 255, 255, 0.06)',
-        accent: Colors.primarySapphire.brand,
-        primary: Colors.primarySapphire.brand,
-        primaryActive: 'rgba(18, 107, 135, 0.22)',
-        text: colors.text,
-        body: Colors.primary[600],
-        muted: Colors.primary[500],
-        buttonText: '#FFFFFF',
-        secondaryButtonBorder: 'rgba(255, 255, 255, 0.12)',
-        secondaryButtonText: colors.text,
-        modalSurface: colors.card,
-      }
-    : {
-        screen: colors.background,
-        surface: '#FFFFFF',
-        surfaceAlt: Colors.primarySapphire[900],
-        border: Colors.primary[800],
-        subtleBorder: 'rgba(3, 47, 60, 0.06)',
-        accent: Colors.primarySapphire.brand,
-        primary: Colors.primarySapphire.brand,
-        primaryActive: Colors.primarySapphire[900],
-        text: Colors.primary.brand,
-        body: Colors.primary[500],
-        muted: Colors.primary[500],
-        buttonText: '#FFFFFF',
-        secondaryButtonBorder: Colors.primary[800],
-        secondaryButtonText: Colors.primary.brand,
-        modalSurface: '#FFFFFF',
-      };
+  const palette = useMemo(
+    (): ScreenPalette =>
+      dark
+        ? {
+            screen: colors.background,
+            surface: colors.card,
+            surfaceAlt: '#121A1D',
+            border: 'rgba(255, 255, 255, 0.08)',
+            subtleBorder: 'rgba(255, 255, 255, 0.06)',
+            accent: Colors.primarySapphire.brand,
+            primary: Colors.primarySapphire.brand,
+            primaryActive: 'rgba(18, 107, 135, 0.22)',
+            text: colors.text,
+            body: Colors.primary[600],
+            muted: Colors.primary[500],
+            buttonText: '#FFFFFF',
+            secondaryButtonBorder: 'rgba(255, 255, 255, 0.12)',
+            secondaryButtonText: colors.text,
+            modalSurface: colors.card,
+          }
+        : {
+            screen: colors.background,
+            surface: '#FFFFFF',
+            surfaceAlt: Colors.primarySapphire[900],
+            border: Colors.primary[800],
+            subtleBorder: 'rgba(3, 47, 60, 0.06)',
+            accent: Colors.primarySapphire.brand,
+            primary: Colors.primarySapphire.brand,
+            primaryActive: Colors.primarySapphire[900],
+            text: Colors.primary.brand,
+            body: Colors.primary[500],
+            muted: Colors.primary[500],
+            buttonText: '#FFFFFF',
+            secondaryButtonBorder: Colors.primary[800],
+            secondaryButtonText: Colors.primary.brand,
+            modalSurface: '#FFFFFF',
+          },
+    [dark, colors]
+  );
 
-  const styles = createStyles(palette, dark, insets.bottom);
-  const previousData = route.params?.data || {};
+  const styles = useMemo(
+    () => createStyles(palette, dark, insets.bottom),
+    [palette, dark, insets.bottom]
+  );
 
-  const toggleType = (id: string) => {
+  const previousData = useMemo(() => route.params?.data ?? {}, [route.params]);
+
+  const toggleType = useCallback((id: string) => {
     setSelectedTypes((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
     );
-  };
+  }, []);
 
-  const toggleTopic = (id: string) => {
+  const toggleTopic = useCallback((id: string) => {
     setSelectedTopics((current) => {
       if (current.includes(id)) {
         return current.filter((item) => item !== id);
       }
-
       if (current.length >= 5) {
         return current;
       }
-
       return [...current, id];
     });
-  };
+  }, []);
 
   const handleQuit = useCallback(() => {
     setShowQuitModal(false);
@@ -162,7 +166,7 @@ function CreatorStepFour({ navigation, route }: Props) {
     );
   }, [navigation]);
 
-  const onReview = () => {
+  const onReview = useCallback(() => {
     navigation.navigate('CreatorReview', {
       data: {
         ...previousData,
@@ -170,7 +174,7 @@ function CreatorStepFour({ navigation, route }: Props) {
         topics: selectedTopics,
       },
     });
-  };
+  }, [navigation, previousData, selectedTypes, selectedTopics]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -194,9 +198,6 @@ function CreatorStepFour({ navigation, route }: Props) {
               <Text style={styles.headerActionText}>Quit</Text>
             </TouchableOpacity>
           </View>
-        </View>
-        <View style={styles.progressBarTrack}>
-          <View style={styles.progressBarFill} />
         </View>
       </View>
 
@@ -296,38 +297,35 @@ function CreatorStepFour({ navigation, route }: Props) {
         </View>
 
         <View style={styles.impactCardWrapper}>
-          <ImageBackground
-            source={{
-              uri: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop',
-            }}
-            style={styles.impactCard}
-            imageStyle={styles.impactImage}
-          >
-            <LinearGradient
-              colors={['transparent', 'rgba(3, 47, 60, 0.9)']}
-              style={styles.impactGradient}
-            >
-              <Text style={styles.impactTitle}>Message impact</Text>
-              <Text style={styles.impactText}>Visual storytelling increases engagement by 4x.</Text>
-            </LinearGradient>
-          </ImageBackground>
+          <MaterialCommunityIcons
+            name="bullhorn-outline"
+            size={32}
+            color={palette.accent}
+            style={styles.impactIcon}
+          />
+          <Text style={styles.impactTitle}>Message impact</Text>
+          <Text style={styles.impactText}>Visual storytelling increases engagement by 4x.</Text>
         </View>
       </ScrollView>
 
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons
-            name="chevron-left"
-            size={18}
-            color={palette.secondaryButtonText}
-          />
-          <Text style={styles.backButtonText}>BACK</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.continueButton} onPress={onReview}>
-          <Text style={styles.continueButtonText}>REVIEW APPLICATION</Text>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={palette.buttonText} />
-        </TouchableOpacity>
+        <View style={styles.progressWrap}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressLabel}>Step 3 of 3</Text>
+            <Text style={styles.progressPercent}>100%</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={styles.progressFill} />
+          </View>
+        </View>
+        <View style={styles.footerActions}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.continueButton} onPress={onReview}>
+            <Text style={styles.continueButtonText}>Review Application</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <CustomModal
@@ -408,19 +406,6 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
       lineHeight: 24,
       fontFamily: 'OpenSans-SemiBold',
       fontWeight: '600',
-    },
-    progressBarTrack: {
-      height: 4,
-      borderRadius: 999,
-      backgroundColor: palette.subtleBorder,
-      overflow: 'hidden',
-      marginTop: 4,
-    },
-    progressBarFill: {
-      width: '100%',
-      height: '100%',
-      borderRadius: 999,
-      backgroundColor: palette.primary,
     },
     scrollContent: {
       flexGrow: 1,
@@ -522,25 +507,15 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
     impactCardWrapper: {
       marginTop: 4,
       borderRadius: 28,
-      overflow: 'hidden',
-      minHeight: 180,
+      minHeight: 140,
       backgroundColor: palette.surfaceAlt,
       borderWidth: 1,
       borderColor: palette.subtleBorder,
-    },
-    impactCard: {
-      width: '100%',
-      height: '100%',
-      minHeight: 180,
-      backgroundColor: palette.surfaceAlt,
-    },
-    impactImage: {
-      opacity: dark ? 0.5 : 0.62,
-    },
-    impactGradient: {
-      flex: 1,
-      justifyContent: 'flex-end',
       padding: 22,
+      justifyContent: 'center',
+    },
+    impactIcon: {
+      marginBottom: 12,
     },
     impactTitle: {
       color: Colors.primarySapphire.brand,
@@ -550,63 +525,88 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
       marginBottom: 6,
     },
     impactText: {
-      color: '#FFFFFF',
+      color: dark ? Colors.primary[600] : Colors.primary[500],
       fontSize: 15,
       lineHeight: 22,
       fontFamily: 'OpenSans-SemiBold',
-      maxWidth: '72%',
+      maxWidth: '80%',
     },
     bottomNav: {
       position: 'absolute',
       bottom: 0,
       width: '100%',
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
       paddingTop: 12,
-      paddingBottom: Math.max(bottomInset, 16),
+      paddingBottom: Math.max(bottomInset, 24),
       backgroundColor: palette.screen,
       borderTopWidth: 1,
       borderTopColor: palette.subtleBorder,
     },
-    backButton: {
-      minWidth: 116,
+    progressWrap: {
+      paddingBottom: 12,
+    },
+    progressHeader: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    progressLabel: {
+      color: palette.text,
+      fontSize: 14,
+      fontWeight: '700',
+      fontFamily: 'OpenSans-SemiBold',
+    },
+    progressPercent: {
+      color: palette.accent,
+      fontSize: 14,
+      fontWeight: '700',
+      fontFamily: 'OpenSans-SemiBold',
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 4,
+      overflow: 'hidden',
+      backgroundColor: palette.subtleBorder,
+    },
+    progressFill: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 4,
+      backgroundColor: palette.primary,
+    },
+    footerActions: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    backButton: {
+      minWidth: 110,
+      minHeight: 50,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 15,
-      paddingHorizontal: 22,
       borderWidth: 1,
       borderColor: palette.secondaryButtonBorder,
-      borderRadius: 24,
+      borderRadius: 60,
       backgroundColor: palette.surface,
     },
     backButtonText: {
       color: palette.secondaryButtonText,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 15,
+      fontWeight: '700',
       fontFamily: 'OpenSans-SemiBold',
-      letterSpacing: 2.2,
-      marginLeft: 4,
     },
     continueButton: {
-      minWidth: 208,
-      flexDirection: 'row',
+      flex: 1,
+      minHeight: 50,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: palette.primary,
-      paddingVertical: 15,
-      paddingHorizontal: 28,
-      borderRadius: 28,
+      borderRadius: 60,
     },
     continueButtonText: {
       color: palette.buttonText,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 16,
+      fontWeight: '800',
       fontFamily: 'OpenSans-SemiBold',
-      letterSpacing: 1.8,
-      marginRight: 4,
     },
     quitModalContainer: {
       minHeight: 280,

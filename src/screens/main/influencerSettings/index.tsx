@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Linking } from 'react-native';
 import { Text } from 'react-native-paper';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import Button from '../../../components/Button';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
@@ -14,49 +13,20 @@ import {
   INSTAGRAM_APP_ID,
   INSTAGRAM_CONNECT_REDIRECT,
   INSTAGRAM_RECONNECT_REDIRECT,
-  getInstagramAuthToken,
   OpenURLButton,
 } from '@/services/constants';
-import { getProfile, removeSocialAccountRequest } from '@/src/redux/actions/AuthActions';
-import { SettingsStackParamsList } from '@/src/navigator/types';
+import { removeSocialAccountRequest } from '@/src/redux/actions/AuthActions';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerSettings'>;
-
-function InfluencerSettings({ route }: Props) {
+function InfluencerSettings() {
   const userToken = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
 
   const time = new Date().getTime() / 1000;
   const { colors } = useTheme();
-  const [instagramTokenExpiresAtReal, setInstagramTokenExpiresAtReal] = useState<number>();
 
-  useEffect(() => {
-    if (route.params?.service === 'instagram' && route.params?.code) {
-      getInstagramAuthToken(
-        route.params.code,
-        userToken,
-        route.params.action === 'reconnect'
-          ? INSTAGRAM_RECONNECT_REDIRECT
-          : INSTAGRAM_CONNECT_REDIRECT
-      ).then((result) => {
-        if (result && result.instagramTokenExpiresAtReal) {
-          setInstagramTokenExpiresAtReal(parseInt(result.instagramTokenExpiresAtReal, 10));
-          dispatch(
-            getProfile.Request({
-              token: userToken,
-            })
-          );
-        }
-      });
-    }
-  }, [dispatch, route.params, userToken]);
-
-  let currentInstagramTokenExpiresAtReal =
+  const currentInstagramTokenExpiresAtReal =
     userProfile?.influencerProfile?.instagramTokenExpirationReal || 0;
-  if (instagramTokenExpiresAtReal) {
-    currentInstagramTokenExpiresAtReal = instagramTokenExpiresAtReal;
-  }
 
   const showInstagramWarning =
     userProfile?.influencerProfile?.instagramId && currentInstagramTokenExpiresAtReal < time;
@@ -127,14 +97,14 @@ function InfluencerSettings({ route }: Props) {
                     btnStyle={styles.buttonContainer}
                     btnTextStyle={btnTextStyle}
                     onPress={() => openInstagramFlow(INSTAGRAM_RECONNECT_REDIRECT)}
-                    disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
+                    disabled={userProfile?.influencerProfile?.influencerStatus !== 'approved'}
                   />
                 ) : (
                   <Button
                     text="Remove Account"
                     btnStyle={[styles.buttonContainer, { backgroundColor: '#E90202' }]}
                     btnTextStyle={btnTextStyle}
-                    disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
+                    disabled={userProfile?.influencerProfile?.influencerStatus !== 'approved'}
                     onPress={async () => {
                       dispatch(
                         removeSocialAccountRequest({
@@ -150,7 +120,7 @@ function InfluencerSettings({ route }: Props) {
               <Button
                 text="Connect Account"
                 btnStyle={styles.buttonContainer}
-                disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
+                disabled={userProfile?.influencerProfile?.influencerStatus !== 'approved'}
                 btnTextStyle={btnTextStyle}
                 onPress={() => openInstagramFlow(INSTAGRAM_CONNECT_REDIRECT)}
               />

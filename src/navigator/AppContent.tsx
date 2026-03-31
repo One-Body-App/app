@@ -118,6 +118,12 @@ function AppContent() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const appStateRef = useRef(AppState.currentState);
+  const showUploadToast = useCallback(
+    (message: string, options: { type: 'success' | 'danger'; placement: 'bottom' }) => {
+      toast.show(message, options);
+    },
+    [toast]
+  );
   const token = authState.userToken;
   const hasFetchedProfileRef = useRef(false);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
@@ -1227,7 +1233,7 @@ function AppContent() {
         routeNameRef.current = navigationRef.getCurrentRoute()?.name;
       }}
     >
-      <VideoProcessingRuntime />
+      <VideoProcessingRuntime showUploadToast={showUploadToast} />
       <ReactionProvider>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
           <MainStack.Navigator
@@ -1353,6 +1359,11 @@ function AppContent() {
                 ...(Platform.OS === 'android' && {
                   headerShown: false,
                   animation: 'slide_from_right',
+                  statusBarHidden: false,
+                  statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                  statusBarColor:
+                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                  statusBarTranslucent: false,
                 }),
               }}
             />
@@ -1371,6 +1382,7 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      statusBarHidden: false,
                       statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
                       statusBarColor:
                         scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
@@ -1394,6 +1406,11 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      statusBarHidden: false,
+                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                      statusBarColor:
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      statusBarTranslucent: false,
                     }),
               }}
             />
@@ -1412,6 +1429,11 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      statusBarHidden: false,
+                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                      statusBarColor:
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      statusBarTranslucent: false,
                     }),
               }}
             />
@@ -1430,6 +1452,11 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      statusBarHidden: false,
+                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                      statusBarColor:
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      statusBarTranslucent: false,
                     }),
               })}
             />

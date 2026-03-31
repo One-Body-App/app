@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -22,6 +23,8 @@ import type { ConnectPortalEventRecord } from '@/src/services/connectPortal';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventView'>;
+const STOCK_EVENT_IMAGE_URI =
+  'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80';
 
 const isValidExternalLink = (value?: string) => {
   if (!value) {
@@ -34,6 +37,81 @@ const isValidExternalLink = (value?: string) => {
   } catch {
     return false;
   }
+};
+
+const getHeroImageUri = (eventRecord: ConnectPortalEventRecord | null) =>
+  eventRecord?.heroImageUri || eventRecord?.photoUri || STOCK_EVENT_IMAGE_URI;
+
+const getOrganizerInitials = (organizerName?: string) => {
+  const trimmedName = String(organizerName || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (trimmedName.length === 0) {
+    return 'OB';
+  }
+
+  return trimmedName
+    .slice(0, 2)
+    .map((segment) => segment.charAt(0).toUpperCase())
+    .join('');
+};
+
+const getDateAndTimeCopy = (eventRecord: ConnectPortalEventRecord | null) => {
+  if (!eventRecord) {
+    return {
+      primary: 'TBD',
+      secondary: '',
+    };
+  }
+
+  const primary = `${formatConnectPortalDate(eventRecord.startDate)}${
+    eventRecord.startTime ? ` • ${eventRecord.startTime}` : ''
+  }`;
+  const isMultiDay =
+    Boolean(eventRecord.endDate) &&
+    eventRecord.endDate !== eventRecord.startDate &&
+    !eventRecord.isSingleDayEvent;
+
+  if (isMultiDay) {
+    return {
+      primary,
+      secondary: `${formatConnectPortalDate(eventRecord.endDate)}${
+        eventRecord.endTime ? ` • ${eventRecord.endTime}` : ''
+      }`,
+    };
+  }
+
+  return {
+    primary,
+    secondary: eventRecord.endTime ? `Ends ${eventRecord.endTime}` : '',
+  };
+};
+
+const getLocationCopy = (eventRecord: ConnectPortalEventRecord | null) => {
+  if (!eventRecord) {
+    return {
+      primary: 'Location TBD',
+      secondary: 'Address TBD',
+    };
+  }
+
+  if (eventRecord.isOnline) {
+    return {
+      primary: 'Online Event',
+      secondary:
+        eventRecord.onlineEventUrl ||
+        eventRecord.externalEventUrl ||
+        eventRecord.locationQuery ||
+        'Join link TBD',
+    };
+  }
+
+  return {
+    primary: eventRecord.venueName || eventRecord.address || 'Location TBD',
+    secondary: eventRecord.address || eventRecord.locationQuery || 'Address TBD',
+  };
 };
 
 function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
@@ -59,12 +137,69 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
     };
   });
 
-  const heroImageUri =
-    eventRecord?.heroImageUri ||
-    'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80';
+  const heroImageUri = getHeroImageUri(eventRecord);
   const isExternalLinkEvent =
     eventRecord?.status === 'published' && eventRecord.ticketType === 'external';
   const hasExternalLink = isValidExternalLink(eventRecord?.externalEventUrl);
+  const dateAndTimeCopy = getDateAndTimeCopy(eventRecord);
+  const locationCopy = getLocationCopy(eventRecord);
+  const organizerInitials = getOrganizerInitials(eventRecord?.organizerName);
+
+  function renderBottomAction() {
+    if (eventRecord?.status === 'draft') {
+      return (
+        <TouchableOpacity
+          style={styles.bottomButton}
+          testID="connect-event-primary-action"
+          onPress={() =>
+            navigation.navigate(getDraftResumeRouteName(eventRecord), {
+              draftId: eventRecord.id,
+            })
+          }
+        >
+          <Text style={styles.bottomButtonText}>Resume Draft</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    if (isExternalLinkEvent) {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.bottomButton,
+            styles.bottomButtonPublished,
+            !hasExternalLink ? styles.bottomButtonDisabled : null,
+          ]}
+          activeOpacity={0.92}
+          disabled={!hasExternalLink}
+          testID="connect-event-primary-action"
+          onPress={async () => {
+            if (!eventRecord?.externalEventUrl) {
+              return;
+            }
+
+            try {
+              await Linking.openURL(eventRecord.externalEventUrl);
+            } catch {
+              Alert.alert('Unable to open link', 'Please try again later.');
+            }
+          }}
+        >
+          <Text style={[styles.bottomButtonText, styles.bottomButtonTextPublished]}>Go!</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={[styles.bottomButton, styles.bottomButtonPublished]}
+        activeOpacity={0.92}
+        testID="connect-event-primary-action"
+      >
+        <Text style={[styles.bottomButtonText, styles.bottomButtonTextPublished]}>Go!</Text>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -73,11 +208,21 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <ImageBackground source={{ uri: heroImageUri }} style={styles.heroImage}>
+          <ImageBackground
+            source={{ uri: heroImageUri }}
+            style={styles.heroImage}
+            testID="connect-event-hero-image"
+          >
             <View style={styles.heroOverlay} />
             <View style={styles.headerRow}>
-              <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                <Text style={styles.headerButtonText}>Back</Text>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => navigation.goBack()}
+                testID="connect-event-back-button"
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+              >
+                <Ionicons name="chevron-back" size={22} color="#032f3c" />
               </TouchableOpacity>
               <View style={styles.headerButtonSpacer} />
             </View>
@@ -94,29 +239,21 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
 
             <View style={styles.infoBlock}>
               <Text style={styles.infoLabel}>Date & Time</Text>
-              <Text style={styles.infoValue}>
-                {eventRecord
-                  ? `${formatConnectPortalDate(eventRecord.startDate)}${eventRecord.startTime ? ` • ${eventRecord.startTime}` : ''}`
-                  : 'TBD'}
-              </Text>
-              {eventRecord?.endTime ? (
-                <Text style={styles.infoSubvalue}>Ends {eventRecord.endTime}</Text>
+              <Text style={styles.infoValue}>{dateAndTimeCopy.primary}</Text>
+              {dateAndTimeCopy.secondary ? (
+                <Text style={styles.infoSubvalue}>{dateAndTimeCopy.secondary}</Text>
               ) : null}
             </View>
 
             <View style={styles.infoBlock}>
               <Text style={styles.infoLabel}>Location</Text>
-              <Text style={styles.infoValue}>
-                {eventRecord?.isOnline ? 'Online Event' : eventRecord?.venueName || 'Location TBD'}
-              </Text>
-              <Text style={styles.infoSubvalue}>
-                {eventRecord?.address || eventRecord?.locationQuery || 'Address TBD'}
-              </Text>
+              <Text style={styles.infoValue}>{locationCopy.primary}</Text>
+              <Text style={styles.infoSubvalue}>{locationCopy.secondary}</Text>
             </View>
 
             <View style={styles.organizerCard}>
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>OB</Text>
+                <Text style={styles.avatarText}>{organizerInitials}</Text>
               </View>
               <View style={styles.organizerCopy}>
                 <Text style={styles.organizerName}>{eventRecord?.organizerName || 'OneBody'}</Text>
@@ -133,43 +270,7 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
           </View>
         </ScrollView>
 
-        <View style={styles.bottomBar}>
-          {eventRecord?.status === 'draft' ? (
-            <TouchableOpacity
-              style={styles.bottomButton}
-              onPress={() =>
-                navigation.navigate(getDraftResumeRouteName(eventRecord), {
-                  draftId: eventRecord.id,
-                })
-              }
-            >
-              <Text style={styles.bottomButtonText}>Resume Draft</Text>
-            </TouchableOpacity>
-          ) : isExternalLinkEvent ? (
-            <TouchableOpacity
-              style={[styles.bottomButton, !hasExternalLink ? styles.bottomButtonDisabled : null]}
-              activeOpacity={0.92}
-              disabled={!hasExternalLink}
-              onPress={async () => {
-                if (!eventRecord?.externalEventUrl) {
-                  return;
-                }
-
-                try {
-                  await Linking.openURL(eventRecord.externalEventUrl);
-                } catch {
-                  Alert.alert('Unable to open link', 'Please try again later.');
-                }
-              }}
-            >
-              <Text style={styles.bottomButtonText}>Open Event Link</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={styles.bottomButton} activeOpacity={0.92}>
-              <Text style={styles.bottomButtonText}>Register Now</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <View style={styles.bottomBar}>{renderBottomAction()}</View>
       </View>
     </SafeAreaView>
   );
@@ -203,16 +304,12 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     minHeight: 42,
-    paddingHorizontal: 14,
+    minWidth: 42,
+    paddingHorizontal: 10,
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.92)',
-  },
-  headerButtonText: {
-    color: '#032f3c',
-    fontSize: 15,
-    fontWeight: '700',
   },
   headerButtonSpacer: {
     width: 42,
@@ -325,6 +422,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#126b87',
   },
+  bottomButtonPublished: {
+    borderRadius: 27,
+  },
   bottomButtonDisabled: {
     opacity: 0.45,
   },
@@ -332,6 +432,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
+  },
+  bottomButtonTextPublished: {
+    fontSize: 22,
+    fontStyle: 'italic',
+    letterSpacing: 0.4,
   },
 });
 

@@ -4,9 +4,10 @@ import React, {
   forwardRef,
   useCallback,
   useImperativeHandle,
+  useRef,
   useState,
 } from 'react';
-import { FlatList, RefreshControl, View, ListRenderItem } from 'react-native';
+import { FlatList, RefreshControl, View, ListRenderItem, useWindowDimensions } from 'react-native';
 import { useSelector } from 'react-redux';
 import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Tabs } from 'react-native-collapsible-tab-view';
@@ -19,6 +20,7 @@ import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 
 type SocialListFooterProps = {
   isEndOfList: boolean;
@@ -76,8 +78,29 @@ const SocialFlatlist = forwardRef<
     const [showRefreshIndicator, setShowRefreshIndicator] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isScrollEnable, setIsScrollEnable] = useState(true);
+    const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
     const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+    const { width } = useWindowDimensions();
+    const { imageViewer, openImages } = useSharedImageViewer();
     const ListComponent = useTabsFlatList ? Tabs.FlatList : FlatList;
+    const socialItemContentWidth = Math.max(width - spacing.x16 * 2 - 14, 0);
+    const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+      if (!viewableItems || viewableItems.length < 1) {
+        setVisibleItemsIndex([]);
+        return;
+      }
+
+      setVisibleItemsIndex(viewableItems.map((item: any) => item.index).filter(Number.isInteger));
+    }, []);
+    const viewabilityConfigCallbackPairs = useRef([
+      {
+        viewabilityConfig: {
+          minimumViewTime: 100,
+          itemVisiblePercentThreshold: 75,
+        },
+        onViewableItemsChanged,
+      },
+    ]);
     const getSocialPosts = useCallback(
       async (pageNumber: number) => {
         setIsLoading(true);
@@ -176,6 +199,9 @@ const SocialFlatlist = forwardRef<
     const renderItem: ListRenderItem<SocialPost> = ({ item, index }) => (
       <SocialItem
         itemData={item}
+        visible={visibleItemsIndex.includes(index)}
+        contentWidth={socialItemContentWidth}
+        onOpenImages={openImages}
         onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
         index={index}
         parentRefreshContent={refreshContent}
@@ -191,38 +217,42 @@ const SocialFlatlist = forwardRef<
     );
 
     return (
-      <ListComponent
-        data={socialPosts}
-        style={{ flex: 1 }}
-        keyExtractor={(item: SocialPost, index: number) => {
-          return `${item?.userData?.username}-${item.id ?? item.postId}-${index}`;
-        }}
-        extraData={isRefreshing}
-        scrollEnabled={isScrollEnable}
-        ListHeaderComponent={headerItem}
-        renderItem={renderItem}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (!isLoading && !isRefreshing && !isEndOfList && socialPosts.length > 0)
-            getSocialPosts(page + 1).then(() => undefined);
-        }}
-        ListFooterComponent={<SocialListFooter isEndOfList={isEndOfList} />}
-        refreshControl={
-          <RefreshControl
-            enabled
-            refreshing={isRefreshing && showRefreshIndicator}
-            onRefresh={() => {
-              refreshContent();
-            }}
-          />
-        }
-        ListEmptyComponent={<SocialListEmpty isLoading={isLoading} emptyText={emptyText} />}
-        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
-        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
-      />
+      <>
+        <ListComponent
+          data={socialPosts}
+          viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+          style={{ flex: 1 }}
+          keyExtractor={(item: SocialPost, index: number) => {
+            return `${item?.userData?.username}-${item.id ?? item.postId}-${index}`;
+          }}
+          extraData={isRefreshing}
+          scrollEnabled={isScrollEnable}
+          ListHeaderComponent={headerItem}
+          renderItem={renderItem}
+          onEndReachedThreshold={0.5}
+          onEndReached={() => {
+            if (!isLoading && !isRefreshing && !isEndOfList && socialPosts.length > 0)
+              getSocialPosts(page + 1).then(() => undefined);
+          }}
+          ListFooterComponent={<SocialListFooter isEndOfList={isEndOfList} />}
+          refreshControl={
+            <RefreshControl
+              enabled
+              refreshing={isRefreshing && showRefreshIndicator}
+              onRefresh={() => {
+                refreshContent();
+              }}
+            />
+          }
+          ListEmptyComponent={<SocialListEmpty isLoading={isLoading} emptyText={emptyText} />}
+          removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+          initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+          maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+          updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+          windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
+        />
+        {imageViewer}
+      </>
       // <>
       //   {socialPost?.map((item, i) => (
       //     <View key={i} style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>

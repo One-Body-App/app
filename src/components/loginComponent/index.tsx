@@ -274,7 +274,10 @@ function LoginComponent({
   const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
   const [hasPasskeyHeroLoaded, setHasPasskeyHeroLoaded] = useState(false);
   const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const clipboardRef = useRef<CustomClipboardHandle>(null);
+  const submissionInFlightRef = useRef(false);
+  const passkeyInFlightRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
@@ -302,6 +305,9 @@ function LoginComponent({
     setShowOtherMfaOptions(false);
     setHasPasskeyHeroLoaded(false);
     setUseAndroidFallbackHero(false);
+    setIsSubmitting(false);
+    submissionInFlightRef.current = false;
+    passkeyInFlightRef.current = null;
   }, [clearOnMountKey]);
 
   useEffect(() => {
@@ -331,6 +337,9 @@ function LoginComponent({
     setShowOtherMfaOptions(false);
     setHasPasskeyHeroLoaded(false);
     setUseAndroidFallbackHero(false);
+    setIsSubmitting(false);
+    submissionInFlightRef.current = false;
+    passkeyInFlightRef.current = null;
     trackMfaEvent('mfa_method_selected', {
       method: preferredMethod,
       source: 'challenge_prefill',
@@ -439,61 +448,90 @@ function LoginComponent({
 
   const runPasskey = useCallback(async () => {
     if (!mfaChallenge) return;
+    if (passkeyInFlightRef.current) {
+      return passkeyInFlightRef.current;
+    }
+
     const { register, authenticate, isSupported } = resolvePasskeyApi();
     const flow = mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge';
-    trackMfaEvent('mfa_method_begin', {
-      method: 'passkey',
-      flow,
-      reason: mfaChallenge.reason,
-    });
-
-    if (typeof isSupported === 'function' && !isSupported()) {
-      setError(
-        `Passkeys are not supported on this ${Platform.OS === 'android' ? 'Android' : 'iOS'} device.`
-      );
-      trackMfaEvent('mfa_method_failure', {
+    const operation = (async () => {
+      setIsSubmitting(true);
+      trackMfaEvent('mfa_method_begin', {
         method: 'passkey',
         flow,
-        reason: 'unsupported_device',
+        reason: mfaChallenge.reason,
       });
-      return;
-    }
 
-    if (!register || !authenticate) {
-      setError('Passkey API is unavailable in this build.');
-      trackMfaEvent('mfa_method_failure', {
-        method: 'passkey',
-        flow,
-        reason: 'passkey_api_unavailable',
-      });
-      return;
-    }
-
-    try {
-      if (mfaChallenge.enrollmentRequired) {
-        let begin = await beginPasskeyRegistration({
-          mfaToken: mfaChallenge.mfaToken,
-          deviceName: Platform.OS === 'ios' ? 'iPhone' : 'Android Device',
+      if (typeof isSupported === 'function' && !isSupported()) {
+        setError(
+          `Passkeys are not supported on this ${Platform.OS === 'android' ? 'Android' : 'iOS'} device.`
+        );
+        trackMfaEvent('mfa_method_failure', {
+          method: 'passkey',
+          flow,
+          reason: 'unsupported_device',
         });
+        return;
+      }
 
-        if (begin.status >= 500 && Platform.OS === 'android') {
-          begin = await beginPasskeyRegistration({
+      if (!register || !authenticate) {
+        setError('Passkey API is unavailable in this build.');
+        trackMfaEvent('mfa_method_failure', {
+          method: 'passkey',
+          flow,
+          reason: 'passkey_api_unavailable',
+        });
+        return;
+      }
+
+      try {
+        if (mfaChallenge.enrollmentRequired) {
+          let begin = await beginPasskeyRegistration({
             mfaToken: mfaChallenge.mfaToken,
+            deviceName: Platform.OS === 'ios' ? 'iPhone' : 'Android Device',
           });
+
+          if (begin.status >= 500 && Platform.OS === 'android') {
+            begin = await beginPasskeyRegistration({
+              mfaToken: mfaChallenge.mfaToken,
+            });
+          }
+
+          if (begin.status !== 200) {
+            throw new Error(
+              (begin.response as any)?.message ?? 'Unable to begin passkey registration.'
+            );
+          }
+          const nativeRegistrationRequest = normalizePasskeyRegistrationRequestForNative(
+            begin.response
+          );
+          const credential = await register(nativeRegistrationRequest);
+          const finish = await finishPasskeyRegistration({
+            mfaToken: mfaChallenge.mfaToken,
+            response: normalizePasskeyRegistrationResponseForServer(credential),
+          });
+          if (finish.status !== 200) {
+            throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
+          }
+          trackMfaEvent('mfa_method_success', {
+            method: 'passkey',
+            flow,
+          });
+          await handleAuthResult(finish.response);
+          return;
         }
 
+        const begin = await beginPasskeyLogin({ mfaToken: mfaChallenge.mfaToken });
         if (begin.status !== 200) {
-          throw new Error(
-            (begin.response as any)?.message ?? 'Unable to begin passkey registration.'
-          );
+          throw new Error((begin.response as any)?.message ?? 'Unable to begin passkey login.');
         }
-        const nativeRegistrationRequest = normalizePasskeyRegistrationRequestForNative(
+        const nativeAuthenticationRequest = normalizePasskeyAuthenticationRequestForNative(
           begin.response
         );
-        const credential = await register(nativeRegistrationRequest);
-        const finish = await finishPasskeyRegistration({
+        const assertion = await authenticate(nativeAuthenticationRequest);
+        const finish = await finishPasskeyLogin({
           mfaToken: mfaChallenge.mfaToken,
-          response: normalizePasskeyRegistrationResponseForServer(credential),
+          response: normalizePasskeyAuthenticationResponseForServer(assertion),
         });
         if (finish.status !== 200) {
           throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
@@ -503,45 +541,34 @@ function LoginComponent({
           flow,
         });
         await handleAuthResult(finish.response);
-        return;
-      }
-
-      const begin = await beginPasskeyLogin({ mfaToken: mfaChallenge.mfaToken });
-      if (begin.status !== 200) {
-        throw new Error((begin.response as any)?.message ?? 'Unable to begin passkey login.');
-      }
-      const nativeAuthenticationRequest = normalizePasskeyAuthenticationRequestForNative(
-        begin.response
-      );
-      const assertion = await authenticate(nativeAuthenticationRequest);
-      const finish = await finishPasskeyLogin({
-        mfaToken: mfaChallenge.mfaToken,
-        response: normalizePasskeyAuthenticationResponseForServer(assertion),
-      });
-      if (finish.status !== 200) {
-        throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
-      }
-      trackMfaEvent('mfa_method_success', {
-        method: 'passkey',
-        flow,
-      });
-      await handleAuthResult(finish.response);
-    } catch (mfaError: any) {
-      if (isPasskeyCancellationError(mfaError)) {
-        trackMfaEvent('mfa_method_cancelled', {
+      } catch (mfaError: any) {
+        if (isPasskeyCancellationError(mfaError)) {
+          trackMfaEvent('mfa_method_cancelled', {
+            method: 'passkey',
+            flow,
+            reason: 'user_cancelled',
+          });
+          setError('');
+          return;
+        }
+        trackMfaEvent('mfa_method_failure', {
           method: 'passkey',
           flow,
-          reason: 'user_cancelled',
+          reason: sanitizeAnalyticsReason(mfaError?.message),
         });
-        setError('');
-        return;
+        throw mfaError;
       }
-      trackMfaEvent('mfa_method_failure', {
-        method: 'passkey',
-        flow,
-        reason: sanitizeAnalyticsReason(mfaError?.message),
-      });
-      throw mfaError;
+    })();
+
+    passkeyInFlightRef.current = operation;
+
+    try {
+      await operation;
+    } finally {
+      if (passkeyInFlightRef.current === operation) {
+        passkeyInFlightRef.current = null;
+      }
+      setIsSubmitting(false);
     }
   }, [handleAuthResult, mfaChallenge, trackMfaEvent]);
 
@@ -734,6 +761,12 @@ function LoginComponent({
       return;
     }
 
+    if (submissionInFlightRef.current) {
+      return;
+    }
+
+    submissionInFlightRef.current = true;
+    setIsSubmitting(true);
     setError('');
     setSuccessText('');
     dispatch(setLoader(true));
@@ -796,11 +829,19 @@ function LoginComponent({
       });
       setError(mfaError?.message ?? 'Unable to continue with email MFA.');
     } finally {
+      submissionInFlightRef.current = false;
+      setIsSubmitting(false);
       dispatch(setLoader(false));
     }
   };
 
   const signInUser = useCallback(async () => {
+    if (submissionInFlightRef.current) {
+      return;
+    }
+
+    submissionInFlightRef.current = true;
+    setIsSubmitting(true);
     try {
       setError('');
       setSuccessText('');
@@ -852,6 +893,8 @@ function LoginComponent({
       }
       setError(fallbackMessage);
     } finally {
+      submissionInFlightRef.current = false;
+      setIsSubmitting(false);
       dispatch(setLoader(false));
     }
   }, [
@@ -870,7 +913,7 @@ function LoginComponent({
 
   const handleSocialLogin = useCallback(
     async (provider: 'google' | 'apple') => {
-      if (socialLoading || mfaChallenge) return;
+      if (socialLoading || mfaChallenge || submissionInFlightRef.current) return;
       const providerLabel = provider === 'google' ? 'Google' : 'Apple';
       setError('');
       setSuccessText('');
@@ -926,6 +969,7 @@ function LoginComponent({
     return (
       <TouchableOpacity
         key={method}
+        disabled={isSubmitting}
         onPress={() => selectMethod(method)}
         style={{
           paddingHorizontal: 12,
@@ -934,6 +978,7 @@ function LoginComponent({
           borderWidth: 1,
           borderColor: isSelected ? '#41899f' : '#8b929a',
           backgroundColor: isSelected ? '#41899f' : 'transparent',
+          opacity: isSubmitting ? 0.6 : 1,
         }}
       >
         <StyledText style={{ color: labelColor }}>{label}</StyledText>
@@ -994,6 +1039,9 @@ function LoginComponent({
     setHasAutoPromptedPasskey(false);
     setError('');
     setSuccessText('');
+    setIsSubmitting(false);
+    submissionInFlightRef.current = false;
+    passkeyInFlightRef.current = null;
   }, []);
   const handleMfaLaunchBack = useCallback(() => {
     if (selectedMfaMethod === 'totp') {
@@ -1130,6 +1178,7 @@ function LoginComponent({
             }}
           >
             <TouchableOpacity
+              disabled={isSubmitting}
               onPress={handleMfaLaunchBack}
               style={{
                 width: 40,
@@ -1137,6 +1186,7 @@ function LoginComponent({
                 borderRadius: 20,
                 justifyContent: 'center',
                 alignItems: 'center',
+                opacity: isSubmitting ? 0.6 : 1,
               }}
             >
               <Ionicons name="arrow-back" size={26} color="#126B87" />
@@ -1452,6 +1502,7 @@ function LoginComponent({
           ) : null}
 
           <TouchableOpacity
+            disabled={isSubmitting}
             onPress={() => {
               if (backupCodes.length > 0 && pendingAccessToken) {
                 completeLogin(pendingAccessToken);
@@ -1467,6 +1518,7 @@ function LoginComponent({
               alignItems: 'center',
               marginBottom: 14,
               marginTop: 6,
+              opacity: isSubmitting ? 0.6 : 1,
             }}
           >
             <StyledText
@@ -1478,6 +1530,7 @@ function LoginComponent({
 
           {isPasskeyEnrollmentScreen && mfaChallenge?.availableMethods.includes('totp') ? (
             <TouchableOpacity
+              disabled={isSubmitting}
               onPress={() => {
                 selectMethod('totp').catch((e: any) => {
                   setError(e?.message ?? 'Unable to switch to authenticator.');
@@ -1500,6 +1553,7 @@ function LoginComponent({
 
           {isTotpEnrollmentScreen && mfaChallenge?.availableMethods.includes('email') ? (
             <TouchableOpacity
+              disabled={isSubmitting}
               onPress={() => {
                 handleEmailAsMfaEnrollment().catch((e: any) => {
                   setError(e?.message ?? 'Unable to continue with email MFA.');
@@ -1645,6 +1699,7 @@ function LoginComponent({
 
               {mfaChallenge.enrollmentRequired && mfaChallenge.availableMethods.includes('totp') ? (
                 <TouchableOpacity
+                  disabled={isSubmitting}
                   onPress={() => selectMethod(selectedMfaMethod === 'totp' ? 'passkey' : 'totp')}
                 >
                   <StyledText style={{ color: dark ? '#9aa4af' : '#6b7280', fontSize: 12 }}>
@@ -1704,6 +1759,7 @@ function LoginComponent({
             btnStyle={styles.primaryBtn}
             btnTextStyle={styles.primaryBtnText}
             onPress={signInUser}
+            disabled={isSubmitting}
           />
 
           {!mfaChallenge ? (

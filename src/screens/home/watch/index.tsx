@@ -1,7 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
 import {
   View,
+  Text,
+  Pressable,
   useWindowDimensions,
   ActivityIndicator,
   ScrollView,
@@ -32,6 +35,8 @@ import {
   BRAND_VIDEO_BACKGROUND,
   getWatchVideoLayout,
 } from '@/src/components/video/universalVideoLayout';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import useObservedEffect from '@/src/hooks/useObservedEffect';
 
 function Watch({ navigation, route }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -45,6 +50,7 @@ function Watch({ navigation, route }: any) {
   const [viewHeight, setViewHeight] = useState<number>(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasFetchError, setHasFetchError] = useState<boolean>(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const { width: screenWidth } = useWindowDimensions();
@@ -124,6 +130,7 @@ function Watch({ navigation, route }: any) {
       });
 
       if (res?.status === 200) {
+        setHasFetchError(false);
         const feedPosts = res.response
           .filter((i: any) => !!i?.playBackId)
           .sort((a: any, b: any) => {
@@ -166,17 +173,21 @@ function Watch({ navigation, route }: any) {
       } else {
         // console.log('error', res?.response);
         setFeedData([]);
+        setHasFetchError(true);
       }
 
       setIsLoading(false);
       setIsRefreshing(false);
     } catch (e: any) {
       setFeedData([]);
+      setHasFetchError(true);
+      setIsLoading(false);
+      setIsRefreshing(false);
       // console.log('watch feed error -- ', e.toString());
     }
   }, [initialPlaybackId, initialPostId, initialWatchPost, page, token]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     // getData(page);
     if (isRefreshing) {
       if (page === 1) {
@@ -187,7 +198,7 @@ function Watch({ navigation, route }: any) {
     }
   }, [getFeedData, isRefreshing, page]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     setFeedTelemetryAuthToken(token || undefined);
   }, [token]);
 
@@ -199,25 +210,23 @@ function Watch({ navigation, route }: any) {
   //   }
   // }).current;
 
-  useEffect(() => {
+  useObservedEffect(() => {
     getFeedData();
   }, [getFeedData, page]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (page === 1) {
       seenWatchImpressionsRef.current.clear();
     }
   }, [page]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
+  useFocusEffect(
+    useCallback(() => {
       setIsRefreshing(true);
-    });
+    }, [])
+  );
 
-    return unsubscribe;
-  }, [navigation]);
-
-  useEffect(() => {
+  useObservedEffect(() => {
     hasAppliedInitialSelectionRef.current = false;
   }, [initialPlaybackId, initialPostId]);
 
@@ -233,7 +242,7 @@ function Watch({ navigation, route }: any) {
     }
   };
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (hasAppliedInitialSelectionRef.current) {
       return;
     }
@@ -264,7 +273,7 @@ function Watch({ navigation, route }: any) {
     hasAppliedInitialSelectionRef.current = true;
   }, [feedData, initialPlaybackId, initialPostId, viewHeight]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     const activePost = feedData[index];
     const postId = getWatchPostId(activePost);
     if (!postId) {
@@ -282,7 +291,7 @@ function Watch({ navigation, route }: any) {
     trackWatchImpression(activePost, index);
   }, [feedData, finalizeWatchDwell, getWatchPostId, index, trackWatchImpression]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     entryOpacity.setValue(0);
     entryScale.setValue(0.985);
     Animated.parallel([
@@ -299,16 +308,17 @@ function Watch({ navigation, route }: any) {
     ]).start();
   }, [entryOpacity, entryScale, index]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       finalizeWatchDwell('unmount');
       flushFeedTelemetry(token || undefined).catch(() => undefined);
     };
-  }, [finalizeWatchDwell, token]);
+  });
 
-  const shouldShowEmptyState = !isLoading && feedData.length < 1;
   const shouldShowInitialLoader = isLoading && page === 1 && !isRefreshing;
   const shouldShowWatchFeed = !shouldShowInitialLoader && feedData.length > 0;
+  const shouldShowEmptyState = !isLoading && !hasFetchError && feedData.length < 1;
+  const shouldShowErrorState = !isLoading && hasFetchError && feedData.length < 1;
 
   return (
     <View
@@ -336,7 +346,23 @@ function Watch({ navigation, route }: any) {
       >
         <MaterialIcons name="chevron-left" size={40} color="#FFFFFF" />
       </TouchableOpacity>
-      {shouldShowEmptyState ? <View style={{ flex: 1, backgroundColor: '#0D0D0D' }} /> : null}
+      {shouldShowEmptyState ? (
+        <View style={styles.feedStateContainer}>
+          <MaterialIcons name="videocam-off" size={56} color="rgba(255,255,255,0.25)" />
+          <Text style={styles.feedStateTitle}>Nothing to watch yet</Text>
+          <Text style={styles.feedStateBody}>Follow others to see their Watch posts here.</Text>
+        </View>
+      ) : null}
+      {shouldShowErrorState ? (
+        <View style={styles.feedStateContainer}>
+          <MaterialIcons name="wifi-off" size={56} color="rgba(255,255,255,0.25)" />
+          <Text style={styles.feedStateTitle}>Could not load videos</Text>
+          <Text style={styles.feedStateBody}>Check your connection and try again.</Text>
+          <Pressable onPress={() => setIsRefreshing(true)} style={styles.feedStateRetryButton}>
+            <Text style={styles.feedStateRetryLabel}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {shouldShowInitialLoader ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicator size="small" />
@@ -440,6 +466,41 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   video: { flex: 1 },
+  feedStateContainer: {
+    flex: 1,
+    backgroundColor: '#0D0D0D',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.x32,
+  },
+  feedStateTitle: {
+    marginTop: spacing.x20,
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+  },
+  feedStateBody: {
+    marginTop: spacing.x10,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    lineHeight: 22,
+    maxWidth: 260,
+  },
+  feedStateRetryButton: {
+    marginTop: spacing.x24,
+    paddingVertical: spacing.x13,
+    paddingHorizontal: spacing.x32,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  feedStateRetryLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.75)',
+  },
 });
 
 export default Watch;

@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useToast } from 'react-native-toast-notifications';
 import useMountEffect from '@/src/hooks/useMountEffect';
+import { navigateWithinCurrentNavigator } from '@/src/navigator/navigateWithinCurrentNavigator';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
@@ -37,7 +38,7 @@ function OnboardingLocation({ navigation, route }: Props) {
       buttonText="Next"
       onPress={() => {
         if (longitude && latitude && locationData && organizationName !== '') {
-          navigation.navigate('OnboardingOrganizationContact', {
+          navigateWithinCurrentNavigator(navigation, 'OnboardingOrganizationContact', {
             ...route.params,
             organizationName,
             longitude,

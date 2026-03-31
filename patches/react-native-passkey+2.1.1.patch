@@ -15,7 +15,19 @@ diff --git a/node_modules/react-native-passkey/android/build.gradle b/node_modul
 index 1234567..89abcde 100644
 --- a/node_modules/react-native-passkey/android/build.gradle
 +++ b/node_modules/react-native-passkey/android/build.gradle
-@@ -142,7 +142,8 @@ dependencies {
+@@ -132,14 +132,15 @@ dependencies {
+     //noinspection GradleDynamicVersion
+   implementation "com.facebook.react:react-native:+"
+   // Android Credentials
+-  implementation "androidx.credentials:credentials-play-services-auth:1.2.0-beta03"
+-  implementation "androidx.credentials:credentials:1.2.0-beta03"
++  implementation "androidx.credentials:credentials-play-services-auth:1.2.2"
++  implementation "androidx.credentials:credentials:1.2.2"
+ 
+   // Kotlin Coroutines
+   implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1'
+   implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
+ }
  
  if (isNewArchitectureEnabled()) {
    react {

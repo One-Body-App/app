@@ -90,6 +90,7 @@ import {
   setFeedTelemetryAuthToken,
   trackFeedTelemetry,
 } from '@/services/feedTelemetry';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 
 import {
   HomeStackParamsList,
@@ -941,6 +942,8 @@ type Props = CompositeScreenProps<
 
 function Home({ navigation, route }: Props) {
   const stackNavigation = useNavigation<NativeStackNavigationProp<HomeStackParamsList, 'Home'>>();
+  const layout = useWindowDimensions();
+  const { imageViewer, openImages } = useSharedImageViewer();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector(
     (state: RootState) => state.auth.getProfileData
@@ -955,6 +958,7 @@ function Home({ navigation, route }: Props) {
   const headerRowHeight = getHeight(5.8);
   const headerSideWidth = headerRowHeight;
   const footerHeight = getHeight(7) + insets.bottom;
+  const socialItemContentWidth = Math.max(layout.width - spacing.x16 * 2 - 14, 0);
   const homeVisibleTabBarStyle = useMemo(
     () => ({
       height: getHeight(7) + insets.bottom,
@@ -2241,6 +2245,8 @@ function Home({ navigation, route }: Props) {
               itemData={watchItem}
               postType={PostType.watch}
               originFeedType={feedOptions.type}
+              contentWidth={socialItemContentWidth}
+              onOpenImages={openImages}
               visible={
                 (feedOptions.type === FeedTypes.Connected ||
                   feedOptions.type === FeedTypes.ForYou) &&
@@ -2342,6 +2348,8 @@ function Home({ navigation, route }: Props) {
             <SocialItem
               itemData={socialItem}
               originFeedType={feedOptions.type}
+              contentWidth={socialItemContentWidth}
+              onOpenImages={openImages}
               visible={
                 (feedOptions.type === FeedTypes.Connected ||
                   feedOptions.type === FeedTypes.ForYou) &&
@@ -2573,9 +2581,11 @@ function Home({ navigation, route }: Props) {
       navigation,
       navigateToDetail,
       navigateToProfile,
+      openImages,
       peopleYouMayKnowUsers,
       preserveFeedPositionOnNextFocus,
       selectedSuggestionIds,
+      socialItemContentWidth,
       suggestedForYouUsers,
       viewableSocialPostIds,
     ]
@@ -3295,6 +3305,7 @@ function Home({ navigation, route }: Props) {
 
       {/* Main Feed */}
       {mainFeedContent}
+      {imageViewer}
     </View>
   );
 }

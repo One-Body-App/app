@@ -56,6 +56,12 @@ import {
   createUploadImageRequestId,
   waitForUploadImageResult,
 } from '@/src/screens/post/uploadImageBridge';
+import {
+  CLIENT_IMAGE_MAX_HEIGHT,
+  CLIENT_IMAGE_MAX_WIDTH,
+  CLIENT_IMAGE_PICKER_QUALITY,
+} from '@/src/screens/post/uploadImageConfig';
+import { extractExifOrientation } from '@/src/screens/post/uploadImageOrientation';
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 type AttachmentMode = 'link' | 'document' | null;
@@ -75,9 +81,6 @@ type ProfileSummary = {
 
 function NewPost({ navigation, route }: Props) {
   const MAX_CONTENT_LENGHT = 300;
-  const FEED_IMAGE_WIDTH = 1080;
-  const FEED_IMAGE_HEIGHT = 1350;
-  const IMAGE_QUALITY = 0.6;
   const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
   const ACTION_BAR_ICON_SIZE = 36;
   const MEDIA_RADIUS = 12;
@@ -245,7 +248,13 @@ function NewPost({ navigation, route }: Props) {
   });
 
   const openUploadImageEditor = useCallback(
-    async (asset: { uri: string; fileName?: string; fileSize?: number; type?: string }) => {
+    async (asset: {
+      uri: string;
+      fileName?: string;
+      fileSize?: number;
+      type?: string;
+      orientation?: number;
+    }) => {
       if (!asset.uri) {
         return;
       }
@@ -286,6 +295,7 @@ function NewPost({ navigation, route }: Props) {
         fileSize: asset.fileSize,
         type: asset.type ?? 'image/jpeg',
         usageContext: 'feed',
+        orientation: asset.orientation,
       });
 
       const result = await resultPromise;
@@ -559,10 +569,11 @@ function NewPost({ navigation, route }: Props) {
     const pickerSelection = await ImagePicker.openPicker({
       multiple: true,
       mediaType: 'photo',
-      compressImageQuality: IMAGE_QUALITY,
-      compressImageMaxWidth: FEED_IMAGE_WIDTH,
-      compressImageMaxHeight: FEED_IMAGE_HEIGHT,
+      compressImageQuality: CLIENT_IMAGE_PICKER_QUALITY,
+      compressImageMaxWidth: CLIENT_IMAGE_MAX_WIDTH,
+      compressImageMaxHeight: CLIENT_IMAGE_MAX_HEIGHT,
       forceJpg: true,
+      includeExif: true,
     }).catch(() => {
       return [];
     });
@@ -585,6 +596,7 @@ function NewPost({ navigation, route }: Props) {
           fileName: normalizedName,
           fileSize: typeof item.size === 'number' ? item.size : undefined,
           type: 'image/jpeg',
+          orientation: extractExifOrientation(item),
         };
       });
 
@@ -598,9 +610,10 @@ function NewPost({ navigation, route }: Props) {
   const captureImage = async (contentType: MediaType) => {
     const options: CameraOptions = {
       mediaType: contentType,
-      quality: IMAGE_QUALITY,
-      maxWidth: FEED_IMAGE_WIDTH,
-      maxHeight: FEED_IMAGE_HEIGHT,
+      quality: CLIENT_IMAGE_PICKER_QUALITY,
+      maxWidth: CLIENT_IMAGE_MAX_WIDTH,
+      maxHeight: CLIENT_IMAGE_MAX_HEIGHT,
+      includeExtra: true,
       // noData: true,
     };
     // let isCameraPermitted = await requestCameraPermission();
@@ -650,6 +663,7 @@ function NewPost({ navigation, route }: Props) {
               fileName,
               type: asset.type ?? 'image/jpeg',
               fileSize: asset.fileSize,
+              orientation: extractExifOrientation(asset),
             };
           });
         // eslint-disable-next-line no-restricted-syntax

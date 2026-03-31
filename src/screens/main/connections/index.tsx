@@ -30,6 +30,7 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 import { Typography } from '@/src/styles';
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
+import { getProfileRoleLabel } from '@/src/components/profile/profileUtils';
 
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { MainDrawerParamsList } from '@/src/navigator/types';
@@ -373,11 +374,7 @@ function Connected({ navigation }: Props) {
               ) : null
             }
             renderItem={({ item }) => {
-              const roleName =
-                item.profile?.whatIDo?.name ??
-                item.profile?.typeOfOrganization?.organizationType ??
-                item.profile?.typeOfOrganization?.name ??
-                '';
+              const roleName = getProfileRoleLabel(item);
 
               return (
                 <TouchableOpacity

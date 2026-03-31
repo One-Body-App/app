@@ -41,25 +41,25 @@ const getScheduleSummary = (draft: ConnectPortalEventDraft) => {
 const getTicketingSummary = (draft: ConnectPortalEventDraft) => {
   if (draft.ticketType === 'external') {
     return {
-      title: 'External Link',
-      supporting: draft.externalEventUrl || 'Link TBD',
+      title: 'External Registration',
+      supporting: draft.externalEventUrl || 'Link to be announced',
       detail:
-        'Attendees will be redirected directly to this event link. No One Body registration flow will appear.',
+        'Attendees will be directed to your external website to register. They will not use the One Body app to check in.',
     };
   }
 
   if (draft.ticketType === 'paid') {
     return {
-      title: 'Legacy paid event',
+      title: 'Paid Ticketed Event',
       supporting: getEventCapacityLabel(draft),
-      detail: `${draft.ticketTiers.length} ticket tier${draft.ticketTiers.length === 1 ? '' : 's'}`,
+      detail: `${draft.ticketTiers.length} ticket option${draft.ticketTiers.length === 1 ? '' : 's'} available`,
     };
   }
 
   return {
-    title: 'Free event',
+    title: 'Free Community RSVP',
     supporting: getEventCapacityLabel(draft),
-    detail: `${draft.ticketTiers.length} RSVP tier${draft.ticketTiers.length === 1 ? '' : 's'} in One Body`,
+    detail: `${draft.ticketTiers.length} RSVP option${draft.ticketTiers.length === 1 ? '' : 's'} inside One Body`,
   };
 };
 
@@ -113,11 +113,11 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
 
         const publishedEvent = await publishConnectPortalDraft(draft.id);
         if (publishedEvent) {
-          navigation.navigate('ConnectGoCreateStep7Success', { draftId: publishedEvent.id });
+          navigation.replace('ConnectGoCreateStep7Success', { draftId: publishedEvent.id });
         } else {
           const latestDraft = await getConnectPortalEventById(route.params.draftId);
           if (latestDraft?.status === 'published') {
-            navigation.navigate('ConnectGoCreateStep7Success', { draftId: latestDraft.id });
+            navigation.replace('ConnectGoCreateStep7Success', { draftId: latestDraft.id });
           }
         }
       }}
@@ -131,8 +131,8 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
               Review your event details.
             </Text>
             <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-              This summary becomes the source of truth for organizer screens and the public `Go!`
-              event surfaces.
+              Make sure everything looks right before sharing this opportunity. Once published,
+              believers in your area can discover it on the Go! map.
             </Text>
           </View>
 
@@ -146,10 +146,11 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
               {draft.category || 'EVENT'}
             </Text>
             <Text style={[styles.cardTitle, { color: palette.textPrimary }]}>
-              {draft.title || 'Untitled Event'}
+              {draft.title || 'Untitled Gathering'}
             </Text>
             <Text style={[styles.cardBody, { color: palette.textSecondary }]}>
-              {draft.description || 'No description yet.'}
+              {draft.description ||
+                'Provide a brief description to let the community know what to expect.'}
             </Text>
           </View>
 
@@ -178,12 +179,12 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
           >
             <Text style={[styles.detailTitle, { color: palette.accent }]}>Location</Text>
             <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
-              {draft.isOnline ? 'Online Event' : draft.venueName || 'Location TBD'}
+              {draft.isOnline ? 'Online Fellowship' : draft.venueName || 'Location to be announced'}
             </Text>
             <Text style={[styles.detailSubvalue, { color: palette.textSecondary }]}>
               {draft.isOnline
-                ? draft.onlineEventUrl || 'Join link TBD'
-                : draft.address || draft.locationQuery || 'TBD'}
+                ? draft.onlineEventUrl || 'Join link to be announced'
+                : draft.address || draft.locationQuery || 'To be announced'}
             </Text>
           </View>
 

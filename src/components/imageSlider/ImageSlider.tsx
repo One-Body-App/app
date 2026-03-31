@@ -19,7 +19,8 @@ type SliderResizeMode = 'contain' | 'cover';
 type ImageSliderProps = {
   images: ImageForSlider[];
   width: number;
-  setImageModalIndexVisible: (item: number) => void;
+  setImageModalIndexVisible?: (item: number) => void;
+  onImagePress?: (item: number) => void;
   minAspectRatio?: number;
   maxAspectRatio?: number;
   multiImageHeightMode?: MultiImageHeightMode;
@@ -87,6 +88,7 @@ export const buildSlideHeights = (
 function ImageSlider({
   images,
   setImageModalIndexVisible,
+  onImagePress,
   width,
   minAspectRatio,
   maxAspectRatio,
@@ -136,6 +138,7 @@ function ImageSlider({
       <ImageSlide
         image={images[0]}
         setImageModalIndexVisible={setImageModalIndexVisible}
+        onImagePress={onImagePress}
         width={safeWidth}
         height={singleImageHeight}
         index={0}
@@ -172,6 +175,7 @@ function ImageSlider({
               key={image.id ?? image.url ?? String(index)}
               image={image}
               setImageModalIndexVisible={setImageModalIndexVisible}
+              onImagePress={onImagePress}
               width={safeWidth}
               height={slideHeight}
               index={index}

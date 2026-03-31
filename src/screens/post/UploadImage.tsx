@@ -36,6 +36,11 @@ import {
   cancelUploadImageRequest,
   resolveUploadImageResult,
 } from '@/src/screens/post/uploadImageBridge';
+import { UPLOAD_IMAGE_EXPORT_QUALITY } from '@/src/screens/post/uploadImageConfig';
+import {
+  getOrientationTransform,
+  normalizeExifOrientation,
+} from '@/src/screens/post/uploadImageOrientation';
 
 type Props = StackScreenProps<MainStackParamList, 'UploadImage'>;
 
@@ -157,6 +162,45 @@ const readImageDimensions = (image: { width: () => number; height: () => number 
   } catch (error) {
     return null;
   }
+};
+
+const makeOrientedImage = (
+  image: { width: () => number; height: () => number },
+  orientation?: number
+) => {
+  const normalizedOrientation = normalizeExifOrientation(orientation);
+  if (!normalizedOrientation || normalizedOrientation === 1) {
+    return image;
+  }
+
+  const sourceWidth = image.width();
+  const sourceHeight = image.height();
+  if (!sourceWidth || !sourceHeight) {
+    return image;
+  }
+
+  const { matrix, outputWidth, outputHeight } = getOrientationTransform(
+    sourceWidth,
+    sourceHeight,
+    normalizedOrientation
+  );
+  const surface = Skia.Surface.MakeOffscreen(outputWidth, outputHeight);
+  if (!surface) {
+    return image;
+  }
+
+  const canvas = surface.getCanvas();
+  const srcRect = Skia.XYWHRect(0, 0, sourceWidth, sourceHeight);
+  const dstRect = Skia.XYWHRect(0, 0, sourceWidth, sourceHeight);
+  const paint = Skia.Paint();
+
+  canvas.save();
+  canvas.concat(matrix);
+  canvas.drawImageRect(image as never, srcRect, dstRect, paint);
+  canvas.restore();
+  surface.flush();
+
+  return surface.makeImageSnapshot().makeNonTextureImage();
 };
 
 const identityMatrix = () => [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
@@ -307,9 +351,14 @@ function UploadImage({ navigation, route }: Props) {
 
   const sourceUri = normalizeImageUri(route.params?.imageUri ?? FALLBACK_PREVIEW_IMAGE);
   const requestId = route.params?.requestId;
+  const imageOrientation = normalizeExifOrientation(route.params?.orientation);
   const loadedImage = useImage(sourceUri);
-  const image =
+  const baseImage =
     Platform.OS === 'android' ? (decodedImage ?? loadedImage) : (loadedImage ?? decodedImage);
+  const image = useMemo(
+    () => (baseImage ? makeOrientedImage(baseImage, imageOrientation) : null),
+    [baseImage, imageOrientation]
+  );
 
   const imageSourceCandidatesMemo = useMemo(() => {
     const nextCandidates: string[] = [];
@@ -753,7 +802,7 @@ function UploadImage({ navigation, route }: Props) {
         return;
       }
 
-      const base64 = snapshot.encodeToBase64(ImageFormat.JPEG, 50);
+      const base64 = snapshot.encodeToBase64(ImageFormat.JPEG, UPLOAD_IMAGE_EXPORT_QUALITY);
       const outputNameBase = route.params?.fileName ?? `edited_${Date.now()}.jpg`;
       const outputName = outputNameBase.toLowerCase().endsWith('.jpg')
         ? outputNameBase

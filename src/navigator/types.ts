@@ -380,7 +380,9 @@ export type OnboardingStackParamList = {
 
     profileType: AccountType;
 
+    selectedOrganizationCategory?: string;
     selectedOrganizationType?: string;
+    selectedOrganizationSubType?: string;
     organizationName?: string;
     organizationContactName?: string;
     organizationContactEmail?: string;
@@ -393,18 +395,27 @@ export type OnboardingStackParamList = {
     address?: string;
     profileType: AccountType;
 
+    selectedOrganizationCategory?: string;
     selectedOrganizationType?: string;
+    selectedOrganizationSubType?: string;
     organizationName?: string;
     organizationContactName?: string;
     organizationContactEmail?: string;
     organizationContactPhoneNumber?: string;
   };
   OnboardingOrganizationType: undefined;
+  OnboardingOrganizationSubtype: {
+    selectedOrganizationCategory: string;
+  };
   OnboardingOrganizationInfo: {
+    selectedOrganizationCategory: string;
     selectedOrganizationType: string;
+    selectedOrganizationSubType: string;
   };
   OnboardingOrganizationContact: {
+    selectedOrganizationCategory: string;
     selectedOrganizationType: string;
+    selectedOrganizationSubType: string;
     organizationName: string;
     longitude: number;
     latitude: number;
@@ -446,6 +457,7 @@ export type MainStackParamList = {
     fileSize?: number;
     type?: string;
     usageContext?: 'feed' | 'comment' | 'chat';
+    orientation?: number;
   };
   ReportPost: {
     targetId: string;

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, SafeAreaView, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, FlatList, SafeAreaView, ScrollView, useWindowDimensions } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -22,6 +22,7 @@ import ArticleItem from '@/components/listItems/ArticleItem';
 import { SavedPost } from '@/utils/types';
 import Button from '@/components/Button';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import {
   MainDrawerParamsList,
   MainStackParamList,
@@ -51,6 +52,27 @@ function Saved({ navigation }: Props) {
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const [filter, setFilter] = useState<ContentType>(ContentType.All);
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>(user?.savedPost ?? []);
+  const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
+  const { width } = useWindowDimensions();
+  const { imageViewer, openImages } = useSharedImageViewer();
+  const socialItemContentWidth = Math.max(width - spacing.x16 * 2 - 14, 0);
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (!viewableItems || viewableItems.length < 1) {
+      setVisibleItemsIndex([]);
+      return;
+    }
+
+    setVisibleItemsIndex(viewableItems.map((item: any) => item.index).filter(Number.isInteger));
+  }, []);
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: {
+        minimumViewTime: 100,
+        itemVisiblePercentThreshold: 75,
+      },
+      onViewableItemsChanged,
+    },
+  ]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -200,6 +222,7 @@ function Saved({ navigation }: Props) {
       ) : null}
       <FlatList
         data={savedPosts}
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: spacing.x72 }}
         onRefresh={() => {
           setIsRefreshing(true);
@@ -260,6 +283,9 @@ function Saved({ navigation }: Props) {
                 <SocialItem
                   itemData={postData}
                   index={index}
+                  visible={visibleItemsIndex.includes(index)}
+                  contentWidth={socialItemContentWidth}
+                  onOpenImages={openImages}
                   onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
                   removePost={removePost}
                   fromSavedPosts
@@ -299,6 +325,7 @@ function Saved({ navigation }: Props) {
         updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
         windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
+      {imageViewer}
     </SafeAreaView>
   );
 }

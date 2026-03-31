@@ -5,11 +5,11 @@ import { useTheme } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
-  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
-  APP_HEADER_ROW_HEIGHT,
   APP_HEADER_ROW_OFFSET,
-  APP_HEADER_SIDE_WIDTH,
   APP_HEADER_TITLE_LINE_HEIGHT,
+  CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  CONNECT_HEADER_ROW_HEIGHT,
+  CONNECT_HEADER_SIDE_WIDTH,
 } from '@/src/styles/headerLayout';
 
 export const BRAND_COLORS = {
@@ -310,17 +310,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
     transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerSideSlot: {
-    minWidth: APP_HEADER_SIDE_WIDTH,
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    minWidth: CONNECT_HEADER_SIDE_WIDTH,
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
     justifyContent: 'center',
   },
   backButton: {
-    width: APP_HEADER_SIDE_WIDTH,
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    width: CONNECT_HEADER_SIDE_WIDTH,
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
@@ -328,8 +328,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: 16 + APP_HEADER_SIDE_WIDTH,
-    right: 16 + APP_HEADER_SIDE_WIDTH,
+    left: 16 + CONNECT_HEADER_SIDE_WIDTH,
+    right: 16 + CONNECT_HEADER_SIDE_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-start',
     justifyContent: 'center',
-    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+    paddingLeft: CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
     color: BRAND_COLORS.black,

@@ -31,6 +31,12 @@ import {
   createUploadImageRequestId,
   waitForUploadImageResult,
 } from '@/src/screens/post/uploadImageBridge';
+import {
+  CLIENT_IMAGE_MAX_HEIGHT,
+  CLIENT_IMAGE_MAX_WIDTH,
+  CLIENT_IMAGE_PICKER_QUALITY,
+} from '@/src/screens/post/uploadImageConfig';
+import { extractExifOrientation } from '@/src/screens/post/uploadImageOrientation';
 import StyledText from '../styled/Text';
 
 const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => {
@@ -73,9 +79,6 @@ const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => 
   return undefined;
 };
 
-const FEED_IMAGE_WIDTH = 1080;
-const FEED_IMAGE_HEIGHT = 1350;
-const IMAGE_QUALITY = 0.6;
 const MEDIA_RADIUS = 12;
 
 interface Props {
@@ -274,6 +277,7 @@ function CommentField({
       fileSize: typeof selectedItem.size === 'number' ? selectedItem.size : undefined,
       type: 'image/jpeg',
       usageContext: 'comment',
+      orientation: extractExifOrientation(selectedItem),
     });
 
     const result = await resultPromise;
@@ -293,10 +297,11 @@ function CommentField({
       const pickerSelection = await ImagePicker.openPicker({
         multiple: false,
         mediaType: 'photo',
-        compressImageQuality: IMAGE_QUALITY,
-        compressImageMaxWidth: FEED_IMAGE_WIDTH,
-        compressImageMaxHeight: FEED_IMAGE_HEIGHT,
+        compressImageQuality: CLIENT_IMAGE_PICKER_QUALITY,
+        compressImageMaxWidth: CLIENT_IMAGE_MAX_WIDTH,
+        compressImageMaxHeight: CLIENT_IMAGE_MAX_HEIGHT,
         forceJpg: true,
+        includeExif: true,
       }).catch(() => null);
 
       const selectedItem = Array.isArray(pickerSelection) ? pickerSelection[0] : pickerSelection;
@@ -314,10 +319,11 @@ function CommentField({
     try {
       const selectedItem = await ImagePicker.openCamera({
         mediaType: 'photo',
-        compressImageQuality: IMAGE_QUALITY,
-        compressImageMaxWidth: FEED_IMAGE_WIDTH,
-        compressImageMaxHeight: FEED_IMAGE_HEIGHT,
+        compressImageQuality: CLIENT_IMAGE_PICKER_QUALITY,
+        compressImageMaxWidth: CLIENT_IMAGE_MAX_WIDTH,
+        compressImageMaxHeight: CLIENT_IMAGE_MAX_HEIGHT,
         forceJpg: true,
+        includeExif: true,
       }).catch(() => null);
 
       await processSelectedImage(selectedItem);

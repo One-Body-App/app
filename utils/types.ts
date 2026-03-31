@@ -16,6 +16,7 @@ export type OrganizationType = {
   _id: string;
   organizationType: string;
   name?: string;
+  category?: string;
 };
 export type OrganizationSize = 'small' | 'medium' | 'large' | 'mega';
 export type Tag = {
@@ -55,6 +56,8 @@ export type TGender = 'Male' | 'Female';
 type Profile = {
   churchType?: string;
   churchSubType?: string;
+  organizationCategory?: string;
+  organizationSubType?: string;
   oftenChurch?: string;
   dateOfBirth: string;
   gender: TGender;

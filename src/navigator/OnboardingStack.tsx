@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { Platform, useColorScheme } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 
 import { OnboardingStackParamList } from './types';
 
@@ -12,6 +13,7 @@ import OnboardingLocation from '../screens/onboardingSteps/onboardingLocation';
 import OnboardingOrganizationContact from '../screens/onboardingSteps/onboardingOrganizationContact';
 import OnboardingOrganizationInfo from '../screens/onboardingSteps/onboardingOrganizationInfo';
 import OnboardingOrganizationType from '../screens/onboardingSteps/onboardingOrganizationType';
+import OnboardingOrganizationSubtype from '../screens/onboardingSteps/onboardingOrganizationSubtype';
 import { headerOptions } from './global';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
@@ -19,6 +21,7 @@ const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 function OnboardingStack() {
   const colorScheme = useColorScheme();
   const dark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   return (
     <Stack.Navigator
@@ -27,6 +30,13 @@ function OnboardingStack() {
         gestureEnabled: false,
         fullScreenGestureEnabled: false,
         statusBarStyle: dark ? 'light' : 'dark',
+        ...(Platform.OS === 'android'
+          ? {
+              statusBarHidden: false,
+              statusBarColor: colors.background,
+              statusBarTranslucent: false,
+            }
+          : {}),
         headerShown: false,
         headerTransparent: true,
         headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
@@ -91,6 +101,14 @@ function OnboardingStack() {
       <Stack.Screen
         name="OnboardingOrganizationType"
         component={OnboardingOrganizationType}
+        options={{
+          ...(Platform.OS === 'ios' ? headerOptions : {}),
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="OnboardingOrganizationSubtype"
+        component={OnboardingOrganizationSubtype}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
           headerShown: false,

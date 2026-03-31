@@ -696,10 +696,13 @@ export default function VideoPost({ navigation, route }: Props) {
 
       await enqueuePendingVideoUpload(recipe);
 
-      toast.show('Your video was queued and is being processed for Watch.', {
-        type: 'success',
-        placement: 'bottom',
-      });
+      toast.show(
+        "Your Watch video was queued for background processing. We'll notify you when it's live.",
+        {
+          type: 'success',
+          placement: 'bottom',
+        }
+      );
 
       if (navigation.canGoBack()) {
         navigation.goBack();

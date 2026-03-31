@@ -28,6 +28,22 @@ import {
 import { AccountType, ResponseGenerator } from '@/utils/types';
 import { saveAuthTokens } from '@/services/authTokens';
 
+const resolveProfileUpdateErrorMessage = (response: unknown) => {
+  if (typeof response === 'string' && response.trim()) {
+    return response;
+  }
+
+  if (Array.isArray((response as { message?: unknown } | null)?.message)) {
+    return (response as { message: string[] }).message.join(', ');
+  }
+
+  if (typeof (response as { message?: unknown } | null)?.message === 'string') {
+    return (response as { message: string }).message;
+  }
+
+  return 'An error occurred during profile update';
+};
+
 function* updateProfileRequest(params: {
   data: {
     token: string;
@@ -59,13 +75,13 @@ function* updateProfileRequest(params: {
       }
     } else {
       yield put(setLoader(false));
-      Alert.alert('Error', 'An error accoured during profile Update', [
+      Alert.alert('Error', resolveProfileUpdateErrorMessage(res?.response), [
         { text: 'Close', onPress: () => console.log('Close Pressed') },
       ]);
     }
   } catch (e) {
     yield put(setLoader(false));
-    Alert.alert('Error', 'An error accoured during profile Update', [
+    Alert.alert('Error', resolveProfileUpdateErrorMessage(e), [
       { text: 'Close', onPress: () => console.log('Close Pressed') },
     ]);
     console.log('saga sign up err --- ', e);
@@ -121,7 +137,7 @@ function* updateOrgProfileRequest(params: {
   try {
     yield put(setLoader(true));
     const res: ResponseGenerator = yield ApiCall({
-      params: { ...params.data.data, accountType: 'organization' },
+      params: { ...params.data.data },
       route: 'user/update-profile',
       token: params.data.token,
       verb: 'patch',
@@ -135,13 +151,13 @@ function* updateOrgProfileRequest(params: {
       }
     } else {
       yield put(setLoader(false));
-      Alert.alert('Error', 'An error accoured during profile Update', [
+      Alert.alert('Error', resolveProfileUpdateErrorMessage(res?.response), [
         { text: 'Close', onPress: () => console.log('Close Pressed') },
       ]);
     }
   } catch (e) {
     yield put(setLoader(false));
-    Alert.alert('Error', 'An error accoured during profile Update', [
+    Alert.alert('Error', resolveProfileUpdateErrorMessage(e), [
       { text: 'Close', onPress: () => console.log('Close Pressed') },
     ]);
     console.log('saga sign up err --- ', e);

@@ -67,4 +67,9 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   btnText: { color: 'white', fontSize: getFontSize(2.5) },
+  buttonContainer: {
+    backgroundColor: '#126B87',
+    borderRadius: 5,
+    paddingHorizontal: getWidth(4),
+  },
 });

@@ -2,6 +2,7 @@ import {
   extractEditedFrames as nativeExtractEditedFrames,
   exportEditedVideo as nativeExportEditedVideo,
 } from 'react-native-video-trim';
+import { Platform } from 'react-native';
 import type {
   EditedFrameOptions,
   ExportedVideoResult,
@@ -38,15 +39,71 @@ const nativeVideoTrim = {
   exportEditedVideo: nativeExportEditedVideo,
 } as NativeVideoTrimModule;
 
+const logVideoProcessing = (message: string, payload?: Record<string, unknown>) => {
+  if (__DEV__) {
+    console.log('[NativeVideoProcessing]', message, payload ?? {});
+  }
+};
+
+const getUriScheme = (value: string) => {
+  if (value.startsWith('content://')) {
+    return 'content';
+  }
+  if (value.startsWith('file://')) {
+    return 'file';
+  }
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return 'remote';
+  }
+  return 'path';
+};
+
 export const extractEditedFrames = async (url: string, options: EditedFrameOptions) => {
   const framePaths = await nativeVideoTrim.extractEditedFrames(url, options);
   return framePaths.map(normalizeVideoProcessingUri);
 };
 
 export const exportEditedVideo = async (url: string, options: ExportVideoOptions) => {
-  const result = await nativeVideoTrim.exportEditedVideo(url, options);
-  return {
-    ...result,
-    outputPath: normalizeVideoProcessingUri(result.outputPath),
-  };
+  const encoder = Platform.OS === 'ios' ? 'libx264' : 'platform-default';
+  logVideoProcessing('export-start', {
+    encoder,
+    inputScheme: getUriScheme(url),
+    trimStartMs: options.startTime,
+    trimEndMs: options.endTime,
+    cropRect: {
+      x: options.cropX,
+      y: options.cropY,
+      width: options.cropWidth,
+      height: options.cropHeight,
+    },
+    outputSize: {
+      width: options.outputWidth,
+      height: options.outputHeight,
+    },
+    videoBitrate: options.videoBitrate,
+    audioBitrate: options.audioBitrate,
+  });
+
+  try {
+    const result = await nativeVideoTrim.exportEditedVideo(url, options);
+    const normalizedResult = {
+      ...result,
+      outputPath: normalizeVideoProcessingUri(result.outputPath),
+    };
+    logVideoProcessing('export-success', {
+      encoder,
+      outputPath: normalizedResult.outputPath,
+      durationMs: normalizedResult.duration,
+      width: normalizedResult.width,
+      height: normalizedResult.height,
+    });
+    return normalizedResult;
+  } catch (error) {
+    logVideoProcessing('export-failed', {
+      encoder,
+      inputScheme: getUriScheme(url),
+      message: error instanceof Error ? error.message : String(error ?? ''),
+    });
+    throw error;
+  }
 };

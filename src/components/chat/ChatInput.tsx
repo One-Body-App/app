@@ -13,6 +13,12 @@ import {
   waitForUploadImageResult,
 } from '@/src/screens/post/uploadImageBridge';
 import {
+  CLIENT_IMAGE_MAX_HEIGHT,
+  CLIENT_IMAGE_MAX_WIDTH,
+  CLIENT_IMAGE_PICKER_QUALITY,
+} from '@/src/screens/post/uploadImageConfig';
+import { extractExifOrientation } from '@/src/screens/post/uploadImageOrientation';
+import {
   CHAT_COUNTER_DANGER_THRESHOLD,
   CHAT_COUNTER_VISIBLE_THRESHOLD,
   CHAT_MAX_IMAGE_ATTACHMENTS,
@@ -172,6 +178,11 @@ function ChatInput({
         multiple: true,
         mediaType: 'photo',
         maxFiles: remainingSlots,
+        compressImageQuality: CLIENT_IMAGE_PICKER_QUALITY,
+        compressImageMaxWidth: CLIENT_IMAGE_MAX_WIDTH,
+        compressImageMaxHeight: CLIENT_IMAGE_MAX_HEIGHT,
+        forceJpg: true,
+        includeExif: true,
       });
       const selectedAssets = Array.isArray(result) ? result : [result];
       const nextImages = await selectedAssets.reduce<Promise<ChatInputAttachment[]>>(
@@ -196,7 +207,10 @@ function ChatInput({
             filePathRaw.startsWith('ph://')
               ? filePathRaw
               : `file://${filePathRaw}`;
-          const fileName = asset.filename || `chat_${Date.now()}_${index}.jpg`;
+          const fileNameRaw = asset.filename || `chat_${Date.now()}_${index}.jpg`;
+          const fileName = fileNameRaw.toLowerCase().endsWith('.jpg')
+            ? fileNameRaw
+            : `${fileNameRaw.split('.').slice(0, -1).join('.') || fileNameRaw}.jpg`;
           const requestId = createUploadImageRequestId();
           const resultPromise = waitForUploadImageResult(requestId);
 
@@ -205,8 +219,9 @@ function ChatInput({
             imageUri: fileUri,
             fileName,
             fileSize: typeof asset.size === 'number' ? asset.size : undefined,
-            type: asset.mime || 'image/jpeg',
+            type: 'image/jpeg',
             usageContext: 'chat',
+            orientation: extractExifOrientation(asset),
           });
 
           const uploadResult = await resultPromise;
@@ -222,7 +237,7 @@ function ChatInput({
               previewUrl: uploadResult.uri,
               uploadUri: uploadResult.uri,
               fileName: uploadResult.fileName || fileName,
-              mimeType: uploadResult.type || asset.mime || 'image/jpeg',
+              mimeType: uploadResult.type || 'image/jpeg',
               size: uploadResult.fileSize ?? asset.size,
             },
           ];

@@ -1,7 +1,9 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
+  FlatList,
+  FlatListProps,
+  ListRenderItemInfo,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
@@ -22,31 +24,162 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import { preloadSoundEffect, playSoundEffect } from '@/src/services/soundEffects';
 import pickerClickSound from '../../../assets/sounds/click.wav';
+import { navigateWithinCurrentNavigator } from '@/src/navigator/navigateWithinCurrentNavigator';
 import { OnboardingStackParamList } from '@/src/navigator/types';
+import {
+  buildOrganizationCategoryGroups,
+  OrganizationCategoryKey,
+} from '@/src/utils/organizationCategories';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationType'>;
+
+type PickerItem = {
+  label: string;
+  value: string;
+};
 
 const ITEM_HEIGHT = 70;
 const VISIBLE_ITEMS = 3;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 
+function InlineWheelPicker({
+  items,
+  scrollY,
+  onScroll,
+  onScrollBeginDrag,
+  dark,
+  listRef,
+}: {
+  items: PickerItem[];
+  scrollY: Animated.Value;
+  onScroll: FlatListProps<PickerItem>['onScroll'];
+  onScrollBeginDrag?: FlatListProps<PickerItem>['onScrollBeginDrag'];
+  dark: boolean;
+  listRef: React.RefObject<FlatList<PickerItem> | null>;
+}) {
+  const renderItem = useCallback(
+    ({ item, index }: ListRenderItemInfo<PickerItem>) => {
+      const inputRange = [
+        (index - 1) * ITEM_HEIGHT,
+        index * ITEM_HEIGHT,
+        (index + 1) * ITEM_HEIGHT,
+      ];
+
+      const scale = scrollY.interpolate({
+        inputRange,
+        outputRange: [0.85, 1.15, 0.85],
+        extrapolate: 'clamp',
+      });
+
+      const opacity = scrollY.interpolate({
+        inputRange,
+        outputRange: [0.3, 1, 0.3],
+        extrapolate: 'clamp',
+      });
+
+      const color = dark
+        ? '#FFF'
+        : scrollY.interpolate({
+            inputRange,
+            outputRange: [Colors.neutral[300], Colors.primary.brand, Colors.neutral[300]],
+            extrapolate: 'clamp',
+          });
+
+      return (
+        <View style={styles.itemContainer}>
+          <Animated.Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[
+              Typography.header.h3,
+              {
+                transform: [{ scale }],
+                opacity,
+                color: color as any,
+                textAlign: 'center',
+                paddingHorizontal: spacing.x16,
+              },
+            ]}
+          >
+            {item.label}
+          </Animated.Text>
+        </View>
+      );
+    },
+    [dark, scrollY]
+  );
+
+  return (
+    <View style={styles.pickerFrame}>
+      <View
+        style={[
+          styles.selectionLine,
+          {
+            top: ITEM_HEIGHT,
+            borderColor: Colors.secondary.brand,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.selectionLine,
+          {
+            bottom: ITEM_HEIGHT,
+            borderColor: Colors.secondary.brand,
+          },
+        ]}
+      />
+
+      <Animated.FlatList
+        ref={listRef}
+        data={items}
+        keyExtractor={(item) => item.value}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_HEIGHT}
+        decelerationRate="fast"
+        onScroll={onScroll}
+        onScrollBeginDrag={onScrollBeginDrag}
+        scrollEventThrottle={16}
+        contentContainerStyle={{
+          paddingVertical: ITEM_HEIGHT,
+        }}
+        getItemLayout={(_, index) => ({
+          length: ITEM_HEIGHT,
+          offset: ITEM_HEIGHT * index,
+          index,
+        })}
+      />
+    </View>
+  );
+}
+
 function OnboardingOrganizationType({ navigation }: Props) {
   const { dark } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const windowHeight = Dimensions.get('window').height;
   const [organizationTypes, setOrganizationTypes] = useState<OrganizationType[]>([]);
-  const [selectedOrganizationType, setSelectedOrganizationType] =
-    useState<OrganizationType['_id']>('');
+  const [selectedOrganizationCategory, setSelectedOrganizationCategory] = useState<
+    OrganizationCategoryKey | ''
+  >('');
 
   const toast = useToast();
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const lastTriggeredIndex = useRef<number>(-1);
-  const pickerTranslateY = -windowHeight * 0.1;
+  const categoryScrollY = useRef(new Animated.Value(0)).current;
+  const categoryListRef = useRef<FlatList<PickerItem> | null>(null);
+  const lastTriggeredCategoryIndex = useRef<number>(-1);
+  const categoryInteractionStarted = useRef(false);
 
-  const organizationTypeItems = organizationTypes.map((item) => ({
-    label: item.organizationType ?? item.name ?? '',
-    value: item._id,
-  }));
+  const organizationCategoryGroups = useMemo(
+    () => buildOrganizationCategoryGroups(organizationTypes),
+    [organizationTypes]
+  );
+  const organizationCategoryItems = useMemo(
+    () =>
+      organizationCategoryGroups.map((item) => ({
+        label: item.label,
+        value: item.value,
+      })),
+    [organizationCategoryGroups]
+  );
 
   const getOrganizationTypes = useCallback(async () => {
     try {
@@ -57,19 +190,7 @@ function OnboardingOrganizationType({ navigation }: Props) {
       });
 
       if (res?.status === 200) {
-        const items = res?.response as OrganizationType[];
-        setOrganizationTypes(items);
-
-        if (!selectedOrganizationType && items.length > 0) {
-          const churchIndex = items.findIndex((item) => {
-            const label = (item.organizationType ?? item.name ?? '').trim().toLowerCase();
-            return label === 'church';
-          });
-          const defaultIndex = churchIndex >= 0 ? churchIndex : 0;
-
-          setSelectedOrganizationType(items[defaultIndex]._id);
-          lastTriggeredIndex.current = defaultIndex;
-        }
+        setOrganizationTypes(res?.response as OrganizationType[]);
       } else if (__DEV__) {
         console.log('error', res?.response);
       }
@@ -78,7 +199,7 @@ function OnboardingOrganizationType({ navigation }: Props) {
         console.log('saga error -- ', e.toString());
       }
     }
-  }, [selectedOrganizationType, token]);
+  }, [token]);
 
   useMountEffect(() => {
     preloadSoundEffect('pickerClick', pickerClickSound, 0.2).catch(() => {
@@ -92,97 +213,50 @@ function OnboardingOrganizationType({ navigation }: Props) {
     }
   });
 
-  const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-    useNativeDriver: true,
-    listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-      const index = Math.round(offsetY / ITEM_HEIGHT);
+  const handleCategoryScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: categoryScrollY } } }],
+    {
+      useNativeDriver: true,
+      listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (!categoryInteractionStarted.current) {
+          return;
+        }
 
-      if (
-        index !== lastTriggeredIndex.current &&
-        index >= 0 &&
-        index < organizationTypeItems.length
-      ) {
-        lastTriggeredIndex.current = index;
-        setSelectedOrganizationType(organizationTypeItems[index].value);
-        playSoundEffect('pickerClick', 0.025);
-      }
-    },
-  });
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const index = Math.round(offsetY / ITEM_HEIGHT);
 
-  const renderItem = ({
-    item,
-    index,
-  }: {
-    item: { label: string; value: string };
-    index: number;
-  }) => {
-    const inputRange = [(index - 1) * ITEM_HEIGHT, index * ITEM_HEIGHT, (index + 1) * ITEM_HEIGHT];
-
-    const scale = scrollY.interpolate({
-      inputRange,
-      outputRange: [0.85, 1.15, 0.85],
-      extrapolate: 'clamp',
-    });
-
-    const opacity = scrollY.interpolate({
-      inputRange,
-      outputRange: [0.3, 1, 0.3],
-      extrapolate: 'clamp',
-    });
-
-    const color = dark
-      ? '#FFF'
-      : scrollY.interpolate({
-          inputRange,
-          outputRange: [Colors.neutral[300], Colors.primary.brand, Colors.neutral[300]],
-          extrapolate: 'clamp',
-        });
-
-    return (
-      <View style={{ height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center' }}>
-        <Animated.Text
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          style={[
-            Typography.header.h3,
-            {
-              transform: [{ scale }],
-              opacity,
-              color: color as any,
-              textAlign: 'center',
-              paddingHorizontal: spacing.x16,
-            },
-          ]}
-        >
-          {item.label}
-        </Animated.Text>
-      </View>
-    );
-  };
-
-  const selectedIndex = organizationTypeItems.findIndex(
-    (item) => item.value === selectedOrganizationType
+        if (
+          index !== lastTriggeredCategoryIndex.current &&
+          index >= 0 &&
+          index < organizationCategoryItems.length
+        ) {
+          lastTriggeredCategoryIndex.current = index;
+          const nextCategory = organizationCategoryItems[index].value as OrganizationCategoryKey;
+          setSelectedOrganizationCategory(nextCategory);
+          playSoundEffect('pickerClick', 0.025);
+        }
+      },
+    }
   );
-  const initialScrollIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
   return (
     <OnboardingStepsLayout
       buttonText="Next"
       onPress={() => {
-        if (selectedOrganizationType) {
-          navigation.navigate('OnboardingOrganizationInfo', {
-            selectedOrganizationType,
-          });
-        } else {
-          toast.show('Organization type is required', {
+        if (!selectedOrganizationCategory) {
+          toast.show('Organization category is required', {
             type: 'danger',
           });
+          return;
         }
+
+        navigateWithinCurrentNavigator(navigation, 'OnboardingOrganizationSubtype', {
+          selectedOrganizationCategory,
+        });
       }}
       onboardingType={AccountType.organization}
       activeStep={1}
-      disabled={!selectedOrganizationType}
+      disabled={!selectedOrganizationCategory}
       dontUseScrollView
       reasonText={
         <StyledText style={{ color: Colors.primary.brand }}>
@@ -193,76 +267,71 @@ function OnboardingOrganizationType({ navigation }: Props) {
         </StyledText>
       }
     >
-      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
-        <View style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <View style={styles.header}>
           <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
             What type of Organization are you?
           </StyledText>
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
           >
-            Identify your organization type
+            Select your organization category
           </StyledText>
         </View>
 
-        <View
-          style={{
-            flex: 4,
-            justifyContent: 'center',
-            alignItems: 'center',
-            transform: [{ translateY: pickerTranslateY }],
-          }}
-        >
-          <View style={{ height: PICKER_HEIGHT, width: '100%' }}>
-            <View
-              style={[
-                styles.selectionLine,
-                {
-                  top: ITEM_HEIGHT,
-                  borderColor: Colors.secondary.brand,
-                },
-              ]}
+        <View style={styles.pickersContainer}>
+          <View style={styles.pickerSection}>
+            <StyledText style={styles.pickerLabel}>Category</StyledText>
+            <InlineWheelPicker
+              items={organizationCategoryItems}
+              scrollY={categoryScrollY}
+              onScroll={handleCategoryScroll}
+              onScrollBeginDrag={() => {
+                categoryInteractionStarted.current = true;
+              }}
+              dark={dark}
+              listRef={categoryListRef}
             />
-            <View
-              style={[
-                styles.selectionLine,
-                {
-                  bottom: ITEM_HEIGHT,
-                  borderColor: Colors.secondary.brand,
-                },
-              ]}
-            />
-
-            {organizationTypeItems.length > 0 ? (
-              <Animated.FlatList
-                data={organizationTypeItems}
-                keyExtractor={(item) => item.value}
-                renderItem={renderItem}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                decelerationRate="fast"
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                initialScrollIndex={initialScrollIndex}
-                contentContainerStyle={{
-                  paddingVertical: ITEM_HEIGHT,
-                }}
-                getItemLayout={(_, index) => ({
-                  length: ITEM_HEIGHT,
-                  offset: ITEM_HEIGHT * index,
-                  index,
-                })}
-              />
-            ) : null}
           </View>
         </View>
       </View>
     </OnboardingStepsLayout>
   );
 }
+
 export default OnboardingOrganizationType;
 
 const styles = StyleSheet.create({
+  container: {
+    marginVertical: spacing.x20,
+    flex: 1,
+  },
+  header: {
+    marginBottom: spacing.x24,
+  },
+  itemContainer: {
+    height: ITEM_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerFrame: {
+    height: PICKER_HEIGHT,
+    width: '100%',
+  },
+  pickersContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: spacing.x8,
+  },
+  pickerLabel: {
+    ...Typography.body.x2M,
+    color: Colors.neutral[300],
+    marginBottom: spacing.x12,
+    textAlign: 'center',
+  },
+  pickerSection: {
+    marginBottom: spacing.x24,
+  },
   selectionLine: {
     position: 'absolute',
     width: '60%',

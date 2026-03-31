@@ -1,5 +1,5 @@
-import React, { ComponentType, ReactElement, useCallback, useState } from 'react';
-import { FlatList, RefreshControl, ListRenderItem } from 'react-native';
+import React, { ComponentType, ReactElement, useCallback, useRef, useState } from 'react';
+import { FlatList, RefreshControl, ListRenderItem, useWindowDimensions } from 'react-native';
 import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { Tabs } from 'react-native-collapsible-tab-view';
@@ -12,6 +12,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import { PostType, WatchPost } from '@/utils/types';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 
 type WatchFlatlistProps = {
   userId: string;
@@ -33,11 +34,35 @@ function WatchFlatlist({
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isEndOfList, setIsEndOfList] = useState(false);
+  const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
+  const { width } = useWindowDimensions();
+  const { imageViewer, openImages } = useSharedImageViewer();
   const ListComponent = useTabsFlatList ? Tabs.FlatList : FlatList;
+  const socialItemContentWidth = Math.max(width - spacing.x16 * 2 - 14, 0);
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (!viewableItems || viewableItems.length < 1) {
+      setVisibleItemsIndex([]);
+      return;
+    }
+
+    setVisibleItemsIndex(viewableItems.map((item: any) => item.index).filter(Number.isInteger));
+  }, []);
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: {
+        minimumViewTime: 100,
+        itemVisiblePercentThreshold: 75,
+      },
+      onViewableItemsChanged,
+    },
+  ]);
   const renderItem: ListRenderItem<WatchPost> = ({ item, index }) => (
     <SocialItem
       itemData={item as any}
       index={index}
+      visible={visibleItemsIndex.includes(index)}
+      contentWidth={socialItemContentWidth}
+      onOpenImages={openImages}
       postType={PostType.watch}
       onOpenVideoPress={({ postId, playBackId, itemData, mediaUrl, aspectRatio }) => {
         navigation.navigate('WatchPortal', {
@@ -94,43 +119,47 @@ function WatchFlatlist({
   );
 
   return (
-    <ListComponent
-      data={posts}
-      style={{ flex: 1 }}
-      ListHeaderComponent={headerItem}
-      keyExtractor={(item: WatchPost, index: number) =>
-        `${item.postId ?? item.id ?? item._id}-${index}`
-      }
-      renderItem={renderItem}
-      onEndReachedThreshold={0.5}
-      onEndReached={() => {
-        if (!isLoading && !refreshing && !isEndOfList && posts.length > 0) {
-          getWatchPosts(page + 1).then(() => undefined);
+    <>
+      <ListComponent
+        data={posts}
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+        style={{ flex: 1 }}
+        ListHeaderComponent={headerItem}
+        keyExtractor={(item: WatchPost, index: number) =>
+          `${item.postId ?? item.id ?? item._id}-${index}`
         }
-      }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setIsEndOfList(false);
-            setRefreshing(true);
-            getWatchPosts(1).then(() => undefined);
-          }}
-        />
-      }
-      ListEmptyComponent={
-        isLoading ? null : (
-          <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
-            {emptyText || 'No watch posts yet'}
-          </StyledText>
-        )
-      }
-      removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-      initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-      maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-      updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
-      windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
-    />
+        renderItem={renderItem}
+        onEndReachedThreshold={0.5}
+        onEndReached={() => {
+          if (!isLoading && !refreshing && !isEndOfList && posts.length > 0) {
+            getWatchPosts(page + 1).then(() => undefined);
+          }
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setIsEndOfList(false);
+              setRefreshing(true);
+              getWatchPosts(1).then(() => undefined);
+            }}
+          />
+        }
+        ListEmptyComponent={
+          isLoading ? null : (
+            <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
+              {emptyText || 'No watch posts yet'}
+            </StyledText>
+          )
+        }
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
+      />
+      {imageViewer}
+    </>
   );
 }
 

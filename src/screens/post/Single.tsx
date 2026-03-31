@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -28,6 +29,7 @@ import {
   getCommentId,
   toSerializableCommentSnapshot,
 } from '@/components/comments/commentListUtils';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 
 type Props = StackScreenProps<MainStackParamList, 'SinglePost'>;
 
@@ -38,6 +40,9 @@ function SinglePost({ navigation, route }: Props) {
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors, dark } = useTheme();
+  const { width } = useWindowDimensions();
+  const { imageViewer, openImages } = useSharedImageViewer();
+  const socialItemContentWidth = Math.max(width - spacing.x16 * 2, 0);
   const backNavigationInFlightRef = useRef(false);
   const resetToHomeFeed = useCallback(() => {
     navigation.reset({
@@ -197,6 +202,9 @@ function SinglePost({ navigation, route }: Props) {
               editPost={editPost}
               removePost={removePost}
               itemData={post}
+              visible
+              contentWidth={socialItemContentWidth}
+              onOpenImages={openImages}
               socialPostviewStyle={{
                 marginHorizontal: 0,
                 marginBottom: 0,
@@ -230,6 +238,7 @@ function SinglePost({ navigation, route }: Props) {
           {!isLoading && isNotFound ? <StyledText>Not Found</StyledText> : null}
         </View>
       )}
+      {imageViewer}
     </SafeAreaView>
   );
 }

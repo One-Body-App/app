@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Platform,
   SafeAreaView,
@@ -187,8 +187,11 @@ const buildReviewNotes = (existingComments: string, reviewSocialLinks: ReviewSoc
 function CreatorStepThree({ navigation, route }: Props) {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
-  const previousData = route.params?.data ?? {};
-  const previousReviewLinks: ReviewSocialLinks = previousData.reviewSocialLinks ?? {};
+  const previousData = useMemo(() => route.params?.data ?? {}, [route.params]);
+  const previousReviewLinks: ReviewSocialLinks = useMemo(
+    () => previousData.reviewSocialLinks ?? {},
+    [previousData]
+  );
   const previousAdditionalLink = previousReviewLinks.additional?.url ?? '';
 
   const [showQuitModal, setShowQuitModal] = useState(false);
@@ -206,72 +209,82 @@ function CreatorStepThree({ navigation, route }: Props) {
     additionalSocialLinkError: '',
   });
 
-  const palette: ScreenPalette = dark
-    ? {
-        screen: colors.background,
-        surface: colors.card,
-        border: 'rgba(255, 255, 255, 0.08)',
-        subtleBorder: 'rgba(255, 255, 255, 0.06)',
-        subtleSurface: '#121A1D',
-        input: '#121A1D',
-        accent: Colors.primarySapphire.brand,
-        primary: Colors.primarySapphire.brand,
-        text: colors.text,
-        body: Colors.primary[600],
-        placeholder: Colors.primary[400],
-        icon: Colors.primary[500],
-        error: '#FFB4AB',
-        buttonText: '#FFFFFF',
-        secondaryButtonBorder: 'rgba(255, 255, 255, 0.12)',
-        secondaryButtonText: colors.text,
-        modalSurface: colors.card,
-      }
-    : {
-        screen: colors.background,
-        surface: '#FFFFFF',
-        border: Colors.primary[800],
-        subtleBorder: 'rgba(3, 47, 60, 0.06)',
-        subtleSurface: Colors.primarySapphire[900],
-        input: '#FFFFFF',
-        accent: Colors.primarySapphire.brand,
-        primary: Colors.primarySapphire.brand,
-        text: Colors.primary.brand,
-        body: Colors.primary[500],
-        placeholder: Colors.primary[500],
-        icon: Colors.primary[500],
-        error: '#B3261E',
-        buttonText: '#FFFFFF',
-        secondaryButtonBorder: Colors.primary[800],
-        secondaryButtonText: Colors.primary.brand,
-        modalSurface: '#FFFFFF',
-      };
+  const palette = useMemo(
+    (): ScreenPalette =>
+      dark
+        ? {
+            screen: colors.background,
+            surface: colors.card,
+            border: 'rgba(255, 255, 255, 0.08)',
+            subtleBorder: 'rgba(255, 255, 255, 0.06)',
+            subtleSurface: '#121A1D',
+            input: '#121A1D',
+            accent: Colors.primarySapphire.brand,
+            primary: Colors.primarySapphire.brand,
+            text: colors.text,
+            body: Colors.primary[600],
+            placeholder: Colors.primary[400],
+            icon: Colors.primary[500],
+            error: '#FFB4AB',
+            buttonText: '#FFFFFF',
+            secondaryButtonBorder: 'rgba(255, 255, 255, 0.12)',
+            secondaryButtonText: colors.text,
+            modalSurface: colors.card,
+          }
+        : {
+            screen: colors.background,
+            surface: '#FFFFFF',
+            border: Colors.primary[800],
+            subtleBorder: 'rgba(3, 47, 60, 0.06)',
+            subtleSurface: Colors.primarySapphire[900],
+            input: '#FFFFFF',
+            accent: Colors.primarySapphire.brand,
+            primary: Colors.primarySapphire.brand,
+            text: Colors.primary.brand,
+            body: Colors.primary[500],
+            placeholder: Colors.primary[500],
+            icon: Colors.primary[500],
+            error: '#B3261E',
+            buttonText: '#FFFFFF',
+            secondaryButtonBorder: Colors.primary[800],
+            secondaryButtonText: Colors.primary.brand,
+            modalSurface: '#FFFFFF',
+          },
+    [dark, colors]
+  );
 
-  const styles = createStyles(palette, dark, insets.bottom);
+  const styles = useMemo(
+    () => createStyles(palette, dark, insets.bottom),
+    [palette, dark, insets.bottom]
+  );
 
-  const changeHandler = (field: string, value: string) => {
+  const changeHandler = useCallback((field: string, value: string) => {
     setState((prev) => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
-  const validateSocialField = (
-    field: 'instagramUrl' | 'facebookUrl' | 'youtubeUrl' | 'tiktokUrl' | 'additionalSocialLink',
-    errorField:
-      | 'instagramUrlError'
-      | 'facebookUrlError'
-      | 'youtubeUrlError'
-      | 'tiktokUrlError'
-      | 'additionalSocialLinkError'
-  ) => {
-    const normalizedValue = normalizeSocialUrl(state[field]);
-    const error = getSocialLinkError(normalizedValue);
+  const validateSocialField = useCallback(
+    (
+      field: 'instagramUrl' | 'facebookUrl' | 'youtubeUrl' | 'tiktokUrl' | 'additionalSocialLink',
+      errorField:
+        | 'instagramUrlError'
+        | 'facebookUrlError'
+        | 'youtubeUrlError'
+        | 'tiktokUrlError'
+        | 'additionalSocialLinkError'
+    ) => {
+      const normalizedValue = normalizeSocialUrl(state[field]);
+      const error = getSocialLinkError(normalizedValue);
 
-    setState((prev) => ({
-      ...prev,
-      [field]: error ? prev[field].trim() : normalizedValue,
-      [errorField]: error,
-    }));
+      setState((prev) => ({
+        ...prev,
+        [field]: error ? prev[field].trim() : normalizedValue,
+        [errorField]: error,
+      }));
 
-    return { normalizedValue, error };
-  };
+      return { normalizedValue, error };
+    },
+    [state]
+  );
 
   const handleQuit = useCallback(() => {
     setShowQuitModal(false);
@@ -297,7 +310,7 @@ function CreatorStepThree({ navigation, route }: Props) {
     );
   }, [navigation]);
 
-  const onNext = () => {
+  const onNext = useCallback(() => {
     const instagram = validateSocialField('instagramUrl', 'instagramUrlError');
     const facebook = validateSocialField('facebookUrl', 'facebookUrlError');
     const youtube = validateSocialField('youtubeUrl', 'youtubeUrlError');
@@ -338,7 +351,7 @@ function CreatorStepThree({ navigation, route }: Props) {
         comments: buildReviewNotes(previousData.comments ?? '', reviewSocialLinks),
       },
     });
-  };
+  }, [showAdditionalLink, previousData, navigation, validateSocialField]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -362,9 +375,6 @@ function CreatorStepThree({ navigation, route }: Props) {
               <Text style={styles.headerActionText}>Quit</Text>
             </TouchableOpacity>
           </View>
-        </View>
-        <View style={styles.progressBarTrack}>
-          <View style={styles.progressBarFill} />
         </View>
       </View>
 
@@ -593,19 +603,23 @@ function CreatorStepThree({ navigation, route }: Props) {
       </KeyboardAwareScrollView>
 
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons
-            name="chevron-left"
-            size={18}
-            color={palette.secondaryButtonText}
-          />
-          <Text style={styles.backButtonText}>BACK</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.continueButton} onPress={onNext}>
-          <Text style={styles.continueButtonText}>CONTINUE</Text>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={palette.buttonText} />
-        </TouchableOpacity>
+        <View style={styles.progressWrap}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressLabel}>Step 2 of 3</Text>
+            <Text style={styles.progressPercent}>66%</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={styles.progressFill} />
+          </View>
+        </View>
+        <View style={styles.footerActions}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.continueButton} onPress={onNext}>
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <CustomModal
@@ -687,19 +701,6 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
       lineHeight: 24,
       fontFamily: 'OpenSans-SemiBold',
       fontWeight: '600',
-    },
-    progressBarTrack: {
-      height: 4,
-      borderRadius: 999,
-      backgroundColor: palette.subtleBorder,
-      overflow: 'hidden',
-      marginTop: 4,
-    },
-    progressBarFill: {
-      width: '75%',
-      height: '100%',
-      borderRadius: 999,
-      backgroundColor: palette.primary,
     },
     scrollContent: {
       flexGrow: 1,
@@ -869,53 +870,78 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
       position: 'absolute',
       bottom: 0,
       width: '100%',
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
       paddingTop: 12,
-      paddingBottom: Math.max(bottomInset, 16),
+      paddingBottom: Math.max(bottomInset, 24),
       backgroundColor: palette.screen,
       borderTopWidth: 1,
       borderTopColor: palette.subtleBorder,
     },
-    backButton: {
-      minWidth: 116,
+    progressWrap: {
+      paddingBottom: 12,
+    },
+    progressHeader: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    progressLabel: {
+      color: palette.text,
+      fontSize: 14,
+      fontWeight: '700',
+      fontFamily: 'OpenSans-SemiBold',
+    },
+    progressPercent: {
+      color: palette.accent,
+      fontSize: 14,
+      fontWeight: '700',
+      fontFamily: 'OpenSans-SemiBold',
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 4,
+      overflow: 'hidden',
+      backgroundColor: palette.subtleBorder,
+    },
+    progressFill: {
+      width: '66%',
+      height: '100%',
+      borderRadius: 4,
+      backgroundColor: palette.primary,
+    },
+    footerActions: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    backButton: {
+      minWidth: 110,
+      minHeight: 50,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 15,
-      paddingHorizontal: 22,
       borderWidth: 1,
       borderColor: palette.secondaryButtonBorder,
-      borderRadius: 24,
+      borderRadius: 60,
       backgroundColor: palette.surface,
     },
     backButtonText: {
       color: palette.secondaryButtonText,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 15,
+      fontWeight: '700',
       fontFamily: 'OpenSans-SemiBold',
-      letterSpacing: 2.2,
-      marginLeft: 4,
     },
     continueButton: {
-      minWidth: 176,
-      flexDirection: 'row',
+      flex: 1,
+      minHeight: 50,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: palette.primary,
-      paddingVertical: 15,
-      paddingHorizontal: 28,
-      borderRadius: 28,
+      borderRadius: 60,
     },
     continueButtonText: {
       color: palette.buttonText,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 16,
+      fontWeight: '800',
       fontFamily: 'OpenSans-SemiBold',
-      letterSpacing: 2.2,
-      marginRight: 4,
     },
     quitModalContainer: {
       minHeight: 280,

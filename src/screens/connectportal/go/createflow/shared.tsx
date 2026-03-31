@@ -24,11 +24,11 @@ import {
   requiresPayoutStep,
 } from '@/src/services/connectPortal';
 import {
-  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
-  APP_HEADER_ROW_HEIGHT,
   APP_HEADER_ROW_OFFSET,
-  APP_HEADER_SIDE_WIDTH,
   APP_HEADER_TITLE_LINE_HEIGHT,
+  CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  CONNECT_HEADER_ROW_HEIGHT,
+  CONNECT_HEADER_SIDE_WIDTH,
 } from '@/src/styles/headerLayout';
 import { borderRadius } from '@/src/styles/outlines';
 
@@ -319,11 +319,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    minHeight: CONNECT_HEADER_ROW_HEIGHT,
     transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerButton: {
-    minWidth: APP_HEADER_SIDE_WIDTH,
+    minWidth: CONNECT_HEADER_SIDE_WIDTH,
   },
   headerButtonHidden: {
     opacity: 0,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   headerTitleAndroidWrap: {
     flex: 1,
     justifyContent: 'center',
-    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+    paddingLeft: CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitleLeadingWrap: {
     flex: 1,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   headerSpacer: {
-    minWidth: APP_HEADER_SIDE_WIDTH,
+    minWidth: CONNECT_HEADER_SIDE_WIDTH,
   },
   progressWrap: {
     paddingBottom: 12,
