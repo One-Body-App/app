@@ -8,12 +8,16 @@ import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
 import type { Coordinate } from '@/src/screens/connectportal/data';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
+import type {
+  ConnectPortalRecurrenceEndType,
+  ConnectPortalRecurrenceFrequency,
+} from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep2'>;
 
-type PickerField = 'startDate' | 'endDate' | 'startTime' | 'endTime';
+type PickerField = 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'recurrenceEndDate';
 
 const formatStoredDate = (value: Date) => format(value, 'yyyy-MM-dd');
 
@@ -110,6 +114,15 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
   const [addressPickerVisible, setAddressPickerVisible] = useState(false);
   const [coordinate, setCoordinate] = useState<Coordinate | undefined>();
   const [addressSuggestion, setAddressSuggestion] = useState<MapSuggestion | null>(null);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<
+    ConnectPortalRecurrenceFrequency | undefined
+  >();
+  const [recurrenceEndType, setRecurrenceEndType] = useState<
+    ConnectPortalRecurrenceEndType | undefined
+  >();
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [recurrenceOccurrenceCount, setRecurrenceOccurrenceCount] = useState('');
 
   useMountEffect(() => {
     let isActive = true;
@@ -141,6 +154,11 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
       setAddress(draft.address);
       setCoordinate(draft.coordinate);
       setAddressSuggestion(createAddressSuggestionFromDraft(draft.address, draft.coordinate));
+      setIsRecurring(draft.isRecurring || false);
+      setRecurrenceFrequency(draft.recurrenceFrequency);
+      setRecurrenceEndType(draft.recurrenceEndType);
+      setRecurrenceEndDate(draft.recurrenceEndDate || '');
+      setRecurrenceOccurrenceCount(draft.recurrenceOccurrenceCount || '');
       setLoading(false);
     })();
 
@@ -189,6 +207,15 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         address: nextAddress,
         coordinate: isOnline ? undefined : coordinate,
         locationQuery: nextLocationQuery,
+        isRecurring,
+        recurrenceFrequency: isRecurring ? recurrenceFrequency : undefined,
+        recurrenceEndType: isRecurring ? recurrenceEndType : undefined,
+        recurrenceEndDate:
+          isRecurring && recurrenceEndType === 'on_date' ? recurrenceEndDate : undefined,
+        recurrenceOccurrenceCount:
+          isRecurring && recurrenceEndType === 'after_occurrences'
+            ? recurrenceOccurrenceCount
+            : undefined,
       },
       completedStep !== undefined ? { completedStep } : undefined
     );
@@ -207,6 +234,10 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
 
     if (activePicker === 'endDate') {
       setEndDate(nextDate);
+    }
+
+    if (activePicker === 'recurrenceEndDate') {
+      setRecurrenceEndDate(nextDate);
     }
 
     if (activePicker === 'startTime') {
@@ -229,13 +260,22 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
     }
   };
 
+  const recurringIncomplete =
+    isRecurring &&
+    (!recurrenceFrequency ||
+      !recurrenceEndType ||
+      (recurrenceEndType === 'on_date' && !recurrenceEndDate) ||
+      (recurrenceEndType === 'after_occurrences' &&
+        (!recurrenceOccurrenceCount || Number(recurrenceOccurrenceCount) < 1)));
+
   const nextDisabled =
     !draftId ||
     !startDate ||
     !startTime ||
     !endTime ||
     (!isSingleDayEvent && !endDate) ||
-    (isOnline ? !isValidOnlineEventUrl(onlineEventUrl) : !venueName.trim() || !address.trim());
+    (isOnline ? !isValidOnlineEventUrl(onlineEventUrl) : !venueName.trim() || !address.trim()) ||
+    recurringIncomplete;
 
   const handleNext = async () => {
     if (isOnline && !isValidOnlineEventUrl(onlineEventUrl)) {
@@ -254,11 +294,18 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
     pickerDate = parseStoredDate(startDate);
   } else if (activePicker === 'endDate') {
     pickerDate = parseStoredDate(endDate || startDate);
+  } else if (activePicker === 'recurrenceEndDate') {
+    pickerDate = parseStoredDate(recurrenceEndDate || startDate);
   } else if (activePicker === 'startTime') {
     pickerDate = parseStoredTime(startTime);
   }
 
-  const pickerMode = activePicker === 'startDate' || activePicker === 'endDate' ? 'date' : 'time';
+  const pickerMode =
+    activePicker === 'startDate' ||
+    activePicker === 'endDate' ||
+    activePicker === 'recurrenceEndDate'
+      ? 'date'
+      : 'time';
   let endDateTextColor = palette.inputPlaceholder;
   if (endDate) {
     endDateTextColor = isSingleDayEvent ? palette.textMuted : palette.inputText;
@@ -512,6 +559,185 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         </>
       )}
 
+      <View
+        style={[
+          styles.toggleRow,
+          { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
+        ]}
+      >
+        <View style={styles.toggleCopy}>
+          <Text style={[styles.toggleTitle, { color: palette.textPrimary }]}>Recurring Event</Text>
+          <Text style={[styles.toggleBody, { color: palette.textSecondary }]}>
+            Will this gathering happen on a regular schedule? Turn this on to set the frequency and
+            end date for the series.
+          </Text>
+        </View>
+        <Switch
+          value={isRecurring}
+          onValueChange={(next) => {
+            setIsRecurring(next);
+            if (!next) {
+              setRecurrenceFrequency(undefined);
+              setRecurrenceEndType(undefined);
+              setRecurrenceEndDate('');
+              setRecurrenceOccurrenceCount('');
+            }
+          }}
+          trackColor={{ false: palette.inputBorder, true: palette.accent }}
+          thumbColor="#FFFFFF"
+        />
+      </View>
+
+      {isRecurring && (
+        <>
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Frequency</Text>
+            <View style={styles.frequencyGrid}>
+              {(
+                [
+                  { value: 'daily', label: 'Daily' },
+                  { value: 'weekly', label: 'Weekly' },
+                  { value: 'biweekly', label: 'Bi-weekly' },
+                  { value: 'monthly', label: 'Monthly' },
+                ] as { value: ConnectPortalRecurrenceFrequency; label: string }[]
+              ).map((option) => {
+                const isSelected = recurrenceFrequency === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    activeOpacity={0.85}
+                    style={[
+                      styles.frequencyChip,
+                      {
+                        backgroundColor: isSelected ? palette.cardActiveBg : palette.inputBg,
+                        borderColor: isSelected ? palette.cardActiveBorder : palette.inputBorder,
+                      },
+                    ]}
+                    onPress={() => setRecurrenceFrequency(option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.frequencyChipText,
+                        { color: isSelected ? palette.accent : palette.textSecondary },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Series Ends</Text>
+            <View style={styles.endConditionRow}>
+              {(
+                [
+                  { value: 'on_date', label: 'On a date' },
+                  { value: 'after_occurrences', label: 'After occurrences' },
+                ] as { value: ConnectPortalRecurrenceEndType; label: string }[]
+              ).map((option) => {
+                const isSelected = recurrenceEndType === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    activeOpacity={0.85}
+                    style={[
+                      styles.endConditionOption,
+                      {
+                        backgroundColor: isSelected ? palette.cardActiveBg : palette.inputBg,
+                        borderColor: isSelected ? palette.cardActiveBorder : palette.inputBorder,
+                      },
+                    ]}
+                    onPress={() => setRecurrenceEndType(option.value)}
+                  >
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        {
+                          borderColor: isSelected ? palette.radioActiveBorder : palette.radioBorder,
+                        },
+                      ]}
+                    >
+                      {isSelected && (
+                        <View
+                          style={[styles.radioInner, { backgroundColor: palette.radioActiveBg }]}
+                        />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.endConditionLabel,
+                        { color: isSelected ? palette.accent : palette.textSecondary },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {recurrenceEndType === 'on_date' && (
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: palette.textPrimary }]}>End Date</Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[
+                  styles.inputButton,
+                  {
+                    backgroundColor: palette.inputBg,
+                    borderColor: palette.inputBorder,
+                  },
+                ]}
+                onPress={() => setActivePicker('recurrenceEndDate')}
+              >
+                <Text
+                  style={[
+                    styles.inputButtonText,
+                    {
+                      color: recurrenceEndDate ? palette.inputText : palette.inputPlaceholder,
+                    },
+                  ]}
+                >
+                  {recurrenceEndDate ? formatDisplayedDate(recurrenceEndDate) : 'MM/DD/YY'}
+                </Text>
+                <MaterialCommunityIcons
+                  name="calendar-month-outline"
+                  size={20}
+                  color={palette.inputPlaceholder}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {recurrenceEndType === 'after_occurrences' && (
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: palette.textPrimary }]}>
+                Number of Occurrences
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: palette.inputBg,
+                    borderColor: palette.inputBorder,
+                    color: palette.inputText,
+                  },
+                ]}
+                value={recurrenceOccurrenceCount}
+                onChangeText={setRecurrenceOccurrenceCount}
+                placeholder="e.g., 12"
+                placeholderTextColor={palette.inputPlaceholder}
+                keyboardType="number-pad"
+              />
+            </View>
+          )}
+        </>
+      )}
+
       <MapBox
         location={addressSuggestion}
         modalVisible={addressPickerVisible}
@@ -528,7 +754,9 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         mode={pickerMode}
         androidVariant="nativeAndroid"
         minimumDate={
-          activePicker === 'endDate' && startDate ? parseStoredDate(startDate) : undefined
+          (activePicker === 'endDate' || activePicker === 'recurrenceEndDate') && startDate
+            ? parseStoredDate(startDate)
+            : undefined
         }
         onConfirm={handleDateConfirm}
         onCancel={() => setActivePicker(null)}
@@ -628,6 +856,56 @@ const styles = StyleSheet.create({
   mapTitle: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  frequencyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  frequencyChip: {
+    flex: 1,
+    minWidth: '45%',
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+  },
+  frequencyChipText: {
+    fontSize: 14,
+    fontFamily: 'OpenSans-SemiBold',
+  },
+  endConditionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  endConditionOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  radioOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  endConditionLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'OpenSans-SemiBold',
   },
 });
 
