@@ -7,6 +7,10 @@ export type ConnectPortalTicketType = 'free' | 'external' | 'paid';
 
 export type ConnectPortalPaymentOption = 'external' | 'internal';
 
+export type ConnectPortalRecurrenceFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+
+export type ConnectPortalRecurrenceEndType = 'on_date' | 'after_occurrences';
+
 export type ConnectPortalMyEventsFilter = 'All' | 'Active' | 'Draft' | 'Past';
 
 export type ConnectViewMode = 'list' | 'map';
@@ -100,6 +104,11 @@ export type ConnectPortalEventRecordBase = {
   startTime: string;
   endTime: string;
   isSingleDayEvent: boolean;
+  isRecurring: boolean;
+  recurrenceFrequency?: ConnectPortalRecurrenceFrequency;
+  recurrenceEndType?: ConnectPortalRecurrenceEndType;
+  recurrenceEndDate?: string;
+  recurrenceOccurrenceCount?: string;
   isOnline: boolean;
   onlineEventUrl: string;
   externalEventUrl: string;
