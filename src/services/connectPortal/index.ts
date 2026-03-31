@@ -331,7 +331,9 @@ const normalizeDraft = (value: unknown): ConnectPortalEventDraft | null => {
         Boolean(item.startDate) &&
         String(item.startDate || '') === String(item.endDate || item.startDate || '')),
     isOnline: item.isOnline === true,
-    onlineEventUrl: String(item.onlineEventUrl || ''),
+    onlineEventUrl: String(
+      item.onlineEventUrl || (item.isOnline ? item.externalEventUrl : '') || ''
+    ),
     externalEventUrl: String((item as Partial<ConnectPortalEventDraft>).externalEventUrl || ''),
     locationQuery: String(item.locationQuery || ''),
     venueName: String(item.venueName || ''),
@@ -402,7 +404,9 @@ const normalizePublishedEvent = (value: unknown): ConnectPortalPublishedEvent | 
         Boolean(item.startDate) &&
         String(item.startDate || '') === String(item.endDate || item.startDate || '')),
     isOnline: item.isOnline === true,
-    onlineEventUrl: String(item.onlineEventUrl || ''),
+    onlineEventUrl: String(
+      item.onlineEventUrl || (item.isOnline ? item.externalEventUrl : '') || ''
+    ),
     externalEventUrl: String((item as Partial<ConnectPortalPublishedEvent>).externalEventUrl || ''),
     locationQuery: String(item.locationQuery || ''),
     venueName: String(item.venueName || ''),
@@ -588,6 +592,38 @@ const createDefaultApiClient = (): ConnectPortalApiClient => {
         ApiCall({ route: `connect/events/${eventId}/analytics`, verb: 'get', token: true })
       ),
     publishEvent: async (payload: Record<string, unknown>) => {
+      const heroImageUri =
+        typeof payload.heroImageUri === 'string' ? payload.heroImageUri : undefined;
+
+      if (heroImageUri && !/^https?:\/\//i.test(heroImageUri)) {
+        const formData = new FormData();
+        formData.append('heroImage', {
+          uri: heroImageUri,
+          name: 'event-hero.jpg',
+          type: 'image/jpeg',
+        } as any);
+        Object.entries(payload).forEach(([key, value]) => {
+          if (
+            key !== 'heroImageUri' &&
+            key !== 'photoUri' &&
+            value !== undefined &&
+            value !== null
+          ) {
+            formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+          }
+        });
+        const formResponse = await unwrap<any>(
+          ApiCall({
+            route: 'connect/events/publish',
+            verb: 'post',
+            token: true,
+            params: formData,
+            isFormUrlEncode: true,
+          })
+        );
+        return normalizePublishedEvent(formResponse);
+      }
+
       const response = await unwrap<any>(
         ApiCall({ route: 'connect/events/publish', verb: 'post', token: true, params: payload })
       );
@@ -866,10 +902,9 @@ export const createConnectPortalStorage = (
       endDate: draft.endDate,
       startTime: draft.startTime,
       endTime: draft.endTime,
-      isSingleDayEvent: draft.isSingleDayEvent,
       isOnline: draft.isOnline,
-      onlineEventUrl: draft.onlineEventUrl,
-      externalEventUrl: draft.externalEventUrl,
+      externalEventUrl:
+        draft.externalEventUrl || (draft.isOnline ? draft.onlineEventUrl.trim() : ''),
       locationQuery: draft.locationQuery,
       venueName: draft.venueName || (draft.isOnline ? 'Online Event' : ''),
       address: draft.address || (draft.isOnline ? 'Online' : ''),
@@ -887,6 +922,13 @@ export const createConnectPortalStorage = (
       businessName: draft.businessName,
       ein: draft.ein,
       tags: ['Event', 'Live'],
+      isRecurring: draft.isRecurring || false,
+      recurrenceFrequency: draft.recurrenceFrequency,
+      recurrenceEndType: draft.recurrenceEndType,
+      recurrenceEndDate: draft.recurrenceEndDate,
+      recurrenceOccurrenceCount: draft.recurrenceOccurrenceCount
+        ? Number(draft.recurrenceOccurrenceCount)
+        : undefined,
     };
 
     const publishedRecord = await apiClient.publishEvent(payload);
