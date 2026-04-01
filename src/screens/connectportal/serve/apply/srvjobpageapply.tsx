@@ -1,32 +1,47 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+  ActivityIndicator,
+  Image,
   SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/src/redux/reducers/rootReducer';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
+import { submitConnectServeJobApplication } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import ServeJobPageApplySuccess from './srvjobpageapplysuccess';
 import { ServeHeader, useServePalette, BRAND_COLORS } from '../shared';
+import type { User } from '@/utils/types';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeJobApply'>;
 
-// Reusable Input Component
 function FormInput({
   label,
   placeholder,
+  value,
+  onChangeText,
   theme,
   isMultiline = false,
+  keyboardType,
+  autoCapitalize,
+  autoCorrect,
 }: {
   label: string;
   placeholder: string;
+  value: string;
+  onChangeText: (value: string) => void;
   theme: { text: string; inputBg: string; inputBorder: string };
   isMultiline?: boolean;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad';
+  autoCapitalize?: 'none' | 'sentences' | 'words';
+  autoCorrect?: boolean;
 }) {
   return (
     <View style={styles.inputGroup}>
@@ -41,26 +56,63 @@ function FormInput({
           },
           isMultiline && styles.inputBoxMultiline,
         ]}
+        value={value}
+        onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={BRAND_COLORS.grays[500]}
         multiline={isMultiline}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
       />
     </View>
   );
 }
 
+const getDefaultLocation = (user?: User | null) =>
+  String(user?.profile?.location?.address || '').trim();
+
 export default function ServeJobPageApply({ navigation, route }: Props) {
   const palette = useServePalette();
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData as User | null);
   const { serve } = useConnectPortalData();
   const job =
     [...serve.publicRecords, ...serve.organizerRecords].find(
       (record) => record.id === route.params.jobId
     ) || null;
 
-  // State
+  const [name, setName] = useState(String(currentUser?.name || '').trim());
+  const [email, setEmail] = useState(String(currentUser?.email || '').trim());
+  const [phone, setPhone] = useState(String(currentUser?.profile?.contactPhoneNumber || '').trim());
+  const [location, setLocation] = useState(getDefaultLocation(currentUser));
+  const [testimony, setTestimony] = useState('');
   const [agreed, setAgreed] = useState(false);
-  const [hasResume, setHasResume] = useState(true); // Mocking an uploaded state
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const profilePhotoUri = useMemo(
+    () => String(currentUser?.profileImage || '').trim(),
+    [currentUser?.profileImage]
+  );
+
+  const submitDisabled =
+    submitting || !name.trim() || !email.trim() || !phone.trim() || !location.trim() || !agreed;
+
+  if (!job) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
+        <ServeHeader
+          title="Application Details"
+          titleColor={palette.text}
+          onBack={() => navigation.goBack()}
+        />
+        <View style={styles.emptyState}>
+          <Text style={[styles.bodyText, { color: palette.subText }]}>Job not found.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
@@ -79,80 +131,86 @@ export default function ServeJobPageApply({ navigation, route }: Props) {
         >
           <Text style={[styles.jobSummaryEyebrow, { color: palette.subText }]}>Applying for</Text>
           <Text style={[styles.jobSummaryTitle, { color: palette.text }]}>
-            {job?.title || 'Serve opportunity'}
+            {job.title || 'Serve opportunity'}
           </Text>
         </View>
 
-        {/* Profile Photo Section */}
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: palette.text }]}>Profile photo</Text>
           <View style={styles.photoRow}>
-            <View style={styles.avatarPlaceholder}>
-              {/* Fallback avatar if no image is present */}
-              <Text style={styles.avatarText}>👤</Text>
+            {profilePhotoUri ? (
+              <Image source={{ uri: profilePhotoUri }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>👤</Text>
+              </View>
+            )}
+            <View style={styles.profilePhotoCopy}>
+              <Text style={[styles.profilePhotoTitle, { color: palette.text }]}>
+                Using your current profile photo
+              </Text>
+              <Text style={[styles.profilePhotoBody, { color: palette.subText }]}>
+                Update your profile photo from Edit Profile if needed.
+              </Text>
             </View>
-            <TouchableOpacity style={[styles.uploadBtn, { backgroundColor: palette.inputBg }]}>
-              <Text style={[styles.uploadBtnText, { color: palette.text }]}>Upload</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Standard Fields */}
-        <FormInput label="Name" placeholder="Adam smith" theme={palette} />
-        <FormInput label="Email address" placeholder="adamsmith@gmail.com" theme={palette} />
-        <FormInput label="Phone number" placeholder="+1 234 3454 543" theme={palette} />
-        <FormInput label="Home address" placeholder="Toronto" theme={palette} />
-
-        {/* Enhancement: Calling/Testimony Field */}
+        <FormInput
+          label="Name"
+          placeholder="Adam Smith"
+          value={name}
+          onChangeText={setName}
+          theme={palette}
+          autoCapitalize="words"
+        />
+        <FormInput
+          label="Email address"
+          placeholder="adamsmith@gmail.com"
+          value={email}
+          onChangeText={setEmail}
+          theme={palette}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <FormInput
+          label="Phone number"
+          placeholder="+1 234 3454 543"
+          value={phone}
+          onChangeText={setPhone}
+          theme={palette}
+          keyboardType="phone-pad"
+        />
+        <FormInput
+          label="Home address"
+          placeholder="Toronto"
+          value={location}
+          onChangeText={setLocation}
+          theme={palette}
+        />
         <FormInput
           label="Brief Testimony / Calling (Optional)"
           placeholder="Share why you feel called to this opportunity..."
+          value={testimony}
+          onChangeText={setTestimony}
           theme={palette}
           isMultiline
         />
 
-        {/* Resume Upload Section */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: palette.text }]}>Resume</Text>
-          <View
-            style={[
-              styles.resumeCard,
-              { backgroundColor: palette.cardBg, borderColor: palette.inputBorder },
-            ]}
-          >
-            {hasResume ? (
-              <View style={styles.resumeAttached}>
-                <View style={styles.pdfBadge}>
-                  <Text style={styles.pdfText}>PDF</Text>
-                </View>
-                <Text style={[styles.resumeFilename, { color: palette.text }]} numberOfLines={1}>
-                  Adamsmith_resume.pdf
-                </Text>
-                <TouchableOpacity onPress={() => setHasResume(false)}>
-                  <Text style={[styles.deleteIcon, { color: palette.subText }]}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-
-            {hasResume && (
-              <View style={styles.orDivider}>
-                <View style={[styles.line, { backgroundColor: palette.inputBorder }]} />
-                <Text style={[styles.orText, { color: palette.subText }]}>or</Text>
-                <View style={[styles.line, { backgroundColor: palette.inputBorder }]} />
-              </View>
-            )}
-
-            <TouchableOpacity style={styles.cloudUploadBtn}>
-              <Text style={styles.cloudIcon}>☁️</Text>
-              <Text style={styles.cloudUploadText}>Upload</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={[styles.supportText, { color: palette.subText }]}>
-            Supports DOC, PDF, JPG, PNG
+        <View
+          style={[
+            styles.infoCard,
+            { backgroundColor: palette.cardBg, borderColor: palette.inputBorder },
+          ]}
+        >
+          <Text style={[styles.infoTitle, { color: palette.text }]}>Resume</Text>
+          <Text style={[styles.infoBody, { color: palette.subText }]}>
+            Resume upload support is optional for this role and can be added later. Your core
+            application details will be submitted now.
           </Text>
         </View>
 
-        {/* Checkbox Section */}
         <TouchableOpacity
           style={styles.checkboxContainer}
           onPress={() => setAgreed(!agreed)}
@@ -165,17 +223,18 @@ export default function ServeJobPageApply({ navigation, route }: Props) {
               agreed && styles.checkboxChecked,
             ]}
           >
-            {agreed && <Text style={styles.checkmark}>✓</Text>}
+            {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
           </View>
           <Text style={[styles.checkboxLabel, { color: palette.subText }]}>
-            I agree to submit my personal details for perusal by poster
+            I agree to submit my personal details for review by the job poster.
           </Text>
         </TouchableOpacity>
+
+        {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Footer Button */}
       <View
         style={[
           styles.footer,
@@ -183,11 +242,39 @@ export default function ServeJobPageApply({ navigation, route }: Props) {
         ]}
       >
         <TouchableOpacity
-          style={[styles.submitButton, !agreed && styles.submitButtonDisabled]}
-          disabled={!agreed}
-          onPress={() => setShowSuccess(true)}
+          style={[styles.submitButton, submitDisabled && styles.submitButtonDisabled]}
+          disabled={submitDisabled}
+          onPress={async () => {
+            if (submitDisabled) {
+              return;
+            }
+
+            try {
+              setSubmitting(true);
+              setSubmitError('');
+              await submitConnectServeJobApplication(job.id, {
+                name,
+                email,
+                phone,
+                location,
+                profilePhotoUri: profilePhotoUri || undefined,
+                testimony,
+                consentAccepted: true,
+              });
+              await serve.refresh();
+              setShowSuccess(true);
+            } catch (error: any) {
+              setSubmitError(error?.message || 'Unable to submit application right now.');
+            } finally {
+              setSubmitting(false);
+            }
+          }}
         >
-          <Text style={styles.submitButtonText}>Submit</Text>
+          {submitting ? (
+            <ActivityIndicator color={BRAND_COLORS.white} />
+          ) : (
+            <Text style={styles.submitButtonText}>Submit</Text>
+          )}
         </TouchableOpacity>
       </View>
       <ServeJobPageApplySuccess
@@ -212,6 +299,16 @@ const styles = StyleSheet.create({
   scrollContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  bodyText: {
+    fontSize: 15,
+    lineHeight: 22,
   },
   inputGroup: {
     marginBottom: 20,
@@ -263,86 +360,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
+  avatarImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    marginRight: 16,
+  },
   avatarText: {
     fontSize: 30,
   },
-  uploadBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  uploadBtnText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  resumeCard: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  resumeAttached: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 10,
-  },
-  pdfBadge: {
-    backgroundColor: BRAND_COLORS.primaryDark,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    marginRight: 10,
-  },
-  pdfText: {
-    color: BRAND_COLORS.white,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  resumeFilename: {
+  profilePhotoCopy: {
     flex: 1,
+    gap: 4,
+  },
+  profilePhotoTitle: {
+    fontSize: 14,
+    fontFamily: 'Rubik-Medium',
+  },
+  profilePhotoBody: {
     fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'OpenSans-Regular',
   },
-  deleteIcon: {
-    fontSize: 16,
-    padding: 4,
+  infoCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
   },
-  orDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '50%',
-    marginVertical: 10,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-  },
-  orText: {
-    marginHorizontal: 10,
-    fontSize: 12,
-  },
-  cloudUploadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 5,
-  },
-  cloudIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  cloudUploadText: {
-    color: BRAND_COLORS.primaryDark,
+  infoTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    marginBottom: 4,
+    fontFamily: 'Rubik-Medium',
   },
-  supportText: {
-    fontSize: 12,
-    marginTop: 8,
+  infoBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: 'OpenSans-Regular',
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 30,
+    marginBottom: 16,
   },
   checkbox: {
     width: 20,
@@ -366,6 +425,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 22,
+  },
+  errorText: {
+    color: '#c62828',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+    fontFamily: 'OpenSans-Regular',
   },
   bottomSpacer: {
     height: 80,

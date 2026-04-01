@@ -1,5 +1,8 @@
 import React from 'react';
 import {
+  ActionSheetIOS,
+  Alert,
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -61,8 +64,52 @@ export default function ServeJobPage({ navigation, route }: Props) {
     );
   }
 
+  const hasInAppMethod = job.applicationMethods.includes('in_app');
+  const hasExternalLinkMethod =
+    job.applicationMethods.includes('external_link') && !!job.applicationUrl.trim();
+
   const handleApply = () => {
-    navigation.navigate('ConnectServeJobApply', { jobId: job.id });
+    if (hasInAppMethod && hasExternalLinkMethod) {
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            title: 'Choose how to apply',
+            options: ['Cancel', 'Apply in One Body', 'Open external link'],
+            cancelButtonIndex: 0,
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) {
+              navigation.navigate('ConnectServeJobApply', { jobId: job.id });
+            } else if (buttonIndex === 2) {
+              handleOpenLink(job.applicationUrl);
+            }
+          }
+        );
+        return;
+      }
+
+      Alert.alert('Choose how to apply', undefined, [
+        {
+          text: 'Apply in One Body',
+          onPress: () => navigation.navigate('ConnectServeJobApply', { jobId: job.id }),
+        },
+        {
+          text: 'Open external link',
+          onPress: () => handleOpenLink(job.applicationUrl),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
+
+    if (hasInAppMethod) {
+      navigation.navigate('ConnectServeJobApply', { jobId: job.id });
+      return;
+    }
+
+    if (hasExternalLinkMethod) {
+      handleOpenLink(job.applicationUrl);
+    }
   };
 
   const handleOpenLink = (url: string) => {
@@ -168,15 +215,28 @@ export default function ServeJobPage({ navigation, route }: Props) {
           <Text style={[styles.bodyText, { color: palette.text }]}>{job.opportunityType}</Text>
         </DetailCard>
 
-        <DetailCard title="Application URL">
-          <TouchableOpacity
-            style={styles.urlRow}
-            onPress={() => handleOpenLink(job.applicationUrl)}
-          >
-            <Text style={styles.linkIcon}>🔗</Text>
-            <Text style={styles.linkText}>{job.applicationUrl}</Text>
-          </TouchableOpacity>
+        <DetailCard title="Application Methods">
+          <Text style={[styles.bodyText, { color: palette.text }]}>
+            {job.applicationMethods.includes('in_app') ? 'Apply in One Body' : ''}
+            {job.applicationMethods.includes('in_app') &&
+            job.applicationMethods.includes('external_link')
+              ? ' • '
+              : ''}
+            {job.applicationMethods.includes('external_link') ? 'External link' : ''}
+          </Text>
         </DetailCard>
+
+        {hasExternalLinkMethod ? (
+          <DetailCard title="Application URL">
+            <TouchableOpacity
+              style={styles.urlRow}
+              onPress={() => handleOpenLink(job.applicationUrl)}
+            >
+              <Text style={styles.linkIcon}>🔗</Text>
+              <Text style={styles.linkText}>{job.applicationUrl}</Text>
+            </TouchableOpacity>
+          </DetailCard>
+        ) : null}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>

@@ -857,8 +857,8 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
     item.mediaUrl ||
     item.images?.[0];
 
-  const likes = item.likesCount || 0;
-  const comments = item.commentsCount || 0;
+  const likes = item.reactions?.length ?? 0;
+  const comments = item.commentNumber ?? item.comments?.length ?? 0;
 
   return (
     <View style={[styles.cardContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}>

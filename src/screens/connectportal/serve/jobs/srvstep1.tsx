@@ -3,6 +3,7 @@ import {
   ActionSheetIOS,
   Alert,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
+import CustomModal from '@/src/components/CustomModal';
 import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
 import type { Coordinate } from '@/src/screens/connectportal/data';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -39,6 +41,136 @@ const VISIBILITY_OPTIONS: SelectOption[] = [
 ];
 
 const OTHER_ROLE_VALUE = '__other__';
+
+type RolePickerSheetProps = {
+  visible: boolean;
+  options: SelectOption[];
+  selectedValue: string;
+  searchText: string;
+  onClose: () => void;
+  onSearchChange: (value: string) => void;
+  onSelect: (value: string) => void;
+  palette: ReturnType<typeof useCreateFlowPalette>;
+};
+
+function RolePickerSheet({
+  visible,
+  options,
+  selectedValue,
+  searchText,
+  onClose,
+  onSearchChange,
+  onSelect,
+  palette,
+}: RolePickerSheetProps) {
+  return (
+    <CustomModal
+      modalVisible={visible}
+      onclose={onClose}
+      style={[
+        styles.roleSheetModal,
+        {
+          backgroundColor: palette.cardBg,
+        },
+      ]}
+      avoidKeyboard
+    >
+      <View style={[styles.roleSheetContent, { backgroundColor: palette.cardBg }]}>
+        <View style={styles.roleSheetHandleWrap}>
+          <View
+            style={[
+              styles.roleSheetHandle,
+              { backgroundColor: palette.isDark ? '#3a4a50' : '#d1d5db' },
+            ]}
+          />
+        </View>
+
+        <View style={[styles.roleSheetHeader, { borderBottomColor: palette.inputBorder }]}>
+          <Text style={[styles.roleSheetTitle, { color: palette.textPrimary }]}>Role</Text>
+          <TouchableOpacity
+            testID="role-sheet-close"
+            onPress={onClose}
+            style={[
+              styles.roleSheetCloseButton,
+              { backgroundColor: palette.isDark ? '#032f3c' : '#f3f4f6' },
+            ]}
+          >
+            <MaterialCommunityIcons name="close" size={20} color={palette.textPrimary} />
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={[
+            styles.roleSearchWrap,
+            {
+              backgroundColor: palette.inputBg,
+              borderColor: palette.inputBorder,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name="magnify" size={18} color={palette.inputPlaceholder} />
+          <TextInput
+            testID="role-search-input"
+            style={[styles.roleSearchInput, { color: palette.inputText }]}
+            value={searchText}
+            onChangeText={onSearchChange}
+            placeholder="Search roles"
+            placeholderTextColor={palette.inputPlaceholder}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+        </View>
+
+        <ScrollView
+          style={styles.roleOptionsScroll}
+          contentContainerStyle={styles.roleOptionsContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {options.length > 0 ? (
+            options.map((option) => {
+              const isSelected = option.value === selectedValue;
+
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  testID={`role-option-${option.value}`}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.roleOptionButton,
+                    {
+                      backgroundColor: isSelected ? palette.cardActiveBg : 'transparent',
+                    },
+                  ]}
+                  onPress={() => onSelect(option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.roleOptionLabel,
+                      { color: isSelected ? palette.accent : palette.textPrimary },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  {isSelected ? (
+                    <MaterialCommunityIcons name="check" size={18} color={palette.accent} />
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })
+          ) : (
+            <View style={styles.roleEmptyState}>
+              <Text style={[styles.roleEmptyStateText, { color: palette.textSecondary }]}>
+                No roles found.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </CustomModal>
+  );
+}
 
 const createAddressSuggestionFromDraft = (
   address: string,
@@ -124,6 +256,8 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
   const [coordinate, setCoordinate] = useState<Coordinate | undefined>();
   const [addressSuggestion, setAddressSuggestion] = useState<MapSuggestion | null>(null);
   const [addressPickerVisible, setAddressPickerVisible] = useState(false);
+  const [roleSheetVisible, setRoleSheetVisible] = useState(false);
+  const [roleSearchText, setRoleSearchText] = useState('');
 
   const roleOptions = useMemo(() => {
     const seenValues = new Set<string>();
@@ -143,6 +277,15 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
 
     return [...mergedOptions, { label: 'Other', value: OTHER_ROLE_VALUE }];
   }, [serve.roleTypeOptions]);
+
+  const filteredRoleOptions = useMemo(() => {
+    const normalizedSearch = roleSearchText.trim().toLowerCase();
+    if (!normalizedSearch) {
+      return roleOptions;
+    }
+
+    return roleOptions.filter((option) => option.label.toLowerCase().includes(normalizedSearch));
+  }, [roleOptions, roleSearchText]);
 
   useMountEffect(() => {
     let isActive = true;
@@ -260,6 +403,23 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
     });
   };
 
+  const closeRoleSheet = () => {
+    setRoleSheetVisible(false);
+    setRoleSearchText('');
+  };
+
+  const handleRoleSelection = (value: string) => {
+    setSelectedRoleValue(value);
+    if (value === OTHER_ROLE_VALUE) {
+      setTitle(customRole);
+      closeRoleSheet();
+      return;
+    }
+
+    setTitle(value);
+    closeRoleSheet();
+  };
+
   const nextDisabled =
     !title.trim() ||
     !description.trim() ||
@@ -346,22 +506,13 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Role</Text>
           <TouchableOpacity
+            testID="role-picker-trigger"
             activeOpacity={0.85}
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
             ]}
-            onPress={() =>
-              showOptionPicker('Role', roleOptions, (value) => {
-                setSelectedRoleValue(value);
-                if (value === OTHER_ROLE_VALUE) {
-                  setTitle(customRole);
-                  return;
-                }
-
-                setTitle(value);
-              })
-            }
+            onPress={() => setRoleSheetVisible(true)}
           >
             <Text style={[styles.inputButtonText, { color: roleDisplayColor }]}>
               {roleDisplayValue || (isOtherRoleSelected ? 'Enter a custom role' : 'Choose a role')}
@@ -479,6 +630,17 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
         types={[MapBoxTypes.address, MapBoxTypes.place, MapBoxTypes.locality]}
         modalTitle={<Text style={[styles.mapTitle, { color: palette.textPrimary }]}>Location</Text>}
       />
+
+      <RolePickerSheet
+        visible={roleSheetVisible}
+        options={filteredRoleOptions}
+        selectedValue={selectedRoleValue}
+        searchText={roleSearchText}
+        onClose={closeRoleSheet}
+        onSearchChange={setRoleSearchText}
+        onSelect={handleRoleSelection}
+        palette={palette}
+      />
     </>
   );
 }
@@ -547,6 +709,101 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     lineHeight: 18,
+    fontFamily: 'OpenSans-Regular',
+  },
+  roleSheetModal: {
+    justifyContent: 'flex-end',
+    margin: 0,
+    height: '88%',
+    minHeight: 420,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: 'hidden',
+  },
+  roleSheetContent: {
+    flex: 1,
+  },
+  roleSheetHandleWrap: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+  roleSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 999,
+  },
+  roleSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  roleSheetTitle: {
+    fontSize: 18,
+    fontFamily: 'Rubik-Bold',
+  },
+  roleSheetCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleSearchWrap: {
+    minHeight: 52,
+    marginHorizontal: 20,
+    marginTop: 14,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    opacity: 0.96,
+  },
+  roleSearchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 14,
+    fontFamily: 'OpenSans-Regular',
+  },
+  roleOptionsScroll: {
+    flex: 1,
+    marginTop: 12,
+  },
+  roleOptionsContent: {
+    paddingHorizontal: 12,
+    paddingBottom: 24,
+  },
+  roleOptionButton: {
+    minHeight: 56,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  roleOptionLabel: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: 'Rubik-Medium',
+    paddingRight: 12,
+  },
+  roleEmptyState: {
+    minHeight: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleEmptyStateText: {
+    fontSize: 14,
+    lineHeight: 20,
     fontFamily: 'OpenSans-Regular',
   },
   mapTitle: {

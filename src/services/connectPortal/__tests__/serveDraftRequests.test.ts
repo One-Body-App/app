@@ -55,6 +55,7 @@ describe('serve draft request sanitization', () => {
       opportunityType: ' Full time ',
       compensationAmount: '   ',
       compensationFrequency: '',
+      applicationMethods: ['external_link', 'in_app', 'external_link'] as any,
       applicationUrl: '   ',
       lastCompletedStep: 2,
     } as any);
@@ -71,6 +72,8 @@ describe('serve draft request sanitization', () => {
           coordinate: [-84.388, 33.749],
           locationQuery: '123 Main St',
           opportunityType: 'Full time',
+          applicationMethods: ['external_link', 'in_app'],
+          applicationUrl: '',
           lastCompletedStep: 2,
         },
       })

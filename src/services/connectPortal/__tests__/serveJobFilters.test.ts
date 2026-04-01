@@ -22,6 +22,7 @@ const createServeJob = (
   opportunityType: overrides.opportunityType || 'Full-time',
   compensationAmount: overrides.compensationAmount || '',
   compensationFrequency: overrides.compensationFrequency || '',
+  applicationMethods: overrides.applicationMethods || [],
   applicationUrl: overrides.applicationUrl || '',
   organizationName: overrides.organizationName || '',
   denomination: overrides.denomination || '',

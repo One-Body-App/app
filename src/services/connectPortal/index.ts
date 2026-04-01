@@ -24,6 +24,8 @@ import type {
   ConnectPortalRecurrenceEndType,
   ConnectPortalRecurrenceFrequency,
   ConnectPortalResumeResolution,
+  ConnectServeJobApplicationMethod,
+  ConnectServeJobApplicationRecord,
   ConnectServeJobCompensationFrequency,
   ConnectServeJobDraft,
   ConnectServeJobPublished,
@@ -1045,6 +1047,62 @@ const normalizeServeJobCompensationFrequency = (
   return '';
 };
 
+const normalizeServeJobApplicationMethods = (
+  value: unknown
+): ConnectServeJobApplicationMethod[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value.filter(
+        (entry): entry is ConnectServeJobApplicationMethod =>
+          entry === 'in_app' || entry === 'external_link'
+      )
+    )
+  );
+};
+
+const normalizeServeJobApplicationRecord = (
+  value: unknown
+): ConnectServeJobApplicationRecord | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const item = value as Partial<ConnectServeJobApplicationRecord>;
+  let id = '';
+  if (typeof item.id === 'string') {
+    id = item.id;
+  } else if (typeof (item as any)._id === 'string') {
+    id = (item as any)._id;
+  }
+
+  if (!id) {
+    return null;
+  }
+
+  return {
+    id,
+    jobId: String(item.jobId || ''),
+    ownerUserId: String(item.ownerUserId || ''),
+    applicantUserId: String(item.applicantUserId || ''),
+    createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+    name: String(item.name || ''),
+    email: String(item.email || ''),
+    phone: String(item.phone || ''),
+    location: String(item.location || ''),
+    profilePhotoUri: String(item.profilePhotoUri || ''),
+    testimony: String(item.testimony || ''),
+    consentAccepted: item.consentAccepted === true,
+    resumeFileName: String(item.resumeFileName || ''),
+    resumeFileUrl: String(item.resumeFileUrl || ''),
+    resumeMimeType: String(item.resumeMimeType || ''),
+  };
+};
+
 const normalizeServeJobRecord = (value: unknown): ConnectServeJobRecord | null => {
   if (!value || typeof value !== 'object') {
     return null;
@@ -1092,6 +1150,7 @@ const normalizeServeJobRecord = (value: unknown): ConnectServeJobRecord | null =
     opportunityType: String(item.opportunityType || ''),
     compensationAmount: String(item.compensationAmount || ''),
     compensationFrequency: normalizeServeJobCompensationFrequency(item.compensationFrequency),
+    applicationMethods: normalizeServeJobApplicationMethods(item.applicationMethods),
     applicationUrl: String(item.applicationUrl || ''),
     organizationName: String(item.organizationName || ''),
     denomination: String(item.denomination || ''),
@@ -1255,11 +1314,12 @@ const buildConnectServeJobDraftUpdateParams = (updates: Partial<ConnectServeJobD
     params.compensationFrequency = updates.compensationFrequency;
   }
 
+  if (updates.applicationMethods !== undefined) {
+    params.applicationMethods = normalizeServeJobApplicationMethods(updates.applicationMethods);
+  }
+
   if (updates.applicationUrl !== undefined) {
-    const applicationUrl = trimStringOrUndefined(updates.applicationUrl);
-    if (applicationUrl !== undefined) {
-      params.applicationUrl = applicationUrl;
-    }
+    params.applicationUrl = String(updates.applicationUrl || '').trim();
   }
 
   if (updates.lastCompletedStep !== undefined) {
@@ -1355,6 +1415,93 @@ export const publishConnectServeJobDraft = async (
   }
 
   return publishedRecord;
+};
+
+export const listConnectServeJobApplications = async (
+  jobId: string
+): Promise<ConnectServeJobApplicationRecord[]> => {
+  const result = await ApiCall<any[]>({
+    route: `connect/jobs/${jobId}/applications`,
+    verb: 'get',
+    token: true,
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    throw new Error((result.response as any)?.message || 'Unable to load job applications');
+  }
+
+  return Array.isArray(result.response)
+    ? (result.response
+        .map(normalizeServeJobApplicationRecord)
+        .filter(Boolean) as ConnectServeJobApplicationRecord[])
+    : [];
+};
+
+export const submitConnectServeJobApplication = async (
+  jobId: string,
+  payload: {
+    name: string;
+    email: string;
+    phone: string;
+    location: string;
+    profilePhotoUri?: string;
+    testimony?: string;
+    consentAccepted: boolean;
+    resumeFile?: {
+      uri: string;
+      name: string;
+      type: string;
+    };
+  }
+): Promise<ConnectServeJobApplicationRecord> => {
+  const hasResumeFile =
+    !!payload.resumeFile?.uri && !!payload.resumeFile?.name && !!payload.resumeFile?.type;
+
+  const params = hasResumeFile ? new FormData() : ({} as Record<string, unknown>);
+  const appendValue = (key: string, value: unknown) => {
+    if (value === undefined || value === null) {
+      return;
+    }
+
+    if (params instanceof FormData) {
+      params.append(key, String(value));
+    } else {
+      params[key] = value;
+    }
+  };
+
+  appendValue('name', payload.name.trim());
+  appendValue('email', payload.email.trim().toLowerCase());
+  appendValue('phone', payload.phone.trim());
+  appendValue('location', payload.location.trim());
+  appendValue('profilePhotoUri', payload.profilePhotoUri?.trim());
+  appendValue('testimony', payload.testimony?.trim());
+  appendValue('consentAccepted', payload.consentAccepted);
+
+  if (params instanceof FormData && hasResumeFile) {
+    params.append('resumeFile', payload.resumeFile as any);
+  }
+
+  const result = await ApiCall<any>({
+    route: `connect/jobs/${jobId}/apply`,
+    verb: 'post',
+    token: true,
+    params,
+    isFormUrlEncode: params instanceof FormData,
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    throw new Error((result.response as any)?.message || 'Unable to submit application');
+  }
+
+  const record = normalizeServeJobApplicationRecord(result.response);
+  if (!record) {
+    throw new Error('Unable to submit application');
+  }
+
+  return record;
 };
 
 export const getConnectServeResumeRouteName = (

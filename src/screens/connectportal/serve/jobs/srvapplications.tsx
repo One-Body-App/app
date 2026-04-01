@@ -1,39 +1,40 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
+  ActivityIndicator,
   FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
+import {
+  listConnectServeJobApplications,
+  formatConnectPortalDate,
+} from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
-import { ServeHeader, useServePalette, BRAND_COLORS, getServeApplicantsByJobId } from '../shared';
+import type { ConnectServeJobApplicationRecord } from '@/src/services/connectPortal/types';
+import { ServeHeader, useServePalette, BRAND_COLORS } from '../shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeApplications'>;
 
-// Reusable Applicant Card Component
 function ApplicantCard({
-  name,
-  date,
-  email,
-  phone,
-  location,
+  applicant,
   theme,
   onOptionsPress,
 }: {
-  name: string;
-  date: string;
-  email: string;
-  phone: string;
-  location: string;
+  applicant: ConnectServeJobApplicationRecord;
   theme: { cardBg: string; borderColor: string; text: string; subText: string };
   onOptionsPress: () => void;
 }) {
+  const submittedDate = applicant.createdAt
+    ? formatConnectPortalDate(String(applicant.createdAt).slice(0, 10))
+    : 'Recently submitted';
+
   return (
     <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
       <View style={styles.cardHeader}>
@@ -41,7 +42,7 @@ function ApplicantCard({
           <View style={styles.avatarPlaceholder}>
             <Text style={styles.avatarIcon}>👤</Text>
           </View>
-          <Text style={[styles.applicantName, { color: theme.text }]}>{name}</Text>
+          <Text style={[styles.applicantName, { color: theme.text }]}>{applicant.name}</Text>
         </View>
         <TouchableOpacity onPress={onOptionsPress} style={styles.optionsButton}>
           <Text style={[styles.optionsIcon, { color: theme.subText }]}>⋮</Text>
@@ -51,20 +52,28 @@ function ApplicantCard({
       <View style={styles.metaContainer}>
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>📅</Text>
-          <Text style={[styles.metaText, { color: theme.subText }]}>{date}</Text>
+          <Text style={[styles.metaText, { color: theme.subText }]}>{submittedDate}</Text>
         </View>
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>✉️</Text>
-          <Text style={[styles.metaText, { color: theme.subText }]}>{email}</Text>
+          <Text style={[styles.metaText, { color: theme.subText }]}>{applicant.email}</Text>
         </View>
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>📞</Text>
-          <Text style={[styles.metaText, { color: theme.subText }]}>{phone}</Text>
+          <Text style={[styles.metaText, { color: theme.subText }]}>{applicant.phone}</Text>
         </View>
         <View style={styles.metaRow}>
           <Text style={styles.metaIcon}>📍</Text>
-          <Text style={[styles.metaText, { color: theme.subText }]}>{location}</Text>
+          <Text style={[styles.metaText, { color: theme.subText }]}>{applicant.location}</Text>
         </View>
+        {applicant.testimony ? (
+          <View style={styles.metaRow}>
+            <Text style={styles.metaIcon}>✍️</Text>
+            <Text style={[styles.metaText, { color: theme.subText }]} numberOfLines={3}>
+              {applicant.testimony}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -76,18 +85,51 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
   const job = serve.organizerRecords.find((record) => record.id === route.params.jobId) || null;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const applicants = getServeApplicantsByJobId(route.params.jobId);
-  const filteredApplicants = applicants.filter((applicant) => {
-    const query = searchQuery.trim().toLowerCase();
+  const [loading, setLoading] = useState(true);
+  const [applications, setApplications] = useState<ConnectServeJobApplicationRecord[]>([]);
+  const [error, setError] = useState('');
 
+  useEffect(() => {
+    let isActive = true;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const records = await listConnectServeJobApplications(route.params.jobId);
+        if (!isActive) {
+          return;
+        }
+        setApplications(records);
+      } catch (err: any) {
+        if (!isActive) {
+          return;
+        }
+        setError(err?.message || 'Unable to load applications.');
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [route.params.jobId]);
+
+  const filteredApplicants = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     if (!query) {
-      return true;
+      return applications;
     }
 
-    return [applicant.name, applicant.email, applicant.location].some((value) =>
-      value.toLowerCase().includes(query)
+    return applications.filter((applicant) =>
+      [applicant.name, applicant.email, applicant.location, applicant.phone].some((value) =>
+        value.toLowerCase().includes(query)
+      )
     );
-  });
+  }, [applications, searchQuery]);
 
   const handleExportCSV = () => {
     console.log('Trigger CSV Export');
@@ -111,9 +153,7 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
         </View>
       ) : (
         <>
-          {/* Sticky Context Info & Actions */}
           <View style={styles.stickyHeaderContent}>
-            {/* Current Job Context */}
             <View
               style={[
                 styles.jobContextCard,
@@ -122,18 +162,15 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
             >
               <Text style={[styles.jobContextTitle, { color: palette.text }]}>{job.title}</Text>
               <Text style={[styles.jobContextMeta, { color: palette.subText }]}>
-                {filteredApplicants.length || job.applicantCount} applicant
-                {filteredApplicants.length === 1 || job.applicantCount === 1 ? '' : 's'}
+                {applications.length} applicant{applications.length === 1 ? '' : 's'}
               </Text>
             </View>
 
-            {/* Export Button */}
             <TouchableOpacity style={styles.exportButton} onPress={handleExportCSV}>
               <Text style={styles.exportIcon}>↑</Text>
               <Text style={styles.exportText}>Export CSV</Text>
             </TouchableOpacity>
 
-            {/* Search Bar */}
             <View
               style={[
                 styles.searchBox,
@@ -151,41 +188,42 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          {/* Applicant List */}
-          <FlatList
-            data={filteredApplicants}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={[styles.emptyStateTitle, { color: palette.text }]}>
-                  No applicants yet
-                </Text>
-                <Text style={[styles.emptyStateText, { color: palette.subText }]}>
-                  New applications for this role will appear here.
-                </Text>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <ApplicantCard
-                name={item.name}
-                date={item.date}
-                email={item.email}
-                phone={item.phone}
-                location={item.location}
-                theme={palette}
-                onOptionsPress={() => handleApplicantOptions(item.id)}
-              />
-            )}
-            removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-            initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-            maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-            updateCellsBatchingPeriod={
-              STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
-            }
-            windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
-          />
+          {loading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator color={BRAND_COLORS.primaryDark} />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredApplicants}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={[styles.emptyStateTitle, { color: palette.text }]}>
+                    {error ? 'Unable to load applicants' : 'No applicants yet'}
+                  </Text>
+                  <Text style={[styles.emptyStateText, { color: palette.subText }]}>
+                    {error || 'New applications for this role will appear here.'}
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <ApplicantCard
+                  applicant={item}
+                  theme={palette}
+                  onOptionsPress={() => handleApplicantOptions(item.id)}
+                />
+              )}
+              removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+              initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+              maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+              updateCellsBatchingPeriod={
+                STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+              }
+              windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
+            />
+          )}
         </>
       )}
     </SafeAreaView>
@@ -206,6 +244,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   jobContextCard: {
     borderWidth: 1,
@@ -260,88 +303,84 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
+    fontFamily: 'OpenSans-Regular',
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 32,
+  },
+  card: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatarPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EAF6FA',
+    marginRight: 12,
+  },
+  avatarIcon: {
+    fontSize: 18,
+  },
+  applicantName: {
+    fontSize: 16,
+    fontFamily: 'Rubik-Medium',
+  },
+  optionsButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  optionsIcon: {
+    fontSize: 18,
+  },
+  metaContainer: {
+    gap: 10,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  metaIcon: {
+    fontSize: 14,
+    marginRight: 8,
+    marginTop: 2,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'OpenSans-Regular',
   },
   emptyState: {
-    borderWidth: 1,
-    borderColor: BRAND_COLORS.grays[100],
-    borderRadius: 12,
-    padding: 20,
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 32,
   },
   emptyStateTitle: {
     fontSize: 18,
+    marginBottom: 8,
     fontFamily: 'Rubik-Medium',
-    marginBottom: 6,
   },
   emptyStateText: {
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
     fontFamily: 'OpenSans-Regular',
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: BRAND_COLORS.grays[200],
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarIcon: {
-    fontSize: 20,
-  },
-  applicantName: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  optionsButton: {
-    padding: 4,
-    marginTop: -4,
-    marginRight: -4,
-  },
-  optionsIcon: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  metaContainer: {
-    paddingLeft: 52, // Align with text next to avatar
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  metaIcon: {
-    fontSize: 12,
-    marginRight: 8,
-  },
-  metaText: {
-    fontSize: 13,
   },
 });

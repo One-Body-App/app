@@ -1,7 +1,7 @@
 /* eslint-disable global-require */
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { ActionSheetIOS, TextInput, TouchableOpacity } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ServeCreateJobStep1 from '../srvstep1';
 
 const mockCreateFlowLayout = jest.fn();
@@ -42,6 +42,19 @@ jest.mock('@/src/services/connectPortal', () => ({
 jest.mock('@/src/services/connectPortal/provider', () => ({
   useConnectPortalData: () => mockUseConnectPortalData(),
 }));
+
+jest.mock('@/src/components/CustomModal', () => {
+  const ReactLocal = require('react');
+  const { View: MockView } = require('react-native');
+
+  return function MockCustomModal(props: any) {
+    if (!props.modalVisible) {
+      return null;
+    }
+
+    return ReactLocal.createElement(MockView, { testID: 'mock-custom-modal' }, props.children);
+  };
+});
 
 jest.mock('@/src/hooks/useMountEffect', () => (callback: () => void) => {
   const ReactLocal = require('react');
@@ -84,9 +97,6 @@ describe('ServeCreateJobStep1', () => {
   });
 
   it('shows church role options and excludes opportunity types from the role picker', () => {
-    const actionSheetSpy = jest
-      .spyOn(ActionSheetIOS, 'showActionSheetWithOptions')
-      .mockImplementation(jest.fn());
     let testRenderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
@@ -100,26 +110,57 @@ describe('ServeCreateJobStep1', () => {
       );
     });
 
-    const buttons = testRenderer!.root.findAllByType(TouchableOpacity);
     act(() => {
-      buttons[1].props.onPress();
+      testRenderer!.root.findByProps({ testID: 'role-picker-trigger' }).props.onPress();
     });
 
-    const options = actionSheetSpy.mock.calls.at(-1)?.[0]?.options as string[];
-    expect(options).toContain('Interim Pastor');
-    expect(options).toContain('Drummer');
-    expect(options).toContain('Church Administrator');
-    expect(options).toContain('Other');
-    expect(options).not.toContain('Full time');
-    expect(options).not.toContain('Part time');
-    expect(options).not.toContain('Contract');
-    expect(options).not.toContain('Volunteer');
+    const texts = testRenderer!.root
+      .findAllByType(Text)
+      .map((node) => node.props.children)
+      .filter((value): value is string => typeof value === 'string');
+
+    expect(texts).toContain('Interim Pastor');
+    expect(texts).toContain('Drummer');
+    expect(texts).toContain('Church Administrator');
+    expect(texts).toContain('Other');
+    expect(texts).not.toContain('Full time');
+    expect(texts).not.toContain('Part time');
+    expect(texts).not.toContain('Contract');
+    expect(texts).not.toContain('Volunteer');
+  });
+
+  it('filters role options case-insensitively from the search input', () => {
+    let testRenderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      testRenderer = TestRenderer.create(
+        <ServeCreateJobStep1
+          navigation={{ navigate: jest.fn() } as any}
+          route={
+            { key: 'serve-step-1', name: 'ConnectServeCreateJobStep1', params: undefined } as any
+          }
+        />
+      );
+    });
+
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-picker-trigger' }).props.onPress();
+    });
+
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-search-input' }).props.onChangeText('drUM');
+    });
+
+    const texts = testRenderer!.root
+      .findAllByType(Text)
+      .map((node) => node.props.children)
+      .filter((value): value is string => typeof value === 'string');
+
+    expect(texts).toContain('Drummer');
+    expect(texts).not.toContain('Interim Pastor');
   });
 
   it('shows a custom role input when Other is selected', () => {
-    const actionSheetSpy = jest
-      .spyOn(ActionSheetIOS, 'showActionSheetWithOptions')
-      .mockImplementation(jest.fn());
     let testRenderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
@@ -133,15 +174,12 @@ describe('ServeCreateJobStep1', () => {
       );
     });
 
-    const buttons = testRenderer!.root.findAllByType(TouchableOpacity);
     act(() => {
-      buttons[1].props.onPress();
+      testRenderer!.root.findByProps({ testID: 'role-picker-trigger' }).props.onPress();
     });
 
-    const selectRole = actionSheetSpy.mock.calls.at(-1)?.[1] as (index: number) => void;
-    const options = actionSheetSpy.mock.calls.at(-1)?.[0]?.options as string[];
     act(() => {
-      selectRole(options.indexOf('Other'));
+      testRenderer!.root.findByProps({ testID: `role-option-__other__` }).props.onPress();
     });
 
     const customRoleInput = testRenderer!.root
@@ -209,9 +247,6 @@ describe('ServeCreateJobStep1', () => {
   });
 
   it('stores the selected predefined role in the draft title', async () => {
-    const actionSheetSpy = jest
-      .spyOn(ActionSheetIOS, 'showActionSheetWithOptions')
-      .mockImplementation(jest.fn());
     const refresh = jest.fn(() => Promise.resolve());
     mockUseConnectPortalData.mockReturnValue({
       serve: {
@@ -234,15 +269,12 @@ describe('ServeCreateJobStep1', () => {
       );
     });
 
-    const buttons = testRenderer!.root.findAllByType(TouchableOpacity);
     act(() => {
-      buttons[1].props.onPress();
+      testRenderer!.root.findByProps({ testID: 'role-picker-trigger' }).props.onPress();
     });
 
-    const selectRole = actionSheetSpy.mock.calls.at(-1)?.[1] as (index: number) => void;
-    const options = actionSheetSpy.mock.calls.at(-1)?.[0]?.options as string[];
     act(() => {
-      selectRole(options.indexOf('Interim Pastor'));
+      testRenderer!.root.findByProps({ testID: 'role-option-Interim Pastor' }).props.onPress();
     });
 
     const layoutProps = mockCreateFlowLayout.mock.calls.at(-1)?.[0] as any;
@@ -288,5 +320,49 @@ describe('ServeCreateJobStep1', () => {
       .findAllByType(TextInput)
       .find((input) => input.props.placeholder === 'Enter the role');
     expect(customRoleInput?.props.value).toBe('Liturgical Arts Coordinator');
+  });
+
+  it('resets the role search when the sheet closes', () => {
+    let testRenderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      testRenderer = TestRenderer.create(
+        <ServeCreateJobStep1
+          navigation={{ navigate: jest.fn() } as any}
+          route={
+            { key: 'serve-step-1', name: 'ConnectServeCreateJobStep1', params: undefined } as any
+          }
+        />
+      );
+    });
+
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-picker-trigger' }).props.onPress();
+    });
+
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-search-input' }).props.onChangeText('music');
+    });
+
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-sheet-close' }).props.onPress();
+    });
+
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-picker-trigger' }).props.onPress();
+    });
+
+    const reopenedSearchInput = testRenderer!.root.findByProps({ testID: 'role-search-input' });
+    expect(reopenedSearchInput.props.value).toBe('');
+    expect(
+      testRenderer!.root
+        .findAllByType(Text)
+        .some((node) => node.props.children === 'Music Director')
+    ).toBe(true);
+    expect(
+      testRenderer!.root
+        .findAllByType(Text)
+        .some((node) => node.props.children === 'Interim Pastor')
+    ).toBe(true);
   });
 });

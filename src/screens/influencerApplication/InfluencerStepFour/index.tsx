@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -12,9 +13,12 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
 import CustomModal from '@/src/components/CustomModal';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { FeedTypes } from '@/src/screens/home';
+import { ApiCall } from '@/src/services/api';
 import { Colors } from '@/src/styles';
 import {
   APP_HEADER_ROW_HEIGHT,
@@ -57,25 +61,15 @@ const CONTENT_TYPES: ContentTypeOption[] = [
   { id: 'images', label: 'Images', icon: 'image' },
 ];
 
-const TOPICS = [
-  { id: 'faith', label: 'Faith & Theology' },
-  { id: 'marriage', label: 'Marriage & Family' },
-  { id: 'youth', label: 'Youth Ministry' },
-  { id: 'worship', label: 'Worship & Music' },
-  { id: 'bible', label: 'Bible Study' },
-  { id: 'apologetics', label: 'Apologetics' },
-  { id: 'missions', label: 'Missions & Outreach' },
-  { id: 'prayer', label: 'Prayer & Devotion' },
-  { id: 'leadership', label: 'Leadership' },
-  { id: 'current_events', label: 'Current Events' },
-];
-
 function CreatorStepFour({ navigation, route }: Props) {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
+  const userToken = useSelector((state: RootState) => state.auth.userToken);
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [interests, setInterests] = useState<Array<{ _id: string; name: string }>>([]);
+  const [loadingInterests, setLoadingInterests] = useState(true);
 
   const palette = useMemo(
     (): ScreenPalette =>
@@ -123,6 +117,21 @@ function CreatorStepFour({ navigation, route }: Props) {
   );
 
   const previousData = useMemo(() => route.params?.data ?? {}, [route.params]);
+
+  useEffect(() => {
+    if (!userToken) return;
+    ApiCall<Array<{ _id: string; name: string }>>({
+      route: 'tags/interest',
+      verb: 'get',
+      token: userToken,
+    })
+      .then((res) => {
+        if (res.status === 200 && Array.isArray(res.data)) {
+          setInterests(res.data);
+        }
+      })
+      .finally(() => setLoadingInterests(false));
+  }, [userToken]);
 
   const toggleType = useCallback((id: string) => {
     setSelectedTypes((current) =>
@@ -248,7 +257,10 @@ function CreatorStepFour({ navigation, route }: Props) {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Topics</Text>
+            <View>
+              <Text style={styles.sectionTitle}>Your Content Genre</Text>
+              <Text style={styles.sectionSubLabel}>Select up to 5</Text>
+            </View>
             <Text
               style={[
                 styles.sectionSub,
@@ -259,41 +271,47 @@ function CreatorStepFour({ navigation, route }: Props) {
             </Text>
           </View>
 
-          <View style={styles.tagsContainer}>
-            {TOPICS.map((topic) => {
-              const isActive = selectedTopics.includes(topic.id);
-              const isDisabled = !isActive && selectedTopics.length >= 5;
+          {loadingInterests ? (
+            <ActivityIndicator color={palette.accent} style={styles.interestsLoader} />
+          ) : (
+            <View style={styles.tagsContainer}>
+              {interests.map((interest) => {
+                const isActive = selectedTopics.includes(interest._id);
+                const isDisabled = !isActive && selectedTopics.length >= 5;
 
-              return (
-                <TouchableOpacity
-                  key={topic.id}
-                  activeOpacity={0.7}
-                  disabled={isDisabled}
-                  style={[
-                    styles.tagButton,
-                    {
-                      backgroundColor: isActive ? palette.primary : palette.surface,
-                      borderColor: isActive ? palette.primary : palette.subtleBorder,
-                      opacity: isDisabled ? 0.4 : 1,
-                    },
-                  ]}
-                  onPress={() => toggleTopic(topic.id)}
-                >
-                  {isActive && (
-                    <MaterialCommunityIcons
-                      name="check-circle"
-                      size={16}
-                      color="#FFFFFF"
-                      style={styles.tagIcon}
-                    />
-                  )}
-                  <Text style={[styles.tagText, { color: isActive ? '#FFFFFF' : palette.primary }]}>
-                    {topic.label.toLowerCase()}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                return (
+                  <TouchableOpacity
+                    key={interest._id}
+                    activeOpacity={0.7}
+                    disabled={isDisabled}
+                    style={[
+                      styles.tagButton,
+                      {
+                        backgroundColor: isActive ? palette.primary : palette.surface,
+                        borderColor: isActive ? palette.primary : palette.subtleBorder,
+                        opacity: isDisabled ? 0.4 : 1,
+                      },
+                    ]}
+                    onPress={() => toggleTopic(interest._id)}
+                  >
+                    {isActive && (
+                      <MaterialCommunityIcons
+                        name="check-circle"
+                        size={16}
+                        color="#FFFFFF"
+                        style={styles.tagIcon}
+                      />
+                    )}
+                    <Text
+                      style={[styles.tagText, { color: isActive ? '#FFFFFF' : palette.primary }]}
+                    >
+                      {interest.name.toLowerCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         <View style={styles.impactCardWrapper}>
@@ -481,6 +499,16 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
       fontSize: 16,
       lineHeight: 24,
       fontFamily: 'OpenSans-SemiBold',
+    },
+    sectionSubLabel: {
+      color: palette.muted,
+      fontSize: 12,
+      lineHeight: 18,
+      fontFamily: 'OpenSans-Regular',
+      marginTop: 2,
+    },
+    interestsLoader: {
+      marginVertical: 16,
     },
     tagsContainer: {
       flexDirection: 'row',

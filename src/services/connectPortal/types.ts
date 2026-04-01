@@ -173,6 +173,8 @@ export type ConnectServeJobCompensationFrequency =
   | 'per_year'
   | '';
 
+export type ConnectServeJobApplicationMethod = 'in_app' | 'external_link';
+
 export type ConnectServeJobRecordBase = {
   id: string;
   createdAt: string;
@@ -191,6 +193,7 @@ export type ConnectServeJobRecordBase = {
   opportunityType: string;
   compensationAmount: string;
   compensationFrequency: ConnectServeJobCompensationFrequency;
+  applicationMethods: ConnectServeJobApplicationMethod[];
   applicationUrl: string;
   organizationName: string;
   denomination: string;
@@ -206,6 +209,25 @@ export type ConnectServeJobPublished = ConnectServeJobRecordBase & {
 };
 
 export type ConnectServeJobRecord = ConnectServeJobDraft | ConnectServeJobPublished;
+
+export type ConnectServeJobApplicationRecord = {
+  id: string;
+  jobId: string;
+  ownerUserId: string;
+  applicantUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  profilePhotoUri: string;
+  testimony: string;
+  consentAccepted: boolean;
+  resumeFileName: string;
+  resumeFileUrl: string;
+  resumeMimeType: string;
+};
 
 export type ConnectPortalResumeResolution =
   | {

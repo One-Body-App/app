@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -18,6 +18,7 @@ import {
   saveConnectServeJobDraft,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import type { ConnectServeJobApplicationMethod } from '@/src/services/connectPortal/types';
 import { CreateFlowLayout, useCreateFlowPalette } from '../../go/createflow/shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
@@ -45,6 +46,23 @@ const COMPENSATION_FREQUENCY_OPTIONS: SelectOption[] = [
 const HIRING_STATUS_OPTIONS: SelectOption[] = [
   { label: 'Open', value: 'open' },
   { label: 'Closed', value: 'closed' },
+];
+
+const APPLICATION_METHOD_OPTIONS: Array<{
+  title: string;
+  description: string;
+  value: ConnectServeJobApplicationMethod;
+}> = [
+  {
+    title: 'Apply in One Body',
+    description: 'Let candidates complete their application directly in the app.',
+    value: 'in_app',
+  },
+  {
+    title: 'External link',
+    description: 'Send candidates to your existing application URL.',
+    value: 'external_link',
+  },
 ];
 
 const showOptionPicker = (
@@ -110,6 +128,9 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
   const [compensationFrequency, setCompensationFrequency] = useState<
     '' | 'per_hour' | 'per_week' | 'per_month' | 'per_year'
   >('');
+  const [applicationMethods, setApplicationMethods] = useState<ConnectServeJobApplicationMethod[]>(
+    []
+  );
   const [applicationUrl, setApplicationUrl] = useState('');
   const [hiringStatus, setHiringStatus] = useState<'open' | 'closed'>('open');
 
@@ -131,6 +152,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
       setOpportunityType(draft.opportunityType);
       setCompensationAmount(draft.compensationAmount);
       setCompensationFrequency(draft.compensationFrequency);
+      setApplicationMethods(draft.applicationMethods || []);
       setApplicationUrl(draft.applicationUrl);
       setHiringStatus(draft.hiringStatus);
       setLoading(false);
@@ -141,6 +163,8 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
     };
   });
 
+  const hasExternalLinkMethod = applicationMethods.includes('external_link');
+
   const persistDraft = async (completedStep?: 1 | 2) => {
     if (!draftId) {
       return null;
@@ -150,9 +174,24 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
       opportunityType,
       compensationAmount,
       compensationFrequency,
-      applicationUrl: applicationUrl.trim(),
+      applicationMethods,
+      applicationUrl: hasExternalLinkMethod ? applicationUrl.trim() : '',
       hiringStatus,
       lastCompletedStep: completedStep,
+    });
+  };
+
+  const toggleApplicationMethod = (method: ConnectServeJobApplicationMethod) => {
+    setApplicationMethods((current) => {
+      const next = current.includes(method)
+        ? current.filter((value) => value !== method)
+        : [...current, method];
+
+      if (!next.includes('external_link')) {
+        setApplicationUrl('');
+      }
+
+      return next;
     });
   };
 
@@ -161,7 +200,18 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
     !opportunityType.trim() ||
     !compensationAmount.trim() ||
     !compensationFrequency ||
-    !isValidApplicationUrl(applicationUrl);
+    applicationMethods.length < 1 ||
+    (hasExternalLinkMethod && !isValidApplicationUrl(applicationUrl));
+
+  const methodSummaryText = useMemo(() => {
+    if (applicationMethods.length < 1) {
+      return 'Choose at least one';
+    }
+
+    return APPLICATION_METHOD_OPTIONS.filter((option) => applicationMethods.includes(option.value))
+      .map((option) => option.title)
+      .join(' + ');
+  }, [applicationMethods]);
 
   return (
     <CreateFlowLayout
@@ -283,25 +333,69 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.textPrimary }]}>Application URL</Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: palette.inputBg,
-              borderColor: palette.inputBorder,
-              color: palette.inputText,
-            },
-          ]}
-          value={applicationUrl}
-          onChangeText={setApplicationUrl}
-          placeholder="https://example.com/apply"
-          placeholderTextColor={palette.inputPlaceholder}
-          keyboardType="url"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Application Methods</Text>
+        <Text style={[styles.supportText, { color: palette.textSecondary }]}>
+          {methodSummaryText}
+        </Text>
+        <View style={styles.methodList}>
+          {APPLICATION_METHOD_OPTIONS.map((option) => {
+            const selected = applicationMethods.includes(option.value);
+            return (
+              <TouchableOpacity
+                key={option.value}
+                testID={`application-method-${option.value}`}
+                activeOpacity={0.88}
+                style={[
+                  styles.methodCard,
+                  {
+                    backgroundColor: selected ? '#EAF6FA' : palette.inputBg,
+                    borderColor: selected ? '#126b87' : palette.inputBorder,
+                  },
+                ]}
+                onPress={() => toggleApplicationMethod(option.value)}
+              >
+                <View style={styles.methodTextWrap}>
+                  <Text style={[styles.methodTitle, { color: palette.textPrimary }]}>
+                    {option.title}
+                  </Text>
+                  <Text style={[styles.methodDescription, { color: palette.textSecondary }]}>
+                    {option.description}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons
+                  name={selected ? 'check-circle' : 'checkbox-blank-circle-outline'}
+                  size={22}
+                  color={selected ? '#126b87' : palette.inputPlaceholder}
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
+
+      {hasExternalLinkMethod ? (
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Application URL</Text>
+          <TextInput
+            testID="application-url-input"
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
+            value={applicationUrl}
+            onChangeText={setApplicationUrl}
+            placeholder="https://example.com/apply"
+            placeholderTextColor={palette.inputPlaceholder}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: palette.textPrimary }]}>Hiring Status</Text>
@@ -359,6 +453,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontFamily: 'Rubik-Medium',
   },
+  supportText: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+    fontFamily: 'OpenSans-Regular',
+  },
   input: {
     minHeight: 52,
     borderWidth: 1,
@@ -380,6 +480,32 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     paddingRight: 12,
+    fontFamily: 'OpenSans-Regular',
+  },
+  methodList: {
+    gap: 10,
+  },
+  methodCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  methodTextWrap: {
+    flex: 1,
+    gap: 4,
+  },
+  methodTitle: {
+    fontSize: 15,
+    fontFamily: 'Rubik-Medium',
+  },
+  methodDescription: {
+    fontSize: 13,
+    lineHeight: 18,
     fontFamily: 'OpenSans-Regular',
   },
 });
