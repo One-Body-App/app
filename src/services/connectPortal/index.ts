@@ -743,6 +743,11 @@ export const createConnectPortalStorage = (
     return drafts.find((draft) => draft.id === draftId) || null;
   };
 
+  const getDraftEventByPublishedEventId = async (publishedEventId: string) => {
+    const drafts = await readDrafts();
+    return drafts.find((draft) => draft.publishedEventId === publishedEventId) || null;
+  };
+
   const getResumeResolution = async (draftId?: string): Promise<ConnectPortalResumeResolution> => {
     if (!draftId) {
       return {
@@ -843,6 +848,59 @@ export const createConnectPortalStorage = (
     const nextDraft = createEmptyDraft(now(), createId, overrides);
     await writeDrafts([nextDraft, ...currentDrafts]);
     return nextDraft;
+  };
+
+  const createEditDraftFromPublishedEvent = async (publishedEventId: string) => {
+    const existingDraft = await getDraftEventByPublishedEventId(publishedEventId);
+    if (existingDraft) {
+      return existingDraft;
+    }
+
+    const publishedEvent = await getEventById(publishedEventId);
+    if (!publishedEvent || publishedEvent.status !== 'published') {
+      return null;
+    }
+
+    return createDraftEvent({
+      publishedEventId: publishedEvent.id,
+      lastCompletedStep: 6,
+      title: publishedEvent.title,
+      eventType: publishedEvent.eventType,
+      category: publishedEvent.category,
+      photoUri: publishedEvent.photoUri,
+      heroImageUri: publishedEvent.heroImageUri,
+      organizerName: publishedEvent.organizerName,
+      organizerRole: publishedEvent.organizerRole,
+      startDate: publishedEvent.startDate,
+      endDate: publishedEvent.endDate,
+      startTime: publishedEvent.startTime,
+      endTime: publishedEvent.endTime,
+      isSingleDayEvent: publishedEvent.isSingleDayEvent,
+      isRecurring: publishedEvent.isRecurring,
+      recurrenceFrequency: publishedEvent.recurrenceFrequency,
+      recurrenceEndType: publishedEvent.recurrenceEndType,
+      recurrenceEndDate: publishedEvent.recurrenceEndDate,
+      recurrenceOccurrenceCount: publishedEvent.recurrenceOccurrenceCount,
+      isOnline: publishedEvent.isOnline,
+      onlineEventUrl: publishedEvent.onlineEventUrl,
+      externalEventUrl: publishedEvent.externalEventUrl,
+      locationQuery: publishedEvent.locationQuery,
+      venueName: publishedEvent.venueName,
+      address: publishedEvent.address,
+      coordinate: publishedEvent.coordinate,
+      description: publishedEvent.description,
+      capacity: publishedEvent.capacity,
+      ticketType: publishedEvent.ticketType,
+      paymentOption: publishedEvent.paymentOption,
+      payoutConfigured: publishedEvent.payoutConfigured,
+      ticketTiers: publishedEvent.ticketTiers,
+      businessName: publishedEvent.businessName,
+      ein: publishedEvent.ein,
+      registrationCount: publishedEvent.registrationCount,
+      viewCount: publishedEvent.viewCount,
+      openCount: publishedEvent.openCount,
+      tags: ['Draft'],
+    });
   };
 
   const upsertDraftEvent = async (
@@ -981,10 +1039,12 @@ export const createConnectPortalStorage = (
     getMyEvents,
     getEventById,
     getDraftEventById,
+    getDraftEventByPublishedEventId,
     getResumeResolution,
     getEventAnalytics,
     trackEventTelemetry,
     createDraftEvent,
+    createEditDraftFromPublishedEvent,
     upsertDraftEvent,
     deleteDraftEvent,
     publishDraftEvent,
@@ -1007,10 +1067,12 @@ export const {
   getMyEvents: getConnectPortalMyEvents,
   getEventById: getConnectPortalEventById,
   getDraftEventById: getConnectPortalDraftById,
+  getDraftEventByPublishedEventId: getConnectPortalDraftByPublishedEventId,
   getResumeResolution: getConnectPortalResumeResolution,
   getEventAnalytics: getConnectPortalEventAnalytics,
   trackEventTelemetry: trackConnectPortalEventTelemetry,
   createDraftEvent: createConnectPortalDraft,
+  createEditDraftFromPublishedEvent: createConnectPortalEditDraftFromPublishedEvent,
   upsertDraftEvent: saveConnectPortalDraft,
   deleteDraftEvent: deleteConnectPortalDraft,
   publishDraftEvent: publishConnectPortalDraft,

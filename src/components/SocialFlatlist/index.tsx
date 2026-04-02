@@ -27,13 +27,8 @@ type SocialListFooterProps = {
 };
 
 function SocialListFooter({ isEndOfList }: SocialListFooterProps) {
-  return (
-    <View>
-      {isEndOfList ? (
-        <StyledText style={{ textAlign: 'center' }}>Not more social posts at this time</StyledText>
-      ) : null}
-    </View>
-  );
+  if (!isEndOfList) return null;
+  return null;
 }
 
 type SocialListEmptyProps = {
@@ -48,7 +43,7 @@ function SocialListEmpty({ isLoading, emptyText }: SocialListEmptyProps) {
 
   return (
     <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
-      {emptyText || 'Nothing here'}
+      {emptyText || 'No social posts to display'}
     </StyledText>
   );
 }

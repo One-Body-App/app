@@ -12,15 +12,7 @@ import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
 } from 'react-native';
-import {
-  Dispatch,
-  PropsWithChildren,
-  SetStateAction,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from 'react';
+import { PropsWithChildren, useRef, useState, useCallback, useMemo } from 'react';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import {
   Camera,
@@ -46,6 +38,7 @@ import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import useObservedEffect from '@/src/hooks/useObservedEffect';
+import type { SelectedVideoSource } from '@/src/services/videoProcessing/types';
 import StyledText from '../styled/Text';
 
 const cameraIos = require('@/assets/icons/camera-ios.png');
@@ -62,6 +55,7 @@ const FILTER_PRESETS = [
 ] as const;
 const IOS_CAMERA_RECOVERY_MAX_STAGE = 4;
 const CAMERA_SESSION_RELEASE_DELAY_MS = Platform.OS === 'ios' ? 180 : 60;
+const IOS_RECORDING_STOP_SETTLE_MS = 400;
 
 type FpsPreset = (typeof FPS_PRESETS)[number];
 type BitratePreset = (typeof BITRATE_PRESETS)[number];
@@ -69,7 +63,7 @@ type CodecPreset = (typeof CODEC_PRESETS)[number];
 type RecorderRatio = (typeof RECORDER_RATIO_OPTIONS)[number];
 
 type Props = {
-  setVideoPath: Dispatch<SetStateAction<string | undefined>>;
+  setVideoPath: (selection?: SelectedVideoSource) => void;
   onClose?: () => void;
 };
 
@@ -101,10 +95,71 @@ const isRecordingCanceledError = (error: unknown) => {
   return code === 'capture/recording-canceled' || code === 'capture/recording-cancelled';
 };
 
+const collectCameraErrorSignals = (
+  error: unknown,
+  seen = new Set<unknown>(),
+  depth = 0
+): string[] => {
+  if (!error || depth > 3 || seen.has(error)) {
+    return [];
+  }
+
+  if (typeof error === 'string') {
+    return [error];
+  }
+
+  if (error instanceof Error) {
+    seen.add(error);
+    return [
+      error.message,
+      ...collectCameraErrorSignals((error as Error & { cause?: unknown }).cause, seen, depth + 1),
+    ].filter(Boolean);
+  }
+
+  if (typeof error !== 'object') {
+    return [];
+  }
+
+  seen.add(error);
+  const candidate = error as Record<string, unknown>;
+  const directValues = [
+    candidate.code,
+    candidate.message,
+    candidate.description,
+    candidate.localizedDescription,
+    candidate.NSLocalizedDescription,
+    candidate.NSLocalizedFailureReason,
+  ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+
+  return [
+    ...directValues,
+    ...collectCameraErrorSignals(candidate.cause, seen, depth + 1),
+    ...collectCameraErrorSignals(candidate.userInfo, seen, depth + 1),
+    ...collectCameraErrorSignals(candidate.nativeError, seen, depth + 1),
+  ];
+};
+
+export const isNoRecordingInProgressError = (error: unknown) => {
+  const normalizedSignals = collectCameraErrorSignals(error).map((value) => value.toLowerCase());
+  return normalizedSignals.some(
+    (value) =>
+      value === 'capture/no-recording-in-progress' ||
+      value.includes('no active video recording in progress') ||
+      value.includes('no recording in progress')
+  );
+};
+
 const getDeviceDefaultExposure = (device?: CameraDevice) =>
   device ? Math.max(device.minExposure, Math.min(device.maxExposure, 0)) : 0;
 
 const getDeviceDefaultZoom = (device?: CameraDevice) => device?.neutralZoom ?? 1;
+
+const normalizeVideoDimension = (value?: number) => {
+  if (!Number.isFinite(value) || !value || value <= 0) {
+    return undefined;
+  }
+  return Math.round(value);
+};
 
 function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<Props>) {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -115,6 +170,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
   const teardownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
   const isRecordingRef = useRef(false);
+  const isRecordingTransitionRef = useRef(false);
+  const recordingStartedAtRef = useRef<number | null>(null);
   const sessionActiveRef = useRef(true);
   const teardownInProgressRef = useRef(false);
   const recoveryAttemptRef = useRef(false);
@@ -465,7 +522,11 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
           return;
         }
 
-        setVideoPath(resolvedSourceUri);
+        setVideoPath({
+          uri: resolvedSourceUri,
+          width: normalizeVideoDimension(selectedAsset.width),
+          height: normalizeVideoDimension(selectedAsset.height),
+        });
       },
     }).catch(() => undefined);
   }, [ensureFileUri, resumeCameraSession, setVideoPath, teardownCameraSession]);
@@ -520,10 +581,25 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     setCameraFrameOffset({ x, y });
   }, []);
 
+  const resetRecordingState = useCallback(() => {
+    isRecordingTransitionRef.current = false;
+    isRecordingRef.current = false;
+    recordingStartedAtRef.current = null;
+    if (isMountedRef.current) {
+      setIsRecording(false);
+    }
+  }, []);
+
   const handleStartRecording = async () => {
-    if (!isRecording) {
+    if (isRecordingTransitionRef.current) {
+      return;
+    }
+
+    if (!isRecordingRef.current) {
       try {
         if (camera.current && isCameraInitialized && shouldCameraBeActive) {
+          isRecordingTransitionRef.current = true;
+          recordingStartedAtRef.current = Date.now();
           setIsRecording(true);
           isRecordingRef.current = true;
           setIsSettingsOpen(false);
@@ -532,8 +608,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
             fileType: 'mp4',
             videoCodec: effectiveVideoCodec,
             onRecordingFinished: async (video) => {
-              setIsRecording(false);
-              isRecordingRef.current = false;
+              resetRecordingState();
               const resolvedVideoPath = ensureFileUri(video?.path);
               if (!resolvedVideoPath) {
                 resumeCameraSession();
@@ -541,37 +616,53 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
               }
               await teardownCameraSession({
                 next: () => {
-                  setVideoPath(resolvedVideoPath);
+                  setVideoPath({
+                    uri: resolvedVideoPath,
+                    ratioId: selectedRatio,
+                    width: normalizeVideoDimension((video as { width?: number })?.width),
+                    height: normalizeVideoDimension((video as { height?: number })?.height),
+                  });
                 },
               });
             },
             onRecordingError: (error) => {
-              setIsRecording(false);
-              isRecordingRef.current = false;
+              resetRecordingState();
               if (isRecordingCanceledError(error)) {
                 return;
               }
               console.error('[VisionCamera] recording failed', error);
             },
           });
+          isRecordingTransitionRef.current = false;
         }
       } catch (error) {
-        setIsRecording(false);
-        isRecordingRef.current = false;
+        resetRecordingState();
         if (!isRecordingCanceledError(error)) {
           console.error('[VisionCamera] failed to start recording', error);
         }
       }
     } else {
+      if (
+        Platform.OS === 'ios' &&
+        recordingStartedAtRef.current !== null &&
+        Date.now() - recordingStartedAtRef.current < IOS_RECORDING_STOP_SETTLE_MS
+      ) {
+        return;
+      }
+
+      isRecordingTransitionRef.current = true;
       try {
         await camera.current?.stopRecording();
       } catch (error) {
+        if (isRecordingCanceledError(error) || isNoRecordingInProgressError(error)) {
+          resetRecordingState();
+          return;
+        }
+
+        resetRecordingState();
         if (!isRecordingCanceledError(error)) {
           console.error('[VisionCamera] failed to stop recording', error);
         }
-      } finally {
-        setIsRecording(false);
-        isRecordingRef.current = false;
       }
     }
   };

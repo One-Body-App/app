@@ -110,7 +110,8 @@ describe('EventDashboardScreen', () => {
     expect(textValues).toContain('New Event');
     expect(textValues).toContain('Start the seven-step event flow.');
     expect(textValues).toContain('My Events');
-    expect(textValues).toContain('Open active events, past events, and drafts.');
+    expect(textValues).toContain('Drafts');
+    expect(textValues).toContain('1 saved draft');
     expect(textValues).toContain('Active Events');
     expect(textValues).toContain('View all');
     expect(textValues).toContain('Manage Event');

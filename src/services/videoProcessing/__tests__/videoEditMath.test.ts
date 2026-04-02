@@ -1,8 +1,10 @@
 import {
   AUDIO_BITRATE,
+  SUPPORTED_VIDEO_RATIO_IDS,
   VIDEO_RATIO_CONFIG,
   clampVideoTransform,
   createDefaultVideoTransform,
+  resolveClosestVideoRatioId,
   resolveCropRect,
   resolveModerationFrameCount,
   resolveSourceCrop,
@@ -10,6 +12,7 @@ import {
 
 describe('videoEditMath', () => {
   it('resolves the expected output targets for supported ratios', () => {
+    expect(SUPPORTED_VIDEO_RATIO_IDS).toEqual(['1:1', '4:3', '16:9', '9:16']);
     expect(VIDEO_RATIO_CONFIG['9:16']).toEqual({
       ratio: 9 / 16,
       outputWidth: 1080,
@@ -23,6 +26,14 @@ describe('videoEditMath', () => {
       videoBitrate: 5_000_000,
     });
     expect(AUDIO_BITRATE).toBe(128_000);
+  });
+
+  it('resolves the closest supported ratio id from source dimensions', () => {
+    expect(resolveClosestVideoRatioId(1080, 1920)).toBe('9:16');
+    expect(resolveClosestVideoRatioId(1920, 1080)).toBe('16:9');
+    expect(resolveClosestVideoRatioId(1440, 1080)).toBe('4:3');
+    expect(resolveClosestVideoRatioId(1080, 1080)).toBe('1:1');
+    expect(resolveClosestVideoRatioId(undefined, 1080)).toBe('9:16');
   });
 
   it('centers the crop rect for the selected ratio', () => {

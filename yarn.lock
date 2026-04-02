@@ -14763,6 +14763,7 @@ __metadata:
     react-native-date-picker: "npm:^4.2.13"
     react-native-device-info: "npm:14.0.4"
     react-native-devsettings: "npm:^1.0.5"
+    react-native-document-picker: "npm:^9.3.1"
     react-native-element-dropdown: "npm:^2.10.0"
     react-native-email-link: "npm:^1.14.6"
     react-native-fast-image: "npm:^8.6.3"
@@ -15972,6 +15973,22 @@ __metadata:
   version: 1.0.5
   resolution: "react-native-devsettings@npm:1.0.5"
   checksum: 10/bff4f174a1ecd671ce9a51173eeb9af9b0de3997c0cfbb4c393c6484f2a77ca76413a560aff7b92fd4194d866fd032d4be6d4a9d7f95f38ab31aa6c56cb1c987
+  languageName: node
+  linkType: hard
+
+"react-native-document-picker@npm:^9.3.1":
+  version: 9.3.1
+  resolution: "react-native-document-picker@npm:9.3.1"
+  dependencies:
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-windows: "*"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: 10/26829e8b0e48e789defea3f418ab41a154c05b72be742f2a2de182812c86eb2f35f31dcd5488b5b99e6bbf3b8c920c76acf06bc44d0222889e6cdf32d13cc1df
   languageName: node
   linkType: hard
 

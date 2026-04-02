@@ -424,7 +424,8 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
     !title.trim() ||
     !description.trim() ||
     parseConnectServeRequirements(requirementsText).length === 0 ||
-    !address.trim();
+    !address.trim() ||
+    !coordinate;
 
   const isOtherRoleSelected = selectedRoleValue === OTHER_ROLE_VALUE;
   const roleDisplayValue = isOtherRoleSelected ? customRole : title;
@@ -619,6 +620,11 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
               color={palette.inputPlaceholder}
             />
           </TouchableOpacity>
+          {address.trim() && !coordinate ? (
+            <Text style={[styles.helperText, { color: palette.textSecondary }]}>
+              Select the location from search results to pin the opportunity on the map.
+            </Text>
+          ) : null}
         </View>
       </CreateFlowLayout>
 

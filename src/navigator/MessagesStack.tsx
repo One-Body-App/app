@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import { MessagesStackParamsList } from './types';
@@ -21,6 +22,12 @@ function MessagesStack() {
         statusBarStyle: dark ? 'light' : 'dark',
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
+        ...(Platform.OS === 'android'
+          ? {
+              statusBarTranslucent: true,
+              statusBarColor: 'transparent',
+            }
+          : {}),
       }}
     >
       <Stack.Screen

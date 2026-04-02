@@ -17,7 +17,9 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
+  createConnectPortalEditDraftFromPublishedEvent,
   getConnectEventTypeOptions,
+  getConnectPortalEventById,
   saveConnectPortalDraft,
   submitConnectEventTypeSuggestion,
 } from '@/src/services/connectPortal';
@@ -27,48 +29,57 @@ import EventTypeDropdown, { OTHER_VALUE } from './EventTypeDropdown';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep1'>;
+const STEP_ONE_RESUME_ERROR =
+  'This event is no longer available. Open a saved draft from My Events or start again.';
 
 function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
   const [draftId, setDraftId] = useState(route.params?.draftId);
+  const [publishedEventId, setPublishedEventId] = useState(route.params?.eventId);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [eventType, setEventType] = useState('');
   const [isOtherEventType, setIsOtherEventType] = useState(false);
   const [eventTypeOptions, setEventTypeOptions] = useState<ConnectPlaceFilterOption[]>([]);
   const [heroImageUri, setHeroImageUri] = useState<string | undefined>();
+  const trimmedTitle = title.trim();
+  const titleError = !loading && !trimmedTitle ? 'Add an event title to continue.' : '';
 
   useMountEffect(() => {
     let isActive = true;
 
     (async () => {
-      const [draft, options] = await Promise.all([
-        ensureStepOneDraftRecord(route.params?.draftId),
+      const [record, options] = await Promise.all([
+        route.params?.draftId
+          ? ensureStepOneDraftRecord(route.params.draftId)
+          : route.params?.eventId
+            ? getConnectPortalEventById(route.params.eventId)
+            : ensureStepOneDraftRecord(undefined),
         getConnectEventTypeOptions(),
       ]);
       if (!isActive) {
         return;
       }
 
-      if (!draft) {
+      if (!record || (route.params?.eventId && record.status !== 'published')) {
         navigation.navigate('ConnectGoMyEvents', {
           initialFilter: 'Draft',
-          resumeError:
-            'This draft is no longer available. Open a saved draft from My Events or start again.',
+          resumeError: STEP_ONE_RESUME_ERROR,
         });
         return;
       }
 
       setEventTypeOptions(options);
-      setDraftId(draft.id);
-      setTitle(draft.title);
-      setEventType(draft.eventType);
-      setHeroImageUri(draft.heroImageUri);
+      setDraftId(record.status === 'draft' ? record.id : undefined);
+      setPublishedEventId(record.status === 'published' ? record.id : record.publishedEventId);
+      setTitle(record.title);
+      setEventType(record.eventType);
+      setHeroImageUri(record.heroImageUri);
 
       if (
-        draft.eventType &&
+        record.eventType &&
         options.length > 0 &&
-        !options.some((o) => o.value === draft.eventType)
+        !options.some((o) => o.value === record.eventType)
       ) {
         setIsOtherEventType(true);
       }
@@ -82,7 +93,19 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
   });
 
   const persistDraft = async (completedStep?: 0 | 1) => {
-    if (!draftId) {
+    let nextDraftId = draftId;
+
+    if (!nextDraftId && publishedEventId) {
+      const seededDraft = await createConnectPortalEditDraftFromPublishedEvent(publishedEventId);
+      if (!seededDraft) {
+        return null;
+      }
+      nextDraftId = seededDraft.id;
+      setDraftId(seededDraft.id);
+      setPublishedEventId(seededDraft.publishedEventId || publishedEventId);
+    }
+
+    if (!nextDraftId) {
       return null;
     }
 
@@ -91,7 +114,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
     }
 
     return saveConnectPortalDraft(
-      draftId,
+      nextDraftId,
       {
         title,
         eventType,
@@ -207,18 +230,24 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
         navigation.navigate('ConnectGoEventDash');
       }}
       onSave={async () => {
-        await persistDraft(0);
-        navigation.navigate('ConnectGoMyEvents', { initialFilter: 'Draft' });
+        const draft = await persistDraft(0);
+        if (draft) {
+          navigation.navigate('ConnectGoMyEvents', { initialFilter: 'Draft' });
+        }
       }}
       saveLabel="Save Draft"
       onNext={async () => {
+        if (!trimmedTitle) {
+          return;
+        }
+
         const draft = await persistDraft(1);
         if (draft) {
           navigation.navigate('ConnectGoCreateStep2', { draftId: draft.id });
         }
       }}
       nextLabel="Next Step"
-      nextDisabled={!draftId}
+      nextDisabled={!trimmedTitle || (!draftId && !publishedEventId)}
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
@@ -246,6 +275,9 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
           placeholder="e.g., Young Adult Worship Night, Fall Retreat"
           placeholderTextColor={palette.inputPlaceholder}
         />
+        {titleError ? (
+          <Text style={[styles.validationMessage, { color: '#D46A6A' }]}>{titleError}</Text>
+        ) : null}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -344,6 +376,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 15,
     fontFamily: 'OpenSans-Regular',
+  },
+  validationMessage: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Rubik-Medium',
   },
   photoCard: {
     borderRadius: 18,

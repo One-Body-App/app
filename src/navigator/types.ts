@@ -45,6 +45,7 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
 import { EditProfileRouteParams } from '@/src/screens/main/editProfile/mediaHelpers';
+import type { VideoRatioId } from '@/src/services/videoProcessing/types';
 import { AccountType, PostType, SerializableCommentSnapshot, WatchPost } from '@/utils/types';
 import { FeedTypes } from '../screens/home';
 import type { ConnectTab } from '../screens/connectportal/data';
@@ -208,6 +209,7 @@ export type ConnectStackParamsList = {
         initialTab?: ConnectTab;
       }
     | undefined;
+  ConnectGoLanding: undefined;
   ConnectGoEventDash: undefined;
   ConnectGoMyEvents:
     | {
@@ -226,6 +228,7 @@ export type ConnectStackParamsList = {
   ConnectGoCreateStep1:
     | {
         draftId?: string;
+        eventId?: string;
       }
     | undefined;
   ConnectGoCreateStep2: {
@@ -513,6 +516,9 @@ export type MainStackParamList = {
     | {
         imagePath?: string;
         videoPath?: string;
+        videoRatioId?: VideoRatioId;
+        videoWidth?: number;
+        videoHeight?: number;
         openCameraOnMount?: boolean;
       }
     | undefined;

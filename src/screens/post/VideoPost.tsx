@@ -3,6 +3,7 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  InteractionManager,
   KeyboardAvoidingView,
   LayoutChangeEvent,
   Platform,
@@ -39,17 +40,26 @@ import {
   MIN_VIDEO_EDITOR_SCALE,
   VIDEO_RATIO_CONFIG,
   clampVideoTransform,
+  resolveClosestVideoRatioId,
   resolveDisplayedVideoFrame,
   resolveSourceCrop,
   resolveCropRect as resolveEditorCropRect,
 } from '@/src/services/videoProcessing/videoEditMath';
 import type {
+  SelectedVideoSource,
   VideoDimensions,
   VideoRatioId,
   VideoTransformState,
 } from '@/src/services/videoProcessing/types';
-import { enqueuePendingVideoUpload } from '@/src/services/videoProcessing/videoUploadQueue';
-import { buildPendingVideoUploadRecipe, ConfirmedVideoCropSelection } from './videoPostUtils';
+import {
+  enqueuePendingVideoUpload,
+  startPendingVideoUploads,
+} from '@/src/services/videoProcessing/videoUploadQueue';
+import {
+  buildPendingVideoUploadRecipe,
+  ConfirmedVideoCropSelection,
+  copyVideoSourceToAppCache,
+} from './videoPostUtils';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -102,6 +112,8 @@ const LIGHT_PALETTE: ThemePalette = {
 };
 
 const RATIO_OPTIONS: VideoRatioId[] = ['1:1', '4:3', '16:9', '9:16'];
+const IOS_UPLOAD_QUEUE_START_DELAY_MS = 450;
+const DEFAULT_UPLOAD_QUEUE_START_DELAY_MS = 150;
 
 type VideoEditorMode = 'crop' | 'edit';
 
@@ -127,6 +139,31 @@ const formatTime = (seconds: number) => {
   const mins = Math.floor(safeSeconds / 60);
   const secs = Math.floor(safeSeconds % 60);
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+const normalizeVideoDimension = (value?: number) => {
+  if (!Number.isFinite(value) || !value || value <= 0) {
+    return undefined;
+  }
+  return Math.round(value);
+};
+
+const resolveInitialRatioId = (
+  preferredRatioId?: VideoRatioId,
+  width?: number,
+  height?: number
+): VideoRatioId | null => {
+  if (preferredRatioId) {
+    return preferredRatioId;
+  }
+
+  const normalizedWidth = normalizeVideoDimension(width);
+  const normalizedHeight = normalizeVideoDimension(height);
+  if (!normalizedWidth || !normalizedHeight) {
+    return null;
+  }
+
+  return resolveClosestVideoRatioId(normalizedWidth, normalizedHeight);
 };
 
 function ActionButton({
@@ -205,6 +242,7 @@ export default function VideoPost({ navigation, route }: Props) {
   });
   const [previewStageSize, setPreviewStageSize] = useState({ width: 1, height: 1 });
   const [selectedRatio, setSelectedRatio] = useState<VideoRatioId>('9:16');
+  const [shouldInferRatioOnLoad, setShouldInferRatioOnLoad] = useState(false);
   const [transform, setTransform] = useState<VideoTransformState>(createDefaultVideoTransform());
   const [editorMode, setEditorMode] = useState<VideoEditorMode>('crop');
   const [confirmedCropSelection, setConfirmedCropSelection] =
@@ -303,6 +341,19 @@ export default function VideoPost({ navigation, route }: Props) {
     }
 
     const normalizedPath = ensureFileUri(preferredPath);
+    if (explicitUri) {
+      try {
+        return await copyVideoSourceToAppCache({
+          sourceUri: normalizedPath,
+          cachesDirectoryPath: RNFS.CachesDirectoryPath,
+          temporaryDirectoryPath: RNFS.TemporaryDirectoryPath,
+          copyFile: async (sourcePath, targetPath) => RNFS.copyFile(sourcePath, targetPath),
+        });
+      } catch {
+        return normalizedPath;
+      }
+    }
+
     if (Platform.OS !== 'ios') {
       return normalizedPath;
     }
@@ -352,6 +403,10 @@ export default function VideoPost({ navigation, route }: Props) {
         rawHeight > 0
       ) {
         setVideoNaturalSize({ width: rawWidth, height: rawHeight });
+        if (shouldInferRatioOnLoad) {
+          setSelectedRatio(resolveClosestVideoRatioId(rawWidth, rawHeight));
+          setShouldInferRatioOnLoad(false);
+        }
       }
 
       if (hasTrimSelection) {
@@ -370,7 +425,7 @@ export default function VideoPost({ navigation, route }: Props) {
         setIsPlaying(true);
       });
     },
-    [hasTrimSelection, resolvedTrimStartMs, toast]
+    [hasTrimSelection, resolvedTrimStartMs, shouldInferRatioOnLoad, toast]
   );
 
   const handleVideoProgress = useCallback(
@@ -425,7 +480,13 @@ export default function VideoPost({ navigation, route }: Props) {
           return;
         }
 
-        setSelectedRatio('9:16');
+        const nextRatioId = resolveInitialRatioId(
+          undefined,
+          selectedAsset.width,
+          selectedAsset.height
+        );
+        setSelectedRatio(nextRatioId ?? '9:16');
+        setShouldInferRatioOnLoad(!nextRatioId);
         applySelectedVideo(nextPath, nextPath, { autoOpenTrimEditor: true });
       } catch {
         toast.show(`Unable to prepare selected ${sourceName}.`, { type: 'danger' });
@@ -458,28 +519,28 @@ export default function VideoPost({ navigation, route }: Props) {
   }, []);
 
   const handleVisionCameraVideoPath = useCallback(
-    (nextValue: React.SetStateAction<string | undefined>) => {
-      const resolvedPath =
-        typeof nextValue === 'function'
-          ? (nextValue as (previousState: string | undefined) => string | undefined)(
-              editableVideoUri || undefined
-            )
-          : nextValue;
-
+    (selection?: SelectedVideoSource) => {
       setIsLiveCameraVisible(false);
-      if (!resolvedPath) {
+      if (!selection?.uri) {
         return;
       }
 
       setIsPreparingVideo(true);
       (async () => {
         try {
-          const preparedPath = await resolveVideoUri(undefined, resolvedPath);
+          const preparedPath = await resolveVideoUri(undefined, selection.uri);
           if (!preparedPath) {
             toast.show('Unable to load selected video.', { type: 'danger' });
             return;
           }
-          setSelectedRatio('9:16');
+
+          const nextRatioId = resolveInitialRatioId(
+            selection.ratioId,
+            selection.width,
+            selection.height
+          );
+          setSelectedRatio(nextRatioId ?? '9:16');
+          setShouldInferRatioOnLoad(!nextRatioId);
           applySelectedVideo(preparedPath, preparedPath, { autoOpenTrimEditor: true });
         } catch {
           toast.show('Unable to prepare selected video.', { type: 'danger' });
@@ -488,7 +549,7 @@ export default function VideoPost({ navigation, route }: Props) {
         }
       })();
     },
-    [applySelectedVideo, editableVideoUri, resolveVideoUri, toast]
+    [applySelectedVideo, resolveVideoUri, toast]
   );
 
   const handleChooseVideoSource = useCallback(() => {
@@ -556,11 +617,11 @@ export default function VideoPost({ navigation, route }: Props) {
       return;
     }
     openTrimEditor(originalVideoUri || editableVideoUri);
-  }, [editableVideoUri, openTrimEditor, originalVideoUri]);
+  }, [editableVideoUri, openTrimEditor, originalVideoUri, toast]);
 
   useEffect(() => {
     if (!pendingAutoTrimUri || isLiveCameraVisible || isPreparingVideo) {
-      return;
+      return undefined;
     }
 
     const queuedUri = pendingAutoTrimUri;
@@ -683,7 +744,11 @@ export default function VideoPost({ navigation, route }: Props) {
       return;
     }
 
+    const uploadQueueStartDelayMs =
+      Platform.OS === 'ios' ? IOS_UPLOAD_QUEUE_START_DELAY_MS : DEFAULT_UPLOAD_QUEUE_START_DELAY_MS;
+
     setLoading(true);
+    setIsPlaying(false);
     try {
       const recipe = buildPendingVideoUploadRecipe({
         sourceUri: uploadSourceUri,
@@ -694,7 +759,7 @@ export default function VideoPost({ navigation, route }: Props) {
         confirmedCropSelection: activeCropSelection,
       });
 
-      await enqueuePendingVideoUpload(recipe);
+      await enqueuePendingVideoUpload(recipe, { startImmediately: false });
 
       toast.show(
         "Your Watch video was queued for background processing. We'll notify you when it's live.",
@@ -718,6 +783,12 @@ export default function VideoPost({ navigation, route }: Props) {
           },
         });
       }
+
+      InteractionManager.runAfterInteractions(() => {
+        setTimeout(() => {
+          startPendingVideoUploads().catch(() => undefined);
+        }, uploadQueueStartDelayMs);
+      });
     } catch (error) {
       toast.show(error instanceof Error ? error.message : 'Unable to upload video.', {
         type: 'danger',
@@ -799,6 +870,9 @@ export default function VideoPost({ navigation, route }: Props) {
 
   useMountEffect(() => {
     const incomingVideoPath = route.params?.videoPath;
+    const incomingVideoRatioId = route.params?.videoRatioId;
+    const incomingVideoWidth = route.params?.videoWidth;
+    const incomingVideoHeight = route.params?.videoHeight;
     let cancelled = false;
 
     if (!incomingVideoPath) {
@@ -812,7 +886,13 @@ export default function VideoPost({ navigation, route }: Props) {
       try {
         const resolvedPath = await resolveVideoUri(undefined, incomingVideoPath);
         if (!cancelled && resolvedPath) {
-          setSelectedRatio('9:16');
+          const nextRatioId = resolveInitialRatioId(
+            incomingVideoRatioId,
+            incomingVideoWidth,
+            incomingVideoHeight
+          );
+          setSelectedRatio(nextRatioId ?? '9:16');
+          setShouldInferRatioOnLoad(!nextRatioId);
           applySelectedVideo(resolvedPath, resolvedPath, { autoOpenTrimEditor: true });
         }
       } catch {
@@ -822,7 +902,12 @@ export default function VideoPost({ navigation, route }: Props) {
       } finally {
         if (!cancelled) {
           setIsPreparingVideo(false);
-          navigation.setParams({ videoPath: undefined });
+          navigation.setParams({
+            videoPath: undefined,
+            videoRatioId: undefined,
+            videoWidth: undefined,
+            videoHeight: undefined,
+          });
         }
       }
     })();
@@ -1195,6 +1280,7 @@ export default function VideoPost({ navigation, route }: Props) {
                       },
                     ]}
                     onPress={() => {
+                      setShouldInferRatioOnLoad(false);
                       setSelectedRatio(ratioId);
                       resetCropState();
                     }}

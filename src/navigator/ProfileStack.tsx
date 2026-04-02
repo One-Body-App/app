@@ -7,6 +7,7 @@ import MyProfile from '../screens/main/myProfile';
 import { MyProfileStackParamsList } from './types';
 import { Colors } from '../styles';
 import InviteFriend from '../screens/main/inviteFriend';
+import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 
@@ -17,6 +18,7 @@ function ProfileStack() {
       screenOptions={{
         gestureEnabled: false,
         fullScreenGestureEnabled: false,
+        ...STANDARD_STACK_ANIMATION_OPTIONS,
         statusBarStyle: dark ? 'light' : 'dark',
         headerTransparent: false,
         headerShadowVisible: false,

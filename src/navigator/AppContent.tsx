@@ -74,19 +74,13 @@ import {
 import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
+import { resumePendingVideoUploads } from '@/src/services/videoProcessing/videoUploadQueue';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import VideoProcessingRuntime from '@/src/components/post/VideoProcessingRuntime';
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
 const LazyVideoPost = React.lazy(() => import('../screens/post/VideoPost'));
-const DirectVideoPost = Platform.OS === 'ios' ? require('../screens/post/VideoPost').default : null;
-
 function VideoPost({ navigation, route }: { navigation: any; route: any }) {
-  if (Platform.OS === 'ios' && DirectVideoPost) {
-    return <DirectVideoPost navigation={navigation} route={route} />;
-  }
-
   return (
     <React.Suspense fallback={<ActivityIndicator size="large" />}>
       <LazyVideoPost navigation={navigation} route={route} />
@@ -109,6 +103,7 @@ function AppContent() {
   const [initializing, setInitializing] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [navigationReady, setNavigationReady] = useState<boolean>(false);
+  const [showSplashOverlay, setShowSplashOverlay] = useState(true);
   const screenHeight = useRef(Dimensions.get('window').height).current;
   const firebaseMessaging = getMessaging();
   const navigationRef = useNavigationContainerRef<MainStackParamList>();
@@ -118,12 +113,6 @@ function AppContent() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const appStateRef = useRef(AppState.currentState);
-  const showUploadToast = useCallback(
-    (message: string, options: { type: 'success' | 'danger'; placement: 'bottom' }) => {
-      toast.show(message, options);
-    },
-    [toast]
-  );
   const token = authState.userToken;
   const hasFetchedProfileRef = useRef(false);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
@@ -287,12 +276,17 @@ function AppContent() {
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
         refreshTokenOnResumeRef.current().catch(() => undefined);
+        resumePendingVideoUploads().catch(() => undefined);
       }
     });
 
     return () => {
       subscription.remove();
     };
+  });
+
+  useMountEffect(() => {
+    resumePendingVideoUploads().catch(() => undefined);
   });
 
   ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;
@@ -369,7 +363,9 @@ function AppContent() {
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        setShowSplashOverlay(false);
+      });
     }
   }, [authChecked, fadeAnim, overlayTranslate, screenHeight]);
 
@@ -1233,7 +1229,6 @@ function AppContent() {
         routeNameRef.current = navigationRef.getCurrentRoute()?.name;
       }}
     >
-      <VideoProcessingRuntime showUploadToast={showUploadToast} />
       <ReactionProvider>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
           <MainStack.Navigator
@@ -1241,6 +1236,12 @@ function AppContent() {
             screenOptions={{
               gestureEnabled: false,
               fullScreenGestureEnabled: false,
+              ...(Platform.OS === 'android'
+                ? {
+                    statusBarTranslucent: true,
+                    statusBarColor: 'transparent',
+                  }
+                : {}),
             }}
           >
             <MainStack.Screen
@@ -1289,6 +1290,7 @@ function AppContent() {
               component={NewPost}
               options={({ route }) => ({
                 headerShown: false,
+                animation: 'slide_from_right',
                 title: route.params?.postId ? 'Edit Post' : 'Create Post',
                 headerBackTitleVisible: false,
                 ...(Platform.OS === 'android'
@@ -1313,13 +1315,12 @@ function AppContent() {
               component={ReportPost}
               options={{
                 headerShown: false,
-                animation: 'slide_from_left',
+                animation: 'slide_from_right',
                 ...(Platform.OS === 'android'
                   ? {
                       statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
                       statusBarColor:
                         scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      statusBarTranslucent: false,
                     }
                   : {}),
               }}
@@ -1335,7 +1336,6 @@ function AppContent() {
                       statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
                       statusBarColor:
                         scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      statusBarTranslucent: false,
                     }
                   : {}),
               }}
@@ -1359,11 +1359,6 @@ function AppContent() {
                 ...(Platform.OS === 'android' && {
                   headerShown: false,
                   animation: 'slide_from_right',
-                  statusBarHidden: false,
-                  statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                  statusBarColor:
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                  statusBarTranslucent: false,
                 }),
               }}
             />
@@ -1382,11 +1377,9 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
-                      statusBarHidden: false,
                       statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
                       statusBarColor:
                         scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      statusBarTranslucent: false,
                     }),
               }}
             />
@@ -1406,11 +1399,6 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
-                      statusBarHidden: false,
-                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                      statusBarColor:
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      statusBarTranslucent: false,
                     }),
               }}
             />
@@ -1429,11 +1417,6 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
-                      statusBarHidden: false,
-                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                      statusBarColor:
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      statusBarTranslucent: false,
                     }),
               }}
             />
@@ -1441,9 +1424,9 @@ function AppContent() {
               name="ConfirmLogin"
               component={ConfirmLogin}
               options={() => ({
-                presentation: 'modal',
                 ...(Platform.OS === 'ios'
                   ? {
+                      presentation: 'modal',
                       ...headerOptions,
                       headerTintColor: Colors.primary.brand,
                       headerBackTitle: '',
@@ -1452,11 +1435,6 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
-                      statusBarHidden: false,
-                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                      statusBarColor:
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      statusBarTranslucent: false,
                     }),
               })}
             />
@@ -1468,18 +1446,20 @@ function AppContent() {
               }}
             />
           </MainStack.Navigator>
-          <Animated.View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: Colors.main.white,
-              transform: [{ translateY: overlayTranslate }],
-            }}
-          />
+          {showSplashOverlay && (
+            <Animated.View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: Colors.main.white,
+                transform: [{ translateY: overlayTranslate }],
+              }}
+            />
+          )}
         </Animated.View>
       </ReactionProvider>
     </NavigationContainer>

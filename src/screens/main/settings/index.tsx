@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { View, TouchableOpacity, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import {
   Key,
@@ -16,7 +16,7 @@ import {
 import Feather from '@react-native-vector-icons/feather';
 import { useToast } from 'react-native-toast-notifications';
 import DeviceInfo from 'react-native-device-info';
-import { styles } from './styles';
+import styles from './styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { borderRadius } from '@/src/styles/outlines';
@@ -55,51 +55,11 @@ function Settings({ navigation }: Props) {
 
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const getUserProfile = async () => {
-    // const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
-    //   id: 'loadig',
-    //   placement: 'top',
-    //   style: {
-    //     backgroundColor: colors.background,
-    //   },
-    // });
-    try {
-      const res = await ApiCall({
-        route: 'user/my-profile',
-        token,
-        verb: 'get',
-      });
-
-      if (res?.status == 200) {
-        // dispatch(setProfile({ token, ...res.response }));
-        setEmailNotificationsEnabled(res.response?.emailNotificationsEnabled ?? false);
-        setPushNotificationsEnabled(res.response?.pushNotificationsEnabled ?? false);
-        setSubscribedToNewsletter(res.response?.subscribedToNewsletter ?? false);
-        setAllowDirectMessages(res.response?.allowDirectMessages ?? true);
-
-        // setIsLoaded(true);
-        // toast.hide(toastId);
-      } else {
-        // toast.hide(toastId);
-      }
-    } catch (e) {
-      // toast.hide(toastId);
-    }
-  };
-
-  const loadSecurePreviewPreference = async () => {
-    try {
-      const enabled = await isSecureMessagePreviewEnabled();
-      setSecurePreviewEnabledState(enabled);
-    } finally {
-      setIsSecurePreviewLoading(false);
-    }
-  };
-
   const updateSecurePreview = async (enabled: boolean) => {
     setSecurePreviewEnabledState(enabled);
     try {
       await setSecureMessagePreviewEnabled(enabled);
+      toast.hide('securePreviewMessage');
       toast.show(
         enabled ? 'Secure lock-screen previews enabled' : 'Secure lock-screen previews disabled',
         {
@@ -114,16 +74,70 @@ function Settings({ navigation }: Props) {
     }
   };
 
-  useEffect(() => {
-    getUserProfile();
-    loadSecurePreviewPreference();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const getUserProfile = async () => {
+        // const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
+        //   id: 'loadig',
+        //   placement: 'top',
+        //   style: {
+        //     backgroundColor: colors.background,
+        //   },
+        // });
+        try {
+          const res = await ApiCall({
+            route: 'user/my-profile',
+            token,
+            verb: 'get',
+          });
+
+          if (!isActive || res?.status !== 200) {
+            return;
+          }
+
+          // dispatch(setProfile({ token, ...res.response }));
+          setEmailNotificationsEnabled(res.response?.emailNotificationsEnabled ?? false);
+          setPushNotificationsEnabled(res.response?.pushNotificationsEnabled ?? false);
+          setSubscribedToNewsletter(res.response?.subscribedToNewsletter ?? false);
+          setAllowDirectMessages(res.response?.allowDirectMessages ?? true);
+
+          // setIsLoaded(true);
+          // toast.hide(toastId);
+        } catch (e) {
+          // toast.hide(toastId);
+        }
+      };
+
+      const loadSecurePreviewPreference = async () => {
+        try {
+          const enabled = await isSecureMessagePreviewEnabled();
+          if (!isActive) {
+            return;
+          }
+          setSecurePreviewEnabledState(enabled);
+        } finally {
+          if (isActive) {
+            setIsSecurePreviewLoading(false);
+          }
+        }
+      };
+
+      getUserProfile();
+      loadSecurePreviewPreference();
+
+      return () => {
+        isActive = false;
+      };
+    }, [token])
+  );
 
   const updateNotifications = async (
-    pushNotificationsEnabled: boolean,
-    subscribedToNewsletter: boolean,
-    emailNotificationsEnabled: boolean,
-    allowDirectMessages: boolean
+    nextPushNotificationsEnabled: boolean,
+    nextSubscribedToNewsletter: boolean,
+    nextEmailNotificationsEnabled: boolean,
+    nextAllowDirectMessages: boolean
   ) => {
     const toastId = 'loading';
     toast.hide(toastId);
@@ -138,10 +152,10 @@ function Settings({ navigation }: Props) {
     setIsLoading(true);
     try {
       const notifications = {
-        pushNotificationsEnabled,
-        subscribedToNewsletter,
-        emailNotificationsEnabled,
-        allowDirectMessages,
+        pushNotificationsEnabled: nextPushNotificationsEnabled,
+        subscribedToNewsletter: nextSubscribedToNewsletter,
+        emailNotificationsEnabled: nextEmailNotificationsEnabled,
+        allowDirectMessages: nextAllowDirectMessages,
       };
 
       const res = await ApiCall({
@@ -151,10 +165,10 @@ function Settings({ navigation }: Props) {
         verb: 'patch',
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(setUserDataNotifications({ notifications }));
 
-        if (pushNotificationsEnabled) {
+        if (nextPushNotificationsEnabled) {
           await enablePushNotifications(token, true);
         } else {
           await disablePushNotifications(token);
@@ -188,12 +202,12 @@ function Settings({ navigation }: Props) {
       style={{
         flex: 1,
         marginHorizontal: spacing.x24,
-        paddingVertical: spacing.x16,
+        paddingBottom: spacing.x16,
       }}
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         <View style={{ flex: 3 }}>
-          {userData?.tokenResult.signInProvider == 'password' ? (
+          {userData?.tokenResult.signInProvider === 'password' ? (
             <View
               style={[
                 styles.settingsCard,
@@ -212,7 +226,7 @@ function Settings({ navigation }: Props) {
                   Security
                 </StyledText>
               </View>
-              {userData?.tokenResult.signInProvider == 'password' ? (
+              {userData?.tokenResult.signInProvider === 'password' ? (
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate('ConfirmLogin', {
@@ -249,7 +263,7 @@ function Settings({ navigation }: Props) {
                   </View>
                 </TouchableOpacity>
               ) : null}
-              {userData?.tokenResult.signInProvider == 'password' ? (
+              {userData?.tokenResult.signInProvider === 'password' ? (
                 <TouchableOpacity
                   onPress={
                     () => {

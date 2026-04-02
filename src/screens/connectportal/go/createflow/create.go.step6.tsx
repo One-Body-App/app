@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -18,6 +18,42 @@ import {
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Review'>;
+
+const PUBLISH_ERROR_FALLBACK = 'Unable to publish event. Please try again.';
+
+const getPublishFailureMessage = (error: unknown) => {
+  if (error && typeof error === 'object') {
+    const responseMessage =
+      'response' in error &&
+      error.response &&
+      typeof error.response === 'object' &&
+      'data' in error.response &&
+      error.response.data &&
+      typeof error.response.data === 'object' &&
+      'message' in error.response.data
+        ? error.response.data.message
+        : undefined;
+
+    if (typeof responseMessage === 'string' && responseMessage.trim()) {
+      return responseMessage;
+    }
+
+    if (Array.isArray(responseMessage)) {
+      const normalized = responseMessage
+        .filter((message): message is string => typeof message === 'string' && message.trim())
+        .join('\n');
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
+      return error.message;
+    }
+  }
+
+  return PUBLISH_ERROR_FALLBACK;
+};
 
 const getScheduleSummary = (draft: ConnectPortalEventDraft) => {
   const startLine = `${formatConnectPortalDate(draft.startDate)}${
@@ -67,6 +103,7 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
   const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<ConnectPortalEventDraft | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useMountEffect(() => {
     let isActive = true;
@@ -107,22 +144,31 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
         navigation.navigate(getReviewBackRouteName(draft), { draftId: draft.id });
       }}
       onNext={async () => {
-        if (!draft) {
+        if (!draft || isPublishing) {
           return;
         }
 
-        const publishedEvent = await publishConnectPortalDraft(draft.id);
-        if (publishedEvent) {
-          navigation.replace('ConnectGoCreateStep7Success', { draftId: publishedEvent.id });
-        } else {
+        setIsPublishing(true);
+
+        try {
+          const publishedEvent = await publishConnectPortalDraft(draft.id);
+          if (publishedEvent) {
+            navigation.replace('ConnectGoCreateStep7Success', { draftId: publishedEvent.id });
+            return;
+          }
+
           const latestDraft = await getConnectPortalEventById(route.params.draftId);
           if (latestDraft?.status === 'published') {
             navigation.replace('ConnectGoCreateStep7Success', { draftId: latestDraft.id });
           }
+        } catch (error) {
+          Alert.alert('Unable to publish event', getPublishFailureMessage(error));
+        } finally {
+          setIsPublishing(false);
         }
       }}
       nextLabel="Publish Event"
-      nextDisabled={!draft}
+      nextDisabled={!draft || isPublishing}
     >
       {draft ? (
         <>

@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1 },
   innerContainer: {
     flex: 1,
@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
   heading: {
     fontSize: getFontSize(2.2),
     fontWeight: '400',
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Rubik-Medium',
   },
   logouttext: {
     fontSize: getFontSize(2.5),
@@ -73,3 +73,5 @@ export const styles = StyleSheet.create({
     paddingHorizontal: getWidth(4),
   },
 });
+
+export default styles;

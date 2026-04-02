@@ -3,7 +3,6 @@ import {
   Alert,
   ImageBackground,
   Linking,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import type { StackScreenProps } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   formatConnectPortalDate,
@@ -25,6 +25,9 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventView'>;
 const STOCK_EVENT_IMAGE_URI =
   'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80';
+const BASE_HERO_IMAGE_HEIGHT = 320;
+const HEADER_TOP_SPACING = 16;
+const BOTTOM_BAR_PADDING_BOTTOM = 24;
 
 const isValidExternalLink = (value?: string) => {
   if (!value) {
@@ -116,6 +119,7 @@ const getLocationCopy = (eventRecord: ConnectPortalEventRecord | null) => {
 
 function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   const [eventRecord, setEventRecord] = useState<ConnectPortalEventRecord | null>(null);
+  const insets = useSafeAreaInsets();
 
   useMountEffect(() => {
     let isActive = true;
@@ -202,7 +206,7 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.screen}>
       <View style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -210,11 +214,14 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
         >
           <ImageBackground
             source={{ uri: heroImageUri }}
-            style={styles.heroImage}
+            style={[styles.heroImage, { height: BASE_HERO_IMAGE_HEIGHT + insets.top }]}
             testID="connect-event-hero-image"
           >
             <View style={styles.heroOverlay} />
-            <View style={styles.headerRow}>
+            <View
+              style={[styles.headerRow, { paddingTop: insets.top + HEADER_TOP_SPACING }]}
+              testID="connect-event-header-row"
+            >
               <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => navigation.goBack()}
@@ -270,14 +277,19 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
           </View>
         </ScrollView>
 
-        <View style={styles.bottomBar}>{renderBottomAction()}</View>
+        <View
+          style={[styles.bottomBar, { paddingBottom: BOTTOM_BAR_PADDING_BOTTOM + insets.bottom }]}
+          testID="connect-event-bottom-bar"
+        >
+          {renderBottomAction()}
+        </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
     flex: 1,
     backgroundColor: '#F6F7F8',
   },
@@ -289,7 +301,6 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: 320,
     justifyContent: 'flex-start',
   },
   heroOverlay: {
@@ -300,7 +311,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
   },
   headerButton: {
     minHeight: 42,
@@ -410,7 +420,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 24,
     backgroundColor: '#F6F7F8',
     borderTopWidth: 1,
     borderTopColor: '#E6EAEC',

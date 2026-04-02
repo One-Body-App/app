@@ -1,45 +1,45 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
+import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
 import StyledText from '@/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MAPBOX_PUBLIC_TOKEN } from '@/services/constants';
 import { ConnectStackParamsList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
+import BulletListIcon from '@/assets/svg/Bullet-List--Streamline-Core.svg';
 import getDeviceLocation from '@/src/services/deviceLocation';
 import {
   createConnectPortalDraft,
   formatConnectPortalDateTime,
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
-import { filterConnectGoEvents } from '@/src/services/connectPortal/goEventFilters';
-import { CONNECT_DEFAULT_EVENT_TYPE_OPTIONS } from '@/src/services/connectPortal/defaultEventTypes';
-import { CONNECT_DEFAULT_SERVE_ROLE_OPTIONS } from '@/src/services/connectPortal/defaultServeRoles';
-import filterConnectServeJobs from '@/src/services/connectPortal/serveJobFilters';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import type { ConnectPortalMapItem, Coordinate } from './data';
+import { CONNECT_PORTAL_MAP_DATA, type ConnectPortalMapItem, type Coordinate } from './data';
 import {
   CONNECT_BRAND,
   CONNECT_BOTTOM_CHIP_RAIL_HEIGHT,
   CONNECT_BOTTOM_NAV_BASE_OFFSET,
   CONNECT_BOTTOM_SEARCH_ROW_HEIGHT,
   CONNECT_BOTTOM_STACK_GAP,
-  CONNECT_GO_QUICK_CHIPS,
   ConnectMapFloatingCard,
   ConnectMapMarker,
   ConnectPortalChrome,
-  ConnectPortalFilterSheet,
   ConnectRetractableSearchBar,
+  ConnectPlacesFilterSheet,
   ConnectPlacesQuickChips,
   useConnectKeyboardMetrics,
 } from './shared';
+import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
+import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
+import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectMap'>;
 
@@ -260,6 +260,10 @@ const CONNECT_MAP_STYLE_DARK = createConnectMapStyle(true);
 const CONNECT_MAP_STYLE_LIGHT = createConnectMapStyle(false);
 
 function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
+  const rootTabReplayToken = useRootTabSwitchReplayToken('ConnectTab');
+  const { getSpringboardStyle } = useSpringboardEntry(rootTabReplayToken, 3, {
+    preset: getTabRootSpringboardPreset('connect'),
+  });
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const mapbox = useMemo(() => resolveMapboxModule(), []);
@@ -272,9 +276,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     setViewMode,
     searchByTab,
     setSearchText,
-    go,
     places,
-    serve,
   } = useConnectPortalData();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [initialCameraTarget, setInitialCameraTarget] = useState<Coordinate>(DEFAULT_CENTER);
@@ -282,6 +284,14 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
   const mapStyleJSON = useMemo(
     () => (dark ? CONNECT_MAP_STYLE_DARK : CONNECT_MAP_STYLE_LIGHT),
     [dark]
+  );
+  const renderListViewIcon = useCallback(
+    (color: string) => <BulletListIcon width={20} height={20} fill={color} color={color} />,
+    []
+  );
+  const renderEventManageIcon = useCallback(
+    (color: string) => <CalendarEditIcon width={18} height={18} fill={color} color={color} />,
+    []
   );
 
   useMountEffect(() => {
@@ -306,17 +316,6 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     };
   });
 
-  const goEventRecords = useMemo(
-    () =>
-      filterConnectGoEvents({
-        events: snapshot.publicPublished,
-        filters: go.filters,
-        quickFilter: go.quickChip,
-        searchText: searchByTab['Go!'],
-      }),
-    [go.filters, go.quickChip, searchByTab, snapshot.publicPublished]
-  );
-
   const activeItems = useMemo(() => {
     if (activeTab === 'Places') {
       return places.visibleRecords.map((record) => ({
@@ -332,7 +331,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
 
     if (activeTab === 'Go!') {
-      return goEventRecords.map((eventRecord) => ({
+      return snapshot.publicPublished.map((eventRecord) => ({
         id: eventRecord.id,
         title: eventRecord.title,
         subtitle: `${eventRecord.startDate || 'Date TBD'}${eventRecord.startTime ? ` • ${eventRecord.startTime}` : ''}`,
@@ -342,30 +341,8 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       }));
     }
 
-    const filteredServeRecords = filterConnectServeJobs({
-      jobs: serve.publicRecords,
-      filters: serve.filters,
-      quickFilter: serve.quickChip,
-      searchText: searchByTab.Serve,
-    });
-
-    return filteredServeRecords.map((job) => ({
-      id: job.id,
-      title: job.title,
-      subtitle: job.opportunityType || 'Serve Opportunity',
-      address: job.address || 'Location TBD',
-      coordinate: job.coordinate || DEFAULT_CENTER,
-      type: 'job' as const,
-    }));
-  }, [
-    activeTab,
-    goEventRecords,
-    places.visibleRecords,
-    serve.publicRecords,
-    serve.filters,
-    serve.quickChip,
-    searchByTab.Serve,
-  ]);
+    return CONNECT_PORTAL_MAP_DATA.Serve;
+  }, [activeTab, places.visibleRecords, snapshot.publicPublished]);
 
   const validSelectedItemId =
     selectedItemId && activeItems.some((item) => item.id === selectedItemId)
@@ -383,11 +360,12 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       : null;
   const selectedEvent =
     activeTab === 'Go!'
-      ? goEventRecords.find((eventRecord) => eventRecord.id === validSelectedItemId) || null
+      ? snapshot.publicPublished.find((eventRecord) => eventRecord.id === validSelectedItemId) ||
+        null
       : null;
   const selectedServeItem =
     activeTab === 'Serve'
-      ? activeItems.find((item) => item.id === validSelectedItemId && item.type === 'job') || null
+      ? CONNECT_PORTAL_MAP_DATA.Serve.find((item) => item.id === validSelectedItemId) || null
       : null;
 
   const onChangeViewMode = (viewMode: 'list' | 'map') => {
@@ -405,7 +383,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       return;
     }
     if (activeTab === 'Serve') {
-      navigation.navigate('ConnectServeCreateJobStep1');
+      Alert.alert('Coming Soon', 'Serve opportunity creation is coming soon.');
     }
   }, [activeTab, navigation]);
 
@@ -416,7 +394,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
 
     if (activeTab === 'Go!') {
-      navigation.navigate('ConnectGoEventDash');
+      navigation.navigate('ConnectGoLanding');
       return;
     }
 
@@ -426,7 +404,6 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
   const onChangeTab = (tab: typeof activeTab) => {
     clearSelection();
     setActiveTab(tab);
-    navigation.setParams({ initialTab: tab });
     if (tab === 'Go!') {
       refresh();
     }
@@ -447,35 +424,14 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
   };
 
-  const showBottomChips =
-    (activeTab === 'Places' || activeTab === 'Go!' || activeTab === 'Serve') && !keyboardVisible;
+  const showPlacesChips = activeTab === 'Places' && !keyboardVisible;
   const chipRailBottom = insets.bottom + CONNECT_BOTTOM_NAV_BASE_OFFSET;
   const searchRowBottom = keyboardVisible
     ? keyboardHeight + CONNECT_BOTTOM_STACK_GAP
     : chipRailBottom +
-      (showBottomChips ? CONNECT_BOTTOM_CHIP_RAIL_HEIGHT + CONNECT_BOTTOM_STACK_GAP : 0);
+      (showPlacesChips ? CONNECT_BOTTOM_CHIP_RAIL_HEIGHT + CONNECT_BOTTOM_STACK_GAP : 0);
   const previewRailBottom =
     searchRowBottom + CONNECT_BOTTOM_SEARCH_ROW_HEIGHT + CONNECT_BOTTOM_STACK_GAP;
-  let filterSheetVisible = serve.filterSheetOpen;
-  if (activeTab === 'Places') {
-    filterSheetVisible = places.filterSheetOpen;
-  } else if (activeTab === 'Go!') {
-    filterSheetVisible = go.filterSheetOpen;
-  }
-
-  const closeFilterSheet = () => {
-    if (activeTab === 'Places') {
-      places.setFilterSheetOpen(false);
-      return;
-    }
-
-    if (activeTab === 'Go!') {
-      go.setFilterSheetOpen(false);
-      return;
-    }
-
-    serve.setFilterSheetOpen(false);
-  };
 
   const floatingCard = useMemo(() => {
     if (selectedPlace) {
@@ -538,9 +494,8 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           fallbackIcon="hand-heart"
           trailingIconName="volunteer-activism"
           primaryAction={{
-            label: 'Details',
-            onPress: () =>
-              navigation.navigate('ConnectServeJobView', { jobId: selectedServeItem.id }),
+            label: 'Explore',
+            onPress: onOpenLanding,
           }}
           onDismiss={clearSelection}
         />
@@ -557,53 +512,6 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     selectedPlace,
     selectedServeItem,
   ]);
-
-  const renderBottomChips = () => {
-    if (activeTab === 'Places') {
-      return (
-        <ConnectPlacesQuickChips
-          selectedChip={places.quickChip}
-          onSelect={places.setQuickChip}
-          variant="bottomOverlay"
-        />
-      );
-    }
-    if (activeTab === 'Serve') {
-      const resolvedServeRoleOptions =
-        serve.roleTypeOptions.length > 0
-          ? serve.roleTypeOptions
-          : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS;
-      return (
-        <ConnectPlacesQuickChips
-          chips={resolvedServeRoleOptions.map((option) => option.value)}
-          selectedChip={serve.filters.roleType || null}
-          onSelect={(chip) =>
-            serve.setFilters({ roleType: chip === serve.filters.roleType ? '' : chip })
-          }
-          variant="bottomOverlay"
-        />
-      );
-    }
-    const resolvedGoChips =
-      go.eventTypeOptions.length > 0 ? go.eventTypeOptions : CONNECT_DEFAULT_EVENT_TYPE_OPTIONS;
-    return (
-      <ConnectPlacesQuickChips
-        chips={resolvedGoChips.slice(0, 7).map((option) => option.value)}
-        selectedChip={go.filters.eventType || null}
-        onSelect={(chip) => go.setFilters({ eventType: chip === go.filters.eventType ? '' : chip })}
-        variant="bottomOverlay"
-        actionChip={
-          go.eventTypeOptions.length > 7
-            ? {
-                label: 'See all',
-                onPress: () => onChangeViewMode('list'),
-                testID: 'connect-go-map-see-all-chip',
-              }
-            : undefined
-        }
-      />
-    );
-  };
 
   return (
     <View
@@ -688,7 +596,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
         </View>
       )}
 
-      <View style={styles.overlayTop}>
+      <Animated.View style={[styles.overlayTop, getSpringboardStyle(0)]}>
         <LinearGradient
           colors={
             dark
@@ -704,96 +612,60 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           onTabChange={onChangeTab}
           userAvatarUri={currentUser?.profileImage}
           overlay
-          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
-          addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
-          headerActionIconName={activeTab === 'Places' ? 'view-list' : undefined}
-          headerActionAccessibilityLabel={
-            activeTab === 'Places' ? 'Switch to list view' : undefined
-          }
-          onHeaderActionPress={activeTab === 'Places' ? () => onChangeViewMode('list') : undefined}
+          headerActionIcon={renderListViewIcon}
+          headerActionAccessibilityLabel="Switch to list view"
+          onHeaderActionPress={() => onChangeViewMode('list')}
         />
-      </View>
+      </Animated.View>
 
-      {showBottomChips ? (
-        <View style={[styles.bottomChipRail, { bottom: chipRailBottom }]}>
-          {renderBottomChips()}
-        </View>
+      {showPlacesChips ? (
+        <Animated.View
+          style={[styles.bottomChipRail, { bottom: chipRailBottom }, getSpringboardStyle(1)]}
+        >
+          <ConnectPlacesQuickChips
+            selectedChip={places.quickChip}
+            onSelect={places.setQuickChip}
+            variant="bottomOverlay"
+          />
+        </Animated.View>
       ) : null}
 
-      <View pointerEvents="box-none" style={[styles.bottomSearchDock, { bottom: searchRowBottom }]}>
+      <Animated.View
+        pointerEvents="box-none"
+        style={[styles.bottomSearchDock, { bottom: searchRowBottom }, getSpringboardStyle(2)]}
+      >
         <ConnectRetractableSearchBar
           key={`connect-map-${activeTab}`}
           searchText={searchByTab[activeTab]}
           onSearchChange={(text) => setSearchText(activeTab, text)}
           searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
-          tertiaryAction={(() => {
-            if (activeTab === 'Go!') {
-              return {
-                icon: 'eventManager' as const,
-                accessibilityLabel: 'Open event management',
-                onPress: () => navigation.navigate('ConnectGoEventDash'),
-                testID: 'connect-go-event-manager-action',
-              };
-            }
-            if (activeTab === 'Serve') {
-              return {
-                icon: 'serveManager' as const,
-                accessibilityLabel: 'Open serve manager',
-                onPress: () => navigation.navigate('ConnectServeHome'),
-                testID: 'connect-serve-manager-action',
-              };
-            }
-            return undefined;
-          })()}
-          viewToggle={
-            activeTab !== 'Places'
-              ? {
-                  toMap: false,
-                  onPress: () => onChangeViewMode('list'),
-                  accessibilityLabel: 'Switch to list view',
-                }
-              : undefined
+          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
+          onSecondaryActionPress={
+            activeTab === 'Go!' ? () => navigation.navigate('ConnectGoEventDash') : undefined
+          }
+          renderSecondaryActionIcon={activeTab === 'Go!' ? renderEventManageIcon : undefined}
+          secondaryActionAccessibilityLabel={
+            activeTab === 'Go!' ? 'Open event management' : undefined
+          }
+          onOpenFilters={
+            activeTab === 'Places' ? () => places.setFilterSheetOpen(true) : onOpenLanding
           }
         />
-      </View>
+      </Animated.View>
 
       {floatingCard ? (
         <View style={[styles.previewRail, { bottom: previewRailBottom }]}>{floatingCard}</View>
       ) : null}
 
-      <ConnectPortalFilterSheet
-        visible={filterSheetVisible}
-        activeTab={activeTab}
-        onClose={closeFilterSheet}
-        places={{
-          filters: places.filters,
-          organizationTypes: places.organizationTypes,
-          churchTypes: places.churchTypes,
-          sortOptions: places.sortOptions,
-          onApply: places.setFilters,
-          onReset: places.resetFilters,
-        }}
-        go={{
-          filters: go.filters,
-          sortOptions: go.sortOptions,
-          eventTypeOptions: go.eventTypeOptions,
-          categoryOptions: go.categoryOptions,
-          quickFilterOptions: CONNECT_GO_QUICK_CHIPS.map((chip) => ({ label: chip, value: chip })),
-          quickFilterValue: go.quickChip,
-          onQuickFilterChange: go.setQuickChip,
-          onApply: go.setFilters,
-          onReset: go.resetFilters,
-        }}
-        serve={{
-          filters: serve.filters,
-          sortOptions: serve.sortOptions,
-          roleTypeOptions:
-            serve.roleTypeOptions.length > 0
-              ? serve.roleTypeOptions
-              : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS,
-          onApply: serve.setFilters,
-          onReset: serve.resetFilters,
-        }}
+      <ConnectPlacesFilterSheet
+        visible={places.filterSheetOpen}
+        filters={places.filters}
+        organizationTypes={places.organizationTypes}
+        churchTypes={places.churchTypes}
+        sortOptions={places.sortOptions}
+        onClose={() => places.setFilterSheetOpen(false)}
+        onApply={places.setFilters}
+        onReset={places.resetFilters}
       />
     </View>
   );

@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
+  Pressable,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -65,45 +67,6 @@ const APPLICATION_METHOD_OPTIONS: Array<{
   },
 ];
 
-const showOptionPicker = (
-  title: string,
-  options: SelectOption[],
-  onSelect: (value: string) => void
-) => {
-  if (options.length === 0) {
-    return;
-  }
-
-  if (Platform.OS === 'ios') {
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        title,
-        options: ['Cancel', ...options.map((option) => option.label)],
-        cancelButtonIndex: 0,
-      },
-      (buttonIndex) => {
-        if (buttonIndex > 0) {
-          onSelect(options[buttonIndex - 1].value);
-        }
-      }
-    );
-    return;
-  }
-
-  Alert.alert(
-    title,
-    undefined,
-    [
-      ...options.map((option) => ({
-        text: option.label,
-        onPress: () => onSelect(option.value),
-      })),
-      { text: 'Cancel', style: 'cancel' as const },
-    ],
-    { cancelable: true }
-  );
-};
-
 const isValidApplicationUrl = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -117,6 +80,18 @@ const isValidApplicationUrl = (value: string) => {
     return false;
   }
 };
+
+const isValidCompensationAmount = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed.length > 0 && Number.isFinite(Number(trimmed));
+};
+
+type AndroidPickerState = {
+  title: string;
+  options: SelectOption[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+} | null;
 
 export default function ServeCreateJobStep2({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
@@ -133,29 +108,43 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
   );
   const [applicationUrl, setApplicationUrl] = useState('');
   const [hiringStatus, setHiringStatus] = useState<'open' | 'closed'>('open');
+  const [pickerState, setPickerState] = useState<AndroidPickerState>(null);
 
   useMountEffect(() => {
     let isActive = true;
 
     (async () => {
-      const draft = await getConnectServeJobDraftById(route.params.draftId);
-      if (!isActive) {
-        return;
-      }
+      try {
+        const draft = await getConnectServeJobDraftById(route.params.draftId);
+        if (!isActive) {
+          return;
+        }
 
-      if (!draft) {
-        navigation.navigate('ConnectServeHome');
-        return;
-      }
+        if (!draft) {
+          navigation.navigate('ConnectServeHome');
+          return;
+        }
 
-      setDraftId(draft.id);
-      setOpportunityType(draft.opportunityType);
-      setCompensationAmount(draft.compensationAmount);
-      setCompensationFrequency(draft.compensationFrequency);
-      setApplicationMethods(draft.applicationMethods || []);
-      setApplicationUrl(draft.applicationUrl);
-      setHiringStatus(draft.hiringStatus);
-      setLoading(false);
+        setDraftId(draft.id);
+        setOpportunityType(draft.opportunityType);
+        setCompensationAmount(draft.compensationAmount);
+        setCompensationFrequency(draft.compensationFrequency);
+        setApplicationMethods(draft.applicationMethods || []);
+        setApplicationUrl(draft.applicationUrl);
+        setHiringStatus(draft.hiringStatus);
+        setLoading(false);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        Alert.alert(
+          'Unable to load opportunity',
+          'Please try again in a moment.',
+          [{ text: 'OK', onPress: () => navigation.navigate('ConnectServeHome') }],
+          { cancelable: false }
+        );
+      }
     })();
 
     return () => {
@@ -198,7 +187,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
   const nextDisabled =
     !draftId ||
     !opportunityType.trim() ||
-    !compensationAmount.trim() ||
+    !isValidCompensationAmount(compensationAmount) ||
     !compensationFrequency ||
     applicationMethods.length < 1 ||
     (hasExternalLinkMethod && !isValidApplicationUrl(applicationUrl));
@@ -213,115 +202,131 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
       .join(' + ');
   }, [applicationMethods]);
 
-  return (
-    <CreateFlowLayout
-      title="Create Job"
-      step={2}
-      totalSteps={2}
-      loading={loading}
-      onBack={async () => {
-        await persistDraft(1);
-        await serve.refresh();
-        navigation.navigate('ConnectServeCreateJobStep1', {
-          draftId: draftId || route.params.draftId,
-        });
-      }}
-      onSave={async () => {
-        await persistDraft(1);
-        await serve.refresh();
-        navigation.navigate('ConnectServeHome');
-      }}
-      saveLabel="Save Draft"
-      onNext={async () => {
-        if (!draftId) {
-          return;
-        }
-        await persistDraft(2);
-        const publishedJob = await publishConnectServeJobDraft(draftId);
-        await serve.refresh();
-        navigation.navigate('ConnectServeApplications', { jobId: publishedJob.id });
-      }}
-      nextLabel="Create Job"
-      nextDisabled={nextDisabled}
-    >
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          Finish the application details.
-        </Text>
-        <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Add the compensation and response details people need before they apply.
-        </Text>
-      </View>
+  const openOptionPicker = (
+    title: string,
+    options: SelectOption[],
+    selectedValue: string,
+    onSelect: (value: string) => void
+  ) => {
+    if (options.length === 0) {
+      return;
+    }
 
-      <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.textPrimary }]}>Opportunity Type</Text>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[
-            styles.inputButton,
-            { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
-          ]}
-          onPress={() =>
-            showOptionPicker('Opportunity Type', OPPORTUNITY_TYPE_OPTIONS, setOpportunityType)
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title,
+          options: ['Cancel', ...options.map((option) => option.label)],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex > 0) {
+            onSelect(options[buttonIndex - 1].value);
           }
-        >
-          <Text
-            style={[
-              styles.inputButtonText,
-              { color: opportunityType ? palette.inputText : palette.inputPlaceholder },
-            ]}
-          >
-            {opportunityType || 'Choose the opportunity type'}
-          </Text>
-          <MaterialCommunityIcons name="chevron-down" size={20} color={palette.inputPlaceholder} />
-        </TouchableOpacity>
-      </View>
+        }
+      );
+      return;
+    }
 
-      <View style={styles.row}>
-        <View style={styles.fieldHalf}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Compensation</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: palette.inputBg,
-                borderColor: palette.inputBorder,
-                color: palette.inputText,
-              },
-            ]}
-            value={compensationAmount}
-            onChangeText={setCompensationAmount}
-            placeholder="Enter amount"
-            placeholderTextColor={palette.inputPlaceholder}
-            keyboardType="numeric"
-          />
+    setPickerState({
+      title,
+      options,
+      selectedValue,
+      onSelect,
+    });
+  };
+
+  const closePicker = () => {
+    setPickerState(null);
+  };
+
+  return (
+    <View style={styles.screenRoot}>
+      <CreateFlowLayout
+        title="Create Job"
+        step={2}
+        totalSteps={2}
+        loading={loading}
+        onBack={async () => {
+          try {
+            await persistDraft(1);
+            await serve.refresh();
+            navigation.navigate('ConnectServeCreateJobStep1', {
+              draftId: draftId || route.params.draftId,
+            });
+          } catch (error) {
+            Alert.alert(
+              'Unable to save opportunity',
+              error instanceof Error ? error.message : 'Please try again in a moment.'
+            );
+          }
+        }}
+        onSave={async () => {
+          try {
+            await persistDraft(1);
+            await serve.refresh();
+            navigation.navigate('ConnectServeHome');
+          } catch (error) {
+            Alert.alert(
+              'Unable to save opportunity',
+              error instanceof Error ? error.message : 'Please try again in a moment.'
+            );
+          }
+        }}
+        saveLabel="Save Draft"
+        onNext={async () => {
+          if (!draftId || !isValidCompensationAmount(compensationAmount)) {
+            return;
+          }
+          try {
+            await persistDraft(2);
+            const publishedJob = await publishConnectServeJobDraft(draftId);
+            await serve.refresh();
+            navigation.navigate('ConnectServeApplications', { jobId: publishedJob.id });
+          } catch (error) {
+            Alert.alert(
+              'Unable to create job',
+              error instanceof Error ? error.message : 'Please try again in a moment.'
+            );
+          }
+        }}
+        nextLabel="Create Job"
+        nextDisabled={nextDisabled}
+      >
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+            Finish the application details.
+          </Text>
+          <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
+            Add the compensation and response details people need before they apply.
+          </Text>
         </View>
 
-        <View style={styles.fieldHalf}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Frequency</Text>
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Opportunity Type</Text>
           <TouchableOpacity
+            testID="opportunity-type-trigger"
             activeOpacity={0.85}
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
             ]}
             onPress={() =>
-              showOptionPicker('Compensation Frequency', COMPENSATION_FREQUENCY_OPTIONS, (value) =>
-                setCompensationFrequency(
-                  value as '' | 'per_hour' | 'per_week' | 'per_month' | 'per_year'
-                )
+              openOptionPicker(
+                'Opportunity Type',
+                OPPORTUNITY_TYPE_OPTIONS,
+                opportunityType,
+                setOpportunityType
               )
             }
           >
             <Text
               style={[
                 styles.inputButtonText,
-                { color: compensationFrequency ? palette.inputText : palette.inputPlaceholder },
+                { color: opportunityType ? palette.inputText : palette.inputPlaceholder },
               ]}
             >
-              {COMPENSATION_FREQUENCY_OPTIONS.find(
-                (option) => option.value === compensationFrequency
-              )?.label || 'Select'}
+              {opportunityType || 'Choose the opportunity type'}
             </Text>
             <MaterialCommunityIcons
               name="chevron-down"
@@ -330,98 +335,251 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
             />
           </TouchableOpacity>
         </View>
-      </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.textPrimary }]}>Application Methods</Text>
-        <Text style={[styles.supportText, { color: palette.textSecondary }]}>
-          {methodSummaryText}
-        </Text>
-        <View style={styles.methodList}>
-          {APPLICATION_METHOD_OPTIONS.map((option) => {
-            const selected = applicationMethods.includes(option.value);
-            return (
-              <TouchableOpacity
-                key={option.value}
-                testID={`application-method-${option.value}`}
-                activeOpacity={0.88}
+        <View style={styles.row}>
+          <View style={styles.fieldHalf}>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Compensation</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: palette.inputBg,
+                  borderColor: palette.inputBorder,
+                  color: palette.inputText,
+                },
+              ]}
+              value={compensationAmount}
+              onChangeText={setCompensationAmount}
+              placeholder="Enter amount"
+              placeholderTextColor={palette.inputPlaceholder}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.fieldHalf}>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Frequency</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.inputButton,
+                { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
+              ]}
+              onPress={() =>
+                openOptionPicker(
+                  'Compensation Frequency',
+                  COMPENSATION_FREQUENCY_OPTIONS,
+                  compensationFrequency,
+                  (value) =>
+                    setCompensationFrequency(
+                      value as '' | 'per_hour' | 'per_week' | 'per_month' | 'per_year'
+                    )
+                )
+              }
+            >
+              <Text
                 style={[
-                  styles.methodCard,
+                  styles.inputButtonText,
+                  { color: compensationFrequency ? palette.inputText : palette.inputPlaceholder },
+                ]}
+              >
+                {COMPENSATION_FREQUENCY_OPTIONS.find(
+                  (option) => option.value === compensationFrequency
+                )?.label || 'Select'}
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={20}
+                color={palette.inputPlaceholder}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Application Methods</Text>
+          <Text style={[styles.supportText, { color: palette.textSecondary }]}>
+            {methodSummaryText}
+          </Text>
+          <View style={styles.methodList}>
+            {APPLICATION_METHOD_OPTIONS.map((option) => {
+              const selected = applicationMethods.includes(option.value);
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  testID={`application-method-${option.value}`}
+                  activeOpacity={0.88}
+                  style={[
+                    styles.methodCard,
+                    {
+                      backgroundColor: selected ? '#EAF6FA' : palette.inputBg,
+                      borderColor: selected ? '#126b87' : palette.inputBorder,
+                    },
+                  ]}
+                  onPress={() => toggleApplicationMethod(option.value)}
+                >
+                  <View style={styles.methodTextWrap}>
+                    <Text style={[styles.methodTitle, { color: palette.textPrimary }]}>
+                      {option.title}
+                    </Text>
+                    <Text style={[styles.methodDescription, { color: palette.textSecondary }]}>
+                      {option.description}
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons
+                    name={selected ? 'check-circle' : 'checkbox-blank-circle-outline'}
+                    size={22}
+                    color={selected ? '#126b87' : palette.inputPlaceholder}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          {hasExternalLinkMethod ? (
+            <>
+              <Text style={[styles.label, { color: palette.textPrimary }]}>Application URL</Text>
+              <TextInput
+                testID="application-url-input"
+                style={[
+                  styles.input,
                   {
-                    backgroundColor: selected ? '#EAF6FA' : palette.inputBg,
-                    borderColor: selected ? '#126b87' : palette.inputBorder,
+                    backgroundColor: palette.inputBg,
+                    borderColor: palette.inputBorder,
+                    color: palette.inputText,
                   },
                 ]}
-                onPress={() => toggleApplicationMethod(option.value)}
-              >
-                <View style={styles.methodTextWrap}>
-                  <Text style={[styles.methodTitle, { color: palette.textPrimary }]}>
-                    {option.title}
-                  </Text>
-                  <Text style={[styles.methodDescription, { color: palette.textSecondary }]}>
-                    {option.description}
-                  </Text>
-                </View>
-                <MaterialCommunityIcons
-                  name={selected ? 'check-circle' : 'checkbox-blank-circle-outline'}
-                  size={22}
-                  color={selected ? '#126b87' : palette.inputPlaceholder}
-                />
-              </TouchableOpacity>
-            );
-          })}
+                value={applicationUrl}
+                onChangeText={setApplicationUrl}
+                placeholder="https://example.com/apply"
+                placeholderTextColor={palette.inputPlaceholder}
+                keyboardType="url"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </>
+          ) : null}
         </View>
-      </View>
 
-      {hasExternalLinkMethod ? (
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Application URL</Text>
-          <TextInput
-            testID="application-url-input"
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Hiring Status</Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
             style={[
-              styles.input,
+              styles.inputButton,
+              { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
+            ]}
+            onPress={() =>
+              openOptionPicker('Hiring Status', HIRING_STATUS_OPTIONS, hiringStatus, (value) =>
+                setHiringStatus(value as 'open' | 'closed')
+              )
+            }
+          >
+            <Text style={[styles.inputButtonText, { color: palette.inputText }]}>
+              {HIRING_STATUS_OPTIONS.find((option) => option.value === hiringStatus)?.label ||
+                'Open'}
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-down"
+              size={20}
+              color={palette.inputPlaceholder}
+            />
+          </TouchableOpacity>
+        </View>
+      </CreateFlowLayout>
+
+      {pickerState ? (
+        <View
+          testID="option-sheet-modal"
+          style={styles.optionSheetOverlay}
+          pointerEvents="box-none"
+        >
+          <Pressable style={styles.optionSheetBackdrop} onPress={closePicker} />
+          <View
+            style={[
+              styles.optionSheetModal,
               {
-                backgroundColor: palette.inputBg,
+                backgroundColor: palette.cardBg,
                 borderColor: palette.inputBorder,
-                color: palette.inputText,
               },
             ]}
-            value={applicationUrl}
-            onChangeText={setApplicationUrl}
-            placeholder="https://example.com/apply"
-            placeholderTextColor={palette.inputPlaceholder}
-            keyboardType="url"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          >
+            <View style={styles.optionSheetHandleWrap}>
+              <View
+                style={[
+                  styles.optionSheetHandle,
+                  { backgroundColor: palette.isDark ? '#3a4a50' : '#d1d5db' },
+                ]}
+              />
+            </View>
+
+            <View style={[styles.optionSheetHeader, { borderBottomColor: palette.inputBorder }]}>
+              <Text style={[styles.optionSheetTitle, { color: palette.textPrimary }]}>
+                {pickerState.title}
+              </Text>
+              <TouchableOpacity
+                testID="option-sheet-close"
+                onPress={closePicker}
+                style={[
+                  styles.optionSheetCloseButton,
+                  { backgroundColor: palette.isDark ? '#032f3c' : '#f3f4f6' },
+                ]}
+              >
+                <MaterialCommunityIcons name="close" size={20} color={palette.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.optionSheetScroll}
+              contentContainerStyle={styles.optionSheetOptions}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {pickerState.options.map((option) => {
+                const selected = option.value === pickerState.selectedValue;
+                return (
+                  <TouchableOpacity
+                    key={`${pickerState.title}-${option.value}`}
+                    testID={`option-sheet-item-${option.value}`}
+                    activeOpacity={0.85}
+                    style={[
+                      styles.optionSheetButton,
+                      {
+                        backgroundColor: selected ? palette.cardActiveBg : 'transparent',
+                      },
+                    ]}
+                    onPress={() => {
+                      pickerState.onSelect(option.value);
+                      closePicker();
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.optionSheetButtonLabel,
+                        { color: selected ? palette.accent : palette.textPrimary },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                    {selected ? (
+                      <MaterialCommunityIcons name="check" size={18} color={palette.accent} />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
       ) : null}
-
-      <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.textPrimary }]}>Hiring Status</Text>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[
-            styles.inputButton,
-            { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
-          ]}
-          onPress={() =>
-            showOptionPicker('Hiring Status', HIRING_STATUS_OPTIONS, (value) =>
-              setHiringStatus(value as 'open' | 'closed')
-            )
-          }
-        >
-          <Text style={[styles.inputButtonText, { color: palette.inputText }]}>
-            {HIRING_STATUS_OPTIONS.find((option) => option.value === hiringStatus)?.label || 'Open'}
-          </Text>
-          <MaterialCommunityIcons name="chevron-down" size={20} color={palette.inputPlaceholder} />
-        </TouchableOpacity>
-      </View>
-    </CreateFlowLayout>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+  },
   section: {
     marginBottom: 24,
     gap: 8,
@@ -507,5 +665,75 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontFamily: 'OpenSans-Regular',
+  },
+  optionSheetOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    zIndex: 40,
+  },
+  optionSheetBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
+  },
+  optionSheetModal: {
+    maxHeight: '72%',
+    minHeight: 320,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  optionSheetContent: {
+    flex: 1,
+  },
+  optionSheetHandleWrap: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+  optionSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 999,
+  },
+  optionSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  optionSheetTitle: {
+    fontSize: 18,
+    fontFamily: 'Rubik-Bold',
+  },
+  optionSheetCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionSheetScroll: {
+    flex: 1,
+  },
+  optionSheetOptions: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  optionSheetButton: {
+    minHeight: 52,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  optionSheetButtonLabel: {
+    fontSize: 16,
+    fontFamily: 'Rubik-Medium',
   },
 });

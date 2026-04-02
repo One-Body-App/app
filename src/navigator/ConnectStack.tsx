@@ -7,6 +7,7 @@ import ListViewScreen from '../screens/connectportal/listview';
 import MapViewScreen from '../screens/connectportal/mapview';
 import UserProfile from '../screens/main/userProfile';
 import ConnectPortalPlaceholderScreen from '../screens/connectportal/placeholder';
+import GoLandingScreen from '../screens/connectportal/go/landing';
 import EventDashboardScreen from '../screens/connectportal/go/eventdash';
 import MyEventsScreen from '../screens/connectportal/go/myevents';
 import EventViewScreen from '../screens/connectportal/go/eventview';
@@ -69,6 +70,11 @@ function ConnectStack() {
           }}
         />
         <Stack.Screen
+          name="ConnectGoLanding"
+          component={GoLandingScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="ConnectGoEventDash"
           component={EventDashboardScreen}
           options={{ headerShown: false }}
@@ -81,7 +87,14 @@ function ConnectStack() {
         <Stack.Screen
           name="ConnectGoEventView"
           component={EventViewScreen}
-          options={{ headerShown: false }}
+          options={{
+            headerShown: false,
+            statusBarStyle: 'light',
+            statusBarColor: Platform.OS === 'android' ? 'transparent' : undefined,
+            statusBarTranslucent: Platform.OS === 'android',
+            contentStyle:
+              Platform.OS === 'android' ? { backgroundColor: 'transparent' } : undefined,
+          }}
         />
         <Stack.Screen
           name="ConnectGoEventAnalytics"

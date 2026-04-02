@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   Platform,
   RefreshControl,
   SafeAreaView,
@@ -18,6 +19,7 @@ import {
   createConnectPortalDraft,
   deleteConnectPortalDraft,
   formatConnectPortalDateTime,
+  getConnectPortalDraftByPublishedEventId,
   getDraftResumeRouteName,
   getEventLifecycleState,
 } from '@/src/services/connectPortal';
@@ -268,6 +270,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                           styles.primaryButton,
                           { backgroundColor: GO_EVENT_ACCENT },
                         ]}
+                        testID={`connect-my-events-resume-${eventRecord.id}`}
                         onPress={() =>
                           navigation.navigate(getDraftResumeRouteName(eventRecord), {
                             draftId: eventRecord.id,
@@ -284,9 +287,19 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                           styles.secondaryButton,
                           { backgroundColor: palette.inputBg, borderColor: palette.border },
                         ]}
-                        onPress={async () => {
-                          await deleteConnectPortalDraft(eventRecord.id);
-                          await refresh(true);
+                        testID={`connect-my-events-delete-${eventRecord.id}`}
+                        onPress={() => {
+                          Alert.alert('Are you sure?', 'This draft will be permanently deleted.', [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: async () => {
+                                await deleteConnectPortalDraft(eventRecord.id);
+                                await refresh(true);
+                              },
+                            },
+                          ]);
                         }}
                       >
                         <Text style={[styles.secondaryButtonText, { color: palette.textPrimary }]}>
@@ -302,9 +315,21 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                           styles.primaryButton,
                           { backgroundColor: GO_EVENT_ACCENT },
                         ]}
-                        onPress={() =>
-                          navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
-                        }
+                        testID={`connect-my-events-manage-${eventRecord.id}`}
+                        onPress={async () => {
+                          const existingDraft = await getConnectPortalDraftByPublishedEventId(
+                            eventRecord.id
+                          );
+
+                          if (existingDraft) {
+                            navigation.navigate(getDraftResumeRouteName(existingDraft), {
+                              draftId: existingDraft.id,
+                            });
+                            return;
+                          }
+
+                          navigation.navigate('ConnectGoCreateStep1', { eventId: eventRecord.id });
+                        }}
                       >
                         <Text style={[styles.primaryButtonText, { color: primaryBtnTextColor }]}>
                           Manage

@@ -60,6 +60,11 @@ const openSansFontFamily = Platform.select({
 
 const defaultFontFamily = openSansFontFamily;
 
+const rubikFontFamily = Platform.select({
+  ios: 'Rubik-Medium',
+  android: 'Rubik-Medium',
+});
+
 type LineHeight = 'x1' | 'x2' | 'x3' | 'x4' | 'x5' | 'x6' | 'x7';
 export const lineHeight: Record<LineHeight, TextStyle> = {
   x1: {
@@ -91,25 +96,25 @@ export const header: Record<Header, TextStyle> = {
     ...fontSize.x6,
     ...lineHeight.x6,
     ...fontWeight.medium,
-    fontFamily: defaultFontFamily,
+    fontFamily: rubikFontFamily,
   },
   h2: {
     ...fontSize.x5,
     ...lineHeight.x5,
     ...fontWeight.medium,
-    fontFamily: defaultFontFamily,
+    fontFamily: rubikFontFamily,
   },
   h3: {
     ...fontSize.x4,
     ...lineHeight.x4,
     ...fontWeight.medium,
-    fontFamily: defaultFontFamily,
+    fontFamily: rubikFontFamily,
   },
   h4: {
     ...fontSize.x3,
     ...lineHeight.x3,
     ...fontWeight.medium,
-    fontFamily: defaultFontFamily,
+    fontFamily: rubikFontFamily,
   },
 };
 

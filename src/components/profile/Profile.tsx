@@ -188,7 +188,7 @@ function Profile({
         headerItem={headerContent}
         userIdToPullData={profileData._id}
         socialType="onebody"
-        emptyText="No posts yet"
+        emptyText="No social posts to display"
       />
     </View>
   );

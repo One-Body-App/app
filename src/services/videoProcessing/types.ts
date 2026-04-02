@@ -28,6 +28,13 @@ export type VideoDimensions = {
   height: number;
 };
 
+export type SelectedVideoSource = {
+  uri: string;
+  ratioId?: VideoRatioId;
+  width?: number;
+  height?: number;
+};
+
 export type VideoEditRecipe = {
   sourceUri: string;
   caption: string;

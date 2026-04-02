@@ -1,5 +1,6 @@
 import {
   buildPendingVideoUploadRecipe,
+  copyVideoSourceToAppCache,
   formatAspectRatioLabel,
   getVideoFitSize,
   isSuccessfulStatus,
@@ -104,6 +105,60 @@ describe('videoPostUtils', () => {
           },
         })
       ).toThrow('Video trim settings are invalid.');
+    });
+  });
+
+  describe('copyVideoSourceToAppCache', () => {
+    it('copies file sources into app-managed cache and preserves the extension', async () => {
+      const copyFile = jest.fn(async () => undefined);
+
+      const result = await copyVideoSourceToAppCache({
+        sourceUri: 'file:///tmp/camera-capture.mov',
+        cachesDirectoryPath: '/cache',
+        temporaryDirectoryPath: '/tmp',
+        copyFile,
+        now: () => 1234,
+        random: () => 0.4,
+      });
+
+      expect(copyFile).toHaveBeenCalledWith(
+        '/tmp/camera-capture.mov',
+        '/cache/onebody_watch_source_1234_400.mov'
+      );
+      expect(result).toBe('file:///cache/onebody_watch_source_1234_400.mov');
+    });
+
+    it('uses an mp4 extension fallback when the source has no file extension', async () => {
+      const copyFile = jest.fn(async () => undefined);
+
+      const result = await copyVideoSourceToAppCache({
+        sourceUri: '/tmp/camera-capture',
+        cachesDirectoryPath: '/cache',
+        temporaryDirectoryPath: '/tmp',
+        copyFile,
+        now: () => 5678,
+        random: () => 0.1,
+      });
+
+      expect(copyFile).toHaveBeenCalledWith(
+        '/tmp/camera-capture',
+        '/cache/onebody_watch_source_5678_100.mp4'
+      );
+      expect(result).toBe('file:///cache/onebody_watch_source_5678_100.mp4');
+    });
+
+    it('returns content URIs unchanged without copying them', async () => {
+      const copyFile = jest.fn(async () => undefined);
+
+      const result = await copyVideoSourceToAppCache({
+        sourceUri: 'content://media/external/video/42',
+        cachesDirectoryPath: '/cache',
+        temporaryDirectoryPath: '/tmp',
+        copyFile,
+      });
+
+      expect(copyFile).not.toHaveBeenCalled();
+      expect(result).toBe('content://media/external/video/42');
     });
   });
 });

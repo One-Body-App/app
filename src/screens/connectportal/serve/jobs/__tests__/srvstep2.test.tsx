@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { TouchableOpacity } from 'react-native';
+import { Alert, Platform, Text, TouchableOpacity } from 'react-native';
 import ServeCreateJobStep2 from '../srvstep2';
 
 const mockCreateFlowLayout = jest.fn();
@@ -32,12 +32,16 @@ jest.mock('../../../go/createflow/shared', () => ({
     return ReactLocal.createElement(MockView, null, props.children);
   },
   useCreateFlowPalette: () => ({
+    isDark: false,
+    accent: '#126b87',
     textPrimary: '#032f3c',
     textSecondary: '#4f6d77',
     inputBg: '#ffffff',
     inputBorder: '#cdd5d8',
     inputText: '#032f3c',
     inputPlaceholder: '#9aacb1',
+    cardBg: '#ffffff',
+    cardActiveBg: '#eef6f8',
   }),
 }));
 
@@ -67,6 +71,10 @@ const createDraft = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe('ServeCreateJobStep2', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
     mockCreateFlowLayout.mockClear();
     mockGetConnectServeJobDraftById.mockReset();
@@ -165,6 +173,46 @@ describe('ServeCreateJobStep2', () => {
 
     const layoutProps = mockCreateFlowLayout.mock.calls.at(-1)?.[0] as any;
     expect(layoutProps.nextDisabled).toBe(false);
+  });
+
+  it('uses a scrollable modal list for Android option pickers', async () => {
+    jest.spyOn(Platform, 'OS', 'get').mockReturnValue('android');
+    const testRenderer = await renderScreen({
+      opportunityType: '',
+    });
+
+    await act(async () => {
+      testRenderer.root.findByProps({ testID: 'opportunity-type-trigger' }).props.onPress();
+    });
+
+    expect(testRenderer.root.findByProps({ testID: 'option-sheet-modal' })).toBeDefined();
+
+    await act(async () => {
+      testRenderer.root.findByProps({ testID: 'option-sheet-item-Volunteer' }).props.onPress();
+    });
+
+    expect(testRenderer.root.findAllByProps({ testID: 'option-sheet-modal' })).toHaveLength(0);
+    expect(
+      testRenderer.root.findAllByType(Text).some((node) => node.props.children === 'Volunteer')
+    ).toBe(true);
+  });
+
+  it('shows a publish error instead of failing silently', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderScreen({
+      applicationMethods: ['in_app'],
+    });
+    mockPublishConnectServeJobDraft.mockRejectedValueOnce(new Error('coordinate is required'));
+
+    const layoutProps = mockCreateFlowLayout.mock.calls.at(-1)?.[0] as any;
+    expect(layoutProps.nextDisabled).toBe(false);
+
+    await act(async () => {
+      await layoutProps.onNext();
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith('Unable to create job', 'coordinate is required');
+    alertSpy.mockRestore();
   });
 
   it('hydrates application methods from the draft and shows the URL field for external links', async () => {

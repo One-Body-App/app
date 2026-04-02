@@ -1,10 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import Explore from '../screens/explore';
 
 import UserProfile from '../screens/main/userProfile';
 import { ExploreStackParamsList } from './types';
+import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 
 const Stack = createNativeStackNavigator<ExploreStackParamsList>();
 
@@ -16,9 +18,14 @@ function ExploreStack() {
       screenOptions={{
         gestureEnabled: false,
         fullScreenGestureEnabled: false,
-        animation: 'slide_from_right',
-        animationDuration: 750,
+        ...STANDARD_STACK_ANIMATION_OPTIONS,
         statusBarStyle: dark ? 'light' : 'dark',
+        ...(Platform.OS === 'android'
+          ? {
+              statusBarTranslucent: true,
+              statusBarColor: 'transparent',
+            }
+          : {}),
       }}
     >
       <Stack.Screen

@@ -233,8 +233,7 @@ function ArticleItem({
                 style={[
                   {
                     color: dark ? Colors.neutral.brand : '#032F3C',
-                    fontFamily: 'Rubik',
-                    fontWeight: '700',
+                    fontFamily: 'Rubik-SemiBold',
                     fontSize: 16,
                   },
                   blogPostTitleStyle,

@@ -16,6 +16,7 @@ export const BRAND_COLORS = {
   white: '#FFFFFF',
   black: '#032f3c',
   primaryDark: '#126b87',
+  primaryBase: '#41899f',
   infoDark: '#12d2d9',
   successBg: '#EDFFF9',
   successText: '#12AC7B',

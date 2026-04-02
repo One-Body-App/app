@@ -23,17 +23,6 @@ import {
   getConnectPortalResumeResolution,
   requiresPayoutStep,
 } from '@/src/services/connectPortal';
-import {
-  APP_HEADER_ROW_OFFSET,
-  APP_HEADER_TITLE_LINE_HEIGHT,
-  CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
-  CONNECT_HEADER_ROW_HEIGHT,
-  CONNECT_HEADER_SIDE_WIDTH,
-} from '@/src/styles/headerLayout';
-import { borderRadius } from '@/src/styles/outlines';
-
-const GO_EVENT_ACCENT = '#126b87';
-const GO_EVENT_BUTTON_RADIUS = borderRadius.button;
 
 export function useCreateFlowPalette() {
   const { dark } = useTheme();
@@ -41,7 +30,7 @@ export function useCreateFlowPalette() {
     isDark: dark,
     screenBg: dark ? '#0e131a' : '#F6F7F8',
     headerTitle: dark ? '#e6eaec' : '#032f3c',
-    accent: dark ? GO_EVENT_ACCENT : '#126b87',
+    accent: dark ? '#41dbe1' : '#126b87',
     textPrimary: dark ? '#e6eaec' : '#032f3c',
     textSecondary: dark ? '#9aacb1' : '#4F6D77',
     textMuted: dark ? 'rgba(230,234,236,0.72)' : 'rgba(3,47,60,0.62)',
@@ -51,24 +40,24 @@ export function useCreateFlowPalette() {
     inputPlaceholder: dark ? '#9aacb1' : '#8AA0A8',
     cardBg: dark ? '#181a1c' : '#FFFFFF',
     cardBorder: dark ? 'rgba(255,255,255,0.1)' : '#D7E1E5',
-    cardActiveBg: dark ? 'rgba(18,107,135,0.12)' : '#EEF6F8',
-    cardActiveBorder: dark ? GO_EVENT_ACCENT : '#126b87',
+    cardActiveBg: dark ? 'rgba(65,219,225,0.12)' : '#EEF6F8',
+    cardActiveBorder: dark ? '#41dbe1' : '#126b87',
     progressTrack: dark ? 'rgba(255,255,255,0.1)' : '#DCE7EB',
-    progressFill: dark ? GO_EVENT_ACCENT : '#126b87',
+    progressFill: dark ? '#41dbe1' : '#126b87',
     footerBg: dark ? '#0e131a' : '#F6F7F8',
     footerBorder: dark ? 'rgba(255,255,255,0.08)' : '#E6EAEC',
     secondaryBtnBg: dark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
     secondaryBtnBorder: dark ? 'rgba(255,255,255,0.12)' : '#C7D6DB',
     secondaryBtnText: dark ? '#e6eaec' : '#032f3c',
-    primaryBtnBg: dark ? GO_EVENT_ACCENT : '#126b87',
-    primaryBtnText: '#FFFFFF',
+    primaryBtnBg: dark ? '#41dbe1' : '#126b87',
+    primaryBtnText: dark ? '#032f3c' : '#FFFFFF',
     radioBorder: dark ? 'rgba(255,255,255,0.2)' : '#C4D4D9',
-    radioActiveBg: dark ? GO_EVENT_ACCENT : '#126b87',
-    radioActiveBorder: dark ? GO_EVENT_ACCENT : '#126b87',
+    radioActiveBg: dark ? '#41dbe1' : '#126b87',
+    radioActiveBorder: dark ? '#41dbe1' : '#126b87',
     dashedBorder: dark ? 'rgba(255,255,255,0.16)' : '#9FB6BE',
     dashedBg: dark ? 'rgba(255,255,255,0.03)' : '#FBFDFD',
     disabledInputBg: dark ? 'rgba(255,255,255,0.04)' : '#F1F6F8',
-    successBubbleBg: dark ? 'rgba(18,107,135,0.14)' : '#EAF5F7',
+    successBubbleBg: dark ? 'rgba(65,219,225,0.14)' : '#EAF5F7',
   };
 }
 
@@ -76,9 +65,7 @@ export type CreateFlowColors = ReturnType<typeof useCreateFlowPalette>;
 
 type CreateFlowLayoutProps = {
   title: string;
-  titleAlignment?: 'center' | 'leading';
   step: ConnectPortalCreateStep;
-  totalSteps?: number;
   children: ReactNode;
   onBack?: () => void;
   onNext?: () => void;
@@ -127,13 +114,7 @@ export const getStepFiveNextRouteName = (
 
 export const getReviewBackRouteName = (
   draft: Pick<ConnectPortalEventDraft, 'ticketType' | 'paymentOption'>
-) => {
-  if (draft.ticketType === 'external') {
-    return 'ConnectGoCreateStep4';
-  }
-
-  return requiresPayoutStep(draft) ? 'ConnectGoCreateStep6Payout' : 'ConnectGoCreateStep5';
-};
+) => (requiresPayoutStep(draft) ? 'ConnectGoCreateStep6Payout' : 'ConnectGoCreateStep5');
 
 export const createDraftTicketTier = (overrides?: Partial<TicketTier>): TicketTier => ({
   id: overrides?.id || `ticket-${Math.round(Math.random() * 100000)}`,
@@ -144,9 +125,7 @@ export const createDraftTicketTier = (overrides?: Partial<TicketTier>): TicketTi
 
 export function CreateFlowLayout({
   title,
-  titleAlignment = 'center',
   step,
-  totalSteps = 7,
   children,
   onBack,
   onNext,
@@ -158,10 +137,7 @@ export function CreateFlowLayout({
   nextDisabled = false,
 }: CreateFlowLayoutProps): React.JSX.Element {
   const palette = useCreateFlowPalette();
-  const safeTotalSteps = Math.max(1, totalSteps);
-  const progressWidth =
-    `${Math.max(0, Math.min(100, (step / safeTotalSteps) * 100))}%` as `${number}%`;
-  const isLeadingTitle = Platform.OS === 'android' && titleAlignment === 'leading';
+  const progressWidth = `${Math.max(0, Math.min(100, (step / 7) * 100))}%` as `${number}%`;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBg }]}>
@@ -170,44 +146,15 @@ export function CreateFlowLayout({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={[styles.header, { backgroundColor: palette.screenBg }]}>
-          {Platform.OS === 'android' || isLeadingTitle ? (
-            <>
-              <TouchableOpacity
-                style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
-                onPress={onBack}
-                disabled={!onBack}
-              >
-                <MaterialIcons name="chevron-left" size={32} color={palette.accent} />
-              </TouchableOpacity>
-              <View
-                style={
-                  isLeadingTitle ? styles.headerTitleLeadingWrap : styles.headerTitleAndroidWrap
-                }
-              >
-                <Text
-                  style={[
-                    styles.headerTitle,
-                    isLeadingTitle ? styles.headerTitleLeading : styles.headerTitleAndroid,
-                    { color: palette.headerTitle },
-                  ]}
-                >
-                  {title}
-                </Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
-                onPress={onBack}
-                disabled={!onBack}
-              >
-                <MaterialIcons name="chevron-left" size={32} color={palette.accent} />
-              </TouchableOpacity>
-              <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>{title}</Text>
-              <View style={styles.headerSpacer} />
-            </>
-          )}
+          <TouchableOpacity
+            style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
+            onPress={onBack}
+            disabled={!onBack}
+          >
+            <MaterialIcons name="chevron-left" size={28} color={palette.accent} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>{title}</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         {loading ? (
@@ -235,10 +182,10 @@ export function CreateFlowLayout({
               <View style={styles.progressWrap}>
                 <View style={styles.progressHeader}>
                   <Text style={[styles.progressLabel, { color: palette.textPrimary }]}>
-                    Step {step} of {safeTotalSteps}
+                    Step {step} of 7
                   </Text>
                   <Text style={[styles.progressPercent, { color: palette.accent }]}>
-                    {Math.round((step / safeTotalSteps) * 100)}%
+                    {Math.round((step / 7) * 100)}%
                   </Text>
                 </View>
                 <View style={[styles.progressTrack, { backgroundColor: palette.progressTrack }]}>
@@ -251,7 +198,7 @@ export function CreateFlowLayout({
                 </View>
               </View>
 
-              <View style={styles.footerActions}>
+              <View style={styles.footerButtonRow}>
                 {saveLabel && onSave ? (
                   <TouchableOpacity
                     style={[
@@ -319,47 +266,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    minHeight: CONNECT_HEADER_ROW_HEIGHT,
-    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+    paddingVertical: 14,
   },
   headerButton: {
-    minWidth: CONNECT_HEADER_SIDE_WIDTH,
+    minWidth: 36,
   },
   headerButtonHidden: {
     opacity: 0,
   },
-  headerTitleAndroidWrap: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingLeft: CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
-  },
-  headerTitleLeadingWrap: {
-    flex: 1,
-    justifyContent: 'center',
-  },
   headerTitle: {
-    fontSize: 24,
-    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
-    fontWeight: '700',
-    fontFamily: 'Rubik-Bold',
-    letterSpacing: 0.3,
-  },
-  headerTitleAndroid: {
-    textAlign: 'left',
-  },
-  headerTitleLeading: {
-    textAlign: 'left',
+    fontSize: 20,
+    fontWeight: '800',
   },
   headerSpacer: {
-    minWidth: CONNECT_HEADER_SIDE_WIDTH,
+    minWidth: 36,
   },
   progressWrap: {
-    paddingBottom: 12,
+    gap: 8,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   progressLabel: {
     fontSize: 14,
@@ -386,7 +313,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 176,
+    paddingBottom: 196,
     gap: 16,
   },
   footer: {
@@ -394,12 +321,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    gap: 12,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 24,
     borderTopWidth: 1,
   },
-  footerActions: {
+  footerButtonRow: {
     flexDirection: 'row',
     gap: 12,
   },
@@ -408,7 +336,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: GO_EVENT_BUTTON_RADIUS,
+    borderRadius: 14,
   },
   primaryButtonDisabled: {
     opacity: 0.4,
@@ -422,7 +350,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: GO_EVENT_BUTTON_RADIUS,
+    borderRadius: 14,
     borderWidth: 1,
   },
   secondaryButtonHidden: {

@@ -6,8 +6,8 @@ import {
   Image,
   ImageBackground,
   type ListRenderItemInfo,
-  type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type NativeScrollEvent,
   Platform,
   RefreshControl,
   ScrollView,
@@ -15,8 +15,8 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  useWindowDimensions,
   View,
+  type ViewToken,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -34,29 +34,13 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { differenceInHours, format, parseISO } from 'date-fns';
+import Video from 'react-native-video';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { getUserProfile } from '@/src/redux/actions/UserAction';
 import { ApiCall } from '@/src/services/api';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Colors, Typography } from '@/src/styles';
-import {
-  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
-  APP_HEADER_BACKGROUND_DARK,
-  APP_HEADER_BACKGROUND_LIGHT,
-  APP_HEADER_BORDER_DARK,
-  APP_HEADER_BORDER_LIGHT,
-  APP_HEADER_CONTENT_GAP,
-  APP_HEADER_HORIZONTAL_INSET,
-  APP_HEADER_ROW_HEIGHT,
-  APP_HEADER_ROW_OFFSET,
-  APP_HEADER_SIDE_WIDTH,
-  APP_HEADER_TITLE_FONT_FAMILY,
-  APP_HEADER_TITLE_FONT_SIZE,
-  APP_HEADER_TITLE_FONT_WEIGHT,
-  APP_HEADER_TITLE_LETTER_SPACING,
-  APP_HEADER_TITLE_LINE_HEIGHT,
-} from '@/src/styles/headerLayout';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import SearchIcon from '@/assets/icons/search.svg';
@@ -66,13 +50,11 @@ import SocialItem from '@/components/listItems/SocialItem';
 import PrayerItem from '@/components/listItems/PrayerItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import UserItem from '@/components/listItems/UserItem';
-import GoBackIcon from '@/components/GoBackIcon';
 import {
   ExploreStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import {
   CONNECT_PORTAL_LIST_DATA,
   type ConnectPortalListItem,
@@ -88,14 +70,12 @@ import {
   WatchPost,
 } from '@/utils/types';
 import { refreshConnectPortalPublishedEvents } from '@/src/services/connectPortal';
+import getDeviceLocation from '@/src/services/deviceLocation';
 import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal/types';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import TrendingTopicsBubbles, {
-  TRENDING_TOPICS_MOCK_DATA,
-  TrendingTopicBubbleItem,
-  mapTrendingTopicResponse,
-} from './TrendingTopicsBubbles';
-import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
+import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
+import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
+import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'Explore'>,
@@ -199,6 +179,19 @@ type ExploreSearchResult =
   | SearchWatchResult
   | SearchServeGoResult;
 
+interface TrendingNowItem {
+  id: string;
+  backgroundImageUri: string;
+  title: string;
+  isLive: boolean;
+  metaIcon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  metaText: string;
+  aspectRatio: '16:9' | '4:3' | '1:1';
+  playBackId?: string;
+  mediaUrl?: string;
+  watchPost: WatchPost;
+}
+
 interface NewCreatorItem {
   id: string;
   avatarUri: string;
@@ -216,6 +209,19 @@ interface ServeOpportunityItem {
   distance: string;
 }
 
+interface GoEventItem {
+  id: string;
+  backgroundImageUri: string;
+  dateString: string;
+  title: string;
+  buttonText: string;
+}
+
+interface PopularTopicItem {
+  id: string;
+  title: string;
+}
+
 interface CommunityPrayerItem {
   post: PrayerPost;
   reactionCount: number;
@@ -223,10 +229,10 @@ interface CommunityPrayerItem {
 
 const SEARCH_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 350;
-const EXPLORE_CHIP_ROW_HEIGHT = 46;
 const EXPLORE_HEADER_COLOR = '#032f3c';
 const EXPLORE_HEADER_FONT_FAMILY = 'Rubik-Bold';
 const EXPLORE_SUBHEADER_FONT_FAMILY = 'OpenSans-Regular';
+const CHIP_ROW_HEIGHT = 46;
 
 const isKnownSubtype = (value?: string): value is SearchPostSubtype =>
   value === 'social' || value === 'rss' || value === 'prayer' || value === 'watch';
@@ -334,33 +340,31 @@ const dedupeResults = (results: ExploreSearchResult[]) => {
   return deduped;
 };
 
+function SearchItemSeparator() {
+  return <View style={{ height: 12 }} />;
+}
+
 function Explore({ navigation }: Props) {
   const dispatch = useDispatch();
-  const { width } = useWindowDimensions();
-  const { imageViewer, openImages } = useSharedImageViewer();
+  const rootTabReplayToken = useRootTabSwitchReplayToken('ExploreTab');
+  const { getSpringboardStyle } = useSpringboardEntry(rootTabReplayToken, 3, {
+    preset: getTabRootSpringboardPreset('explore'),
+  });
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const headerRowHeight = APP_HEADER_ROW_HEIGHT;
-  const headerSideWidth = APP_HEADER_SIDE_WIDTH;
-  const styles = useMemo(
-    () => createStyles(dark, headerRowHeight, headerSideWidth),
-    [dark, headerRowHeight, headerSideWidth]
-  );
+  const styles = useMemo(() => createStyles(dark), [dark]);
   const headerTextColor = dark ? '#f8fafc' : EXPLORE_HEADER_COLOR;
   const subheaderTextColor = dark ? '#d5dae1' : EXPLORE_HEADER_COLOR;
   const primaryTextColor = dark ? '#f4f7fb' : colors.text;
   const secondaryTextColor = dark ? '#c4ccd6' : Colors.neutral[300];
   const tertiaryTextColor = dark ? '#9aa4b2' : Colors.neutral[300];
   const screenBackgroundColor = dark ? '#0a0b0d' : '#f8fafc';
-  const headerBackgroundColor = dark ? APP_HEADER_BACKGROUND_DARK : APP_HEADER_BACKGROUND_LIGHT;
-  const headerDividerColor = dark ? APP_HEADER_BORDER_DARK : APP_HEADER_BORDER_LIGHT;
+  const headerBackgroundColor = dark ? '#0c0d10' : '#ffffff';
+  const headerDividerColor = dark ? 'rgba(255,255,255,0.06)' : colors.border;
   const searchSurfaceColor = dark ? '#1c2024' : '#f1f5f9';
   const surfaceCardColor = dark ? '#15191d' : colors.card;
   const surfaceBorderColor = dark ? 'rgba(255,255,255,0.1)' : colors.border;
-  const headerChevronColor = dark ? colors.text : Colors.primary.brand;
   const shouldUseBlurHeader = Platform.OS === 'ios';
-  const canGoBack = navigation.canGoBack();
-  const socialItemContentWidth = Math.max(width - spacing.x16 * 2 - 14, 0);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData as User | null);
@@ -378,13 +382,18 @@ function Explore({ navigation }: Props) {
   const [isServeLoading, setIsServeLoading] = useState(true);
   const [goEvents, setGoEvents] = useState<ConnectPortalPublishedEvent[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
-  const [popularTopicItems, setPopularTopicItems] =
-    useState<TrendingTopicBubbleItem[]>(TRENDING_TOPICS_MOCK_DATA);
+  const [popularTopicItems, setPopularTopicItems] = useState<PopularTopicItem[]>([
+    { id: 'topic-1', title: 'Theology & Life' },
+    { id: 'topic-2', title: 'Tech & Ethics' },
+    { id: 'topic-3', title: 'Prayer Habits' },
+    { id: 'topic-4', title: 'Church Leadership' },
+  ]);
   const [isRefreshingBrowse, setIsRefreshingBrowse] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
+    null
+  );
+  const [visibleVideoId, setVisibleVideoId] = useState<string | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const chipOffset = useRef(new Animated.Value(0)).current;
-  const lastSearchScrollYRef = useRef(0);
-  const searchChipHiddenRef = useRef(false);
 
   const [searchResults, setSearchResults] = useState<ExploreSearchResult[]>([]);
   const [searchPage, setSearchPage] = useState(1);
@@ -395,6 +404,9 @@ function Explore({ navigation }: Props) {
 
   const requestSequenceRef = useRef(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chipOffset = useRef(new Animated.Value(0)).current;
+  const lastScrollYRef = useRef(0);
+  const chipHiddenRef = useRef(false);
 
   const trimmedSearchText = searchText.trim();
   const isSearchMode = trimmedSearchText.length > 0;
@@ -410,35 +422,35 @@ function Explore({ navigation }: Props) {
     setIsSearchLoading(false);
     setIsSearchLoadingMore(false);
     setActiveFilter(SearchFeedFilter.top);
+    chipHiddenRef.current = false;
     chipOffset.setValue(0);
-    searchChipHiddenRef.current = false;
-    lastSearchScrollYRef.current = 0;
+    lastScrollYRef.current = 0;
   }, [chipOffset]);
 
   const handleSearchScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { y } = event.nativeEvent.contentOffset;
-      const diff = y - lastSearchScrollYRef.current;
-      lastSearchScrollYRef.current = y;
+      const diff = y - lastScrollYRef.current;
+      lastScrollYRef.current = y;
 
       if (y <= 0) {
-        if (searchChipHiddenRef.current) {
-          searchChipHiddenRef.current = false;
+        if (chipHiddenRef.current) {
+          chipHiddenRef.current = false;
           Animated.timing(chipOffset, {
             toValue: 0,
             duration: 200,
             useNativeDriver: true,
           }).start();
         }
-      } else if (diff > 2 && !searchChipHiddenRef.current) {
-        searchChipHiddenRef.current = true;
+      } else if (diff > 2 && !chipHiddenRef.current) {
+        chipHiddenRef.current = true;
         Animated.timing(chipOffset, {
-          toValue: -EXPLORE_CHIP_ROW_HEIGHT,
+          toValue: -CHIP_ROW_HEIGHT,
           duration: 200,
           useNativeDriver: true,
         }).start();
-      } else if (diff < -2 && searchChipHiddenRef.current) {
-        searchChipHiddenRef.current = false;
+      } else if (diff < -2 && chipHiddenRef.current) {
+        chipHiddenRef.current = false;
         Animated.timing(chipOffset, {
           toValue: 0,
           duration: 200,
@@ -930,33 +942,36 @@ function Explore({ navigation }: Props) {
     setIsPrayerLoading(false);
   }, [token]);
 
-  const fetchServeOpportunities = useCallback(async () => {
-    setIsServeLoading(true);
-    try {
-      const res = await ApiCall({
-        route: 'user/search',
-        token,
-        verb: 'post',
-        params: { text: 'serve', type: 'posts', limit: 10, skip: 0 },
-      });
-      let items: any[] = [];
-      if (res?.status === 200 && Array.isArray(res.response)) {
-        items = res.response.slice(0, 5);
+  const fetchServeOpportunities = useCallback(
+    async (_location: { latitude: number; longitude: number } | null) => {
+      setIsServeLoading(true);
+      try {
+        const res = await ApiCall({
+          route: 'user/search',
+          token,
+          verb: 'post',
+          params: { text: 'serve', type: 'posts', limit: 10, skip: 0 },
+        });
+        let items: any[] = [];
+        if (res?.status === 200 && Array.isArray(res.response)) {
+          items = res.response.slice(0, 5);
+        }
+        setServeOpportunityItems(
+          items.map((item: any, idx: number) => ({
+            id: item._id ?? item.id ?? `serve-${idx}`,
+            imageUri: resolveImageUrl(item) || NO_PROFILE_IMAGE,
+            title: resolveTitle(item.title) || item.content?.slice(0, 50) || 'Serve Opportunity',
+            organization: item.userData?.name ?? item.organization ?? 'Community',
+            distance: item.distance ? `${item.distance} miles` : 'Nearby',
+          }))
+        );
+      } catch {
+        // Network failure — section stays empty
       }
-      setServeOpportunityItems(
-        items.map((item: any, idx: number) => ({
-          id: item._id ?? item.id ?? `serve-${idx}`,
-          imageUri: resolveImageUrl(item) || NO_PROFILE_IMAGE,
-          title: resolveTitle(item.title) || item.content?.slice(0, 50) || 'Serve Opportunity',
-          organization: item.userData?.name ?? item.organization ?? 'Community',
-          distance: item.distance ? `${item.distance} miles` : 'Nearby',
-        }))
-      );
-    } catch {
-      // Network failure — section stays empty
-    }
-    setIsServeLoading(false);
-  }, [token]);
+      setIsServeLoading(false);
+    },
+    [token]
+  );
 
   const fetchGoEvents = useCallback(async () => {
     setIsEventsLoading(true);
@@ -978,17 +993,15 @@ function Explore({ navigation }: Props) {
 
   const fetchTrendingTopics = useCallback(async () => {
     try {
-      const res = await ApiCall({
-        route: 'tags/interest?sort=trending&limit=18',
-        token,
-        verb: 'get',
-      });
+      const res = await ApiCall({ route: 'tags/interest', token, verb: 'get' });
       const tags = Array.isArray(res?.response) ? res.response : res?.response?.data;
       if (res?.status === 200 && Array.isArray(tags) && tags.length > 0) {
-        const mappedTopics = mapTrendingTopicResponse(tags);
-        if (mappedTopics.length > 0) {
-          setPopularTopicItems(mappedTopics);
-        }
+        setPopularTopicItems(
+          tags.map((t: any, idx: number) => ({
+            id: t._id ?? t.id ?? `topic-${idx}`,
+            title: t.title ?? t.name ?? 'Topic',
+          }))
+        );
       }
     } catch {
       // Network failure — section stays empty
@@ -997,11 +1010,13 @@ function Explore({ navigation }: Props) {
 
   const fetchAllSections = useCallback(async () => {
     setIsRefreshingBrowse(true);
+    const location = await getDeviceLocation().catch(() => null);
+    setUserCoords(location);
     await Promise.allSettled([
       fetchTrending(),
       fetchNewVoices(),
       fetchCommunityPrayer(),
-      fetchServeOpportunities(),
+      fetchServeOpportunities(location),
       fetchGoEvents(),
       fetchTrendingTopics(),
     ]);
@@ -1088,14 +1103,14 @@ function Explore({ navigation }: Props) {
 
   const handleOpenWatchPost = useCallback(
     (watchItem: WatchPost) => {
-      navigation
-        .getParent()
-        ?.getParent()
-        ?.navigate('WatchPortal', {
+      navigation.push(
+        'WatchPortal' as never,
+        {
           initialPostId: String(watchItem.postId ?? watchItem.id ?? ''),
           initialPlaybackId: watchItem.playBackId,
           initialWatchPost: watchItem,
-        });
+        } as never
+      );
     },
     [navigation]
   );
@@ -1120,40 +1135,55 @@ function Explore({ navigation }: Props) {
       const result = info.item;
 
       if (result.kind === 'user') {
-        return (
-          <View style={styles.searchRowSpacing}>
-            <UserItem item={result.item} />
-          </View>
-        );
+        return <UserItem item={result.item} />;
       }
 
       if (result.kind === 'social') {
         return (
-          <View style={styles.searchRowSpacing}>
-            <SocialItem
-              itemData={result.item}
-              originFeedType="forYou"
-              visible
-              contentWidth={socialItemContentWidth}
-              onOpenImages={openImages}
-            />
-          </View>
+          <SocialItem
+            itemData={result.item}
+            originFeedType="forYou"
+            socialPostviewStyle={[
+              styles.searchCard,
+              {
+                backgroundColor: surfaceCardColor,
+                borderColor: surfaceBorderColor,
+              },
+            ]}
+          />
         );
       }
 
       if (result.kind === 'prayer') {
         return (
-          <View style={styles.searchRowSpacing}>
-            <PrayerItem item={result.item} originFeedType="forYou" />
-          </View>
+          <PrayerItem
+            item={result.item}
+            originFeedType="forYou"
+            style={[
+              styles.searchCard,
+              {
+                backgroundColor: surfaceCardColor,
+                borderColor: surfaceBorderColor,
+              },
+            ]}
+          />
         );
       }
 
       if (result.kind === 'rss') {
         return (
-          <View style={styles.searchRowSpacing}>
-            <ArticleItem item={result.item} imageSizeType="cover" originFeedType="forYou" />
-          </View>
+          <ArticleItem
+            item={result.item}
+            imageSizeType="cover"
+            originFeedType="forYou"
+            blogPostStyle={[
+              styles.searchCard,
+              {
+                backgroundColor: surfaceCardColor,
+                borderColor: surfaceBorderColor,
+              },
+            ]}
+          />
         );
       }
 
@@ -1239,10 +1269,8 @@ function Explore({ navigation }: Props) {
       dark,
       handleOpenConnectPortal,
       handleOpenWatchPost,
-      openImages,
       primaryTextColor,
       secondaryTextColor,
-      socialItemContentWidth,
       surfaceBorderColor,
       surfaceCardColor,
       styles,
@@ -1345,6 +1373,7 @@ function Explore({ navigation }: Props) {
       col.map((item) => {
         const ar = getAspectRatio(item);
         const itemId = String(item.postId ?? item.id ?? '');
+        const isVisible = visibleVideoId === itemId;
         const thumbnail = getMuxThumbnail(item.playBackId, item.mediaUrl);
         return (
           <TouchableOpacity
@@ -1354,11 +1383,22 @@ function Explore({ navigation }: Props) {
             style={styles.masonryCard}
           >
             <View style={[styles.masonryImageWrap, { aspectRatio: ar }]}>
-              <FastImage
-                source={{ uri: thumbnail }}
-                style={styles.masonryVideo}
-                resizeMode={FastImage.resizeMode.cover}
-              />
+              {isVisible && item.playBackId ? (
+                <Video
+                  source={{ uri: `https://stream.mux.com/${item.playBackId}.m3u8` }}
+                  style={styles.masonryVideo}
+                  resizeMode="cover"
+                  muted
+                  repeat
+                  paused={!isVisible}
+                />
+              ) : (
+                <FastImage
+                  source={{ uri: thumbnail }}
+                  style={styles.masonryVideo}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              )}
             </View>
             <StyledText
               numberOfLines={2}
@@ -1436,7 +1476,7 @@ function Explore({ navigation }: Props) {
               }}
             >
               <StyledText style={styles.featuredFollowText}>
-                {featuredVoice.isFollowing ? 'Connected' : 'Connect'}
+                {featuredVoice.isFollowing ? 'Following' : 'Follow'}
               </StyledText>
             </TouchableOpacity>
           </View>
@@ -1545,7 +1585,7 @@ function Explore({ navigation }: Props) {
                       creator.isFollowing && { color: Colors.primarySapphire.brand },
                     ]}
                   >
-                    {creator.isFollowing ? 'Connected' : 'Connect'}
+                    {creator.isFollowing ? 'Following' : 'Follow'}
                   </StyledText>
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -1697,13 +1737,10 @@ function Explore({ navigation }: Props) {
                     activeOpacity={0.9}
                     style={styles.goEventCard}
                     onPress={() => {
-                      navigation.navigate('Main', {
-                        screen: 'ConnectTab',
-                        params: {
-                          screen: 'ConnectGoEventView',
-                          params: { eventId: event._id ?? event.id },
-                        },
-                      });
+                      navigation.push(
+                        'ConnectGoEventView' as never,
+                        { eventId: event._id ?? event.id } as never
+                      );
                     }}
                   >
                     <ImageBackground
@@ -1737,13 +1774,10 @@ function Explore({ navigation }: Props) {
                     key={`list-${event._id ?? event.id}`}
                     style={styles.goEventRow}
                     onPress={() => {
-                      navigation.navigate('Main', {
-                        screen: 'ConnectTab',
-                        params: {
-                          screen: 'ConnectGoEventView',
-                          params: { eventId: event._id ?? event.id },
-                        },
-                      });
+                      navigation.push(
+                        'ConnectGoEventView' as never,
+                        { eventId: event._id ?? event.id } as never
+                      );
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -1791,25 +1825,33 @@ function Explore({ navigation }: Props) {
         >
           Trending Topics
         </StyledText>
-        <TrendingTopicsBubbles
-          topics={popularTopicItems}
-          onTopicPress={handleSearchTextChange}
-          style={{ marginHorizontal: spacing.x16 }}
-        />
+        <View style={styles.topicsPillWrap}>
+          {popularTopicItems.map((topic) => (
+            <TouchableOpacity
+              key={topic.id}
+              style={styles.topicPill}
+              activeOpacity={0.8}
+              onPress={() => handleSearchTextChange(topic.title)}
+            >
+              <StyledText style={styles.topicPillText}>{topic.title}</StyledText>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </ScrollView>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
-      <View
+      <Animated.View
         style={[
           styles.headerWrap,
           {
-            paddingTop: insets.top,
-            borderBottomColor: headerDividerColor,
+            paddingTop: insets.top + spacing.x8,
+            borderBottomColor: isSearchMode ? 'transparent' : headerDividerColor,
             backgroundColor: headerBackgroundColor,
           },
+          getSpringboardStyle(0),
         ]}
       >
         {shouldUseBlurHeader && (
@@ -1824,29 +1866,19 @@ function Explore({ navigation }: Props) {
 
         <View style={styles.headerRow}>
           <View style={styles.headerSideSlot}>
-            {canGoBack ? (
-              <GoBackIcon
-                color={headerChevronColor}
-                goBack={() => navigation.goBack()}
-                size={30}
-                style={styles.headerBackButton}
-                accessibilityLabel="Go back"
-              />
-            ) : (
-              <TouchableOpacity
-                accessibilityRole="button"
-                onPress={handleOpenDrawer}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {userAvatar ? (
-                  <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
-                ) : (
-                  <View style={styles.headerAvatarFallback}>
-                    <ProfileFill width={22} height={22} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={handleOpenDrawer}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              {userAvatar ? (
+                <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
+              ) : (
+                <View style={styles.headerAvatarFallback}>
+                  <ProfileFill width={22} height={22} />
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
 
           <View style={styles.headerCenterWrap} pointerEvents="none">
@@ -1889,19 +1921,19 @@ function Explore({ navigation }: Props) {
             ) : null}
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       {isSearchMode ? (
-        <View style={{ flex: 1, overflow: 'hidden' }}>
+        <Animated.View style={[styles.searchContentWrap, getSpringboardStyle(1)]}>
           <Animated.View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1,
-              transform: [{ translateY: chipOffset }],
-            }}
+            style={[
+              styles.chipOverlay,
+              {
+                backgroundColor: screenBackgroundColor,
+                transform: [{ translateY: chipOffset }],
+              },
+              getSpringboardStyle(2),
+            ]}
           >
             <ScrollView
               horizontal
@@ -1910,13 +1942,8 @@ function Explore({ navigation }: Props) {
             >
               {searchFilterChips.map((chip) => {
                 const isActive = activeFilter === chip.id;
-                const { 300: neutral300, 500: neutral500 } = Colors.neutral;
-                let chipTextColor = neutral500;
-                if (isActive) {
-                  chipTextColor = '#fff';
-                } else if (dark) {
-                  chipTextColor = neutral300;
-                }
+                const chipBorderColor = dark ? 'rgba(255,255,255,0.15)' : Colors.neutral[200];
+                const inactiveTextColor = dark ? Colors.neutral[300] : Colors.neutral[400];
 
                 return (
                   <TouchableOpacity
@@ -1926,13 +1953,14 @@ function Explore({ navigation }: Props) {
                       styles.chip,
                       {
                         backgroundColor: isActive ? Colors.primarySapphire.brand : 'transparent',
+                        borderWidth: 1,
+                        borderColor: isActive ? Colors.primarySapphire.brand : chipBorderColor,
                       },
                     ]}
                   >
                     <StyledText
                       style={{
-                        color: chipTextColor,
-                        fontWeight: isActive ? '700' : '600',
+                        color: isActive ? '#fff' : inactiveTextColor,
                       }}
                     >
                       {chip.label}
@@ -1950,13 +1978,14 @@ function Explore({ navigation }: Props) {
             contentContainerStyle={[
               styles.searchContentContainer,
               {
-                paddingTop: EXPLORE_CHIP_ROW_HEIGHT,
+                paddingTop: CHIP_ROW_HEIGHT,
                 paddingBottom: getHeight(7) + insets.bottom,
               },
             ]}
+            ItemSeparatorComponent={SearchItemSeparator}
             showsVerticalScrollIndicator={false}
-            scrollEventThrottle={16}
             onScroll={handleSearchScroll}
+            scrollEventThrottle={16}
             onEndReached={handleEndReached}
             onEndReachedThreshold={0.35}
             ListFooterComponent={searchListFooter}
@@ -1985,24 +2014,16 @@ function Explore({ navigation }: Props) {
                 </View>
               )
             }
-            removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-            initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-            maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-            updateCellsBatchingPeriod={
-              STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
-            }
-            windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
           />
-        </View>
+        </Animated.View>
       ) : (
-        browseContent
+        <Animated.View style={[{ flex: 1 }, getSpringboardStyle(1)]}>{browseContent}</Animated.View>
       )}
-      {imageViewer}
     </View>
   );
 }
 
-const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: number) =>
+const createStyles = (dark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -2012,22 +2033,14 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       zIndex: 8,
     },
     headerRow: {
-      height: headerRowHeight,
+      minHeight: 52,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
-      transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+      paddingHorizontal: spacing.x16,
     },
     headerSideSlot: {
-      width: headerSideWidth,
-      height: headerRowHeight,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerBackButton: {
-      width: 44,
-      height: 44,
+      width: 48,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -2035,14 +2048,14 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       flex: 1,
       alignItems: Platform.OS === 'android' ? 'flex-start' : 'center',
       justifyContent: 'center',
-      ...(Platform.OS === 'android' ? { paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT } : {}),
+      ...(Platform.OS === 'android' ? { paddingLeft: 14 } : {}),
     },
     headerTitle: {
-      fontSize: APP_HEADER_TITLE_FONT_SIZE,
-      lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
-      fontFamily: APP_HEADER_TITLE_FONT_FAMILY,
-      fontWeight: APP_HEADER_TITLE_FONT_WEIGHT,
-      letterSpacing: APP_HEADER_TITLE_LETTER_SPACING,
+      fontSize: 24,
+      lineHeight: 28,
+      fontFamily: 'Rubik-Bold',
+      fontWeight: '700',
+      letterSpacing: 0.3,
       color: EXPLORE_HEADER_COLOR,
       textAlign: Platform.OS === 'android' ? 'left' : 'center',
     },
@@ -2061,8 +2074,7 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       justifyContent: 'center',
     },
     searchContainer: {
-      paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
-      paddingTop: APP_HEADER_CONTENT_GAP,
+      paddingHorizontal: spacing.x16,
       paddingBottom: spacing.x10,
     },
     searchInputWrap: {
@@ -2324,6 +2336,23 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       backgroundColor: '#41dbe1',
       marginRight: spacing.x8,
     },
+    topicsPillWrap: {
+      paddingHorizontal: spacing.x16,
+      marginTop: 12,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    topicPill: {
+      backgroundColor: dark ? '#1a1e23' : '#e6eaec',
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+    },
+    topicPillText: {
+      color: dark ? Colors.neutral[200] : '#032f3c',
+      fontWeight: '600',
+    },
     featuredBanner: {
       marginHorizontal: spacing.x16,
       marginTop: spacing.x16,
@@ -2375,14 +2404,32 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       fontWeight: '700',
       fontSize: 12,
     },
+    searchContentWrap: {
+      flex: 1,
+    },
+    chipOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1,
+      height: CHIP_ROW_HEIGHT,
+      justifyContent: 'center',
+    },
     searchContentContainer: {
-      paddingHorizontal: spacing.x8,
-      paddingTop: 12,
+      paddingHorizontal: spacing.x16,
       paddingBottom: spacing.x32,
       flexGrow: 1,
     },
-    searchRowSpacing: {
-      marginBottom: 12,
+    searchCard: {
+      borderRadius: 12,
+      borderWidth: 1,
+      marginHorizontal: 0,
+      marginBottom: 0,
+      padding: spacing.x16,
+    },
+    searchItemSeparator: {
+      height: 12,
     },
     sectionInlineSpinner: {
       marginVertical: spacing.x16,
@@ -2398,7 +2445,6 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       borderRadius: 12,
       borderWidth: 1,
       padding: 12,
-      marginBottom: 12,
     },
     watchHeader: {
       flexDirection: 'row',
@@ -2420,7 +2466,6 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       borderRadius: 12,
       borderWidth: 1,
       padding: 12,
-      marginBottom: 12,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.x8,

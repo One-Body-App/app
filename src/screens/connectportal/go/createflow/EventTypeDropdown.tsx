@@ -18,6 +18,8 @@ type Props = {
   onCustomChange: (text: string) => void;
   placeholder?: string;
   palette: CreateFlowColors;
+  hasError?: boolean;
+  errorColor?: string;
 };
 
 export default function EventTypeDropdown({
@@ -28,6 +30,8 @@ export default function EventTypeDropdown({
   onCustomChange,
   placeholder = 'Select event type',
   palette,
+  hasError = false,
+  errorColor,
 }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -50,7 +54,7 @@ export default function EventTypeDropdown({
           styles.trigger,
           {
             backgroundColor: palette.inputBg,
-            borderColor: palette.inputBorder,
+            borderColor: hasError ? errorColor || palette.accent : palette.inputBorder,
           },
         ]}
         activeOpacity={0.7}
@@ -76,7 +80,7 @@ export default function EventTypeDropdown({
             styles.customInput,
             {
               backgroundColor: palette.inputBg,
-              borderColor: palette.inputBorder,
+              borderColor: hasError ? errorColor || palette.accent : palette.inputBorder,
               color: palette.inputText,
             },
           ]}
@@ -166,8 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   triggerText: {
-    fontSize: 15,
-    fontFamily: 'OpenSans-Regular',
+    fontSize: 16,
     flex: 1,
   },
   customInput: {
@@ -175,8 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 16,
-    fontSize: 15,
-    fontFamily: 'OpenSans-Regular',
+    fontSize: 16,
     marginTop: 8,
   },
   overlay: {
@@ -213,7 +215,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   optionText: {
-    fontSize: 15,
-    fontFamily: 'OpenSans-Regular',
+    fontSize: 16,
   },
 });

@@ -107,6 +107,28 @@ jest.mock('react-native-simple-toast', () => ({
   LONG: 'LONG',
 }));
 
+jest.mock('react-native-document-picker', () => ({
+  __esModule: true,
+  default: {
+    pickSingle: jest.fn(),
+    isCancel: jest.fn(() => false),
+    types: {
+      pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      allFiles: '*/*',
+    },
+  },
+  pickSingle: jest.fn(),
+  isCancel: jest.fn(() => false),
+  types: {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    allFiles: '*/*',
+  },
+}));
+
 jest.mock('react-native-haptic-feedback', () => ({
   trigger: jest.fn(),
   HapticFeedbackTypes: {},

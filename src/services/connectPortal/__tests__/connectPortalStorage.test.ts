@@ -16,7 +16,7 @@ const createMemoryStorage = (seed?: ConnectPortalEventRecord[]) => {
 };
 
 const createApiClient = (overrides?: Partial<any>) => {
-  const publishedEvents: any[] = [];
+  const publishedEvents: any[] = [...(overrides?.publishedEvents || [])];
 
   const apiClient = {
     listPublicEvents: jest.fn(async () => publishedEvents),
@@ -71,6 +71,50 @@ const createApiClient = (overrides?: Partial<any>) => {
     ...overrides,
   };
 };
+
+const createPublishedEvent = (overrides: Partial<any> = {}) => ({
+  id: overrides.id || 'published-1',
+  status: 'published',
+  createdAt: overrides.createdAt || '2026-03-14T12:00:00.000Z',
+  updatedAt: overrides.updatedAt || '2026-03-14T12:00:00.000Z',
+  publishedAt: overrides.publishedAt || '2026-03-14T12:00:00.000Z',
+  title: overrides.title || 'Published Event',
+  eventType: overrides.eventType || 'Retreat',
+  category: overrides.category || 'RETREAT',
+  photoUri: overrides.photoUri || 'https://example.com/photo.jpg',
+  heroImageUri: overrides.heroImageUri || 'https://example.com/hero.jpg',
+  organizerName: overrides.organizerName || 'You',
+  organizerRole: overrides.organizerRole || 'Event Organizer',
+  startDate: overrides.startDate || '2026-05-01',
+  endDate: overrides.endDate || '2026-05-01',
+  startTime: overrides.startTime || '7:00 PM',
+  endTime: overrides.endTime || '9:00 PM',
+  isSingleDayEvent: overrides.isSingleDayEvent ?? true,
+  isRecurring: overrides.isRecurring ?? false,
+  recurrenceFrequency: overrides.recurrenceFrequency,
+  recurrenceEndType: overrides.recurrenceEndType,
+  recurrenceEndDate: overrides.recurrenceEndDate,
+  recurrenceOccurrenceCount: overrides.recurrenceOccurrenceCount,
+  isOnline: overrides.isOnline ?? false,
+  onlineEventUrl: overrides.onlineEventUrl || '',
+  externalEventUrl: overrides.externalEventUrl || '',
+  locationQuery: overrides.locationQuery || 'Retreat Center, 123 Main St',
+  venueName: overrides.venueName || 'Retreat Center',
+  address: overrides.address || '123 Main St',
+  coordinate: overrides.coordinate || [-84.4, 33.7],
+  description: overrides.description || 'Published event description',
+  capacity: overrides.capacity || '50',
+  ticketType: overrides.ticketType || 'free',
+  paymentOption: overrides.paymentOption || 'external',
+  payoutConfigured: overrides.payoutConfigured ?? false,
+  ticketTiers: overrides.ticketTiers || [],
+  businessName: overrides.businessName || '',
+  ein: overrides.ein || '',
+  registrationCount: overrides.registrationCount ?? 3,
+  viewCount: overrides.viewCount ?? 12,
+  openCount: overrides.openCount ?? 4,
+  tags: overrides.tags || ['Event', 'Live'],
+});
 
 describe('connectPortalStorage', () => {
   it('creates and persists multiple drafts', async () => {
@@ -316,5 +360,87 @@ describe('connectPortalStorage', () => {
     const resolution = await api.getResumeResolution('missing-draft');
 
     expect(resolution.kind).toBe('missing');
+  });
+
+  it('finds and reopens saved edit drafts by publishedEventId', async () => {
+    const storage = createMemoryStorage();
+    const api = createConnectPortalStorage({
+      storage,
+      apiClient: createApiClient() as any,
+      now: jest.fn().mockReturnValue('2026-03-14T12:00:00.000Z'),
+      createId: jest.fn().mockReturnValue('draft-edit-1'),
+    });
+
+    await api.createDraftEvent({
+      title: 'Edit Draft',
+      publishedEventId: 'published-42',
+      lastCompletedStep: 6,
+    });
+
+    const existingDraft = await api.getDraftEventByPublishedEventId('published-42');
+
+    expect(existingDraft?.id).toBe('draft-edit-1');
+    expect(getDraftResumeRouteName(existingDraft!)).toBe('ConnectGoCreateStep6Review');
+  });
+
+  it('creates a seeded edit draft from a published event and reuses it', async () => {
+    const storage = createMemoryStorage();
+    const publishedEvent = createPublishedEvent({
+      id: 'published-42',
+      title: "Hope Men's Retreat",
+      description: 'Bring a journal.',
+      ticketType: 'external',
+      externalEventUrl: 'https://example.com/register',
+    });
+    const api = createConnectPortalStorage({
+      storage,
+      apiClient: createApiClient({ publishedEvents: [publishedEvent] }) as any,
+      now: jest.fn().mockReturnValue('2026-03-14T12:00:00.000Z'),
+      createId: jest.fn().mockReturnValue('draft-edit-42'),
+    });
+
+    const seededDraft = await api.createEditDraftFromPublishedEvent('published-42');
+    const resumedDraft = await api.createEditDraftFromPublishedEvent('published-42');
+
+    expect(seededDraft?.id).toBe('draft-edit-42');
+    expect(seededDraft?.publishedEventId).toBe('published-42');
+    expect(seededDraft?.title).toBe("Hope Men's Retreat");
+    expect(seededDraft?.description).toBe('Bring a journal.');
+    expect(seededDraft?.lastCompletedStep).toBe(6);
+    expect(seededDraft?.externalEventUrl).toBe('https://example.com/register');
+    expect(resumedDraft?.id).toBe('draft-edit-42');
+  });
+
+  it('publishes edit drafts back onto the original published event id', async () => {
+    const storage = createMemoryStorage();
+    const publishedEvent = createPublishedEvent({
+      id: 'published-42',
+      title: "Hope Men's Retreat",
+    });
+    const apiClient = createApiClient({ publishedEvents: [publishedEvent] });
+    const api = createConnectPortalStorage({
+      storage,
+      apiClient: apiClient as any,
+      now: jest.fn().mockReturnValue('2026-03-14T12:00:00.000Z'),
+      createId: jest.fn().mockReturnValue('draft-edit-42'),
+    });
+
+    const seededDraft = await api.createEditDraftFromPublishedEvent('published-42');
+    if (!seededDraft) {
+      throw new Error('Expected edit draft');
+    }
+
+    await api.upsertDraftEvent(
+      seededDraft.id,
+      {
+        title: "Hope Men's Retreat Updated",
+      },
+      { completedStep: 6 }
+    );
+    await api.publishDraftEvent(seededDraft.id);
+
+    const publishPayload = (apiClient.publishEvent as jest.Mock).mock.calls[0]?.[0];
+    expect(publishPayload.eventId).toBe('published-42');
+    expect(publishPayload.title).toBe("Hope Men's Retreat Updated");
   });
 });

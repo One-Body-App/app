@@ -2188,6 +2188,35 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - react-native-document-picker (9.3.1):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - react-native-fbsdk-next (12.2.0):
     - React-Core
     - react-native-fbsdk-next/Core (= 12.2.0)
@@ -3954,6 +3983,7 @@ DEPENDENCIES:
   - react-native-color-matrix-image-filters (from `../node_modules/react-native-color-matrix-image-filters`)
   - react-native-config (from `../node_modules/react-native-config`)
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
+  - react-native-document-picker (from `../node_modules/react-native-document-picker`)
   - react-native-fbsdk-next (from `../node_modules/react-native-fbsdk-next`)
   - "react-native-geolocation (from `../node_modules/@react-native-community/geolocation`)"
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
@@ -4218,6 +4248,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-config"
   react-native-date-picker:
     :path: "../node_modules/react-native-date-picker"
+  react-native-document-picker:
+    :path: "../node_modules/react-native-document-picker"
   react-native-fbsdk-next:
     :path: "../node_modules/react-native-fbsdk-next"
   react-native-geolocation:
@@ -4491,6 +4523,7 @@ SPEC CHECKSUMS:
   react-native-color-matrix-image-filters: 2b8fd85e6c098db9bcd9084ea8e85b0558b196f7
   react-native-config: 644074ab88db883fcfaa584f03520ec29589d7df
   react-native-date-picker: 486684578c6dafa35618ad3bb89199b4c3787bad
+  react-native-document-picker: fd2f9293ffb141171cfc51e849e3e6f9dd79c65b
   react-native-fbsdk-next: ddf303a27fa0a9598639a6f421036f6b9f0483c3
   react-native-geolocation: b7f68b8c04e36ee669c630dbc48dd42cf93a0a41
   react-native-image-picker: bf90d78234b2bdffd8ce3e037b097c84a2778a28
@@ -4546,7 +4579,7 @@ SPEC CHECKSUMS:
   React-timing: f13aa25cc5050bd311d6c462e3b53d38d8240a89
   React-utils: cd6a6168ebc38be234c61cd439da4556beccd37b
   ReactAppDependencyProvider: 3267432b637c9b38e86961b287f784ee1b08dde0
-  ReactCodegen: a492cab89cc8de48b8b65bda6714808786a411bd
+  ReactCodegen: 73fed495b2e7a8a4e9287034ce5ed342582c6c4c
   ReactCommon: 3d916b13ac777fc387b8035ab80ceb90aca4f747
   RecaptchaEnterprise: 2d06f415c94253c3e92214a4d1472b5875442cdc
   RecaptchaEnterpriseSDK: 2fd06a12a27f943c24f643f8814404a27cc74288

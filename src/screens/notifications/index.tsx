@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
-  InteractionManager,
   Linking,
   Modal,
   Platform,
@@ -17,7 +16,6 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { NotificationBing } from 'iconsax-react-native';
@@ -26,16 +24,9 @@ import StyledText from '@/components/styled/Text';
 import { ApiCall } from '@/services/api';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
-import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors, Typography } from '@/src/styles';
-import {
-  APP_HEADER_CONTENT_GAP,
-  APP_HEADER_ROW_HEIGHT,
-  APP_HEADER_ROW_OFFSET,
-  APP_HEADER_SIDE_WIDTH,
-} from '@/src/styles/headerLayout';
 import { spacing } from '@/src/styles/spacing';
 import {
   QueuedPushNotification,
@@ -278,11 +269,8 @@ const getPrimaryCategory = (item: InboxNotification): Exclude<CategoryKey, 'all'
 function NotificationScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
-  const toastRef = useRef(toast);
-  toastRef.current = toast;
   const { colors, dark } = useTheme();
-  const insets = useSafeAreaInsets();
-  const styles = createStyles(dark, colors, insets.top);
+  const styles = createStyles(dark, colors);
 
   const [notifications, setNotifications] = useState<InboxNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -365,7 +353,7 @@ function NotificationScreen({ navigation }: Props) {
         }
 
         if (didServerFetchFail) {
-          toastRef.current.show('Unable to load server notifications right now.', {
+          toast.show('Unable to load server notifications right now.', {
             type: 'danger',
             placement: 'top',
           });
@@ -437,7 +425,7 @@ function NotificationScreen({ navigation }: Props) {
         setRefreshing(false);
       }
     },
-    [logNotificationDebug, token]
+    [logNotificationDebug, token, toast]
   );
 
   useEffect(() => {
@@ -452,50 +440,16 @@ function NotificationScreen({ navigation }: Props) {
   );
 
   useEffect(() => {
-    const parent = navigation.getParent();
-
-    const hideAndroidTabBar = () => {
-      if (Platform.OS !== 'android') {
-        return;
-      }
-
-      parent?.setOptions({
-        tabBarStyle: {
-          display: 'none',
-          height: 0,
-          opacity: 0,
-        },
-      });
-    };
-
-    const restoreAndroidTabBar = () => {
-      if (Platform.OS !== 'android') {
-        return;
-      }
-
-      parent?.setOptions({
-        tabBarStyle: undefined,
-      });
-    };
-
     if (navigation.isFocused()) {
       setListInstanceKey((current) => current + 1);
-      hideAndroidTabBar();
     }
 
     const unsubscribeFocus = navigation.addListener('focus', () => {
       setListInstanceKey((current) => current + 1);
-      hideAndroidTabBar();
-    });
-
-    const unsubscribeBlur = navigation.addListener('blur', () => {
-      restoreAndroidTabBar();
     });
 
     return () => {
       unsubscribeFocus();
-      unsubscribeBlur();
-      restoreAndroidTabBar();
     };
   }, [navigation]);
 
@@ -645,23 +599,6 @@ function NotificationScreen({ navigation }: Props) {
 
   const menuCategory = menuNotification ? getPrimaryCategory(menuNotification) : 'feed';
 
-  const openNotificationSettings = useCallback(() => {
-    const rootNavigation = navigation.getParent()?.getParent() as
-      | { navigate: (route: string, params?: object) => void }
-      | undefined;
-    const targetNavigation = (rootNavigation || navigation.getParent()) as
-      | { navigate: (route: string, params?: object) => void }
-      | undefined;
-
-    navigation.goBack();
-
-    InteractionManager.runAfterInteractions(() => {
-      targetNavigation?.navigate('Settings', {
-        screen: 'NotificationSettings',
-      });
-    });
-  }, [navigation]);
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -690,7 +627,17 @@ function NotificationScreen({ navigation }: Props) {
           <StyledText style={styles.headerTitleIOS}>Notifications</StyledText>
         ) : null}
 
-        <Pressable onPress={openNotificationSettings} style={styles.headerActionButton}>
+        <Pressable
+          onPress={() => {
+            const parent = navigation.getParent();
+            if (parent) {
+              (parent as any).navigate('Settings', { screen: 'NotificationSettings' });
+              return;
+            }
+            navigation.goBack();
+          }}
+          style={styles.headerActionButton}
+        >
           <MaterialCommunityIcons
             name="bell-cog-outline"
             size={28}
@@ -860,11 +807,6 @@ function NotificationScreen({ navigation }: Props) {
             </StyledText>
           </View>
         }
-        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
-        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
 
       <Modal
@@ -938,7 +880,7 @@ function NotificationScreen({ navigation }: Props) {
   );
 }
 
-const createStyles = (dark: boolean, colors: any, topInset: number) =>
+const createStyles = (dark: boolean, colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -954,26 +896,24 @@ const createStyles = (dark: boolean, colors: any, topInset: number) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      minHeight: APP_HEADER_ROW_HEIGHT + topInset,
-      paddingTop: topInset,
+      paddingTop: Platform.OS === 'ios' ? spacing.x64 : spacing.x13,
       paddingHorizontal: spacing.x16,
-      transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+      paddingBottom: spacing.x5,
     },
     headerLeft: {
       flexDirection: 'row',
       alignItems: 'center',
-      flex: Platform.OS === 'android' ? 1 : 0,
     },
     headerBackButton: {
-      width: APP_HEADER_SIDE_WIDTH,
-      height: APP_HEADER_ROW_HEIGHT,
+      width: 32,
+      height: 32,
       alignItems: 'center',
       justifyContent: 'center',
+      marginRight: Platform.OS === 'android' ? spacing.x5 : 0,
     },
     headerTitle: {
       ...Typography.body.x5M,
       color: colors.text,
-      textAlign: 'left',
     },
     headerTitleIOS: {
       ...Typography.body.x5M,
@@ -982,14 +922,14 @@ const createStyles = (dark: boolean, colors: any, topInset: number) =>
       textAlign: 'center',
     },
     headerActionButton: {
-      width: APP_HEADER_SIDE_WIDTH,
-      height: APP_HEADER_ROW_HEIGHT,
+      width: 32,
+      height: 32,
       alignItems: 'center',
       justifyContent: 'center',
     },
     chipsContainer: {
       paddingHorizontal: spacing.x16,
-      paddingTop: APP_HEADER_CONTENT_GAP,
+      paddingTop: spacing.x10,
       paddingBottom: spacing.x8,
       gap: spacing.x8,
     },

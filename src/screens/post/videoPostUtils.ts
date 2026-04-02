@@ -29,6 +29,64 @@ const sanitizeRatio = (ratio?: number) => {
 export const isSuccessfulStatus = (status?: number) =>
   Number.isFinite(status) && Number(status) >= 200 && Number(status) < 300;
 
+const ensureFileUri = (value: string) => {
+  if (!value) {
+    return '';
+  }
+  if (value.startsWith('file://') || value.startsWith('content://')) {
+    return value;
+  }
+  return `file://${value}`;
+};
+
+const stripFileUriScheme = (value: string) =>
+  value.startsWith('file://') ? value.slice(7) : value;
+
+const getVideoFileExtension = (value: string) => {
+  const cleanPath = value.split(/[?#]/)[0] || value;
+  const fileName = cleanPath.split('/').pop() || cleanPath;
+  const extensionMatch = fileName.match(/(\.[A-Za-z0-9]+)$/);
+  return extensionMatch?.[1] || '.mp4';
+};
+
+export const copyVideoSourceToAppCache = async ({
+  sourceUri,
+  cachesDirectoryPath,
+  temporaryDirectoryPath,
+  copyFile,
+  now = Date.now,
+  random = Math.random,
+}: {
+  sourceUri: string;
+  cachesDirectoryPath?: string | null;
+  temporaryDirectoryPath?: string | null;
+  copyFile: (sourcePath: string, targetPath: string) => Promise<void>;
+  now?: () => number;
+  random?: () => number;
+}) => {
+  const normalizedSourceUri = String(sourceUri || '').trim();
+  if (!normalizedSourceUri) {
+    throw new Error('Selected video file is missing.');
+  }
+
+  if (normalizedSourceUri.startsWith('content://')) {
+    return normalizedSourceUri;
+  }
+
+  const sourcePath = stripFileUriScheme(normalizedSourceUri);
+  const baseDirectory = String(cachesDirectoryPath || temporaryDirectoryPath || '').trim();
+  if (!baseDirectory) {
+    return ensureFileUri(sourcePath);
+  }
+
+  const extension = getVideoFileExtension(sourcePath);
+  const targetPath = `${baseDirectory.replace(/\/+$/, '')}/onebody_watch_source_${now()}_${Math.round(
+    random() * 1000
+  )}${extension}`;
+  await copyFile(sourcePath, targetPath);
+  return ensureFileUri(targetPath);
+};
+
 export const getVideoFitSize = (
   containerWidth: number,
   containerHeight: number,

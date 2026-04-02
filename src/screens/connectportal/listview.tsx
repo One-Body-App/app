@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import {
+  Alert,
   Animated,
   FlatList,
   NativeSyntheticEvent,
@@ -13,27 +14,23 @@ import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import StyledText from '@/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ConnectStackParamsList } from '@/src/navigator/types';
-import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import {
   createConnectPortalDraft,
+  type ConnectQuickChip,
   formatConnectPortalDateTime,
   trackConnectPortalEventTelemetry,
-  ConnectServeJobPublished,
 } from '@/src/services/connectPortal';
-import { filterConnectGoEvents } from '@/src/services/connectPortal/goEventFilters';
-import { CONNECT_DEFAULT_EVENT_TYPE_OPTIONS } from '@/src/services/connectPortal/defaultEventTypes';
-import { CONNECT_DEFAULT_SERVE_ROLE_OPTIONS } from '@/src/services/connectPortal/defaultServeRoles';
-import filterConnectServeJobs from '@/src/services/connectPortal/serveJobFilters';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import type { ConnectTab } from './data';
+import { CONNECT_PORTAL_LIST_DATA, type ConnectTab } from './data';
 import {
   CONNECT_BRAND,
   CONNECT_BOTTOM_NAV_BASE_OFFSET,
@@ -41,6 +38,7 @@ import {
   CONNECT_BOTTOM_STACK_GAP,
   CONNECT_GO_QUICK_CHIPS,
   CONNECT_PLACE_QUICK_CHIPS,
+  CONNECT_SERVE_QUICK_CHIPS,
   ConnectPlaceCard,
   ConnectPlacesQuickChips,
   ConnectPortalChrome,
@@ -49,6 +47,9 @@ import {
   useConnectPalette,
   useConnectKeyboardMetrics,
 } from './shared';
+import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
+import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
+import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
 
@@ -56,13 +57,35 @@ function ListItemSeparator() {
   return <View style={{ height: spacing.x13 }} />;
 }
 
-const getServeJobTags = (job: ConnectServeJobPublished) => [
-  'Serve',
-  ...(job.hiringStatus === 'open' ? ['Hiring'] : []),
-];
+const normalize = (value: string) => value.trim().toLowerCase();
+
+const matchesSearch = (query: string, values: Array<string | undefined>) => {
+  if (!query) {
+    return true;
+  }
+
+  return values.some((value) => normalize(String(value || '')).includes(query));
+};
+
+const isUpcomingEvent = (startDate: string) => {
+  if (!startDate) {
+    return true;
+  }
+  return startDate >= new Date().toISOString().slice(0, 10);
+};
+
+const getServeRoleType = (location: string) =>
+  location
+    .split('•')
+    .map((part) => part.trim())
+    .filter(Boolean)[1] || location;
 
 function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
-  const { dark, colors } = useTheme();
+  const rootTabReplayToken = useRootTabSwitchReplayToken('ConnectTab');
+  const { getSpringboardStyle } = useSpringboardEntry(rootTabReplayToken, 3, {
+    preset: getTabRootSpringboardPreset('connect'),
+  });
+  const { colors, dark } = useTheme();
   const palette = useConnectPalette();
   const insets = useSafeAreaInsets();
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
@@ -80,6 +103,10 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     serve,
   } = useConnectPortalData();
   const { keyboardHeight, keyboardVisible } = useConnectKeyboardMetrics();
+  const renderEventManageIcon = useCallback(
+    (color: string) => <CalendarEditIcon width={18} height={18} fill={color} color={color} />,
+    []
+  );
 
   const CHIP_ROW_HEIGHT = 46;
   const chipOffset = useRef(new Animated.Value(0)).current;
@@ -137,22 +164,124 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   );
 
   const eventRecords = useMemo(() => {
-    return filterConnectGoEvents({
-      events: snapshot.publicPublished,
-      filters: go.filters,
-      quickFilter: go.quickChip,
-      searchText: searchByTab['Go!'],
+    const searchQuery = normalize(searchByTab['Go!']);
+    const filtered = snapshot.publicPublished.filter((eventRecord) => {
+      if (
+        go.filters.eventType &&
+        normalize(eventRecord.eventType) !== normalize(go.filters.eventType)
+      ) {
+        return false;
+      }
+
+      if (
+        go.filters.category &&
+        normalize(eventRecord.category) !== normalize(go.filters.category)
+      ) {
+        return false;
+      }
+
+      if (go.filters.mode === 'online' && !eventRecord.isOnline) {
+        return false;
+      }
+
+      if (go.filters.mode === 'in_person' && eventRecord.isOnline) {
+        return false;
+      }
+
+      if (go.quickChip === 'Upcoming' && !isUpcomingEvent(eventRecord.startDate)) {
+        return false;
+      }
+
+      if (go.quickChip === 'Online' && !eventRecord.isOnline) {
+        return false;
+      }
+
+      if (go.quickChip === 'In Person' && eventRecord.isOnline) {
+        return false;
+      }
+
+      if (
+        go.quickChip === 'Live' &&
+        !eventRecord.isLive &&
+        !eventRecord.tags.some((tag) => normalize(tag) === 'live')
+      ) {
+        return false;
+      }
+
+      return matchesSearch(searchQuery, [
+        eventRecord.title,
+        eventRecord.venueName,
+        eventRecord.address,
+        eventRecord.eventType,
+        eventRecord.category,
+        ...eventRecord.tags,
+      ]);
+    });
+
+    return [...filtered].sort((left, right) => {
+      if (go.filters.sort === 'alphabetical') {
+        return left.title.localeCompare(right.title);
+      }
+
+      if (go.filters.sort === 'recently_updated') {
+        return right.updatedAt.localeCompare(left.updatedAt);
+      }
+
+      const dateCompare = (left.startDate || '').localeCompare(right.startDate || '');
+      if (dateCompare !== 0) {
+        return dateCompare;
+      }
+      return (left.startTime || '').localeCompare(right.startTime || '');
     });
   }, [go.filters, go.quickChip, searchByTab, snapshot.publicPublished]);
 
   const serveItems = useMemo(() => {
-    return filterConnectServeJobs({
-      jobs: serve.publicRecords,
-      filters: serve.filters,
-      quickFilter: serve.quickChip,
-      searchText: searchByTab.Serve,
+    const searchQuery = normalize(searchByTab.Serve);
+    const filtered = CONNECT_PORTAL_LIST_DATA.Serve.filter((item) => {
+      const roleType = getServeRoleType(item.location);
+
+      if (serve.filters.roleType && normalize(roleType) !== normalize(serve.filters.roleType)) {
+        return false;
+      }
+
+      if (
+        serve.filters.tag &&
+        !item.tags.some((tag) => normalize(tag) === normalize(serve.filters.tag))
+      ) {
+        return false;
+      }
+
+      if (serve.quickChip === 'Hiring' && !item.tags.some((tag) => normalize(tag) === 'hiring')) {
+        return false;
+      }
+
+      if (serve.quickChip === 'Part-time' && normalize(roleType) !== 'part-time') {
+        return false;
+      }
+
+      if (serve.quickChip === 'Full-time' && normalize(roleType) !== 'full-time') {
+        return false;
+      }
+
+      if (serve.quickChip === 'Serve' && !item.tags.some((tag) => normalize(tag) === 'serve')) {
+        return false;
+      }
+
+      return matchesSearch(searchQuery, [item.title, item.location, roleType, ...item.tags]);
     });
-  }, [searchByTab.Serve, serve.filters, serve.publicRecords, serve.quickChip]);
+
+    return [...filtered].sort((left, right) => {
+      if (serve.filters.sort === 'role_type') {
+        return getServeRoleType(left.location).localeCompare(getServeRoleType(right.location));
+      }
+
+      if (serve.filters.sort === 'nearest_match') {
+        return left.location.localeCompare(right.location);
+      }
+
+      return left.title.localeCompare(right.title);
+    });
+  }, [searchByTab.Serve, serve.filters, serve.quickChip]);
 
   let sectionTitle = 'Open Opportunities';
   if (activeTab === 'Places') {
@@ -175,7 +304,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
       return;
     }
     if (activeTab === 'Serve') {
-      navigation.navigate('ConnectServeCreateJobStep1');
+      Alert.alert('Coming Soon', 'Serve opportunity creation is coming soon.');
     }
   }, [activeTab, navigation]);
 
@@ -186,43 +315,30 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
   };
 
-  const handleTabChange = useCallback(
-    (tab: ConnectTab) => {
-      setActiveTab(tab);
-      navigation.setParams({ initialTab: tab });
-    },
-    [navigation, setActiveTab]
-  );
-
-  const resolvedGoChips =
-    go.eventTypeOptions.length > 0 ? go.eventTypeOptions : CONNECT_DEFAULT_EVENT_TYPE_OPTIONS;
-  const resolvedServeRoleOptions =
-    serve.roleTypeOptions.length > 0 ? serve.roleTypeOptions : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS;
-
   let quickChipProps: {
-    chips: string[];
-    selectedChip?: string | null;
-    onSelect: (chip: string) => void;
+    chips: ConnectQuickChip[];
+    selectedChip: ConnectQuickChip;
+    onSelect: (chip: ConnectQuickChip) => void;
   } = {
-    chips: resolvedServeRoleOptions.map((option) => option.value),
-    selectedChip: serve.filters.roleType || null,
-    onSelect: (chip: string) =>
-      serve.setFilters({ roleType: chip === serve.filters.roleType ? '' : chip }),
+    chips: CONNECT_SERVE_QUICK_CHIPS,
+    selectedChip: serve.quickChip,
+    onSelect: (chip: ConnectQuickChip) =>
+      serve.setQuickChip(chip as (typeof CONNECT_SERVE_QUICK_CHIPS)[number]),
   };
 
   if (activeTab === 'Places') {
     quickChipProps = {
       chips: CONNECT_PLACE_QUICK_CHIPS,
       selectedChip: places.quickChip,
-      onSelect: (chip: string) =>
+      onSelect: (chip: ConnectQuickChip) =>
         places.setQuickChip(chip as (typeof CONNECT_PLACE_QUICK_CHIPS)[number]),
     };
   } else if (activeTab === 'Go!') {
     quickChipProps = {
-      chips: resolvedGoChips.map((option) => option.value),
-      selectedChip: go.filters.eventType || null,
-      onSelect: (chip: string) =>
-        go.setFilters({ eventType: chip === go.filters.eventType ? '' : chip }),
+      chips: CONNECT_GO_QUICK_CHIPS,
+      selectedChip: go.quickChip,
+      onSelect: (chip: ConnectQuickChip) =>
+        go.setQuickChip(chip as (typeof CONNECT_GO_QUICK_CHIPS)[number]),
     };
   }
 
@@ -272,20 +388,18 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={{ zIndex: 1, position: 'relative' }}>
+      <Animated.View style={[{ zIndex: 1, position: 'relative' }, getSpringboardStyle(0)]}>
         <ConnectPortalChrome
           activeTab={activeTab}
-          onTabChange={handleTabChange}
+          onTabChange={setActiveTab}
           userAvatarUri={currentUser?.profileImage}
-          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
-          addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
-          headerActionIconName={activeTab === 'Places' ? 'map' : undefined}
-          headerActionAccessibilityLabel={activeTab === 'Places' ? 'Switch to map view' : undefined}
-          onHeaderActionPress={activeTab === 'Places' ? () => onChangeViewMode('map') : undefined}
+          headerActionIconName="map"
+          headerActionAccessibilityLabel="Switch to map view"
+          onHeaderActionPress={() => onChangeViewMode('map')}
         />
-      </View>
+      </Animated.View>
 
-      <View style={styles.chipContentWrap}>
+      <Animated.View style={[styles.chipContentWrap, getSpringboardStyle(1)]}>
         <Animated.View
           style={{
             position: 'absolute',
@@ -392,11 +506,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
 
             const serveItem = item as (typeof serveItems)[number];
             return (
-              <TouchableOpacity
-                style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('ConnectServeJobView', { jobId: serveItem.id })}
-              >
+              <View style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}>
                 <MaterialIcons name="volunteer-activism" size={28} color={palette.activeText} />
                 <View style={styles.genericCardCopy}>
                   <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
@@ -405,10 +515,10 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                   <StyledText
                     style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}
                   >
-                    {[serveItem.address, serveItem.opportunityType].filter(Boolean).join(' • ')}
+                    {serveItem.location}
                   </StyledText>
                   <View style={styles.genericTagsRow}>
-                    {getServeJobTags(serveItem).map((tag) => (
+                    {serveItem.tags.map((tag) => (
                       <View
                         key={`${serveItem.id}-${tag}`}
                         style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
@@ -420,54 +530,32 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                     ))}
                   </View>
                 </View>
-              </TouchableOpacity>
+              </View>
             );
           }}
           ItemSeparatorComponent={ListItemSeparator}
-          removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-          initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-          maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-          updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
-          windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
         />
-      </View>
+      </Animated.View>
 
-      <View pointerEvents="box-none" style={[styles.bottomSearchDock, { bottom: searchRowBottom }]}>
+      <Animated.View
+        pointerEvents="box-none"
+        style={[styles.bottomSearchDock, { bottom: searchRowBottom }, getSpringboardStyle(2)]}
+      >
         <ConnectRetractableSearchBar
           key={`connect-list-${activeTab}-${viewModes[activeTab]}`}
           searchText={searchByTab[activeTab]}
           onSearchChange={(text) => setSearchText(activeTab, text)}
           searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
-          tertiaryAction={(() => {
-            if (activeTab === 'Go!') {
-              return {
-                icon: 'eventManager' as const,
-                accessibilityLabel: 'Open event management',
-                onPress: () => navigation.navigate('ConnectGoEventDash'),
-                testID: 'connect-go-event-manager-action',
-              };
-            }
-            if (activeTab === 'Serve') {
-              return {
-                icon: 'serveManager' as const,
-                accessibilityLabel: 'Open serve manager',
-                onPress: () => navigation.navigate('ConnectServeHome'),
-                testID: 'connect-serve-manager-action',
-              };
-            }
-            return undefined;
-          })()}
-          viewToggle={
-            activeTab !== 'Places'
-              ? {
-                  toMap: true,
-                  onPress: () => onChangeViewMode('map'),
-                  accessibilityLabel: 'Switch to map view',
-                }
-              : undefined
+          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
+          onSecondaryActionPress={
+            activeTab === 'Go!' ? () => navigation.navigate('ConnectGoEventDash') : undefined
+          }
+          renderSecondaryActionIcon={activeTab === 'Go!' ? renderEventManageIcon : undefined}
+          secondaryActionAccessibilityLabel={
+            activeTab === 'Go!' ? 'Open event management' : undefined
           }
         />
-      </View>
+      </Animated.View>
 
       <ConnectPortalFilterSheet
         visible={filterSheetVisible}
@@ -486,16 +574,15 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           sortOptions: go.sortOptions,
           eventTypeOptions: go.eventTypeOptions,
           categoryOptions: go.categoryOptions,
-          quickFilterOptions: CONNECT_GO_QUICK_CHIPS.map((chip) => ({ label: chip, value: chip })),
-          quickFilterValue: go.quickChip,
-          onQuickFilterChange: go.setQuickChip,
+          modeOptions: go.modeOptions,
           onApply: go.setFilters,
           onReset: go.resetFilters,
         }}
         serve={{
           filters: serve.filters,
           sortOptions: serve.sortOptions,
-          roleTypeOptions: resolvedServeRoleOptions,
+          roleTypeOptions: serve.roleTypeOptions,
+          tagOptions: serve.tagOptions,
           onApply: serve.setFilters,
           onReset: serve.resetFilters,
         }}

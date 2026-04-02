@@ -1,7 +1,7 @@
 /* eslint-disable global-require */
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput } from 'react-native';
 import ServeCreateJobStep1 from '../srvstep1';
 
 const mockCreateFlowLayout = jest.fn();
@@ -320,6 +320,36 @@ describe('ServeCreateJobStep1', () => {
       .findAllByType(TextInput)
       .find((input) => input.props.placeholder === 'Enter the role');
     expect(customRoleInput?.props.value).toBe('Liturgical Arts Coordinator');
+  });
+
+  it('keeps the next step disabled until the location includes a coordinate', async () => {
+    mockGetConnectServeJobDraftById.mockResolvedValue({
+      id: 'serve-draft-no-coordinate',
+      visibility: 'public',
+      title: 'Interim Pastor',
+      description: 'Lead weekend services',
+      requirements: ['Preach'],
+      address: '123 Main St',
+      coordinate: undefined,
+    });
+
+    await act(async () => {
+      TestRenderer.create(
+        <ServeCreateJobStep1
+          navigation={{ navigate: jest.fn() } as any}
+          route={
+            {
+              key: 'serve-step-1',
+              name: 'ConnectServeCreateJobStep1',
+              params: { draftId: 'serve-draft-no-coordinate' },
+            } as any
+          }
+        />
+      );
+    });
+
+    const layoutProps = mockCreateFlowLayout.mock.calls.at(-1)?.[0] as any;
+    expect(layoutProps.nextDisabled).toBe(true);
   });
 
   it('resets the role search when the sheet closes', () => {

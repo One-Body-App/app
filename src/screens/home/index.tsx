@@ -29,15 +29,25 @@ import {
   NativeSyntheticEvent,
   ViewStyle,
 } from 'react-native';
-import { TabView } from 'react-native-tab-view';
+import { TabView, SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import Toast from 'react-native-simple-toast';
+import Reanimated, {
+  SensorType,
+  useAnimatedSensor,
+  useFrameCallback,
+  useSharedValue,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+
 import { useSelector } from 'react-redux';
 import {
   CompositeScreenProps,
   useNavigation,
   useTheme,
+  useScrollToTop,
   DrawerActions,
   useFocusEffect,
+  useIsFocused,
 } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BlurView } from '@react-native-community/blur';
@@ -56,6 +66,13 @@ import {
 } from 'iconsax-react-native';
 import { serialize } from 'object-to-formdata';
 import { useTabBarAnimation } from '@/navigator/TabBarAnimationContext';
+import {
+  getTabRootSpringboardPreset,
+  HOME_FEED_LIST_BATCH_CONFIG,
+  SHOULD_RUN_HOME_FEED_INTRO,
+} from '@/src/navigator/motionPolicy';
+import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
+import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
 
 import styles from './styles';
 import { ApiCall } from '@/services/api';
@@ -68,12 +85,6 @@ import PrayerItem from '@/components/listItems/PrayerItem';
 import { ArticleType, PostType, PrayerPost, SocialPost, User } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import {
-  APP_HEADER_BACKGROUND_DARK,
-  APP_HEADER_BACKGROUND_LIGHT,
-  APP_HEADER_BORDER_DARK,
-  APP_HEADER_BORDER_LIGHT,
-} from '@/src/styles/headerLayout';
 import useScrollIntentLock from '@/src/hooks/useScrollIntentLock';
 import { getHeight } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/icons/logo.svg';
@@ -84,13 +95,13 @@ import WallComponent from '@/components/prayerWallComponent';
 import PrayersComponent from '@/components/prayerWallMyPrayersComponent';
 import TestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
 import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
-import GlassTabBar from '@/components/GlassTabBar';
+import prayerTabStyles from '@/src/screens/main/prayer/styles';
 import {
   flushFeedTelemetry,
   setFeedTelemetryAuthToken,
   trackFeedTelemetry,
 } from '@/services/feedTelemetry';
-import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
+import { HapticService } from '@/src/services/haptic';
 
 import {
   HomeStackParamsList,
@@ -121,6 +132,9 @@ const BRAND = {
   accentDark: '#12d2d9',
   primaryBase: '#41899f',
 };
+const PRAYER_LIQUID_HEIGHT = 36;
+const PRAYER_GLASS_PILL_HORIZONTAL_INSET = 0;
+const PRAYER_GLASS_PILL_HEIGHT = 36;
 
 // --- TYPES ---
 type FeedPost = (ArticleType | SocialPost) & {
@@ -417,6 +431,111 @@ type PrayerWallTabsProps = {
   wallRefreshSignal: number;
 };
 
+type PrayerWallRoute = {
+  key: string;
+  title: string;
+};
+
+type PrayerLiquidIndicatorProps = {
+  tabWidth: number;
+};
+
+function PrayerLiquidIndicator({ tabWidth }: PrayerLiquidIndicatorProps) {
+  const pillWidth = Math.max(56, tabWidth - PRAYER_GLASS_PILL_HORIZONTAL_INSET * 2);
+  const pillRadius = PRAYER_GLASS_PILL_HEIGHT / 2;
+  const gravitySensor = useAnimatedSensor(SensorType.GRAVITY, {
+    interval: 'auto',
+  });
+  const waterTime = useSharedValue(0);
+  const waterGravityX = useSharedValue(0);
+  const waterGravityY = useSharedValue(0);
+  const waterWidth = useSharedValue(pillWidth);
+  const waterHeight = useSharedValue(PRAYER_GLASS_PILL_HEIGHT);
+
+  useEffect(() => {
+    waterWidth.value = pillWidth;
+    waterHeight.value = PRAYER_GLASS_PILL_HEIGHT;
+  }, [pillWidth, waterHeight, waterWidth]);
+
+  useFrameCallback((frameInfo) => {
+    'worklet';
+
+    const elapsedMs = frameInfo.timeSinceFirstFrame ?? frameInfo.timestamp;
+    waterTime.value = elapsedMs / 1000;
+
+    const rawX = Math.max(-1.6, Math.min(1.6, gravitySensor.sensor.value.x || 0));
+    const rawY = Math.max(-1.6, Math.min(1.6, gravitySensor.sensor.value.y || 0));
+
+    // Low-pass keeps liquid inertia realistic and avoids jitter.
+    waterGravityX.value += (rawX - waterGravityX.value) * 0.06;
+    waterGravityY.value += (rawY - waterGravityY.value) * 0.06;
+  });
+
+  const sheenAnimatedStyle = useAnimatedStyle(() => {
+    const width = Math.max(waterWidth.value, 1);
+    const driftRange = width * 0.055;
+    const gravityShift = -waterGravityX.value * width * 0.05;
+    const idleDrift = Math.sin(waterTime.value * 1.35) * driftRange;
+    const sheenOpacity = 0.2 + Math.cos(waterTime.value * 0.95) * 0.05;
+    const skewX = -waterGravityY.value * 1.8 + Math.cos(waterTime.value * 1.15) * 0.45;
+
+    return {
+      opacity: Math.max(0.1, Math.min(0.28, sheenOpacity)),
+      transform: [{ translateX: gravityShift + idleDrift }, { skewX: `${skewX}deg` }],
+    };
+  });
+
+  return (
+    <>
+      {/* Shadow layer — separate from the clipped content so iOS shadow isn't cropped */}
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          borderRadius: pillRadius,
+          shadowColor: '#ffffff',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.12,
+          shadowRadius: 4,
+        }}
+      />
+      {/* Glass pill */}
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          borderRadius: pillRadius,
+          backgroundColor: 'rgba(18, 107, 135, 0.15)',
+          overflow: 'hidden',
+          elevation: 4,
+        }}
+      >
+        {/* Animated sheen keeps highlight physically tied to liquid movement */}
+        <Reanimated.View
+          style={{
+            position: 'absolute',
+            top: 4,
+            left: '20%',
+            width: '56%',
+            height: 8,
+            borderRadius: 999,
+            backgroundColor: 'rgba(255, 255, 255, 0.24)',
+          }}
+        >
+          <Reanimated.View
+            style={[
+              {
+                ...StyleSheet.absoluteFillObject,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              },
+              sheenAnimatedStyle,
+            ]}
+          />
+        </Reanimated.View>
+      </View>
+    </>
+  );
+}
+
 function PrayerWallTabs({
   topInset,
   bottomInset,
@@ -434,7 +553,8 @@ function PrayerWallTabs({
     { key: 'Saved', title: 'Saved' },
     { key: 'MyPrayers', title: 'My Prayers' },
   ]);
-  const { dark, colors } = useTheme();
+  const [tabBarWidth, setTabBarWidth] = useState(0);
+  const { colors, dark } = useTheme();
   const [areSubtabsVisible, setAreSubtabsVisible] = useState(true);
   const [localWallRefreshSignal, setLocalWallRefreshSignal] = useState(0);
   const previousWallRefreshSignalRef = useRef<number | undefined>(wallRefreshSignal);
@@ -443,6 +563,11 @@ function PrayerWallTabs({
   const prayerScrollAccumulator = useRef(0);
   const areSubtabsVisibleRef = useRef(true);
   const prayerSubtabsVisibility = useRef(new Animated.Value(1)).current;
+  const pillLeftAnim = useRef(new Animated.Value(0)).current;
+  const pillWidthAnim = useRef(new Animated.Value(0)).current;
+  const pillScaleYAnim = useRef(new Animated.Value(1)).current;
+  const previousTabIndexRef = useRef(0);
+  const hasInitializedLiquidRef = useRef(false);
   const setSubtabsVisibility = useCallback(
     (visible: boolean) => {
       if (areSubtabsVisibleRef.current === visible) {
@@ -530,15 +655,179 @@ function PrayerWallTabs({
       refreshWallFeed();
     }
   }, [index, refreshWallFeed, wallRefreshSignal]);
+  const tabWidth = tabBarWidth > 0 ? tabBarWidth / routes.length : 0;
+
+  useEffect(() => {
+    if (tabWidth <= 0) {
+      return;
+    }
+    const toX = index * tabWidth;
+
+    if (!hasInitializedLiquidRef.current) {
+      pillLeftAnim.setValue(toX);
+      pillWidthAnim.setValue(tabWidth);
+      pillScaleYAnim.setValue(1);
+      hasInitializedLiquidRef.current = true;
+      previousTabIndexRef.current = index;
+      return;
+    }
+
+    const fromX = previousTabIndexRef.current * tabWidth;
+    previousTabIndexRef.current = index;
+    if (toX === fromX) {
+      return;
+    }
+
+    const movingRight = toX > fromX;
+    const naturalSpan = Math.abs(toX - fromX) + tabWidth;
+
+    let surgePhase: Animated.CompositeAnimation;
+
+    if (Platform.OS === 'ios') {
+      if (movingRight) {
+        // iOS right: clamp surge so right edge never exceeds tabBarWidth
+        const surgeWidth = Math.min(tabBarWidth - fromX, naturalSpan * 1.2);
+        surgePhase = Animated.parallel([
+          Animated.timing(pillWidthAnim, {
+            toValue: surgeWidth,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillScaleYAnim, {
+            toValue: 0.72,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+        ]);
+      } else {
+        // iOS left: keep right edge fixed at fromX + tabWidth (no right-side overflow)
+        const fixedWidth = fromX + tabWidth - toX;
+        surgePhase = Animated.parallel([
+          Animated.timing(pillLeftAnim, {
+            toValue: toX,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillWidthAnim, {
+            toValue: fixedWidth,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillScaleYAnim, {
+            toValue: 0.72,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+        ]);
+      }
+    } else {
+      // Android: keep original 20% overshoot behavior (works correctly)
+      const spanWidth = naturalSpan * 1.2;
+      surgePhase = movingRight
+        ? // Right edge surges: expand width rightward, squish height
+          Animated.parallel([
+            Animated.timing(pillWidthAnim, {
+              toValue: spanWidth,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillScaleYAnim, {
+              toValue: 0.72,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+          ])
+        : // Left edge surges: move left + expand width leftward, squish height
+          Animated.parallel([
+            Animated.timing(pillLeftAnim, {
+              toValue: toX,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillWidthAnim, {
+              toValue: spanWidth,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillScaleYAnim, {
+              toValue: 0.72,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+          ]);
+    }
+
+    // Snap phase: return to final position — water settling
+    // iOS: timing only (no spring) for left/width so right edge never clips overflow:hidden
+    // Android: spring bounce for full water-settle effect
+    const snapPhase =
+      Platform.OS === 'ios'
+        ? Animated.parallel([
+            Animated.timing(pillLeftAnim, {
+              toValue: toX,
+              duration: 200,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillWidthAnim, {
+              toValue: tabWidth,
+              duration: 200,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.spring(pillScaleYAnim, {
+              toValue: 1,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+          ])
+        : Animated.parallel([
+            Animated.spring(pillLeftAnim, {
+              toValue: toX,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+            Animated.spring(pillWidthAnim, {
+              toValue: tabWidth,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+            Animated.spring(pillScaleYAnim, {
+              toValue: 1,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+          ]);
+
+    Animated.sequence([surgePhase, snapPhase]).start(({ finished }) => {
+      if (finished) {
+        HapticService.trigger('impactLight');
+      }
+    });
+  }, [index, pillLeftAnim, pillScaleYAnim, pillWidthAnim, tabBarWidth, tabWidth]);
 
   const prayerSubtabContainerHeight = prayerSubtabsVisibility.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 60],
+    outputRange: [0, 44],
     extrapolate: 'clamp',
   });
   const prayerSubtabTranslateY = prayerSubtabsVisibility.interpolate({
     inputRange: [0, 1],
-    outputRange: [-16, 0],
+    outputRange: [-12, 0],
     extrapolate: 'clamp',
   });
   const shareButtonStyle = isIOS
@@ -607,7 +896,11 @@ function PrayerWallTabs({
         onIndexChange={applyPrayerTabIndex}
         initialLayout={{ width: layout.width }}
         sceneContainerStyle={{ paddingBottom: bottomInset / 2 }}
-        renderTabBar={() => {
+        renderTabBar={(
+          props: SceneRendererProps & {
+            navigationState: NavigationState<PrayerWallRoute>;
+          }
+        ) => {
           return (
             <Animated.View
               pointerEvents={areSubtabsVisible ? 'auto' : 'none'}
@@ -615,16 +908,66 @@ function PrayerWallTabs({
                 height: prayerSubtabContainerHeight,
                 opacity: prayerSubtabsVisibility,
                 transform: [{ translateY: prayerSubtabTranslateY }],
-                paddingHorizontal: 16,
-                backgroundColor: colors.card,
+                overflow: 'hidden',
               }}
             >
-              <GlassTabBar
-                tabs={routes.map((r) => r.title)}
-                activeIndex={index}
-                onTabChange={applyPrayerTabIndex}
-                style={{ marginVertical: 2 }}
-              />
+              <View
+                style={[
+                  prayerTabStyles.tabBar,
+                  { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' },
+                ]}
+                onLayout={(event) => {
+                  const nextWidth = event.nativeEvent.layout.width;
+                  if (Math.abs(nextWidth - tabBarWidth) > 1) {
+                    setTabBarWidth(nextWidth);
+                  }
+                }}
+              >
+                {tabWidth > 0 ? (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      prayerTabStyles.liquidCanvasLayer,
+                      {
+                        left: pillLeftAnim,
+                        width: pillWidthAnim,
+                        height: PRAYER_LIQUID_HEIGHT,
+                        transform: [{ scaleY: pillScaleYAnim }],
+                      },
+                    ]}
+                  >
+                    <PrayerLiquidIndicator tabWidth={tabWidth} />
+                  </Animated.View>
+                ) : null}
+                {props.navigationState.routes.map((route, i) => {
+                  const isActive = props.navigationState.index === i;
+                  return (
+                    <TouchableOpacity
+                      key={route.key}
+                      style={prayerTabStyles.tabItem}
+                      onPress={() => {
+                        if (isActive) {
+                          if (route.key === 'Wall') {
+                            refreshWallFeed();
+                          }
+                          return;
+                        }
+                        applyPrayerTabIndex(i);
+                      }}
+                    >
+                      <StyledText
+                        style={
+                          isActive
+                            ? { color: colors.text, fontWeight: 'bold' }
+                            : { color: colors.text }
+                        }
+                      >
+                        {route.title}
+                      </StyledText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </Animated.View>
           );
         }}
@@ -857,8 +1200,8 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
     item.mediaUrl ||
     item.images?.[0];
 
-  const likes = item.reactions?.length ?? 0;
-  const comments = item.commentNumber ?? item.comments?.length ?? 0;
+  const likes = item.likesCount || 0;
+  const comments = item.commentsCount || 0;
 
   return (
     <View style={[styles.cardContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}>
@@ -942,8 +1285,10 @@ type Props = CompositeScreenProps<
 
 function Home({ navigation, route }: Props) {
   const stackNavigation = useNavigation<NativeStackNavigationProp<HomeStackParamsList, 'Home'>>();
-  const layout = useWindowDimensions();
-  const { imageViewer, openImages } = useSharedImageViewer();
+  const isFocused = useIsFocused();
+  const rootTabReplayToken = useRootTabSwitchReplayToken('HomeTab');
+  const springboardPreset = getTabRootSpringboardPreset('home');
+  const shouldRunHomeFeedIntro = SHOULD_RUN_HOME_FEED_INTRO;
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector(
     (state: RootState) => state.auth.getProfileData
@@ -958,25 +1303,13 @@ function Home({ navigation, route }: Props) {
   const headerRowHeight = getHeight(5.8);
   const headerSideWidth = headerRowHeight;
   const footerHeight = getHeight(7) + insets.bottom;
-  const socialItemContentWidth = Math.max(layout.width - spacing.x16 * 2 - 14, 0);
-  const homeVisibleTabBarStyle = useMemo(
-    () => ({
-      height: getHeight(7) + insets.bottom,
-      borderTopWidth: 0,
-      borderTopColor: 'transparent',
-      backgroundColor: 'transparent',
-      elevation: 0,
-      overflow: 'visible' as const,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      paddingBottom: insets.bottom,
-    }),
-    [insets.bottom]
-  );
   const defaultHeaderHeight = insets.top + headerRowHeight + spacing.x10 + spacing.x8 + 20;
   const glassOverlayColor = dark ? 'rgba(13,13,13,0.7)' : 'rgba(246,246,247,0.7)';
-  const androidHeaderBackground = dark ? APP_HEADER_BACKGROUND_DARK : APP_HEADER_BACKGROUND_LIGHT;
-  const androidHeaderBorderColor = dark ? APP_HEADER_BORDER_DARK : APP_HEADER_BORDER_LIGHT;
+  const androidHeaderBackground = dark ? 'rgba(13,13,13,0.92)' : 'rgba(246,246,247,0.92)';
+  const androidHeaderBorderColor = dark ? 'rgba(255,255,255,0.08)' : BRAND.gray100;
+  const { getSpringboardStyle } = useSpringboardEntry(rootTabReplayToken, 3, {
+    preset: springboardPreset,
+  });
   const tabContainerGlassStyle = useMemo(
     () => ({
       backgroundColor: 'transparent',
@@ -1019,8 +1352,10 @@ function Home({ navigation, route }: Props) {
   const feedTypeRef = useRef<FeedTypes>(feedOptions.type);
   const handledRouteSelectedTabRef = useRef<FeedTypes | undefined>(route.params?.selectedTab);
   const handledRouteRefreshTokenRef = useRef<number | undefined>(route.params?.refreshToken);
-  const feedIntroHeaderOpacity = useRef(new Animated.Value(0)).current;
-  const feedIntroHeaderTranslateY = useRef(new Animated.Value(-22)).current;
+  const feedIntroHeaderOpacity = useRef(new Animated.Value(shouldRunHomeFeedIntro ? 0 : 1)).current;
+  const feedIntroHeaderTranslateY = useRef(
+    new Animated.Value(shouldRunHomeFeedIntro ? -22 : 0)
+  ).current;
   const feedIntroHasStarted = useRef(false);
   const feedIntroCardsCanAnimate = useRef(false);
   const feedIntroCardsAnimated = useRef(false);
@@ -1028,7 +1363,6 @@ function Home({ navigation, route }: Props) {
   const feedIntroCardValues = useRef<Record<string, Animated.Value>>({});
   const latestVisibleItems = useRef<ViewToken[]>([]);
   const suggestionsRequestSequenceRef = useRef(0);
-  const suggestionsInitialFocusRef = useRef(true);
   const isPaginatingRef = useRef(false);
   const [peopleYouMayKnowUsers, setPeopleYouMayKnowUsers] = useState<User[]>([]);
   const [suggestedForYouUsers, setSuggestedForYouUsers] = useState<User[]>([]);
@@ -1042,17 +1376,27 @@ function Home({ navigation, route }: Props) {
     [introAnimatedCardKeys]
   );
   const listRef = useRef<FlatList<RenderFeedEntry>>(null);
-  const headerInsetRef = useRef(0);
   const renderEntryFallbackKeyMapRef = useRef(new WeakMap<object, string>());
   const renderEntryFallbackKeySequenceRef = useRef(0);
   const feedVisibleStartByKeyRef = useRef<Map<string, number>>(new Map());
   const feedImpressionsByKeyRef = useRef<Set<string>>(new Set());
   const [viewableSocialPostIds, setViewableSocialPostIds] = useState<Set<string>>(new Set());
+  useScrollToTop(listRef as any);
   const scrollIntent = useScrollIntentLock();
 
   useEffect(() => {
     setFeedTelemetryAuthToken(token || undefined);
   }, [token]);
+
+  useEffect(() => {
+    const followingIds = (userProfile?.following ?? [])
+      .map((id) => String(id))
+      .filter((id) => id.length > 0);
+    if (followingIds.length < 1) {
+      return;
+    }
+    setSelectedSuggestionIds((previous) => Array.from(new Set([...previous, ...followingIds])));
+  }, [userProfile?.following]);
 
   const handleNewPrayerPress = useCallback(() => {
     navigation.navigate('PrayerWall', {
@@ -1091,22 +1435,10 @@ function Home({ navigation, route }: Props) {
       if (!pendingScrollToTopRef.current) {
         return;
       }
-      const offset = Platform.OS === 'ios' ? -headerInsetRef.current : 0;
-      listRef.current?.scrollToOffset({ offset, animated: false });
+      listRef.current?.scrollToOffset({ offset: 0, animated: false });
       pendingScrollToTopRef.current = false;
     });
   }, []);
-
-  useEffect(() => {
-    const parent = navigation.getParent();
-    if (!parent) return;
-    return (parent as any).addListener('tabPress', (e: any) => {
-      if (navigation.isFocused() && !e.defaultPrevented) {
-        const offset = Platform.OS === 'ios' ? -headerInsetRef.current : 0;
-        listRef.current?.scrollToOffset({ offset, animated: true });
-      }
-    });
-  }, [navigation]);
 
   const requestFeedRefresh = useCallback(
     ({
@@ -1365,14 +1697,8 @@ function Home({ navigation, route }: Props) {
         return;
       }
 
-      const followingSet = new Set(
-        (userProfile?.following ?? []).map((id) => String(id)).filter(Boolean)
-      );
-      const excludeFollowed = (users: User[]) =>
-        users.filter((u) => !followingSet.has(getSuggestionUserId(u)));
-
-      setPeopleYouMayKnowUsers(excludeFollowed(peopleResult));
-      setSuggestedForYouUsers(excludeFollowed(suggestedResult));
+      setPeopleYouMayKnowUsers(peopleResult);
+      setSuggestedForYouUsers(suggestedResult);
     };
 
     loadSuggestions();
@@ -1381,47 +1707,6 @@ function Home({ navigation, route }: Props) {
       isCancelled = true;
     };
   }, [feedOptions.type, getSuggestedUsers]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (suggestionsInitialFocusRef.current) {
-        suggestionsInitialFocusRef.current = false;
-        return;
-      }
-
-      setSelectedSuggestionIds([]);
-      setPeopleYouMayKnowUsers([]);
-      setSuggestedForYouUsers([]);
-
-      if (feedOptions.type !== FeedTypes.Connected && feedOptions.type !== FeedTypes.ForYou) {
-        return;
-      }
-
-      const requestSequence = ++suggestionsRequestSequenceRef.current;
-
-      const reload = async () => {
-        const [peopleResult, suggestedResult] = await Promise.all([
-          getSuggestedUsers(),
-          getSuggestedUsers('popular'),
-        ]);
-
-        if (requestSequence !== suggestionsRequestSequenceRef.current) {
-          return;
-        }
-
-        const followingSet = new Set(
-          (userProfile?.following ?? []).map((id) => String(id)).filter(Boolean)
-        );
-        const excludeFollowed = (users: User[]) =>
-          users.filter((u) => !followingSet.has(getSuggestionUserId(u)));
-
-        setPeopleYouMayKnowUsers(excludeFollowed(peopleResult));
-        setSuggestedForYouUsers(excludeFollowed(suggestedResult));
-      };
-
-      reload();
-    }, [feedOptions.type, getSuggestedUsers, userProfile?.following])
-  );
 
   const feedDataWithSuggestions = useMemo<RenderFeedEntry[]>(() => {
     const isPrimaryFeed =
@@ -1742,6 +2027,25 @@ function Home({ navigation, route }: Props) {
       });
     }
   }, [reloadFeed, requestFeedRefresh, route.params?.refreshToken, route.params?.selectedTab]);
+
+  useLayoutEffect(() => {
+    if (!shouldRunHomeFeedIntro || !rootTabReplayToken) {
+      return;
+    }
+
+    feedIntroHasStarted.current = false;
+    feedIntroCardsCanAnimate.current = false;
+    feedIntroCardsAnimated.current = false;
+    setIntroAnimatedCardKeys([]);
+    feedIntroHeaderOpacity.setValue(0);
+    feedIntroHeaderTranslateY.setValue(-22);
+    Object.values(feedIntroCardValues.current).forEach((value) => value.setValue(0));
+  }, [
+    feedIntroHeaderOpacity,
+    feedIntroHeaderTranslateY,
+    rootTabReplayToken,
+    shouldRunHomeFeedIntro,
+  ]);
 
   const renderTabs = useCallback(
     (containerStyle?: StyleProp<ViewStyle>) => (
@@ -2245,8 +2549,6 @@ function Home({ navigation, route }: Props) {
               itemData={watchItem}
               postType={PostType.watch}
               originFeedType={feedOptions.type}
-              contentWidth={socialItemContentWidth}
-              onOpenImages={openImages}
               visible={
                 (feedOptions.type === FeedTypes.Connected ||
                   feedOptions.type === FeedTypes.ForYou) &&
@@ -2348,8 +2650,6 @@ function Home({ navigation, route }: Props) {
             <SocialItem
               itemData={socialItem}
               originFeedType={feedOptions.type}
-              contentWidth={socialItemContentWidth}
-              onOpenImages={openImages}
               visible={
                 (feedOptions.type === FeedTypes.Connected ||
                   feedOptions.type === FeedTypes.ForYou) &&
@@ -2581,11 +2881,9 @@ function Home({ navigation, route }: Props) {
       navigation,
       navigateToDetail,
       navigateToProfile,
-      openImages,
       peopleYouMayKnowUsers,
       preserveFeedPositionOnNextFocus,
       selectedSuggestionIds,
-      socialItemContentWidth,
       suggestedForYouUsers,
       viewableSocialPostIds,
     ]
@@ -2639,19 +2937,17 @@ function Home({ navigation, route }: Props) {
   const lastScrollRef = useRef(0);
   const resolvedHeaderHeight = headerHeight || defaultHeaderHeight;
   const headerInset = resolvedHeaderHeight + spacing.x10;
-  headerInsetRef.current = headerInset;
+  const iosRefreshOffset = resolvedHeaderHeight + spacing.x13;
+  const hideFloatingHeaderForIOSRefresh = Platform.OS === 'ios' && isRefreshing;
   const clampDistance = headerInset + footerHeight;
   const scrollClampSource = useMemo(
     () =>
       scrollY.interpolate({
-        inputRange:
-          Platform.OS === 'ios'
-            ? [-headerInset - 100, -headerInset, clampDistance - headerInset]
-            : [-100, 0, clampDistance],
+        inputRange: [-100, 0, clampDistance],
         outputRange: [0, 0, clampDistance],
         extrapolate: 'clamp',
       }),
-    [scrollY, clampDistance, headerInset]
+    [scrollY, clampDistance]
   );
   const clampedScroll = useMemo(
     () => Animated.diffClamp(scrollClampSource, 0, clampDistance),
@@ -2693,9 +2989,7 @@ function Home({ navigation, route }: Props) {
         useNativeDriver: true,
         listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
           const rawValue = event?.nativeEvent?.contentOffset?.y ?? 0;
-          const adjustedValue =
-            Platform.OS === 'ios' ? rawValue + headerInsetRef.current : rawValue;
-          const nextValue = Math.max(0, adjustedValue);
+          const nextValue = Math.max(0, rawValue);
           const diff = nextValue - lastScrollRef.current;
           const threshold = 1;
           if (nextValue > 8 && !hasUserInteractedRef.current) {
@@ -2729,6 +3023,9 @@ function Home({ navigation, route }: Props) {
 
   const maybeStartFeedCardIntro = useCallback(
     (viewableItems: ViewToken[]) => {
+      if (!shouldRunHomeFeedIntro) {
+        return;
+      }
       if (feedOptions.type === FeedTypes.Pray) {
         return;
       }
@@ -2771,7 +3068,7 @@ function Home({ navigation, route }: Props) {
 
       Animated.parallel(animations).start();
     },
-    [feedOptions.type, getFeedEntryKey, showBlockingLoader]
+    [feedOptions.type, getFeedEntryKey, showBlockingLoader, shouldRunHomeFeedIntro]
   );
 
   const handleViewableItemsChanged = useCallback(
@@ -2943,6 +3240,12 @@ function Home({ navigation, route }: Props) {
   }, [feedOptions.type, token]);
 
   useEffect(() => {
+    if (!shouldRunHomeFeedIntro) {
+      feedIntroHeaderOpacity.setValue(1);
+      feedIntroHeaderTranslateY.setValue(0);
+      return;
+    }
+
     if (feedOptions.type === FeedTypes.Pray) {
       feedIntroHeaderOpacity.setValue(1);
       feedIntroHeaderTranslateY.setValue(0);
@@ -2987,6 +3290,8 @@ function Home({ navigation, route }: Props) {
     feedIntroHeaderOpacity,
     feedIntroHeaderTranslateY,
     maybeStartFeedCardIntro,
+    rootTabReplayToken,
+    shouldRunHomeFeedIntro,
   ]);
 
   useEffect(() => {
@@ -3047,63 +3352,46 @@ function Home({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      const parent = navigation.getParent?.();
-      if (!parent) return undefined;
-
       lastScrollRef.current = 0;
       headerVisibility.setValue(1);
       footerVisibility.setValue(1);
       tabBarAnimationRef.current?.setTabBarTranslateY(0);
 
-      if (feedOptions.type === FeedTypes.Pray) {
-        tabBarAnimationRef.current?.resetTabBar();
-        return () => {
-          tabBarAnimationRef.current?.resetTabBar();
-        };
-      }
-
-      const animationFrame = requestAnimationFrame(() => {
+      const frameId = requestAnimationFrame(() => {
         tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
       });
 
       return () => {
-        cancelAnimationFrame(animationFrame);
+        cancelAnimationFrame(frameId);
         tabBarAnimationRef.current?.resetTabBar();
       };
-    }, [feedOptions.type, footerVisibility, footerTranslateY, headerVisibility, navigation])
+    }, [footerTranslateY, footerVisibility, headerVisibility])
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      const parent = navigation.getParent?.();
-      if (!parent) {
-        return undefined;
-      }
+  useEffect(() => {
+    const parent = navigation.getParent?.();
+    if (!parent || !isFocused) {
+      return undefined;
+    }
 
-      if (feedOptions.type !== FeedTypes.Pray) {
-        parent.setOptions({
-          tabBarStyle: homeVisibleTabBarStyle,
-        });
-        return undefined;
-      }
+    if (feedOptions.type !== FeedTypes.Pray) {
+      return undefined;
+    }
 
+    parent.setOptions({
+      tabBarStyle: {
+        height: 0,
+        opacity: 0,
+        display: 'none',
+      },
+    });
+
+    return () => {
       parent.setOptions({
-        tabBarStyle: {
-          ...homeVisibleTabBarStyle,
-          height: 0,
-          opacity: 0,
-          display: 'none',
-          paddingBottom: 0,
-        },
+        tabBarStyle: undefined,
       });
-
-      return () => {
-        parent.setOptions({
-          tabBarStyle: homeVisibleTabBarStyle,
-        });
-      };
-    }, [feedOptions.type, homeVisibleTabBarStyle, navigation])
-  );
+    };
+  }, [feedOptions.type, isFocused, navigation]);
 
   const handleFeedRefresh = useCallback(() => {
     if (feedOptions.type === FeedTypes.Pray || isRefreshing) {
@@ -3163,7 +3451,7 @@ function Home({ navigation, route }: Props) {
 
   const listContentContainerStyle = useMemo(
     () => ({
-      paddingTop: Platform.OS === 'ios' ? 0 : headerInset,
+      paddingTop: headerInset,
       paddingBottom: footerHeight + spacing.x16,
     }),
     [footerHeight, headerInset]
@@ -3175,46 +3463,42 @@ function Home({ navigation, route }: Props) {
     }
 
     return (
-      <StatusInput
-        dark={dark}
-        textColor={colors.text}
-        value={quickPostText}
-        onChangeText={setQuickPostText}
-        onActionPress={handleQuickComposerAction}
-        hasText={hasQuickPostText}
-        isSubmitting={isQuickPosting}
-      />
+      <Animated.View style={getSpringboardStyle(2)}>
+        <StatusInput
+          dark={dark}
+          textColor={colors.text}
+          value={quickPostText}
+          onChangeText={setQuickPostText}
+          onActionPress={handleQuickComposerAction}
+          hasText={hasQuickPostText}
+          isSubmitting={isQuickPosting}
+        />
+      </Animated.View>
     );
   }, [
     colors.text,
     dark,
     feedOptions.type,
+    getSpringboardStyle,
     handleQuickComposerAction,
     hasQuickPostText,
     isQuickPosting,
     quickPostText,
   ]);
 
-  const [refreshTintReady, setRefreshTintReady] = useState(Platform.OS !== 'ios');
-  useEffect(() => {
-    if (Platform.OS === 'ios' && !refreshTintReady) {
-      requestAnimationFrame(() => setRefreshTintReady(true));
-    }
-  }, [refreshTintReady]);
-
-  const feedRefreshControl = useMemo(
-    () => (
+  const feedRefreshControl = useMemo(() => {
+    const iosSpinnerColor = dark ? BRAND.gray100 : BRAND.primaryDark;
+    return (
       <RefreshControl
         refreshing={isRefreshing}
         onRefresh={handleFeedRefresh}
-        progressViewOffset={Platform.OS === 'android' ? headerInset : 0}
-        tintColor={refreshTintReady ? '#126b87' : undefined}
-        titleColor={refreshTintReady ? '#126b87' : undefined}
-        colors={['#126b87']}
+        progressViewOffset={Platform.OS === 'ios' ? iosRefreshOffset : headerInset}
+        tintColor={iosSpinnerColor}
+        titleColor={iosSpinnerColor}
+        colors={[BRAND.primaryDark]}
       />
-    ),
-    [handleFeedRefresh, headerInset, isRefreshing, refreshTintReady]
-  );
+    );
+  }, [dark, handleFeedRefresh, headerInset, iosRefreshOffset, isRefreshing]);
 
   let mainFeedContent: React.ReactNode;
 
@@ -3243,16 +3527,13 @@ function Home({ navigation, route }: Props) {
         data={feedDataWithSuggestions}
         keyExtractor={getFeedEntryKey}
         removeClippedSubviews={Platform.OS === 'android'}
-        initialNumToRender={6}
-        maxToRenderPerBatch={8}
+        initialNumToRender={HOME_FEED_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={HOME_FEED_LIST_BATCH_CONFIG.maxToRenderPerBatch}
         updateCellsBatchingPeriod={16}
-        windowSize={8}
+        windowSize={HOME_FEED_LIST_BATCH_CONFIG.windowSize}
         contentContainerStyle={listContentContainerStyle}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
-        contentInset={Platform.OS === 'ios' ? { top: headerInset } : undefined}
-        contentOffset={Platform.OS === 'ios' ? { x: 0, y: -headerInset } : undefined}
-        scrollIndicatorInsets={Platform.OS === 'ios' ? { top: headerInset } : undefined}
         alwaysBounceVertical={Platform.OS === 'ios'}
         ListHeaderComponent={feedListHeaderComponent}
         ListEmptyComponent={emptyFeedState}
@@ -3286,26 +3567,33 @@ function Home({ navigation, route }: Props) {
       style={[styles.container, { backgroundColor: dark ? Colors.neutral[900] : BRAND.gray100 }]}
     >
       <Animated.View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10,
-          opacity: feedIntroHeaderOpacity,
-          transform: [
-            {
-              translateY: Animated.add(headerTranslateY, feedIntroHeaderTranslateY),
-            },
-          ],
-        }}
+        style={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+          },
+          getSpringboardStyle(0),
+        ]}
       >
-        {renderOverlayHeader()}
+        <Animated.View
+          style={{
+            opacity: hideFloatingHeaderForIOSRefresh ? 0 : feedIntroHeaderOpacity,
+            transform: [
+              {
+                translateY: Animated.add(headerTranslateY, feedIntroHeaderTranslateY),
+              },
+            ],
+          }}
+        >
+          {renderOverlayHeader()}
+        </Animated.View>
       </Animated.View>
 
       {/* Main Feed */}
-      {mainFeedContent}
-      {imageViewer}
+      <Animated.View style={[{ flex: 1 }, getSpringboardStyle(1)]}>{mainFeedContent}</Animated.View>
     </View>
   );
 }

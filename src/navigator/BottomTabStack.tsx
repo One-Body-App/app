@@ -4,7 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 
 import {
   BottomTabBar,
@@ -12,12 +12,7 @@ import {
   createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import {
-  getFocusedRouteNameFromRoute,
-  useFocusEffect,
-  useNavigation,
-  useTheme,
-} from '@react-navigation/native';
+import { getFocusedRouteNameFromRoute, useFocusEffect, useTheme } from '@react-navigation/native';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
@@ -26,13 +21,14 @@ import ConnectStack from './ConnectStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
 import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationContext';
+import { RootTabTransitionProvider, useRootTabTransition } from './RootTabTransitionContext';
+import { ROOT_TAB_SCENE_MOTION_MODE } from './motionPolicy';
+import { AnimatedRootTabName } from './rootTabTransition';
 import ConnectIcon from '@/assets/icons/connect.svg';
 import Home2Icon from '@/assets/icons/home2.svg';
 import MessagesIcon from '@/assets/icons/messages.svg';
 import MessagesStack from './MessagesStack';
 import { useChatUnreadCount } from '@/src/services/chat/unreadIndicator';
-import { createConnectPortalDraft } from '@/src/services/connectPortal';
-import { resolveBottomTabCreateTarget } from './connectBottomCreateAction';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -77,110 +73,187 @@ const getActiveNestedRouteName = (route: any): string | undefined => {
   return getActiveNestedRouteName(childRoute) ?? childRoute.name;
 };
 
-function SlideInOnFocus({
+function DirectionalTabScene({
   children,
-  direction = 'right',
+  tabName,
 }: {
   children: React.ReactNode;
-  direction?: 'left' | 'right';
+  tabName: AnimatedRootTabName;
 }) {
+  const { colors } = useTheme();
+  const { latestTransition } = useRootTabTransition() ?? {};
   const translateX = useRef(new Animated.Value(0)).current;
-  const hasFocusedOnce = useRef(false);
   const runningAnimation = useRef<Animated.CompositeAnimation | null>(null);
-  const shouldAnimateRef = useRef(false);
-  const navigation = useNavigation();
-  const initialOffset = direction === 'left' ? -SCREEN_WIDTH : SCREEN_WIDTH;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const lastHandledTransitionTokenRef = useRef(0);
+  const isFocusedRef = useRef(false);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('tabPress', () => {
-      if (!navigation.isFocused()) {
-        shouldAnimateRef.current = true;
-      }
-    });
-    return unsubscribe;
-  }, [navigation]);
-
+  // Track focus/blur only. Reset animated values on blur so the screen
+  // is in a clean state when it becomes visible again.
+  // Does NOT depend on latestTransition — prevents the double-fire that
+  // caused the Android offset glitch.
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'android') {
-        shouldAnimateRef.current = false;
-        translateX.setValue(0);
-        return () => {
-          runningAnimation.current?.stop();
-          runningAnimation.current = null;
-          translateX.setValue(0);
-        };
-      }
-
-      if (!hasFocusedOnce.current) {
-        hasFocusedOnce.current = true;
-        shouldAnimateRef.current = false;
-        translateX.setValue(0);
-        return () => {
-          runningAnimation.current?.stop();
-          runningAnimation.current = null;
-          translateX.setValue(0);
-        };
-      }
-
-      if (!shouldAnimateRef.current) {
-        translateX.setValue(0);
-        return () => {
-          runningAnimation.current?.stop();
-          runningAnimation.current = null;
-          translateX.setValue(0);
-        };
-      }
-
-      shouldAnimateRef.current = false;
-      runningAnimation.current?.stop();
-      translateX.setValue(initialOffset);
-      runningAnimation.current = Animated.timing(translateX, {
-        toValue: 0,
-        duration: 350,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      });
-      runningAnimation.current.start(() => {
-        runningAnimation.current = null;
-      });
+      isFocusedRef.current = true;
 
       return () => {
+        isFocusedRef.current = false;
         runningAnimation.current?.stop();
         runningAnimation.current = null;
         translateX.setValue(0);
+        opacity.setValue(1);
+        scale.setValue(1);
       };
-    }, [initialOffset, translateX])
+    }, [translateX, opacity, scale])
   );
 
-  if (Platform.OS === 'android') {
-    return <View style={{ flex: 1 }}>{children}</View>;
+  // Start the directional animation when a matching transition is reported.
+  // This useEffect runs AFTER useLayoutEffect in RootTabTransitionReporter
+  // has updated the context, so the transition data is always current.
+  useEffect(() => {
+    if (ROOT_TAB_SCENE_MOTION_MODE === 'off') return;
+    if (!isFocusedRef.current) return;
+    if (!latestTransition) return;
+    if (latestTransition.toTab !== tabName) return;
+    if (latestTransition.direction === 'none') return;
+    if (latestTransition.token === lastHandledTransitionTokenRef.current) return;
+
+    lastHandledTransitionTokenRef.current = latestTransition.token;
+    runningAnimation.current?.stop();
+
+    if (ROOT_TAB_SCENE_MOTION_MODE === 'lite') {
+      // Android: use opacity-only transition to avoid translateX offset glitches
+      // caused by native-driver setValue/start race conditions on the bridge.
+      translateX.setValue(0);
+      opacity.setValue(0.82);
+      scale.setValue(1);
+      runningAnimation.current = Animated.timing(opacity, {
+        toValue: 1,
+        duration: 150,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      });
+    } else {
+      const initialOffsetMagnitude = SCREEN_WIDTH * 0.12;
+      const initialOffset =
+        latestTransition.direction === 'left' ? initialOffsetMagnitude : -initialOffsetMagnitude;
+      translateX.setValue(initialOffset);
+      opacity.setValue(0.97);
+      scale.setValue(0.992);
+      runningAnimation.current = Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 280,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]);
+    }
+
+    runningAnimation.current.start(({ finished }) => {
+      if (finished) {
+        translateX.setValue(0);
+        opacity.setValue(1);
+        scale.setValue(1);
+      }
+      runningAnimation.current = null;
+    });
+
+    return () => {
+      runningAnimation.current?.stop();
+      runningAnimation.current = null;
+    };
+  }, [latestTransition, tabName, translateX, opacity, scale]);
+
+  if (ROOT_TAB_SCENE_MOTION_MODE === 'off') {
+    return <View style={{ flex: 1, backgroundColor: colors.background }}>{children}</View>;
   }
 
-  return <Animated.View style={{ flex: 1, transform: [{ translateX }] }}>{children}</Animated.View>;
+  if (ROOT_TAB_SCENE_MOTION_MODE === 'lite') {
+    return (
+      <Animated.View
+        collapsable={false}
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          opacity,
+        }}
+      >
+        {children}
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View
+      collapsable={false}
+      renderToHardwareTextureAndroid
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        opacity,
+        overflow: 'hidden',
+        transform: [{ translateX }, { scale }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+function RootTabTransitionReporter({ state }: { state: BottomTabBarProps['state'] }) {
+  const transitionContext = useRootTabTransition();
+
+  useLayoutEffect(() => {
+    const activeRoute = state.routes[state.index];
+    transitionContext?.reportActiveTab(activeRoute?.name);
+  }, [state.index, state.routes, transitionContext]);
+
+  return null;
 }
 
 function HomeTabWrapper() {
   return (
-    <SlideInOnFocus direction="left">
+    <DirectionalTabScene tabName="HomeTab">
       <HomeStack />
-    </SlideInOnFocus>
+    </DirectionalTabScene>
   );
 }
 
 function ExploreTabWrapper() {
   return (
-    <SlideInOnFocus>
+    <DirectionalTabScene tabName="ExploreTab">
       <ExploreStack />
-    </SlideInOnFocus>
+    </DirectionalTabScene>
   );
 }
 
 function ConnectTabWrapper() {
   return (
-    <SlideInOnFocus>
+    <DirectionalTabScene tabName="ConnectTab">
       <ConnectStack />
-    </SlideInOnFocus>
+    </DirectionalTabScene>
+  );
+}
+
+function MessagesTabWrapper() {
+  return (
+    <DirectionalTabScene tabName="Messages">
+      <MessagesStack />
+    </DirectionalTabScene>
   );
 }
 
@@ -236,12 +309,15 @@ AnimatedTabBar.propTypes = {
 
 function TabBarWrapper({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   return (
-    <AnimatedTabBar
-      state={state}
-      descriptors={descriptors}
-      navigation={navigation}
-      insets={insets}
-    />
+    <>
+      <RootTabTransitionReporter state={state} />
+      <AnimatedTabBar
+        state={state}
+        descriptors={descriptors}
+        navigation={navigation}
+        insets={insets}
+      />
+    </>
   );
 }
 
@@ -393,199 +469,181 @@ function BottomStack() {
     : ['rgba(246,246,247,0.98)', 'rgba(230,234,236,0.95)'];
 
   return (
-    <TabBarAnimationProvider>
-      <Tab.Navigator
-        tabBar={TabBarWrapper}
-        sceneContainerStyle={
-          Platform.OS === 'android' ? { backgroundColor: 'transparent' } : undefined
-        }
-        screenOptions={{
-          headerStatusBarHeight: 0,
-          headerShown: false,
-          headerStyle: {
-            backgroundColor: colors.background,
-          },
-          tabBarActiveTintColor: brandColors.primaryDark,
-          tabBarInactiveTintColor: dark ? 'rgba(230,234,236,0.65)' : brandColors.black,
-          tabBarShowLabel: false,
-          tabBarLabelStyle: { paddingTop: 4 },
-          tabBarStyle: defaultTabBarStyle,
-          tabBarBackground: () => (
-            <View style={StyleSheet.absoluteFill}>
-              {Platform.OS === 'ios' ? (
-                <BlurView
-                  style={StyleSheet.absoluteFill}
-                  blurType={dark ? 'dark' : 'light'}
-                  blurAmount={20}
-                  reducedTransparencyFallbackColor={dark ? '#0D0D0D' : colors.background}
-                />
-              ) : null}
-              <LinearGradient
-                colors={tabBarGradientColors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[
-                  StyleSheet.absoluteFill,
-                  {
-                    backgroundColor: dark ? '#0D0D0D' : colors.background,
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  StyleSheet.absoluteFill,
-                  {
-                    borderTopWidth: 1,
-                    borderTopColor: dark ? 'rgba(255,255,255,0.08)' : brandColors.scale100,
-                  },
-                ]}
-              />
-            </View>
-          ),
-          tabBarItemStyle: {
-            paddingTop: 4,
-            paddingBottom: 4,
-            overflow: 'visible',
-          },
-          tabBarIconStyle: {
-            overflow: 'visible',
-          },
-          tabBarAllowFontScaling: false,
-        }}
-      >
-        <Tab.Screen
-          name="HomeTab"
-          component={HomeTabWrapper}
-          initialParams={{
-            screen: 'Home',
-            params: {
-              selectedTab: FeedTypes.ForYou,
+    <RootTabTransitionProvider>
+      <TabBarAnimationProvider>
+        <Tab.Navigator
+          tabBar={TabBarWrapper}
+          sceneContainerStyle={{ backgroundColor: colors.background }}
+          screenOptions={{
+            headerStatusBarHeight: 0,
+            headerShown: false,
+            headerStyle: {
+              backgroundColor: colors.background,
             },
-          }}
-          options={({ route }) => {
-            const pendingScreen = getScreenParam(route.params);
-            const nestedPendingScreen = getNestedScreenParam(route.params);
-            const focusedRouteName =
-              getActiveNestedRouteName(route) ??
-              (typeof pendingScreen === 'string' ? pendingScreen : undefined) ??
-              (typeof nestedPendingScreen === 'string' ? nestedPendingScreen : undefined) ??
-              getFocusedRouteNameFromRoute(route) ??
-              'Home';
-            const shouldHideTabBar = focusedRouteName === 'Notifications';
-
-            return {
-              tabBarLabel: 'Home',
-              tabBarIcon: HomeTabIcon,
-              tabBarStyle: shouldHideTabBar
-                ? { ...defaultTabBarStyle, display: 'none', height: 0, opacity: 0 }
-                : defaultTabBarStyle,
-            };
-          }}
-        />
-        <Tab.Screen
-          name="ExploreTab"
-          component={ExploreTabWrapper}
-          options={{
-            tabBarLabel: 'Explore',
-            tabBarIcon: ExploreTabIcon,
-            tabBarStyle: exploreTabBarStyle,
-          }}
-        />
-        <Tab.Screen
-          name="PostTab"
-          component={PostTabPlaceholder}
-          options={{
-            tabBarLabel: 'Post',
-            tabBarIcon: () => (
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: brandColors.primaryDark,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <MaterialIcons name="add" size={26} color="white" />
+            tabBarActiveTintColor: brandColors.primaryDark,
+            tabBarInactiveTintColor: dark ? 'rgba(230,234,236,0.65)' : brandColors.black,
+            tabBarShowLabel: false,
+            tabBarLabelStyle: { paddingTop: 4 },
+            tabBarStyle: defaultTabBarStyle,
+            tabBarBackground: () => (
+              <View style={StyleSheet.absoluteFill}>
+                {Platform.OS === 'ios' ? (
+                  <BlurView
+                    style={StyleSheet.absoluteFill}
+                    blurType={dark ? 'dark' : 'light'}
+                    blurAmount={20}
+                    reducedTransparencyFallbackColor={dark ? '#0D0D0D' : colors.background}
+                  />
+                ) : null}
+                <LinearGradient
+                  colors={tabBarGradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    StyleSheet.absoluteFill,
+                    {
+                      backgroundColor: dark ? '#0D0D0D' : colors.background,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    {
+                      borderTopWidth: 1,
+                      borderTopColor: dark ? 'rgba(255,255,255,0.08)' : brandColors.scale100,
+                    },
+                  ]}
+                />
               </View>
             ),
-          }}
-          listeners={({ navigation }) => ({
-            tabPress: (e) => {
-              e.preventDefault();
-              const createTarget = resolveBottomTabCreateTarget(navigation.getState());
-              if (createTarget === 'go') {
-                createConnectPortalDraft().then((draft) => {
-                  navigation.navigate('ConnectTab', {
-                    screen: 'ConnectGoCreateStep1',
-                    params: { draftId: draft.id },
-                  });
-                });
-                return;
-              }
-
-              if (createTarget === 'serve') {
-                navigation.navigate('ConnectTab', {
-                  screen: 'ConnectServeCreateJobStep1',
-                });
-                return;
-              }
-
-              navigation.navigate('Post');
+            tabBarItemStyle: {
+              paddingTop: 4,
+              paddingBottom: 4,
+              overflow: 'visible',
             },
-          })}
-        />
-        <Tab.Screen
-          name="ConnectTab"
-          component={ConnectTabWrapper}
-          options={({ route }) => {
-            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectMap';
-            const shouldShowTabBar =
-              focusedRouteName === 'ConnectPortal' ||
-              focusedRouteName === 'ConnectMap' ||
-              focusedRouteName === 'ConnectGoEventDash' ||
-              focusedRouteName === 'ConnectPlacesHome' ||
-              focusedRouteName === 'ConnectServeHome';
+            tabBarIconStyle: {
+              overflow: 'visible',
+            },
+            tabBarAllowFontScaling: false,
+          }}
+        >
+          <Tab.Screen
+            name="HomeTab"
+            component={HomeTabWrapper}
+            initialParams={{
+              screen: 'Home',
+              params: {
+                selectedTab: FeedTypes.ForYou,
+              },
+            }}
+            options={({ route }) => {
+              const pendingScreen = getScreenParam(route.params);
+              const nestedPendingScreen = getNestedScreenParam(route.params);
+              const focusedRouteName =
+                getActiveNestedRouteName(route) ??
+                (typeof pendingScreen === 'string' ? pendingScreen : undefined) ??
+                (typeof nestedPendingScreen === 'string' ? nestedPendingScreen : undefined) ??
+                getFocusedRouteNameFromRoute(route) ??
+                'Home';
+              const shouldHideTabBar = focusedRouteName === 'Notifications';
 
-            return {
-              tabBarLabel: 'Connect',
-              tabBarIcon: ConnectTabIcon,
-              tabBarStyle: shouldShowTabBar
-                ? exploreTabBarStyle
-                : { ...exploreTabBarStyle, display: 'none', height: 0, opacity: 0 },
-            };
-          }}
-        />
-        <Tab.Screen
-          name="MyProfileTab"
-          component={ProfileStack}
-          options={{
-            tabBarButton: () => null,
-            tabBarStyle: { display: 'none' },
-          }}
-        />
-        <Tab.Screen
-          name="Messages"
-          component={MessagesStack}
-          options={({ route }) => {
-            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'MessagesList';
-            const shouldShowTabBar = focusedRouteName === 'MessagesList';
+              return {
+                tabBarLabel: 'Home',
+                tabBarIcon: HomeTabIcon,
+                tabBarStyle: shouldHideTabBar
+                  ? { ...defaultTabBarStyle, display: 'none', height: 0, opacity: 0 }
+                  : defaultTabBarStyle,
+              };
+            }}
+          />
+          <Tab.Screen
+            name="ExploreTab"
+            component={ExploreTabWrapper}
+            options={{
+              tabBarLabel: 'Explore',
+              tabBarIcon: ExploreTabIcon,
+              tabBarStyle: exploreTabBarStyle,
+            }}
+          />
+          <Tab.Screen
+            name="PostTab"
+            component={PostTabPlaceholder}
+            options={{
+              tabBarLabel: 'Post',
+              tabBarIcon: () => (
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: brandColors.primaryDark,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MaterialIcons name="add" size={26} color="white" />
+                </View>
+              ),
+            }}
+            listeners={({ navigation }) => ({
+              tabPress: (e) => {
+                e.preventDefault();
+                navigation.navigate('Post');
+              },
+            })}
+          />
+          <Tab.Screen
+            name="ConnectTab"
+            component={ConnectTabWrapper}
+            options={({ route }) => {
+              const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectMap';
+              const shouldShowTabBar =
+                focusedRouteName === 'ConnectPortal' ||
+                focusedRouteName === 'ConnectMap' ||
+                focusedRouteName === 'ConnectGoLanding' ||
+                focusedRouteName === 'ConnectPlacesHome' ||
+                focusedRouteName === 'ConnectServeHome';
 
-            return {
-              tabBarLabel: 'Chat',
-              tabBarIcon: ChatTabIcon,
-              tabBarStyle: shouldShowTabBar
-                ? connectVisibleTabBarStyle
-                : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },
-              lazy: true,
-              unmountOnBlur: false,
-              freezeOnBlur: true,
-            };
-          }}
-        />
-      </Tab.Navigator>
-    </TabBarAnimationProvider>
+              return {
+                tabBarLabel: 'Connect',
+                tabBarIcon: ConnectTabIcon,
+                tabBarStyle: shouldShowTabBar
+                  ? exploreTabBarStyle
+                  : { ...exploreTabBarStyle, display: 'none', height: 0, opacity: 0 },
+              };
+            }}
+          />
+          <Tab.Screen
+            name="MyProfileTab"
+            component={ProfileStack}
+            options={{
+              tabBarButton: () => null,
+              tabBarStyle: { display: 'none' },
+            }}
+          />
+          <Tab.Screen
+            name="Messages"
+            component={MessagesTabWrapper}
+            options={({ route }) => {
+              const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'MessagesList';
+              const shouldShowTabBar = focusedRouteName === 'MessagesList';
+
+              return {
+                tabBarLabel: 'Chat',
+                tabBarIcon: ChatTabIcon,
+                tabBarStyle: shouldShowTabBar
+                  ? connectVisibleTabBarStyle
+                  : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },
+                lazy: false,
+                unmountOnBlur: false,
+                freezeOnBlur: false,
+              };
+            }}
+          />
+        </Tab.Navigator>
+      </TabBarAnimationProvider>
+    </RootTabTransitionProvider>
   );
 }
 export default BottomStack;

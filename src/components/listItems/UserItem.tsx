@@ -113,13 +113,13 @@ function UserItem({ item }: { item: User }) {
         }
       }}
       style={{
-        backgroundColor: Colors.neutral[900],
+        backgroundColor: colors.card,
         flexDirection: 'row',
         flex: 1,
-        marginVertical: spacing.x10,
         padding: spacing.x10,
         borderRadius: borderRadius.base,
-
+        borderWidth: 1,
+        borderColor: colors.border,
         alignItems: 'center',
       }}
     >
@@ -159,15 +159,10 @@ function UserItem({ item }: { item: User }) {
               {item.name}
             </StyledText>
             {item?.profile?.whatIDo?.name ||
-            item.profile?.organizationSubType ||
-            item.profile?.organizationCategory ||
             item.profile?.typeOfOrganization?.organizationType ||
             item.profile?.typeOfOrganization?.name ? (
               <StyledText numberOfLines={1} style={[{ color: Colors.neutral[500] }]}>
                 {item?.profile.whatIDo?.name ??
-                  (item.profile?.organizationCategory && item.profile?.organizationSubType
-                    ? `${item.profile.organizationCategory} - ${item.profile.organizationSubType}`
-                    : (item.profile?.organizationSubType ?? item.profile?.organizationCategory)) ??
                   item.profile.typeOfOrganization?.organizationType ??
                   item.profile.typeOfOrganization?.name}
               </StyledText>

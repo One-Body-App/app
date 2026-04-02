@@ -1,16 +1,18 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
-import { BlurView } from '@react-native-community/blur';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,37 +57,16 @@ import {
   updateChatConversationArchiveState,
   updateChatConversationMuteState,
 } from '@/src/services/chat/api';
-import GlassTabBar from '@/src/components/GlassTabBar';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import { MessagesConversationListView } from '@/src/components/chat/MessagesConversationListView';
 import { SwipeableChatItem } from '@/src/components/chat/SwipeableChatItem';
-import {
-  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
-  APP_HEADER_BACKGROUND_DARK,
-  APP_HEADER_BACKGROUND_LIGHT,
-  APP_HEADER_BORDER_DARK,
-  APP_HEADER_BORDER_LIGHT,
-  APP_HEADER_HORIZONTAL_INSET,
-  APP_HEADER_ROW_HEIGHT,
-  APP_HEADER_ROW_OFFSET,
-  APP_HEADER_SIDE_WIDTH,
-  APP_HEADER_TITLE_FONT_FAMILY,
-  APP_HEADER_TITLE_FONT_SIZE,
-  APP_HEADER_TITLE_FONT_WEIGHT,
-  APP_HEADER_TITLE_LETTER_SPACING,
-  APP_HEADER_TITLE_LINE_HEIGHT,
-} from '@/src/styles/headerLayout';
-import { spacing } from '@/src/styles/spacing';
-import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
+import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
+import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
+import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
 import ChatEmptyState from './chatempty';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'MessagesList'>;
 type ChatSectionFilter = 'inbox' | 'groups' | 'archived';
-const CHAT_FILTER_TABS: { label: string; value: ChatSectionFilter }[] = [
-  { label: 'Inbox', value: 'inbox' },
-  { label: 'Groups', value: 'groups' },
-  { label: 'Archived', value: 'archived' },
-];
 
 const formatTimeLabel = (iso: string) => {
   const date = new Date(iso);
@@ -140,16 +121,30 @@ const getNativeDestructiveAction = (
 };
 
 function ChatListScreen({ navigation }: Props) {
-  const { dark, colors } = useTheme();
+  const rootTabReplayToken = useRootTabSwitchReplayToken('Messages');
+  const { getSpringboardStyle } = useSpringboardEntry(rootTabReplayToken, 3, {
+    preset: getTabRootSpringboardPreset('messages'),
+  });
+  const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
   const token = useSelector((state: RootState) => state.auth.userToken);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [loading, setLoading] = useState(true);
-  const [query] = useState('');
+  const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<ChatSectionFilter>('inbox');
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
-  const selectedFilterIndex = CHAT_FILTER_TABS.findIndex((tab) => tab.value === selectedFilter);
+  const searchInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    publishChatUnreadFromConversations(conversations);
+  }, [conversations]);
+
+  useEffect(() => {
+    if (!token) {
+      resetChatUnreadIndicator();
+    }
+  }, [token]);
 
   const refreshConversations = useCallback(async () => {
     const conversationsResponse = await fetchChatConversations({
@@ -167,183 +162,165 @@ function ChatListScreen({ navigation }: Props) {
     }
   }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      publishChatUnreadFromConversations(conversations);
-      return undefined;
-    }, [conversations])
-  );
+  useEffect(() => {
+    let isMounted = true;
+    let unsubscribeMessage: (() => void) | undefined;
+    let unsubscribeGroupMessage: (() => void) | undefined;
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!token) {
-        resetChatUnreadIndicator();
+    const bootstrap = async () => {
+      try {
+        await ensureChatReady(token || undefined);
+        await connectChatSocket();
+
+        if (isMounted) {
+          await refreshConversations();
+        }
+
+        unsubscribeMessage = await onChatMessage((payload: any) => {
+          if (!isMounted || !payload?.senderId || !payload?.receiverId) {
+            return;
+          }
+
+          setConversations((prev) => {
+            const senderId = String(payload.senderId);
+            const receiverId = String(payload.receiverId);
+            if (receiverId !== String(currentUser?._id || '')) {
+              return prev;
+            }
+
+            const activePeerUserId = getActiveDirectConversationPeerId();
+            const shouldIncrementUnread = activePeerUserId !== senderId;
+            const preview = '[Encrypted message]';
+            const nowIso = payload?.createdAt
+              ? new Date(payload.createdAt).toISOString()
+              : new Date().toISOString();
+            const existingIndex = prev.findIndex((item) => item.peerUserId === senderId);
+
+            if (existingIndex >= 0) {
+              const existing = prev[existingIndex]!;
+              const updated: ConversationListItem = {
+                ...existing,
+                lastMessagePreview: preview,
+                updatedAt: nowIso,
+                unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
+                lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
+                lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
+                isArchived: false,
+              };
+              const clone = [...prev];
+              clone.splice(existingIndex, 1);
+              return [updated, ...clone];
+            }
+
+            return [
+              {
+                id: `c-${senderId}`,
+                conversationType: 'direct',
+                peerUserId: senderId,
+                peerName: payload.senderName || 'OneBody user',
+                peerUsername:
+                  typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
+                lastMessagePreview: preview,
+                updatedAt: nowIso,
+                unreadCount: shouldIncrementUnread ? 1 : 0,
+                isArchived: false,
+                lastMessageId: payload?._id ? String(payload._id) : '',
+                lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
+              },
+              ...prev,
+            ];
+          });
+        });
+
+        unsubscribeGroupMessage = await onChatGroupMessage((payload: any) => {
+          if (!isMounted || !payload?.groupId || !payload?.senderId) {
+            return;
+          }
+
+          setConversations((prev) => {
+            const groupId = String(payload.groupId);
+            const senderId = String(payload.senderId);
+            const activeGroupId = getActiveGroupConversationId();
+            const shouldIncrementUnread =
+              groupId.length > 0 &&
+              activeGroupId !== groupId &&
+              senderId !== String(currentUser?._id || '');
+            const parsed = parseChatMessagePayload(String(payload.plaintextPayload || ''));
+            const preview =
+              parsed.type === 'text'
+                ? parsed.text.trim() || 'New group message'
+                : parsed.text.trim() || (parsed.type === 'image' ? '[Image]' : '[GIF]');
+            const nowIso = payload?.createdAt
+              ? new Date(payload.createdAt).toISOString()
+              : new Date().toISOString();
+            const existingIndex = prev.findIndex(
+              (item) =>
+                (item.conversationType === 'group' || Boolean(item.groupId)) &&
+                (item.groupId === groupId || item.id === `group:${groupId}`)
+            );
+
+            if (existingIndex >= 0) {
+              const existing = prev[existingIndex]!;
+              const updated: ConversationListItem = {
+                ...existing,
+                groupId,
+                groupName: String(
+                  payload.groupName || existing.groupName || existing.peerName || 'Group chat'
+                ),
+                peerName: String(
+                  payload.groupName || existing.groupName || existing.peerName || 'Group chat'
+                ),
+                lastMessagePreview: preview,
+                updatedAt: nowIso,
+                unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
+                lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
+                isArchived: false,
+              };
+              const clone = [...prev];
+              clone.splice(existingIndex, 1);
+              return [updated, ...clone];
+            }
+
+            return [
+              {
+                id: `group:${groupId}`,
+                conversationType: 'group',
+                groupId,
+                groupName: String(payload.groupName || 'Group chat'),
+                peerUserId: '',
+                peerName: String(payload.groupName || 'Group chat'),
+                lastMessagePreview: preview,
+                updatedAt: nowIso,
+                unreadCount: shouldIncrementUnread ? 1 : 0,
+                isArchived: false,
+                lastMessageId: payload?._id ? String(payload._id) : '',
+                participantCount: 0,
+              },
+              ...prev,
+            ];
+          });
+        });
+      } catch {
+        // Keep screen interactive when network/bootstrap fails.
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-      return undefined;
-    }, [token])
-  );
+    };
 
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-      let unsubscribeMessage: (() => void) | undefined;
-      let unsubscribeGroupMessage: (() => void) | undefined;
+    bootstrap();
 
-      const bootstrap = async () => {
-        try {
-          await ensureChatReady(token || undefined);
-          await connectChatSocket();
-
-          if (isMounted) {
-            await refreshConversations();
-          }
-
-          unsubscribeMessage = await onChatMessage((payload: any) => {
-            if (!isMounted || !payload?.senderId || !payload?.receiverId) {
-              return;
-            }
-
-            setConversations((prev) => {
-              const senderId = String(payload.senderId);
-              const receiverId = String(payload.receiverId);
-              if (receiverId !== String(currentUser?._id || '')) {
-                return prev;
-              }
-
-              const activePeerUserId = getActiveDirectConversationPeerId();
-              const shouldIncrementUnread = activePeerUserId !== senderId;
-              const preview = '[Encrypted message]';
-              const nowIso = payload?.createdAt
-                ? new Date(payload.createdAt).toISOString()
-                : new Date().toISOString();
-              const existingIndex = prev.findIndex((item) => item.peerUserId === senderId);
-
-              if (existingIndex >= 0) {
-                const existing = prev[existingIndex]!;
-                const updated: ConversationListItem = {
-                  ...existing,
-                  lastMessagePreview: preview,
-                  updatedAt: nowIso,
-                  unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
-                  lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
-                  lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
-                  isArchived: false,
-                };
-                const clone = [...prev];
-                clone.splice(existingIndex, 1);
-                return [updated, ...clone];
-              }
-
-              return [
-                {
-                  id: `c-${senderId}`,
-                  conversationType: 'direct',
-                  peerUserId: senderId,
-                  peerName: payload.senderName || 'OneBody user',
-                  peerUsername:
-                    typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
-                  lastMessagePreview: preview,
-                  updatedAt: nowIso,
-                  unreadCount: shouldIncrementUnread ? 1 : 0,
-                  isArchived: false,
-                  lastMessageId: payload?._id ? String(payload._id) : '',
-                  lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
-                },
-                ...prev,
-              ];
-            });
-          });
-
-          unsubscribeGroupMessage = await onChatGroupMessage((payload: any) => {
-            if (!isMounted || !payload?.groupId || !payload?.senderId) {
-              return;
-            }
-
-            setConversations((prev) => {
-              const groupId = String(payload.groupId);
-              const senderId = String(payload.senderId);
-              const activeGroupId = getActiveGroupConversationId();
-              const shouldIncrementUnread =
-                groupId.length > 0 &&
-                activeGroupId !== groupId &&
-                senderId !== String(currentUser?._id || '');
-              const parsed = parseChatMessagePayload(String(payload.plaintextPayload || ''));
-              const preview =
-                parsed.type === 'text'
-                  ? parsed.text.trim() || 'New group message'
-                  : parsed.text.trim() || (parsed.type === 'image' ? '[Image]' : '[GIF]');
-              const nowIso = payload?.createdAt
-                ? new Date(payload.createdAt).toISOString()
-                : new Date().toISOString();
-              const existingIndex = prev.findIndex(
-                (item) =>
-                  (item.conversationType === 'group' || Boolean(item.groupId)) &&
-                  (item.groupId === groupId || item.id === `group:${groupId}`)
-              );
-
-              if (existingIndex >= 0) {
-                const existing = prev[existingIndex]!;
-                const updated: ConversationListItem = {
-                  ...existing,
-                  groupId,
-                  groupName: String(
-                    payload.groupName || existing.groupName || existing.peerName || 'Group chat'
-                  ),
-                  peerName: String(
-                    payload.groupName || existing.groupName || existing.peerName || 'Group chat'
-                  ),
-                  lastMessagePreview: preview,
-                  updatedAt: nowIso,
-                  unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
-                  lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
-                  isArchived: false,
-                };
-                const clone = [...prev];
-                clone.splice(existingIndex, 1);
-                return [updated, ...clone];
-              }
-
-              return [
-                {
-                  id: `group:${groupId}`,
-                  conversationType: 'group',
-                  groupId,
-                  groupName: String(payload.groupName || 'Group chat'),
-                  peerUserId: '',
-                  peerName: String(payload.groupName || 'Group chat'),
-                  lastMessagePreview: preview,
-                  updatedAt: nowIso,
-                  unreadCount: shouldIncrementUnread ? 1 : 0,
-                  isArchived: false,
-                  lastMessageId: payload?._id ? String(payload._id) : '',
-                  participantCount: 0,
-                },
-                ...prev,
-              ];
-            });
-          });
-        } catch {
-          // Keep screen interactive when network/bootstrap fails.
-        } finally {
-          if (isMounted) {
-            setLoading(false);
-          }
-        }
-      };
-
-      bootstrap();
-
-      return () => {
-        isMounted = false;
-        if (unsubscribeMessage) {
-          unsubscribeMessage();
-        }
-        if (unsubscribeGroupMessage) {
-          unsubscribeGroupMessage();
-        }
-      };
-    }, [currentUser?._id, refreshConversations, token])
-  );
+    return () => {
+      isMounted = false;
+      if (unsubscribeMessage) {
+        unsubscribeMessage();
+      }
+      if (unsubscribeGroupMessage) {
+        unsubscribeGroupMessage();
+      }
+    };
+  }, [currentUser?._id, refreshConversations, token]);
 
   useFocusEffect(
     useCallback(() => {
@@ -352,11 +329,9 @@ function ChatListScreen({ navigation }: Props) {
     }, [refreshConversations])
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      return subscribeToConversationListReadEvents(setConversations);
-    }, [])
-  );
+  useEffect(() => {
+    return subscribeToConversationListReadEvents(setConversations);
+  }, []);
 
   const filteredConversations = useMemo(() => {
     const sectionFiltered = conversations.filter((item) => {
@@ -565,13 +540,47 @@ function ChatListScreen({ navigation }: Props) {
     [handleDestructiveConversation]
   );
 
-  const handleFilterTabChange = (index: number) => {
-    const nextFilter = CHAT_FILTER_TABS[index]?.value;
-    if (!nextFilter) {
-      return;
-    }
+  const renderFilters = () => {
+    const filters: { label: string; value: ChatSectionFilter }[] = [
+      { label: 'Inbox', value: 'inbox' },
+      { label: 'Groups', value: 'groups' },
+      { label: 'Archived', value: 'archived' },
+    ];
 
-    setSelectedFilter(nextFilter);
+    return (
+      <View
+        style={[
+          styles.filterContainer,
+          {
+            borderBottomColor: dark ? 'rgba(255,255,255,0.08)' : '#e6eaec',
+            backgroundColor: colors.background,
+          },
+        ]}
+      >
+        {filters.map((filter) => {
+          const isActive = selectedFilter === filter.value;
+          return (
+            <TouchableOpacity
+              key={filter.value}
+              style={[styles.filterItem, isActive && styles.filterItemSelected]}
+              onPress={() => setSelectedFilter(filter.value)}
+            >
+              <View style={[styles.filterUnderline, isActive && styles.filterUnderlineSelected]}>
+                <Text
+                  style={[
+                    styles.filterText,
+                    { color: dark ? 'rgba(255,255,255,0.58)' : '#9aacb1' },
+                    isActive && styles.filterTextSelected,
+                  ]}
+                >
+                  {filter.label}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
   };
 
   const handleMuteConversation = useCallback(
@@ -851,75 +860,60 @@ function ChatListScreen({ navigation }: Props) {
             </SwipeableChatItem>
           );
         }}
-        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
-        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
+      <Animated.View
         style={[
-          styles.headerWrap,
-          {
-            paddingTop: insets.top,
-            backgroundColor: dark ? APP_HEADER_BACKGROUND_DARK : APP_HEADER_BACKGROUND_LIGHT,
-            borderBottomColor: dark ? APP_HEADER_BORDER_DARK : APP_HEADER_BORDER_LIGHT,
-          },
+          styles.headerRow,
+          { marginTop: insets.top + (isIOS ? 6 : 12) },
+          getSpringboardStyle(0),
         ]}
       >
-        {isIOS && (
-          <BlurView
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-            blurType={dark ? 'dark' : 'light'}
-            blurAmount={18}
-            reducedTransparencyFallbackColor={colors.background}
+        <View style={styles.headerSideSlot}>
+          <Image
+            source={{ uri: headerAvatarUri }}
+            style={[styles.headerAvatar, { borderColor: colors.border }]}
           />
+        </View>
+
+        {isIOS ? (
+          <View style={styles.headerCenterWrap} pointerEvents="none">
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
+          </View>
+        ) : (
+          <View style={styles.headerAndroidTitleWrap}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
+          </View>
         )}
 
-        <View style={styles.headerRow}>
-          <View style={styles.headerSideSlot}>
-            <Image
-              source={{ uri: headerAvatarUri }}
-              style={[styles.headerAvatar, { borderColor: colors.border }]}
-            />
-          </View>
-
-          {isIOS ? (
-            <View style={styles.headerCenterWrap} pointerEvents="none">
-              <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
-            </View>
-          ) : (
-            <View style={styles.headerAndroidTitleWrap}>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
-            </View>
-          )}
-
-          <View style={styles.headerSideSlot}>
-            <Pressable
-              onPress={openSettings}
-              style={styles.settingsButton}
-              testID="chat-settings-button"
-            >
-              <MaterialIcons name="settings" size={30} color="#126b87" />
-            </Pressable>
-          </View>
+        <View style={styles.headerSideSlot}>
+          <Pressable onPress={openSettings} style={styles.settingsButton}>
+            <MaterialIcons name="settings" size={30} color="#126b87" />
+          </Pressable>
         </View>
+      </Animated.View>
 
-        <View style={styles.filterBarWrap} testID="chat-filter-tabs">
-          <GlassTabBar
-            tabs={CHAT_FILTER_TABS.map((tab) => tab.label)}
-            activeIndex={Math.max(selectedFilterIndex, 0)}
-            onTabChange={handleFilterTabChange}
+      <Animated.View style={getSpringboardStyle(1)}>
+        <View style={[styles.searchWrap, { backgroundColor: colors.card }]}>
+          <MaterialIcons name="search" size={20} color={colors.text} />
+          <TextInput
+            ref={searchInputRef}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search conversations..."
+            placeholderTextColor={colors.text}
+            style={[styles.searchInput, { color: colors.text }]}
           />
         </View>
-      </View>
-      {conversationsContent}
+        {renderFilters()}
+      </Animated.View>
+      <Animated.View style={[{ flex: 1 }, getSpringboardStyle(2)]}>
+        {conversationsContent}
+      </Animated.View>
       {selectedFilter !== 'groups' ? (
         <View style={[styles.encryptedWrap, { bottom: encryptedBottom }]}>
           <View style={[styles.encryptedBadge, { backgroundColor: colors.card }]}>
@@ -943,32 +937,23 @@ function ChatListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
-  },
-  headerWrap: {
-    borderBottomWidth: 1,
-    paddingBottom: Platform.OS === 'android' ? spacing.x5 : spacing.x8,
-    marginHorizontal: -APP_HEADER_HORIZONTAL_INSET,
-    paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
+    paddingHorizontal: 22,
   },
   headerRow: {
-    minHeight: APP_HEADER_ROW_HEIGHT,
     justifyContent: 'space-between',
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerSideSlot: {
-    width: APP_HEADER_SIDE_WIDTH,
-    minHeight: APP_HEADER_ROW_HEIGHT,
+    width: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerAndroidTitleWrap: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+    paddingLeft: 14,
   },
   headerCenterWrap: {
     position: 'absolute',
@@ -980,9 +965,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
   },
   settingsButton: {
@@ -993,16 +978,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: APP_HEADER_TITLE_FONT_SIZE,
-    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
-    fontFamily: APP_HEADER_TITLE_FONT_FAMILY,
-    fontWeight: APP_HEADER_TITLE_FONT_WEIGHT,
-    letterSpacing: APP_HEADER_TITLE_LETTER_SPACING,
-    textAlign: Platform.OS === 'android' ? 'left' : 'center',
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  filterBarWrap: {
-    paddingTop: Platform.OS === 'android' ? 4 : 6,
-    paddingBottom: Platform.OS === 'android' ? 4 : 6,
+  searchWrap: {
+    borderRadius: 16,
+    minHeight: 52,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 6,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+  },
+  filterItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  filterItemSelected: {},
+  filterUnderline: {
+    paddingBottom: 8,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  filterUnderlineSelected: {
+    borderBottomColor: '#126b87',
+  },
+  filterText: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+    color: '#9aacb1',
+  },
+  filterTextSelected: {
+    color: '#126b87',
+    fontWeight: '700',
+  },
+  searchInput: {
+    marginLeft: 8,
+    flex: 1,
+    fontSize: 15,
   },
   encryptedWrap: {
     position: 'absolute',

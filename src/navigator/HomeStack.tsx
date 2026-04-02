@@ -9,6 +9,7 @@ import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
 import { Colors } from '../styles';
+import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
 function HomeStack() {
@@ -21,8 +22,7 @@ function HomeStack() {
           // drawerType,
           gestureEnabled: false,
           fullScreenGestureEnabled: false,
-          animation: 'slide_from_right',
-          animationDuration: 750,
+          ...STANDARD_STACK_ANIMATION_OPTIONS,
           statusBarStyle: dark ? 'light' : 'dark',
           statusBarColor: Platform.OS === 'android' && dark ? '#0D0D0D' : 'transparent',
           statusBarTranslucent: true,
@@ -49,7 +49,7 @@ function HomeStack() {
         name="Notifications"
         component={Notifications}
         options={{
-          presentation: Platform.OS === 'ios' ? 'fullScreenModal' : 'modal',
+          presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
           headerShown: false,
         }}

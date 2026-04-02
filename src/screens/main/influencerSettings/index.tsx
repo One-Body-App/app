@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import Button from '../../../components/Button';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
-import { styles } from './styles';
+import styles from './styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import {
@@ -68,7 +68,7 @@ function InfluencerSettings() {
                 fontWeight: '700',
                 fontSize: getFontSize(2.3),
                 marginLeft: 5,
-                fontFamily: 'OpenSans-Regular',
+                fontFamily: 'Rubik-Medium',
               }}
             >
               Creator Instagram Account

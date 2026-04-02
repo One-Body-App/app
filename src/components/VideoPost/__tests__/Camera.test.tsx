@@ -136,6 +136,7 @@ jest.mock('../../styled/Text', () => {
 
 import CameraComponent, {
   getDefaultRecorderCaptureSettings,
+  isNoRecordingInProgressError,
   shouldAllowCameraFlip,
 } from '../Camera';
 
@@ -226,5 +227,33 @@ describe('CameraComponent', () => {
 
     expect(mockLatestCameraProps.device.id).toBe('front-camera');
     expect(mockLatestCameraProps.torch).toBe('off');
+  });
+
+  it('treats no-recording-in-progress errors as non-fatal stop errors', () => {
+    expect(
+      isNoRecordingInProgressError({
+        code: 'capture/no-recording-in-progress',
+      })
+    ).toBe(true);
+    expect(
+      isNoRecordingInProgressError(
+        new Error(
+          'There was no active video recording in progress! Did you call stopRecording() twice?'
+        )
+      )
+    ).toBe(true);
+    expect(
+      isNoRecordingInProgressError({
+        cause: {
+          code: 'capture/no-recording-in-progress',
+        },
+      })
+    ).toBe(true);
+    expect(
+      isNoRecordingInProgressError({
+        code: 'capture/recording-canceled',
+      })
+    ).toBe(false);
+    expect(isNoRecordingInProgressError(new Error('different error'))).toBe(false);
   });
 });

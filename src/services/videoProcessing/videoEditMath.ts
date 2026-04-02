@@ -1,5 +1,7 @@
 import { VideoCropRect, VideoDimensions, VideoRatioId, VideoTransformState } from './types';
 
+export const SUPPORTED_VIDEO_RATIO_IDS: VideoRatioId[] = ['1:1', '4:3', '16:9', '9:16'];
+
 export const MIN_VIDEO_EDITOR_SCALE = 1;
 export const MAX_VIDEO_EDITOR_SCALE = 6;
 
@@ -150,6 +152,30 @@ export const createDefaultVideoTransform = (): VideoTransformState => ({
   translateX: 0,
   translateY: 0,
 });
+
+export const resolveClosestVideoRatioId = (
+  width?: number,
+  height?: number,
+  fallbackRatioId: VideoRatioId = '9:16'
+): VideoRatioId => {
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    !width ||
+    !height ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return fallbackRatioId;
+  }
+
+  const targetRatio = width / height;
+  return SUPPORTED_VIDEO_RATIO_IDS.reduce((closestRatioId, ratioId) => {
+    const currentDelta = Math.abs(VIDEO_RATIO_CONFIG[ratioId].ratio - targetRatio);
+    const bestDelta = Math.abs(VIDEO_RATIO_CONFIG[closestRatioId].ratio - targetRatio);
+    return currentDelta < bestDelta ? ratioId : closestRatioId;
+  }, fallbackRatioId);
+};
 
 export const resolveModerationFrameCount = (durationMs: number) => {
   const seconds = Math.max(1, durationMs / 1000);

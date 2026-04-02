@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import TestRenderer, { act } from 'react-test-renderer';
 import EventViewScreen from '../eventview';
 
@@ -16,6 +16,14 @@ const mockFormatConnectPortalDate = jest.fn((value: string) => {
 });
 
 jest.mock('@react-native-vector-icons/ionicons', () => 'Ionicons');
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: jest.fn(() => ({
+    top: 28,
+    bottom: 14,
+    left: 0,
+    right: 0,
+  })),
+}));
 
 jest.mock('@/src/services/connectPortal', () => ({
   formatConnectPortalDate: (value: string) => mockFormatConnectPortalDate(value),
@@ -133,6 +141,20 @@ describe('EventViewScreen', () => {
     });
 
     expect(renderer.root.findByType('Ionicons').props.name).toBe('chevron-back');
+
+    const heroStyle = StyleSheet.flatten(
+      renderer.root.findByProps({ testID: 'connect-event-hero-image' }).props.style
+    );
+    const headerRowStyle = StyleSheet.flatten(
+      renderer.root.findByProps({ testID: 'connect-event-header-row' }).props.style
+    );
+    const bottomBarStyle = StyleSheet.flatten(
+      renderer.root.findByProps({ testID: 'connect-event-bottom-bar' }).props.style
+    );
+
+    expect(heroStyle.height).toBe(348);
+    expect(headerRowStyle.paddingTop).toBe(44);
+    expect(bottomBarStyle.paddingBottom).toBe(38);
 
     const textValues = renderer.root
       .findAllByType(Text)
