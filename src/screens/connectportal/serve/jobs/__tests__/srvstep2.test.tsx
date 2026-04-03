@@ -20,8 +20,7 @@ jest.mock('@/src/services/connectPortal/provider', () => ({
 }));
 
 jest.mock('@/src/hooks/useMountEffect', () => (callback: () => void) => {
-  const ReactLocal = jest.requireActual('react');
-  ReactLocal.useEffect(callback, []);
+  callback();
 });
 
 jest.mock('../../../go/createflow/shared', () => ({

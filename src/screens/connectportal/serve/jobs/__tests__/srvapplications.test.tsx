@@ -22,8 +22,7 @@ jest.mock('@react-native-vector-icons/material-icons', () => {
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
   useFocusEffect: (effect: () => void | (() => void)) => {
-    const ReactLocal = require('react');
-    ReactLocal.useEffect(effect, [effect]);
+    effect();
   },
 }));
 

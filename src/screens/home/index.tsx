@@ -1,13 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  memo,
-  useMemo,
-  JSX,
-} from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState, memo, useMemo, JSX } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -47,7 +38,6 @@ import {
   useScrollToTop,
   DrawerActions,
   useFocusEffect,
-  useIsFocused,
 } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BlurView } from '@react-native-community/blur';
@@ -73,6 +63,8 @@ import {
 } from '@/src/navigator/motionPolicy';
 import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
 import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import useObservedEffect from '@/src/hooks/useObservedEffect';
 
 import styles from './styles';
 import { ApiCall } from '@/services/api';
@@ -116,6 +108,7 @@ import {
   shouldSkipRefreshTrigger,
 } from './feedRefreshUtils';
 import type { RefreshTrigger } from './feedRefreshUtils';
+import { resolveVideoMetadata } from '@/src/components/video/universalVideoLayout';
 
 // --- BRAND HEX CODES ---
 const BRAND = {
@@ -144,6 +137,10 @@ type FeedPost = (ArticleType | SocialPost) & {
   postId?: string;
   playBackId?: string;
   mediaType?: string;
+  aspectRatio?: number;
+  aspect_ratio?: string;
+  videoWidth?: number;
+  videoHeight?: number;
   authorName?: string;
   authorAvatar?: string;
   source?: string | { name: string };
@@ -281,6 +278,14 @@ const isWatchPost = (
   entry: FeedPost
 ): entry is SocialPost & { type?: 'watch'; playBackId?: string } =>
   entry.type === 'watch' || (typeof entry.playBackId === 'string' && entry.playBackId.length > 0);
+
+const isHomeWatchPortalEligible = (entry: FeedPost) =>
+  resolveVideoMetadata({
+    aspect_ratio: entry.aspect_ratio,
+    aspectRatio: entry.aspectRatio,
+    videoWidth: entry.videoWidth,
+    videoHeight: entry.videoHeight,
+  }).isNineBySixteen;
 
 const isLikelySocialPost = (entry: FeedPost) => {
   if (isWatchPost(entry)) {
@@ -452,7 +457,7 @@ function PrayerLiquidIndicator({ tabWidth }: PrayerLiquidIndicatorProps) {
   const waterWidth = useSharedValue(pillWidth);
   const waterHeight = useSharedValue(PRAYER_GLASS_PILL_HEIGHT);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     waterWidth.value = pillWidth;
     waterHeight.value = PRAYER_GLASS_PILL_HEIGHT;
   }, [pillWidth, waterHeight, waterWidth]);
@@ -646,7 +651,7 @@ function PrayerWallTabs({
     setLocalWallRefreshSignal((previous) => previous + 1);
   }, []);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (previousWallRefreshSignalRef.current === wallRefreshSignal) {
       return;
     }
@@ -657,7 +662,7 @@ function PrayerWallTabs({
   }, [index, refreshWallFeed, wallRefreshSignal]);
   const tabWidth = tabBarWidth > 0 ? tabBarWidth / routes.length : 0;
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (tabWidth <= 0) {
       return;
     }
@@ -1285,7 +1290,6 @@ type Props = CompositeScreenProps<
 
 function Home({ navigation, route }: Props) {
   const stackNavigation = useNavigation<NativeStackNavigationProp<HomeStackParamsList, 'Home'>>();
-  const isFocused = useIsFocused();
   const rootTabReplayToken = useRootTabSwitchReplayToken('HomeTab');
   const springboardPreset = getTabRootSpringboardPreset('home');
   const shouldRunHomeFeedIntro = SHOULD_RUN_HOME_FEED_INTRO;
@@ -1381,14 +1385,15 @@ function Home({ navigation, route }: Props) {
   const feedVisibleStartByKeyRef = useRef<Map<string, number>>(new Map());
   const feedImpressionsByKeyRef = useRef<Set<string>>(new Set());
   const [viewableSocialPostIds, setViewableSocialPostIds] = useState<Set<string>>(new Set());
+  feedTypeRef.current = feedOptions.type;
   useScrollToTop(listRef as any);
   const scrollIntent = useScrollIntentLock();
 
-  useEffect(() => {
+  useObservedEffect(() => {
     setFeedTelemetryAuthToken(token || undefined);
   }, [token]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     const followingIds = (userProfile?.following ?? [])
       .map((id) => String(id))
       .filter((id) => id.length > 0);
@@ -1679,7 +1684,7 @@ function Home({ navigation, route }: Props) {
     return entries.map((entry, index) => getFeedEntryIdentity(entry) ?? `fallback:${index}`);
   }, []);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (feedOptions.type !== FeedTypes.Connected && feedOptions.type !== FeedTypes.ForYou) {
       return undefined;
     }
@@ -1876,7 +1881,7 @@ function Home({ navigation, route }: Props) {
     [getFeedIdentitySequence, token]
   );
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (feedOptions.type === FeedTypes.Pray) {
       activeFirstPageRequestRef.current = null;
       setIsLoading(false);
@@ -1982,11 +1987,7 @@ function Home({ navigation, route }: Props) {
     handleOpenPostComposer();
   }, [handleOpenPostComposer, handleSubmitQuickPost, hasQuickPostText]);
 
-  useEffect(() => {
-    feedTypeRef.current = feedOptions.type;
-  }, [feedOptions.type]);
-
-  useEffect(() => {
+  useObservedEffect(() => {
     const routeSelectedTab = route.params?.selectedTab;
     const routeRefreshToken = route.params?.refreshToken;
 
@@ -2153,25 +2154,14 @@ function Home({ navigation, route }: Props) {
                 <Image
                   source={{ uri: userAvatar }}
                   style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
                     backgroundColor: BRAND.gray200,
                   }}
                 />
               ) : (
-                <View
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
-                    backgroundColor: '#126b87',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ProfileFill width={22} height={22} />
-                </View>
+                <ProfileFill width={32} height={32} color="#126b87" />
               )}
             </TouchableOpacity>
           </View>
@@ -2286,25 +2276,14 @@ function Home({ navigation, route }: Props) {
                 <Image
                   source={{ uri: userAvatar }}
                   style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
                     backgroundColor: BRAND.gray200,
                   }}
                 />
               ) : (
-                <View
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
-                    backgroundColor: '#126b87',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ProfileFill width={22} height={22} />
-                </View>
+                <ProfileFill width={32} height={32} color="#126b87" />
               )}
             </TouchableOpacity>
           </View>
@@ -2582,17 +2561,25 @@ function Home({ navigation, route }: Props) {
                 preserveFeedPositionOnNextFocus();
                 const postId = watchItem.postId ?? watchItem.id ?? watchItem._id;
                 const { playBackId } = watchItem;
-                if (!postId || !playBackId) {
+                if (!postId) {
                   return;
                 }
-                navigation.push('WatchPortal', {
-                  initialPostId: String(postId),
-                  initialPlaybackId: playBackId,
-                  initialWatchPost: {
-                    ...watchItem,
-                    playBackId,
-                    postId: String(postId),
-                  },
+                if (playBackId && isHomeWatchPortalEligible(watchItem)) {
+                  navigation.push('WatchPortal', {
+                    initialPostId: String(postId),
+                    initialPlaybackId: playBackId,
+                    initialWatchPost: {
+                      ...watchItem,
+                      playBackId,
+                      postId: String(postId),
+                    },
+                  } as any);
+                  return;
+                }
+
+                navigation.navigate('SingleRss', {
+                  postId: String(postId),
+                  postType: PostType.watch,
                 } as any);
               }}
               onOpenVideoPress={({
@@ -2603,7 +2590,14 @@ function Home({ navigation, route }: Props) {
                 videoWidth,
                 videoHeight,
               }) => {
-                if (!playBackId) {
+                const { isNineBySixteen } = resolveVideoMetadata({
+                  aspect_ratio: itemData.aspect_ratio,
+                  aspectRatio: aspectRatio ?? itemData.aspectRatio,
+                  videoWidth: videoWidth ?? itemData.videoWidth,
+                  videoHeight: videoHeight ?? itemData.videoHeight,
+                });
+
+                if (!playBackId || !isNineBySixteen) {
                   return;
                 }
                 preserveFeedPositionOnNextFocus();
@@ -3202,7 +3196,7 @@ function Home({ navigation, route }: Props) {
     itemVisiblePercentThreshold: 55,
   }).current;
 
-  useEffect(() => {
+  useObservedEffect(() => {
     const visibleStartByKey = feedVisibleStartByKeyRef.current;
     const impressionsByKey = feedImpressionsByKeyRef.current;
 
@@ -3239,7 +3233,7 @@ function Home({ navigation, route }: Props) {
     };
   }, [feedOptions.type, token]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (!shouldRunHomeFeedIntro) {
       feedIntroHeaderOpacity.setValue(1);
       feedIntroHeaderTranslateY.setValue(0);
@@ -3294,15 +3288,15 @@ function Home({ navigation, route }: Props) {
     shouldRunHomeFeedIntro,
   ]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       if (feedIntroDelayTimeout.current) {
         clearTimeout(feedIntroDelayTimeout.current);
       }
     };
-  }, []);
+  });
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (!showBlockingLoader) {
       maybeStartFeedCardIntro(latestVisibleItems.current);
     }
@@ -3368,30 +3362,28 @@ function Home({ navigation, route }: Props) {
     }, [footerTranslateY, footerVisibility, headerVisibility])
   );
 
-  useEffect(() => {
-    const parent = navigation.getParent?.();
-    if (!parent || !isFocused) {
-      return undefined;
-    }
+  useFocusEffect(
+    useCallback(() => {
+      const parent = navigation.getParent?.();
+      if (!parent || feedOptions.type !== FeedTypes.Pray) {
+        return undefined;
+      }
 
-    if (feedOptions.type !== FeedTypes.Pray) {
-      return undefined;
-    }
-
-    parent.setOptions({
-      tabBarStyle: {
-        height: 0,
-        opacity: 0,
-        display: 'none',
-      },
-    });
-
-    return () => {
       parent.setOptions({
-        tabBarStyle: undefined,
+        tabBarStyle: {
+          height: 0,
+          opacity: 0,
+          display: 'none',
+        },
       });
-    };
-  }, [feedOptions.type, isFocused, navigation]);
+
+      return () => {
+        parent.setOptions({
+          tabBarStyle: undefined,
+        });
+      };
+    }, [feedOptions.type, navigation])
+  );
 
   const handleFeedRefresh = useCallback(() => {
     if (feedOptions.type === FeedTypes.Pray || isRefreshing) {
@@ -3422,7 +3414,7 @@ function Home({ navigation, route }: Props) {
     });
   }, [feedOptions.type, isRefreshing, requestFeedRefresh]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (__DEV__ && Platform.OS === 'ios') {
       console.log('[Home Refresh] Spinner state changed', {
         isRefreshing,

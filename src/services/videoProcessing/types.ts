@@ -58,6 +58,7 @@ export type PendingVideoUploadStatus =
   | 'compressing'
   | 'uploading'
   | 'posting'
+  | 'processing_remote'
   | 'failed'
   | 'complete';
 
@@ -76,6 +77,13 @@ export type PendingVideoUpload = {
   processedWidth?: number;
   processedHeight?: number;
   uploadId?: string;
+  uploadTransport?: 'mux_sdk' | 'raw_put_fallback';
+  nativeUploadState?: 'uploading' | 'paused' | 'failed' | 'success';
+  watchId?: string;
+  watchProcessingStatus?: 'PROCESSING' | 'READY' | 'FAILED_SYNC';
+  remotePollAttempt?: number;
+  remotePollStartedAt?: string;
+  nextRemotePollAt?: string;
   lastError?: string;
   failureCode?:
     | 'nsfw-blocked'

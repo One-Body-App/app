@@ -279,10 +279,10 @@ function CreatorReview({ navigation, route }: Props) {
               </TouchableOpacity>
             </View>
             <View style={styles.pillContainer}>
-              {data.topics && data.topics.length > 0 ? (
-                data.topics.map((topic: string) => (
-                  <View key={topic} style={styles.pill}>
-                    <Text style={styles.pillText}>{topic}</Text>
+              {data.topicNames?.length > 0 || data.topics?.length > 0 ? (
+                (data.topicNames ?? data.topics).map((label: string) => (
+                  <View key={label} style={styles.pill}>
+                    <Text style={styles.pillText}>{label.toLowerCase()}</Text>
                   </View>
                 ))
               ) : (

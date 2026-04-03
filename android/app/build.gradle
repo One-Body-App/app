@@ -201,6 +201,7 @@ dependencies {
     implementation 'com.facebook.fresco:animated-gif:2.5.0'
 
     implementation 'com.google.firebase:firebase-iid:21.1.0'
+    implementation "com.mux.video:upload:0.4.1"
     // For WebP support, including animated WebP
     implementation 'com.facebook.fresco:animated-webp:2.5.0'
     implementation 'com.facebook.fresco:webpsupport:2.5.0'

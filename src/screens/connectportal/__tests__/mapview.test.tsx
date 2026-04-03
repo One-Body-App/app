@@ -9,10 +9,12 @@ const mockChrome: jest.Mock = jest.fn();
 const mockFilterSheet: jest.Mock = jest.fn();
 const mockUseConnectPortalData = jest.fn(() => ({}));
 const mockUseSelector = jest.fn();
+const mockUseFocusEffect = jest.fn((callback: () => void) => callback());
 
 jest.mock('react-native-linear-gradient', () => 'LinearGradient');
 
 jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: (callback: () => void) => mockUseFocusEffect(callback),
   useTheme: jest.fn(() => ({
     dark: false,
     colors: {

@@ -68,6 +68,10 @@ const createMemoryStorage = (seed?: PendingVideoUpload[]) => {
 };
 
 const createDeleteFile = () => jest.fn(async () => undefined);
+const createUploadedResult = (uploadId: string) => ({
+  uploadId,
+  uploadTransport: 'raw_put_fallback' as const,
+});
 
 describe('videoUploadQueue', () => {
   it('moves a queued item through moderation, compression, upload, and posting', async () => {
@@ -92,7 +96,7 @@ describe('videoUploadQueue', () => {
       }),
       uploadVideo: jest.fn(async () => {
         events.push('uploading');
-        return 'mux_upload_1';
+        return createUploadedResult('mux_upload_1');
       }),
       createWatchPost: jest.fn(async () => {
         events.push('posting');
@@ -113,8 +117,80 @@ describe('videoUploadQueue', () => {
       expect.objectContaining({
         id: item.id,
         status: 'complete',
+        watchProcessingStatus: 'READY',
         uploadId: 'mux_upload_1',
         processedVideoUri: 'file:///tmp/exported.mp4',
+      }),
+    ]);
+  });
+
+  it('waits for backend READY before completing remotely processed uploads', async () => {
+    const storage = createMemoryStorage();
+    const getWatchPostStatus = jest
+      .fn()
+      .mockResolvedValueOnce({
+        _id: 'watch-remote-1',
+        processingStatus: 'PROCESSING',
+      })
+      .mockResolvedValueOnce({
+        _id: 'watch-remote-1',
+        playBackId: 'playback-remote-1',
+        processingStatus: 'READY',
+      });
+    const transitions: PendingVideoUpload['status'][] = [];
+    let lastStatus: PendingVideoUpload['status'] | undefined;
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported-remote.mp4',
+        processedDuration: 12_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_remote')),
+      createWatchPost: jest.fn(async () => ({
+        _id: 'watch-remote-1',
+        processingStatus: 'PROCESSING',
+      })),
+      getWatchPostStatus,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    const unsubscribe = queue.subscribe((items) => {
+      const status = items[0]?.status;
+      if (!status || status === lastStatus) {
+        return;
+      }
+      lastStatus = status;
+      transitions.push(status);
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+    unsubscribe();
+
+    expect(transitions).toEqual([
+      'queued',
+      'moderating',
+      'compressing',
+      'uploading',
+      'posting',
+      'processing_remote',
+      'complete',
+    ]);
+    expect(getWatchPostStatus).toHaveBeenCalledTimes(2);
+    expect(queue.getItems()).toEqual([
+      expect.objectContaining({
+        status: 'complete',
+        watchId: 'watch-remote-1',
+        watchProcessingStatus: 'READY',
       }),
     ]);
   });
@@ -136,7 +212,7 @@ describe('videoUploadQueue', () => {
         processedWidth: 1080,
         processedHeight: 1920,
       })),
-      uploadVideo: jest.fn(async () => 'mux_upload_delayed'),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_delayed')),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
       log: jest.fn(),
@@ -182,7 +258,7 @@ describe('videoUploadQueue', () => {
         processedWidth: 1080,
         processedHeight: 1920,
       })),
-      uploadVideo: jest.fn(async () => 'mux_upload_subscriber'),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_subscriber')),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
       log: jest.fn(),
@@ -233,7 +309,7 @@ describe('videoUploadQueue', () => {
         if (uploadAttempts < 3) {
           throw new QueueError('network', 'temporary upload failure', true);
         }
-        return 'mux_upload_retry';
+        return createUploadedResult('mux_upload_retry');
       }),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
@@ -272,7 +348,7 @@ describe('videoUploadQueue', () => {
         },
       })),
       exportVideo,
-      uploadVideo: jest.fn(async () => 'mux_upload_blocked'),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_blocked')),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
       log: jest.fn(),
@@ -316,7 +392,7 @@ describe('videoUploadQueue', () => {
       processedWidth: 1080,
       processedHeight: 1920,
     }));
-    const uploadVideo = jest.fn(async () => 'mux_upload_resume');
+    const uploadVideo = jest.fn(async () => createUploadedResult('mux_upload_resume'));
     const createWatchPost = jest.fn(async () => undefined);
     const queue = createVideoUploadQueue({
       storage,
@@ -339,6 +415,180 @@ describe('videoUploadQueue', () => {
     expect(exportVideo).not.toHaveBeenCalled();
     expect(uploadVideo).not.toHaveBeenCalled();
     expect(createWatchPost).toHaveBeenCalledTimes(1);
+  });
+
+  it('resumes remote-processing items by polling status instead of re-uploading', async () => {
+    const seed: PendingVideoUpload[] = [
+      {
+        id: 'resume-remote-item',
+        status: 'processing_remote',
+        retryCount: 0,
+        createdAt: '2026-03-07T10:00:00.000Z',
+        updatedAt: '2026-03-07T10:00:00.000Z',
+        recipe: baseRecipe,
+        moderationDecision: 'safe',
+        moderationScores: null,
+        processedVideoUri: 'file:///tmp/exported.mp4',
+        processedDuration: 20_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+        uploadId: 'mux_upload_resume_remote',
+        watchId: 'watch-resume-remote',
+        watchProcessingStatus: 'PROCESSING',
+      },
+    ];
+    const storage = createMemoryStorage(seed);
+    const moderateVideo = jest.fn(async () => ({
+      moderationDecision: 'safe',
+      moderationScores: null,
+    }));
+    const exportVideo = jest.fn(async () => ({
+      processedVideoUri: 'file:///tmp/exported.mp4',
+      processedDuration: 20_000,
+      processedWidth: 1080,
+      processedHeight: 1920,
+    }));
+    const uploadVideo = jest.fn(async () => createUploadedResult('mux_upload_resume_remote'));
+    const createWatchPost = jest.fn(async () => undefined);
+    const getWatchPostStatus = jest.fn(async () => ({
+      _id: 'watch-resume-remote',
+      playBackId: 'playback-resume-remote',
+      processingStatus: 'READY' as const,
+    }));
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo,
+      exportVideo,
+      uploadVideo,
+      createWatchPost,
+      getWatchPostStatus,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.resume();
+    await queue.waitForIdle();
+
+    const [result] = queue.getItems();
+    expect(result.status).toBe('complete');
+    expect(result.watchProcessingStatus).toBe('READY');
+    expect(moderateVideo).not.toHaveBeenCalled();
+    expect(exportVideo).not.toHaveBeenCalled();
+    expect(uploadVideo).not.toHaveBeenCalled();
+    expect(createWatchPost).not.toHaveBeenCalled();
+    expect(getWatchPostStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it('prioritizes newly queued uploads before continuing remote-processing polls', async () => {
+    const seed: PendingVideoUpload[] = [
+      {
+        id: 'remote-first',
+        status: 'processing_remote',
+        retryCount: 0,
+        createdAt: '2026-03-07T10:00:00.000Z',
+        updatedAt: '2026-03-07T10:00:00.000Z',
+        recipe: baseRecipe,
+        moderationDecision: 'safe',
+        moderationScores: null,
+        processedVideoUri: 'file:///tmp/exported-remote-first.mp4',
+        processedDuration: 20_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+        uploadId: 'mux_upload_remote_first',
+        watchId: 'watch-remote-first',
+        watchProcessingStatus: 'PROCESSING',
+      },
+      {
+        id: 'queued-second',
+        status: 'queued',
+        retryCount: 0,
+        createdAt: '2026-03-07T10:00:00.000Z',
+        updatedAt: '2026-03-07T10:00:00.000Z',
+        recipe: {
+          ...baseRecipe,
+          sourceUri: 'file:///tmp/source-second.mp4',
+        },
+      },
+    ];
+    const storage = createMemoryStorage(seed);
+    const events: string[] = [];
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async (recipe) => {
+        events.push(`moderate:${recipe.sourceUri}`);
+        return {
+          moderationDecision: 'safe',
+          moderationScores: null,
+        };
+      }),
+      exportVideo: jest.fn(async (recipe) => {
+        events.push(`export:${recipe.sourceUri}`);
+        return {
+          processedVideoUri: `file:///tmp/${recipe.sourceUri.includes('second') ? 'queued-second' : 'other'}.mp4`,
+          processedDuration: 12_000,
+          processedWidth: 1080,
+          processedHeight: 1920,
+        };
+      }),
+      uploadVideo: jest.fn(async () => {
+        events.push('upload:queued-second');
+        return createUploadedResult('mux_upload_queued_second');
+      }),
+      createWatchPost: jest.fn(async (item) => {
+        events.push(`post:${item.id}`);
+        return {
+          _id: item.id === 'queued-second' ? 'watch-queued-second' : 'watch-unknown',
+          processingStatus: item.id === 'queued-second' ? 'READY' : 'PROCESSING',
+        };
+      }),
+      getWatchPostStatus: jest
+        .fn()
+        .mockImplementationOnce(async () => {
+          events.push('poll:remote-first');
+          return {
+            _id: 'watch-remote-first',
+            processingStatus: 'PROCESSING',
+          };
+        })
+        .mockImplementationOnce(async () => {
+          events.push('poll:remote-first-ready');
+          return {
+            _id: 'watch-remote-first',
+            playBackId: 'playback-remote-first',
+            processingStatus: 'READY',
+          };
+        }),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.resume();
+    await queue.waitForIdle();
+
+    expect(events).toEqual([
+      'moderate:file:///tmp/source-second.mp4',
+      'export:file:///tmp/source-second.mp4',
+      'upload:queued-second',
+      'post:queued-second',
+      'poll:remote-first',
+      'poll:remote-first-ready',
+    ]);
+    expect(queue.getItems()).toEqual([
+      expect.objectContaining({
+        id: 'remote-first',
+        status: 'complete',
+        watchProcessingStatus: 'READY',
+      }),
+      expect.objectContaining({
+        id: 'queued-second',
+        status: 'complete',
+        watchProcessingStatus: 'READY',
+      }),
+    ]);
   });
 
   it('stops retrying after the configured retry limit', async () => {
@@ -390,7 +640,7 @@ describe('videoUploadQueue', () => {
         processedWidth: 1080,
         processedHeight: 1920,
       })),
-      uploadVideo: jest.fn(async () => 'mux_upload_invalid_trim'),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_invalid_trim')),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
       log: jest.fn(),
@@ -412,7 +662,7 @@ describe('videoUploadQueue', () => {
 
   it('fails locally when export dimensions are invalid before upload', async () => {
     const storage = createMemoryStorage();
-    const uploadVideo = jest.fn(async () => 'mux_upload_invalid_dimensions');
+    const uploadVideo = jest.fn(async () => createUploadedResult('mux_upload_invalid_dimensions'));
     const createWatchPost = jest.fn(async () => undefined);
     const deleteFile = createDeleteFile();
     const queue = createVideoUploadQueue({
@@ -461,7 +711,7 @@ describe('videoUploadQueue', () => {
       exportVideo: jest.fn(async () => {
         throw new Error('Command failed with state COMPLETED and rc 1.');
       }),
-      uploadVideo: jest.fn(async () => 'mux_upload_never_called'),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_never_called')),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
       log: jest.fn(),
@@ -491,7 +741,7 @@ describe('videoUploadQueue', () => {
 
   it('fails locally when export duration exceeds the selected trim tolerance', async () => {
     const storage = createMemoryStorage();
-    const uploadVideo = jest.fn(async () => 'mux_upload_invalid_duration');
+    const uploadVideo = jest.fn(async () => createUploadedResult('mux_upload_invalid_duration'));
     const createWatchPost = jest.fn(async () => undefined);
     const queue = createVideoUploadQueue({
       storage,
@@ -525,7 +775,9 @@ describe('videoUploadQueue', () => {
 
   it('fails locally when export aspect ratio does not match the selected watch ratio', async () => {
     const storage = createMemoryStorage();
-    const uploadVideo = jest.fn(async () => 'mux_upload_invalid_aspect_ratio');
+    const uploadVideo = jest.fn(async () =>
+      createUploadedResult('mux_upload_invalid_aspect_ratio')
+    );
     const createWatchPost = jest.fn(async () => undefined);
     const queue = createVideoUploadQueue({
       storage,
@@ -565,7 +817,7 @@ describe('videoUploadQueue', () => {
       processedWidth: 1080,
       processedHeight: 1920,
     }));
-    const uploadVideo = jest.fn(async () => 'mux_upload_unclassified');
+    const uploadVideo = jest.fn(async () => createUploadedResult('mux_upload_unclassified'));
     const createWatchPost = jest.fn(async () => undefined);
     const queue = createVideoUploadQueue({
       storage,
@@ -596,7 +848,7 @@ describe('videoUploadQueue', () => {
 
   it('stops locally when moderation throws before server calls', async () => {
     const storage = createMemoryStorage();
-    const uploadVideo = jest.fn(async () => 'mux_upload_runtime_failure');
+    const uploadVideo = jest.fn(async () => createUploadedResult('mux_upload_runtime_failure'));
     const createWatchPost = jest.fn(async () => undefined);
     const queue = createVideoUploadQueue({
       storage,
@@ -644,7 +896,7 @@ describe('videoUploadQueue', () => {
         processedWidth: 1080,
         processedHeight: 1920,
       })),
-      uploadVideo: jest.fn(async () => 'mux_upload_cleanup'),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_cleanup')),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
       log: jest.fn(),
@@ -692,7 +944,7 @@ describe('videoUploadQueue', () => {
         processedWidth: 1080,
         processedHeight: 1920,
       })),
-      uploadVideo: jest.fn(async () => 'mux_upload_resume'),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_resume')),
       createWatchPost: jest.fn(async () => undefined),
       now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
       log: jest.fn(),

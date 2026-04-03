@@ -31,6 +31,7 @@ import { AccountType, Badge } from '@/utils/types';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
 import Selected from '@/assets/svg/Selected.svg';
+import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import { ProfileProps } from './profileTypes';
 import { getProfileDisplayName, getProfileRoleLabel, getProfileTypeLabel } from './profileUtils';
 
@@ -436,13 +437,17 @@ function ProfileHeader({
                   testID="profile-avatar-edit-button"
                 >
                   <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
-                    <FastImage
-                      source={{
-                        uri: profileData.profileImage || DEFAULT_PROFILE_IMAGE,
-                      }}
-                      style={[styles.avatar, styles.selfAvatar]}
-                      resizeMode={FastImage.resizeMode.cover}
-                    />
+                    {profileData.profileImage ? (
+                      <FastImage
+                        source={{ uri: profileData.profileImage }}
+                        style={[styles.avatar, styles.selfAvatar]}
+                        resizeMode={FastImage.resizeMode.cover}
+                      />
+                    ) : (
+                      <View style={[styles.avatar, styles.selfAvatar, styles.avatarFallback]}>
+                        <ProfileFill width={56} height={56} color={Colors.primarySapphire.brand} />
+                      </View>
+                    )}
                     <View pointerEvents="none" style={styles.avatarEditBadge}>
                       <Icon name="pencil-outline" size={16} color="#FFFFFF" />
                     </View>
@@ -450,13 +455,17 @@ function ProfileHeader({
                 </TouchableOpacity>
               ) : (
                 <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
-                  <FastImage
-                    source={{
-                      uri: profileData.profileImage || DEFAULT_PROFILE_IMAGE,
-                    }}
-                    style={[styles.avatar, styles.selfAvatar]}
-                    resizeMode={FastImage.resizeMode.cover}
-                  />
+                  {profileData.profileImage ? (
+                    <FastImage
+                      source={{ uri: profileData.profileImage }}
+                      style={[styles.avatar, styles.selfAvatar]}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  ) : (
+                    <View style={[styles.avatar, styles.selfAvatar, styles.avatarFallback]}>
+                      <ProfileFill width={56} height={56} color={Colors.primarySapphire.brand} />
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -482,13 +491,17 @@ function ProfileHeader({
         ) : (
           <View style={styles.heroRow}>
             <View style={styles.avatarWrap}>
-              <FastImage
-                source={{
-                  uri: profileData.profileImage || DEFAULT_PROFILE_IMAGE,
-                }}
-                style={styles.avatar}
-                resizeMode={FastImage.resizeMode.cover}
-              />
+              {profileData.profileImage ? (
+                <FastImage
+                  source={{ uri: profileData.profileImage }}
+                  style={styles.avatar}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              ) : (
+                <View style={[styles.avatar, styles.avatarFallback]}>
+                  <ProfileFill width={50} height={50} color={Colors.primarySapphire.brand} />
+                </View>
+              )}
             </View>
 
             <View style={styles.actionRow}>
@@ -690,6 +703,10 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth.base,
     height: AVATAR_SIZE,
     width: AVATAR_SIZE,
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarEditBadge: {
     alignItems: 'center',

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from '@/src/redux/actions/AuthActions';
@@ -17,6 +17,7 @@ import {
   refreshConnectPortalPublishedEvents,
 } from './index';
 import { CONNECT_DEFAULT_SERVE_ROLE_OPTIONS } from './defaultServeRoles';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import type {
   ConnectGoFilters,
   ConnectGoQuickChip,
@@ -229,6 +230,39 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
   const [serveFilters, setServeFilters] = useState<ConnectServeFilters>(DEFAULT_SERVE_FILTERS);
   const [serveQuickChip, setServeQuickChip] = useState<ConnectServeQuickChip>('Hiring');
   const [serveFilterSheetOpen, setServeFilterSheetOpen] = useState(false);
+  const profileLocation = currentUser?.profile?.location;
+  const profileLongitude = profileLocation?.coordinates?.lon;
+  const profileLatitude = profileLocation?.coordinates?.lat;
+  const profileLocationAddress = profileLocation?.address || '';
+
+  const applyProfileLocationDefaults = useCallback(
+    (filters: ConnectPlaceFilters): ConnectPlaceFilters => {
+      if (filters.lat !== undefined || filters.lon !== undefined || filters.locationAddress) {
+        return filters;
+      }
+
+      if (
+        typeof profileLongitude !== 'number' ||
+        typeof profileLatitude !== 'number' ||
+        !profileLocationAddress
+      ) {
+        return filters;
+      }
+
+      return {
+        ...filters,
+        lon: profileLongitude,
+        lat: profileLatitude,
+        locationAddress: profileLocationAddress,
+      };
+    },
+    [profileLatitude, profileLocationAddress, profileLongitude]
+  );
+
+  const effectivePlaceFilters = useMemo(
+    () => applyProfileLocationDefaults(placeFilters),
+    [applyProfileLocationDefaults, placeFilters]
+  );
 
   const refresh = useCallback(async (force = false) => {
     setError(null);
@@ -274,37 +308,63 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
     }
   }, []);
 
-  const refreshPlaces = useCallback(async () => {
-    setPlacesLoading(true);
-    setPlacesError(null);
-    try {
-      const response = await listConnectPortalPlaces(placeFilters, {
-        text: searchByTab.Places,
-        page: 1,
-        limit: 50,
-        view: viewModes.Places,
-      });
-      setPlaceRecords(response.data);
-    } catch (caught) {
-      const message =
-        caught instanceof Error ? caught.message : 'Unable to load Connect places right now.';
-      setPlacesError({ code: 'network', message });
-      setPlaceRecords([]);
-    } finally {
-      setPlacesLoading(false);
-    }
-  }, [placeFilters, searchByTab.Places, viewModes.Places]);
+  const refreshPlaces = useCallback(
+    async (
+      filtersOverride?: ConnectPlaceFilters,
+      optionsOverride?: {
+        text?: string;
+        view?: ConnectViewMode;
+      }
+    ) => {
+      const nextFilters = filtersOverride ?? effectivePlaceFilters;
+      const nextText = optionsOverride?.text ?? searchByTab.Places;
+      const nextView = optionsOverride?.view ?? viewModes.Places;
 
-  const updateViewMode = useCallback((tab: ConnectTab, viewMode: ConnectViewMode) => {
-    setViewModes((previous) => ({ ...previous, [tab]: viewMode }));
-  }, []);
+      setPlacesLoading(true);
+      setPlacesError(null);
+      try {
+        const response = await listConnectPortalPlaces(nextFilters, {
+          text: nextText,
+          page: 1,
+          limit: 50,
+          view: nextView,
+        });
+        setPlaceRecords(response.data);
+      } catch (caught) {
+        const message =
+          caught instanceof Error ? caught.message : 'Unable to load Connect places right now.';
+        setPlacesError({ code: 'network', message });
+        setPlaceRecords([]);
+      } finally {
+        setPlacesLoading(false);
+      }
+    },
+    [effectivePlaceFilters, searchByTab.Places, viewModes.Places]
+  );
 
-  const updateSearchText = useCallback((tab: ConnectTab, text: string) => {
-    setSearchByTab((previous) => ({ ...previous, [tab]: text }));
-  }, []);
+  const updateViewMode = useCallback(
+    (tab: ConnectTab, viewMode: ConnectViewMode) => {
+      setViewModes((previous) => ({ ...previous, [tab]: viewMode }));
+      if (tab === 'Places') {
+        refreshPlaces(undefined, { view: viewMode }).catch(() => undefined);
+      }
+    },
+    [refreshPlaces]
+  );
 
-  useEffect(() => {
+  const updateSearchText = useCallback(
+    (tab: ConnectTab, text: string) => {
+      setSearchByTab((previous) => ({ ...previous, [tab]: text }));
+      if (tab === 'Places') {
+        refreshPlaces(undefined, { text }).catch(() => undefined);
+      }
+    },
+    [refreshPlaces]
+  );
+
+  useMountEffect(() => {
     refresh();
+    refreshPlaces().catch(() => undefined);
     Promise.all([
       getConnectPortalPlaceFilterOptions(),
       getConnectEventTypeOptions(),
@@ -331,51 +391,41 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
               : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS,
         }));
       });
-  }, [refresh]);
-
-  useEffect(() => {
-    const profileLocation = currentUser?.profile?.location;
-    const longitude = profileLocation?.coordinates?.lon;
-    const latitude = profileLocation?.coordinates?.lat;
-    const locationAddress = profileLocation?.address || '';
-
-    setPlaceFilters((previous) => {
-      if (previous.lat !== undefined || previous.lon !== undefined || previous.locationAddress) {
-        return previous;
-      }
-
-      if (typeof longitude !== 'number' || typeof latitude !== 'number' || !locationAddress) {
-        return previous;
-      }
-
-      return {
-        ...previous,
-        lon: longitude,
-        lat: latitude,
-        locationAddress,
-      };
-    });
-  }, [currentUser?.profile?.location]);
-
-  useEffect(() => {
-    refreshPlaces();
-  }, [refreshPlaces]);
+  });
 
   const visiblePlaceRecords = useMemo(
     () => applyQuickChip(placeRecords, placesQuickChip),
     [placeRecords, placesQuickChip]
   );
-
-  useEffect(() => {
-    if (!visiblePlaceRecords.length) {
-      setSelectedPlaceId(null);
-      return;
+  const visibleSelectedPlaceId = useMemo(() => {
+    if (!selectedPlaceId) {
+      return null;
     }
 
-    if (selectedPlaceId && !visiblePlaceRecords.some((place) => place.id === selectedPlaceId)) {
-      setSelectedPlaceId(null);
-    }
+    return visiblePlaceRecords.some((place) => place.id === selectedPlaceId)
+      ? selectedPlaceId
+      : null;
   }, [selectedPlaceId, visiblePlaceRecords]);
+
+  const updatePlaceFilters = useCallback(
+    (updater: Partial<ConnectPlaceFilters>) => {
+      const nextFilters = { ...placeFilters, ...updater };
+      setPlaceFilters(nextFilters);
+      refreshPlaces(applyProfileLocationDefaults(nextFilters)).catch(() => undefined);
+    },
+    [applyProfileLocationDefaults, placeFilters, refreshPlaces]
+  );
+
+  const resetPlaceFilters = useCallback(() => {
+    const nextFilters = getDefaultConnectPlaceFilters({
+      lat: profileLatitude,
+      lon: profileLongitude,
+      locationAddress: profileLocationAddress,
+    });
+    setPlaceFilters(nextFilters);
+    setPlacesQuickChip('Nearby');
+    refreshPlaces(nextFilters).catch(() => undefined);
+  }, [profileLatitude, profileLocationAddress, profileLongitude, refreshPlaces]);
 
   const isFollowing = useCallback(
     (placeId: string) => {
@@ -463,28 +513,17 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
         visibleRecords: visiblePlaceRecords,
         loading: placesLoading,
         error: placesError,
-        filters: placeFilters,
+        filters: effectivePlaceFilters,
         quickChip: placesQuickChip,
         filterSheetOpen: placeFilterSheetOpen,
-        selectedPlaceId,
+        selectedPlaceId: visibleSelectedPlaceId,
         organizationTypes,
         churchTypes,
         sortOptions,
         setQuickChip: setPlacesQuickChip,
         setFilterSheetOpen: setPlaceFilterSheetOpen,
-        setFilters: (updater: Partial<ConnectPlaceFilters>) => {
-          setPlaceFilters((previous) => ({ ...previous, ...updater }));
-        },
-        resetFilters: () => {
-          setPlaceFilters(
-            getDefaultConnectPlaceFilters({
-              lat: currentUser?.profile?.location?.coordinates?.lat,
-              lon: currentUser?.profile?.location?.coordinates?.lon,
-              locationAddress: currentUser?.profile?.location?.address || '',
-            })
-          );
-          setPlacesQuickChip('Nearby');
-        },
+        setFilters: updatePlaceFilters,
+        resetFilters: resetPlaceFilters,
         refresh: refreshPlaces,
         selectPlace: setSelectedPlaceId,
         toggleFollow,
@@ -541,10 +580,10 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       visiblePlaceRecords,
       placesLoading,
       placesError,
-      placeFilters,
+      effectivePlaceFilters,
       placesQuickChip,
       placeFilterSheetOpen,
-      selectedPlaceId,
+      visibleSelectedPlaceId,
       organizationTypes,
       churchTypes,
       sortOptions,
@@ -562,14 +601,13 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       serveQuickChip,
       serveFilterSheetOpen,
       serveRoleTypeOptions,
-      currentUser?.profile?.location?.address,
-      currentUser?.profile?.location?.coordinates?.lat,
-      currentUser?.profile?.location?.coordinates?.lon,
       isFollowing,
       refresh,
       refreshPlaces,
       refreshServeJobs,
+      resetPlaceFilters,
       toggleFollow,
+      updatePlaceFilters,
       updateSearchText,
       updateViewMode,
     ]

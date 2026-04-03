@@ -70,6 +70,7 @@ function CreatorStepFour({ navigation, route }: Props) {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [interests, setInterests] = useState<Array<{ _id: string; name: string }>>([]);
   const [loadingInterests, setLoadingInterests] = useState(true);
+  const [interestsError, setInterestsError] = useState(false);
 
   const palette = useMemo(
     (): ScreenPalette =>
@@ -118,20 +119,29 @@ function CreatorStepFour({ navigation, route }: Props) {
 
   const previousData = useMemo(() => route.params?.data ?? {}, [route.params]);
 
-  useEffect(() => {
+  const fetchInterests = useCallback(() => {
     if (!userToken) return;
+    setLoadingInterests(true);
+    setInterestsError(false);
     ApiCall<Array<{ _id: string; name: string }>>({
       route: 'tags/interest',
       verb: 'get',
       token: userToken,
     })
       .then((res) => {
-        if (res.status === 200 && Array.isArray(res.data)) {
-          setInterests(res.data);
+        if (res.status === 200 && Array.isArray(res.response)) {
+          setInterests(res.response);
+        } else {
+          setInterestsError(true);
         }
       })
+      .catch(() => setInterestsError(true))
       .finally(() => setLoadingInterests(false));
   }, [userToken]);
+
+  useEffect(() => {
+    fetchInterests();
+  }, [fetchInterests]);
 
   const toggleType = useCallback((id: string) => {
     setSelectedTypes((current) =>
@@ -181,9 +191,10 @@ function CreatorStepFour({ navigation, route }: Props) {
         ...previousData,
         contentTypes: selectedTypes,
         topics: selectedTopics,
+        topicNames: selectedTopics.map((id) => interests.find((i) => i._id === id)?.name ?? id),
       },
     });
-  }, [navigation, previousData, selectedTypes, selectedTopics]);
+  }, [navigation, previousData, selectedTypes, selectedTopics, interests]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -273,6 +284,10 @@ function CreatorStepFour({ navigation, route }: Props) {
 
           {loadingInterests ? (
             <ActivityIndicator color={palette.accent} style={styles.interestsLoader} />
+          ) : interestsError ? (
+            <TouchableOpacity onPress={fetchInterests} style={styles.retryButton}>
+              <Text style={styles.retryText}>Could not load topics. Tap to retry.</Text>
+            </TouchableOpacity>
           ) : (
             <View style={styles.tagsContainer}>
               {interests.map((interest) => {
@@ -509,6 +524,21 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
     },
     interestsLoader: {
       marginVertical: 16,
+    },
+    retryButton: {
+      marginVertical: 16,
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: palette.subtleBorder,
+      alignSelf: 'flex-start',
+    },
+    retryText: {
+      color: palette.accent,
+      fontSize: 14,
+      lineHeight: 20,
+      fontFamily: 'OpenSans-SemiBold',
     },
     tagsContainer: {
       flexDirection: 'row',

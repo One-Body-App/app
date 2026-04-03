@@ -4,6 +4,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { useSelector } from 'react-redux';
 import SocialItem from '../SocialItem';
 import { PostType } from '@/utils/types';
+import { resolveVideoMetadata } from '@/src/components/video/universalVideoLayout';
 
 const mockReact = React;
 const mockNavigate = jest.fn();
@@ -94,6 +95,7 @@ jest.mock('@/src/components/video/UniversalVideoCard', () => 'UniversalVideoCard
 jest.mock('@/src/components/video/universalVideoLayout', () => ({
   resolveVideoMetadata: jest.fn(() => ({
     aspectRatio: 16 / 9,
+    isNineBySixteen: false,
   })),
 }));
 
@@ -104,6 +106,7 @@ jest.mock('@/services/repostSourceResolver', () => ({
 }));
 
 const mockedUseSelector = useSelector as jest.Mock;
+const mockedResolveVideoMetadata = resolveVideoMetadata as jest.Mock;
 
 const buildPost = (overrides: Record<string, any> = {}) => ({
   postId: 'post-1',
@@ -134,6 +137,10 @@ describe('SocialItem image interactions', () => {
         },
       })
     );
+    mockedResolveVideoMetadata.mockReturnValue({
+      aspectRatio: 16 / 9,
+      isNineBySixteen: false,
+    });
     jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       url: 'https://example.com/article',
@@ -292,5 +299,67 @@ describe('SocialItem image interactions', () => {
     });
 
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('only shows WatchPortal affordances for 9:16 watch videos', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+    const onOpenVideoPress = jest.fn();
+
+    mockedResolveVideoMetadata.mockReturnValue({
+      aspectRatio: 9 / 16,
+      isNineBySixteen: true,
+    });
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <SocialItem
+          itemData={buildPost({
+            type: PostType.watch,
+            playBackId: 'playback-1',
+            mediaType: 'video',
+            mediaUrl: 'https://stream.mux.com/playback-1.m3u8',
+          })}
+          postType={PostType.watch}
+          contentWidth={320}
+          onOpenVideoPress={onOpenVideoPress}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const nineBySixteenCard = renderer!.root.findByType('UniversalVideoCard');
+    expect(nineBySixteenCard.props.showExpandButton).toBe(true);
+
+    act(() => {
+      nineBySixteenCard.props.onPress();
+    });
+
+    expect(onOpenVideoPress).toHaveBeenCalledTimes(1);
+
+    mockedResolveVideoMetadata.mockReturnValue({
+      aspectRatio: 16 / 9,
+      isNineBySixteen: false,
+    });
+    onOpenVideoPress.mockClear();
+
+    await act(async () => {
+      renderer!.update(
+        <SocialItem
+          itemData={buildPost({
+            type: PostType.watch,
+            playBackId: 'playback-1',
+            mediaType: 'video',
+            mediaUrl: 'https://stream.mux.com/playback-1.m3u8',
+          })}
+          postType={PostType.watch}
+          contentWidth={320}
+          onOpenVideoPress={onOpenVideoPress}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const wideCard = renderer!.root.findByType('UniversalVideoCard');
+    expect(wideCard.props.showExpandButton).toBe(false);
   });
 });

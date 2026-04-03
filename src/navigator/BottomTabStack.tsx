@@ -4,7 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useCallback, useLayoutEffect, useRef } from 'react';
 
 import {
   BottomTabBar,
@@ -108,75 +108,83 @@ function DirectionalTabScene({
     }, [translateX, opacity, scale])
   );
 
-  // Start the directional animation when a matching transition is reported.
-  // This useEffect runs AFTER useLayoutEffect in RootTabTransitionReporter
-  // has updated the context, so the transition data is always current.
-  useEffect(() => {
-    if (ROOT_TAB_SCENE_MOTION_MODE === 'off') return;
-    if (!isFocusedRef.current) return;
-    if (!latestTransition) return;
-    if (latestTransition.toTab !== tabName) return;
-    if (latestTransition.direction === 'none') return;
-    if (latestTransition.token === lastHandledTransitionTokenRef.current) return;
-
-    lastHandledTransitionTokenRef.current = latestTransition.token;
-    runningAnimation.current?.stop();
-
-    if (ROOT_TAB_SCENE_MOTION_MODE === 'lite') {
-      // Android: use opacity-only transition to avoid translateX offset glitches
-      // caused by native-driver setValue/start race conditions on the bridge.
-      translateX.setValue(0);
-      opacity.setValue(0.82);
-      scale.setValue(1);
-      runningAnimation.current = Animated.timing(opacity, {
-        toValue: 1,
-        duration: 150,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      });
-    } else {
-      const initialOffsetMagnitude = SCREEN_WIDTH * 0.12;
-      const initialOffset =
-        latestTransition.direction === 'left' ? initialOffsetMagnitude : -initialOffsetMagnitude;
-      translateX.setValue(initialOffset);
-      opacity.setValue(0.97);
-      scale.setValue(0.992);
-      runningAnimation.current = Animated.parallel([
-        Animated.timing(translateX, {
-          toValue: 0,
-          duration: 300,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 220,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(scale, {
-          toValue: 1,
-          duration: 280,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]);
-    }
-
-    runningAnimation.current.start(({ finished }) => {
-      if (finished) {
-        translateX.setValue(0);
-        opacity.setValue(1);
-        scale.setValue(1);
+  useFocusEffect(
+    useCallback(() => {
+      if (ROOT_TAB_SCENE_MOTION_MODE === 'off') {
+        return undefined;
       }
-      runningAnimation.current = null;
-    });
+      if (!latestTransition) {
+        return undefined;
+      }
+      if (latestTransition.toTab !== tabName) {
+        return undefined;
+      }
+      if (latestTransition.direction === 'none') {
+        return undefined;
+      }
+      if (latestTransition.token === lastHandledTransitionTokenRef.current) {
+        return undefined;
+      }
 
-    return () => {
+      lastHandledTransitionTokenRef.current = latestTransition.token;
       runningAnimation.current?.stop();
-      runningAnimation.current = null;
-    };
-  }, [latestTransition, tabName, translateX, opacity, scale]);
+
+      if (ROOT_TAB_SCENE_MOTION_MODE === 'lite') {
+        // Android: use opacity-only transition to avoid translateX offset glitches
+        // caused by native-driver setValue/start race conditions on the bridge.
+        translateX.setValue(0);
+        opacity.setValue(0.82);
+        scale.setValue(1);
+        runningAnimation.current = Animated.timing(opacity, {
+          toValue: 1,
+          duration: 150,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        });
+      } else {
+        const initialOffsetMagnitude = SCREEN_WIDTH * 0.12;
+        const initialOffset =
+          latestTransition.direction === 'left' ? initialOffsetMagnitude : -initialOffsetMagnitude;
+        translateX.setValue(initialOffset);
+        opacity.setValue(0.97);
+        scale.setValue(0.992);
+        runningAnimation.current = Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: 0,
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 220,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 280,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]);
+      }
+
+      runningAnimation.current.start(({ finished }) => {
+        if (finished) {
+          translateX.setValue(0);
+          opacity.setValue(1);
+          scale.setValue(1);
+        }
+        runningAnimation.current = null;
+      });
+
+      return () => {
+        runningAnimation.current?.stop();
+        runningAnimation.current = null;
+      };
+    }, [latestTransition, tabName, translateX, opacity, scale])
+  );
 
   if (ROOT_TAB_SCENE_MOTION_MODE === 'off') {
     return <View style={{ flex: 1, backgroundColor: colors.background }}>{children}</View>;

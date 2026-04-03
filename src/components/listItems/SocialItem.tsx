@@ -1259,6 +1259,9 @@ function SocialItem({
                   videoWidth: itemData.videoWidth,
                   videoHeight: itemData.videoHeight,
                 });
+                const shouldOpenWatchPortal = Boolean(
+                  isWatchPost && playBackId && onOpenVideoPress && resolvedMetadata.isNineBySixteen
+                );
 
                 return (
                   <View
@@ -1281,18 +1284,18 @@ function SocialItem({
                       repeat
                       borderRadius={FEED_MEDIA_RADIUS}
                       onPress={() => {
-                        if (isWatchPost && playBackId && onOpenVideoPress) {
+                        if (shouldOpenWatchPortal) {
                           openWatchPortal(mediaItem.url, resolvedMetadata.aspectRatio);
                           return;
                         }
                         handleContentPress();
                       }}
                       onExpandPress={
-                        isWatchPost && playBackId && onOpenVideoPress
+                        shouldOpenWatchPortal
                           ? () => openWatchPortal(mediaItem.url, resolvedMetadata.aspectRatio)
                           : undefined
                       }
-                      showExpandButton={Boolean(isWatchPost && playBackId && onOpenVideoPress)}
+                      showExpandButton={shouldOpenWatchPortal}
                       onLoad={(loadData: any) => {
                         const naturalWidth = Number(loadData?.naturalSize?.width);
                         const naturalHeight = Number(loadData?.naturalSize?.height);

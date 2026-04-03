@@ -1,8 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
+import { Platform } from 'react-native';
 import type { ClientModerationScores, PendingVideoUpload, VideoEditRecipe } from './types';
 import { AUDIO_BITRATE, VIDEO_RATIO_CONFIG, resolveModerationFrameCount } from './videoEditMath';
 import { deriveVideoAspectRatio, validateExportedVideoForWatch } from './videoUploadValidation';
+import {
+  NativeMuxDirectUploadError,
+  getNativeMuxDirectUploads,
+  isNativeMuxDirectUploadAvailable,
+  resumeNativeMuxDirectUploads,
+  startNativeMuxDirectUpload,
+  waitForNativeMuxDirectUpload,
+  type NativeMuxDirectUploadRecord,
+} from './muxDirectUploadBridge';
 import {
   extractEditedFrames,
   exportEditedVideo,
@@ -14,8 +24,28 @@ import { ApiCall } from '@/src/services/api';
 
 const VIDEO_UPLOAD_QUEUE_STORAGE_KEY = 'video-processing.pending-watch-posts.v1';
 const MAX_RETRY_COUNT = 3;
+const REMOTE_POLL_BASE_INTERVAL_MS = process.env.JEST_WORKER_ID ? 0 : 3000;
+const REMOTE_POLL_MULTIPLIER = 1.8;
+const REMOTE_POLL_MAX_INTERVAL_MS = process.env.JEST_WORKER_ID ? 0 : 30000;
+const REMOTE_POLL_JITTER_RATIO = 0.2;
+const REMOTE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 
 type QueueFailureCode = NonNullable<PendingVideoUpload['failureCode']>;
+type WatchBackendProcessingStatus = NonNullable<PendingVideoUpload['watchProcessingStatus']>;
+type UploadTransport = NonNullable<PendingVideoUpload['uploadTransport']>;
+type WatchPostResponse = {
+  _id?: string;
+  postId?: string;
+  playBackId?: string;
+  processingStatus?: WatchBackendProcessingStatus;
+  message?: string;
+  syncFailureReason?: string;
+};
+type UploadVideoResult = {
+  uploadId: string;
+  uploadTransport: UploadTransport;
+  nativeUploadState?: NonNullable<PendingVideoUpload['nativeUploadState']>;
+};
 
 type QueueDependencies = {
   storage: Pick<typeof AsyncStorage, 'getItem' | 'setItem'>;
@@ -32,8 +62,12 @@ type QueueDependencies = {
     processedWidth: number;
     processedHeight: number;
   }>;
-  uploadVideo: (processedVideoUri: string) => Promise<string>;
-  createWatchPost: (item: PendingVideoUpload) => Promise<void>;
+  uploadVideo: (processedVideoUri: string) => Promise<UploadVideoResult>;
+  resumeNativeUploads: () => Promise<NativeMuxDirectUploadRecord[]>;
+  getNativeUploads: () => Promise<NativeMuxDirectUploadRecord[]>;
+  waitForNativeUpload: (uploadId: string) => Promise<void>;
+  createWatchPost: (item: PendingVideoUpload) => Promise<WatchPostResponse | void>;
+  getWatchPostStatus: (watchId: string) => Promise<WatchPostResponse>;
   now: () => string;
   log: (message: string, payload?: Record<string, unknown>) => void;
 };
@@ -74,6 +108,7 @@ const ACTIVE_QUEUE_STATUSES = new Set<PendingVideoUpload['status']>([
   'compressing',
   'uploading',
   'posting',
+  'processing_remote',
 ]);
 
 const normalizeFailureMessage = (error: unknown) => {
@@ -91,11 +126,107 @@ const normalizePendingItemForResume = (item: PendingVideoUpload): PendingVideoUp
     return item;
   }
 
+  if (
+    item.status === 'processing_remote' ||
+    (item.status === 'uploading' && item.uploadTransport === 'mux_sdk')
+  ) {
+    return item;
+  }
+
   return {
     ...item,
     status: 'queued',
   };
 };
+
+const resolveWatchId = (watch: WatchPostResponse | void) => {
+  const candidate = watch?._id ?? watch?.postId;
+  return typeof candidate === 'string' && candidate.trim() !== '' ? candidate.trim() : undefined;
+};
+
+const normalizeWatchProcessingStatus = (
+  watch: WatchPostResponse | void,
+  fallback: WatchBackendProcessingStatus
+): WatchBackendProcessingStatus => {
+  if (
+    watch?.processingStatus === 'READY' ||
+    watch?.processingStatus === 'PROCESSING' ||
+    watch?.processingStatus === 'FAILED_SYNC'
+  ) {
+    return watch.processingStatus;
+  }
+
+  if (typeof watch?.playBackId === 'string' && watch.playBackId.trim() !== '') {
+    return 'READY';
+  }
+
+  return fallback;
+};
+
+const resolveWatchFailureMessage = (watch: WatchPostResponse | void) => {
+  const normalizedMessage = normalizeFailureMessage(watch?.message);
+  if (normalizedMessage && normalizedMessage !== 'Video processing failed.') {
+    return normalizedMessage;
+  }
+
+  return 'Your Watch video could not be synced from Mux.';
+};
+
+const parseTimestampMs = (value?: string) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const clampRemotePollDelay = (value: number) =>
+  Math.min(Math.max(value, REMOTE_POLL_BASE_INTERVAL_MS), REMOTE_POLL_MAX_INTERVAL_MS);
+
+const UINT32_MOD = 4294967296;
+
+const hashJitterSeed = (value: string) => {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % UINT32_MOD;
+  }
+  return hash;
+};
+
+const computeNextRemotePollDelayMs = (item: PendingVideoUpload) => {
+  if (REMOTE_POLL_BASE_INTERVAL_MS <= 0) {
+    return 0;
+  }
+
+  const attempt = Math.max(0, item.remotePollAttempt ?? 0);
+  const baseDelay = clampRemotePollDelay(
+    Math.round(REMOTE_POLL_BASE_INTERVAL_MS * REMOTE_POLL_MULTIPLIER ** attempt)
+  );
+  const jitterSeed = hashJitterSeed(`${item.id}:${attempt}`);
+  const jitterRatio = ((jitterSeed % 1000) / 1000) * 2 - 1;
+  return Math.round(baseDelay * (1 + jitterRatio * REMOTE_POLL_JITTER_RATIO));
+};
+
+const resolveNextRemotePollAt = (item: PendingVideoUpload, nowIsoString: string) => {
+  const baseTime = parseTimestampMs(nowIsoString) ?? Date.now();
+  return new Date(baseTime + computeNextRemotePollDelayMs(item)).toISOString();
+};
+
+const isRemotePollTimedOut = (item: PendingVideoUpload, nowIsoString: string) => {
+  const startedAtMs = parseTimestampMs(item.remotePollStartedAt);
+  const nowMs = parseTimestampMs(nowIsoString) ?? Date.now();
+  if (!startedAtMs) {
+    return false;
+  }
+  return nowMs - startedAtMs >= REMOTE_POLL_TIMEOUT_MS;
+};
+
+const isNativeMuxUploadItem = (item: PendingVideoUpload) =>
+  item.status === 'uploading' && item.uploadTransport === 'mux_sdk';
+
+const isNativeMuxUploadRecordActive = (record?: NativeMuxDirectUploadRecord | null) =>
+  record?.state === 'uploading' || record?.state === 'paused';
 
 const createFrameDataUri = async (uri: string) => {
   const base64 = await RNFS.readFile(stripFileScheme(uri), 'base64');
@@ -217,14 +348,17 @@ const defaultDependencies: QueueDependencies = {
       );
     }
 
-    const uploadUrl = uploadLink.response.url;
     if (processedVideoUri.startsWith('file://') && process.env.JEST_WORKER_ID) {
-      return uploadLink.response.id;
+      return {
+        uploadId: uploadLink.response.id,
+        uploadTransport: 'raw_put_fallback',
+      };
     }
 
     // eslint-disable-next-line global-require
     const rnFetchBlobModule = require('rn-fetch-blob');
     const RNFetchBlob = rnFetchBlobModule.default ?? rnFetchBlobModule;
+    const uploadUrl = uploadLink.response.url;
     let uploadSourcePath = stripFileScheme(processedVideoUri);
     let cleanupUploadCopy: (() => Promise<void>) | null = null;
 
@@ -242,6 +376,46 @@ const defaultDependencies: QueueDependencies = {
           // ignore temporary upload copy cleanup failures
         }
       };
+    }
+
+    const normalizedUploadFileUri = uploadSourcePath.startsWith('file://')
+      ? uploadSourcePath
+      : `file://${uploadSourcePath}`;
+    const prefersNativeUpload =
+      (Platform.OS === 'ios' || Platform.OS === 'android') && isNativeMuxDirectUploadAvailable();
+
+    if (prefersNativeUpload) {
+      try {
+        await startNativeMuxDirectUpload({
+          uploadId: uploadLink.response.id,
+          uploadUrl,
+          fileUri: normalizedUploadFileUri,
+        });
+
+        if (cleanupUploadCopy) {
+          await cleanupUploadCopy();
+        }
+
+        return {
+          uploadId: uploadLink.response.id,
+          uploadTransport: 'mux_sdk',
+          nativeUploadState: 'success',
+        };
+      } catch (error) {
+        const nativeError =
+          error instanceof NativeMuxDirectUploadError
+            ? error
+            : new NativeMuxDirectUploadError(normalizeFailureMessage(error));
+
+        if (!nativeError.startedBytes) {
+          // fall through to the existing raw PUT implementation before any bytes have been sent
+        } else {
+          if (cleanupUploadCopy) {
+            await cleanupUploadCopy();
+          }
+          throw new QueueError('network', nativeError.message, true);
+        }
+      }
     }
 
     let uploadResponse;
@@ -262,7 +436,41 @@ const defaultDependencies: QueueDependencies = {
       throw new QueueError('network', `Video upload failed (${status}).`, true);
     }
 
-    return uploadLink.response.id;
+    return {
+      uploadId: uploadLink.response.id,
+      uploadTransport: 'raw_put_fallback',
+    };
+  },
+  resumeNativeUploads: async () => {
+    if (!isNativeMuxDirectUploadAvailable()) {
+      return [];
+    }
+
+    try {
+      return await resumeNativeMuxDirectUploads();
+    } catch (error) {
+      if (__DEV__) {
+        console.log('[VideoUploadQueue]', 'resume-native-uploads-failed', error);
+      }
+      return [];
+    }
+  },
+  getNativeUploads: async () => {
+    if (!isNativeMuxDirectUploadAvailable()) {
+      return [];
+    }
+
+    try {
+      return await getNativeMuxDirectUploads();
+    } catch (error) {
+      if (__DEV__) {
+        console.log('[VideoUploadQueue]', 'get-native-uploads-failed', error);
+      }
+      return [];
+    }
+  },
+  waitForNativeUpload: async (uploadId) => {
+    await waitForNativeMuxDirectUpload(uploadId);
   },
   createWatchPost: async (item) => {
     if (!item.processedWidth || !item.processedHeight) {
@@ -277,7 +485,7 @@ const defaultDependencies: QueueDependencies = {
       throw new QueueError('processing', 'Processed video aspect ratio is invalid.');
     }
 
-    const response = await ApiCall<{ message?: string }>({
+    const response = await ApiCall<WatchPostResponse>({
       route: 'watch/post',
       verb: 'post',
       token: true,
@@ -297,6 +505,25 @@ const defaultDependencies: QueueDependencies = {
         true
       );
     }
+
+    return response.response;
+  },
+  getWatchPostStatus: async (watchId) => {
+    const response = await ApiCall<WatchPostResponse>({
+      route: `watch/status/${watchId}`,
+      verb: 'get',
+      token: true,
+    });
+
+    if (response.status !== 200 || !response.response) {
+      throw new QueueError(
+        'network',
+        response.response?.message || 'Unable to refresh Watch processing status.',
+        true
+      );
+    }
+
+    return response.response;
   },
   now: () => new Date().toISOString(),
   log: (message, payload) => {
@@ -307,11 +534,16 @@ const defaultDependencies: QueueDependencies = {
 };
 
 export const createVideoUploadQueue = (
-  dependencies: QueueDependencies = defaultDependencies
+  overrides: Partial<QueueDependencies> = {}
 ): VideoUploadQueue => {
+  const dependencies: QueueDependencies = {
+    ...defaultDependencies,
+    ...overrides,
+  };
   let items: PendingVideoUpload[] = [];
   let hasHydrated = false;
   let processingPromise: Promise<void> | null = null;
+  let wakeQueueResolver: (() => void) | null = null;
   const listeners = new Set<VideoUploadQueueListener>();
 
   const serializeItemsForStorage = (value: PendingVideoUpload[]) =>
@@ -321,6 +553,64 @@ export const createVideoUploadQueue = (
     const snapshot = cloneItems(items);
     listeners.forEach((listener) => {
       listener(snapshot);
+    });
+  };
+
+  const getNextProcessableItem = () =>
+    items.find((item) => item.status === 'queued') ??
+    items.find((item) => isNativeMuxUploadItem(item)) ??
+    items.find((item) => {
+      if (item.status !== 'processing_remote') {
+        return false;
+      }
+
+      const nextPollAtMs = parseTimestampMs(item.nextRemotePollAt);
+      if (!nextPollAtMs) {
+        return true;
+      }
+
+      return nextPollAtMs <= Date.now();
+    });
+
+  const getNextRemotePollDelay = () => {
+    const now = Date.now();
+    const delays = items
+      .filter((item) => item.status === 'processing_remote')
+      .map((item) => {
+        const nextPollAtMs = parseTimestampMs(item.nextRemotePollAt);
+        return typeof nextPollAtMs === 'number' ? Math.max(0, nextPollAtMs - now) : 0;
+      });
+
+    if (!delays.length) {
+      return null;
+    }
+
+    return Math.min(...delays);
+  };
+
+  const wakeQueue = () => {
+    wakeQueueResolver?.();
+    wakeQueueResolver = null;
+  };
+
+  const waitForWakeOrTimeout = async (timeoutMs: number) => {
+    if (timeoutMs <= 0) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      const timeoutId = setTimeout(() => {
+        if (wakeQueueResolver === resolve) {
+          wakeQueueResolver = null;
+        }
+        resolve();
+      }, timeoutMs);
+
+      wakeQueueResolver = () => {
+        clearTimeout(timeoutId);
+        wakeQueueResolver = null;
+        resolve();
+      };
     });
   };
 
@@ -358,6 +648,7 @@ export const createVideoUploadQueue = (
     }
     await persist();
     notifyListeners();
+    wakeQueue();
   };
 
   const hydrate = async () => {
@@ -411,11 +702,14 @@ export const createVideoUploadQueue = (
     const nextRetryCount = item.retryCount + 1;
 
     if (failure.retryable && nextRetryCount <= MAX_RETRY_COUNT) {
+      const retryStatus: PendingVideoUpload['status'] =
+        item.status === 'processing_remote' ? 'processing_remote' : 'queued';
+
       await updateItem(
         item.id,
         {
           retryCount: nextRetryCount,
-          status: 'queued',
+          status: retryStatus,
           lastError: failure.message,
           failureCode: failure.code,
         },
@@ -505,7 +799,15 @@ export const createVideoUploadQueue = (
   };
 
   const uploadItem = async (item: PendingVideoUpload) => {
-    if (item.uploadId) {
+    if (item.uploadId && item.uploadTransport !== 'mux_sdk') {
+      return;
+    }
+
+    if (
+      item.uploadId &&
+      item.uploadTransport === 'mux_sdk' &&
+      item.nativeUploadState === 'success'
+    ) {
       return;
     }
 
@@ -514,8 +816,16 @@ export const createVideoUploadQueue = (
     }
 
     await updateItem(item.id, { status: 'uploading' }, 'uploading');
-    const uploadId = await dependencies.uploadVideo(item.processedVideoUri);
-    await updateItem(item.id, { uploadId }, 'uploaded');
+    const uploaded = await dependencies.uploadVideo(item.processedVideoUri);
+    await updateItem(
+      item.id,
+      {
+        uploadId: uploaded.uploadId,
+        uploadTransport: uploaded.uploadTransport,
+        nativeUploadState: uploaded.nativeUploadState,
+      },
+      'uploaded'
+    );
   };
 
   const postItem = async (item: PendingVideoUpload) => {
@@ -524,14 +834,51 @@ export const createVideoUploadQueue = (
     }
 
     await updateItem(item.id, { status: 'posting' }, 'posting');
-    await dependencies.createWatchPost({
+    const createdWatch = await dependencies.createWatchPost({
       ...item,
       status: 'posting',
     });
+    const watchProcessingStatus = normalizeWatchProcessingStatus(createdWatch, 'READY');
+    const watchId = resolveWatchId(createdWatch) ?? item.watchId;
+
+    if (watchProcessingStatus === 'FAILED_SYNC') {
+      throw new QueueError('processing', resolveWatchFailureMessage(createdWatch));
+    }
+
+    if (watchProcessingStatus === 'PROCESSING') {
+      if (!watchId) {
+        throw new QueueError(
+          'processing',
+          'Watch processing status could not be tracked after upload.'
+        );
+      }
+
+      await updateItem(
+        item.id,
+        {
+          status: 'processing_remote',
+          watchId,
+          watchProcessingStatus,
+          remotePollAttempt: 0,
+          remotePollStartedAt: dependencies.now(),
+          nextRemotePollAt: dependencies.now(),
+          lastError: undefined,
+          failureCode: undefined,
+        },
+        'processing-remote'
+      );
+      return;
+    }
+
     await updateItem(
       item.id,
       {
         status: 'complete',
+        watchId,
+        watchProcessingStatus: 'READY',
+        remotePollAttempt: undefined,
+        remotePollStartedAt: undefined,
+        nextRemotePollAt: undefined,
         lastError: undefined,
         failureCode: undefined,
       },
@@ -540,11 +887,170 @@ export const createVideoUploadQueue = (
     await cleanupItemArtifacts(item);
   };
 
+  const processNativeUploadingItem = async (item: PendingVideoUpload) => {
+    if (!item.uploadId) {
+      throw new QueueError('processing', 'Upload id missing while waiting for native upload.');
+    }
+
+    const nativeUploads = await dependencies.getNativeUploads();
+    const currentNativeUpload = nativeUploads.find(
+      (nativeUpload) => nativeUpload.uploadId === item.uploadId
+    );
+
+    if (currentNativeUpload?.state === 'success') {
+      await updateItem(
+        item.id,
+        {
+          nativeUploadState: 'success',
+        },
+        'native-upload-success'
+      );
+      return;
+    }
+
+    if (currentNativeUpload?.state === 'failed') {
+      throw new QueueError(
+        'network',
+        currentNativeUpload.errorMessage || 'Native Mux upload failed.',
+        true
+      );
+    }
+
+    await updateItem(
+      item.id,
+      {
+        nativeUploadState: isNativeMuxUploadRecordActive(currentNativeUpload)
+          ? currentNativeUpload.state
+          : (item.nativeUploadState ?? 'uploading'),
+      },
+      'native-upload-waiting'
+    );
+
+    await dependencies.waitForNativeUpload(item.uploadId);
+
+    await updateItem(
+      item.id,
+      {
+        nativeUploadState: 'success',
+      },
+      'native-upload-success'
+    );
+  };
+
+  const processRemoteItem = async (item: PendingVideoUpload) => {
+    if (!item.watchId) {
+      throw new QueueError('processing', 'Watch id missing while waiting for remote processing.');
+    }
+
+    const currentItem = getItemById(item.id) ?? item;
+    const nowIsoString = dependencies.now();
+    const nextRemotePollAtMs = parseTimestampMs(currentItem.nextRemotePollAt);
+    if (typeof nextRemotePollAtMs === 'number' && nextRemotePollAtMs > Date.now()) {
+      return;
+    }
+
+    if (isRemotePollTimedOut(currentItem, nowIsoString)) {
+      throw new QueueError(
+        'processing',
+        'Your Watch video timed out while Mux was still processing it.'
+      );
+    }
+
+    let latestWatch: WatchPostResponse;
+    try {
+      latestWatch = await dependencies.getWatchPostStatus(item.watchId);
+    } catch (error) {
+      const nextAttempt = (currentItem.remotePollAttempt ?? 0) + 1;
+      await updateItem(
+        item.id,
+        {
+          status: 'processing_remote',
+          watchId: currentItem.watchId,
+          watchProcessingStatus: 'PROCESSING',
+          remotePollAttempt: nextAttempt,
+          remotePollStartedAt: currentItem.remotePollStartedAt ?? nowIsoString,
+          nextRemotePollAt: resolveNextRemotePollAt(
+            {
+              ...currentItem,
+              remotePollAttempt: nextAttempt,
+            },
+            nowIsoString
+          ),
+          lastError: undefined,
+          failureCode: undefined,
+        },
+        'processing-remote-retry'
+      );
+      return;
+    }
+
+    const watchProcessingStatus = normalizeWatchProcessingStatus(latestWatch, 'PROCESSING');
+
+    if (watchProcessingStatus === 'FAILED_SYNC') {
+      throw new QueueError('processing', resolveWatchFailureMessage(latestWatch));
+    }
+
+    if (watchProcessingStatus === 'READY') {
+      const latestItem = getItemById(item.id) ?? item;
+      await updateItem(
+        item.id,
+        {
+          status: 'complete',
+          watchProcessingStatus,
+          watchId: resolveWatchId(latestWatch) ?? latestItem.watchId ?? item.watchId,
+          remotePollAttempt: undefined,
+          remotePollStartedAt: undefined,
+          nextRemotePollAt: undefined,
+          lastError: undefined,
+          failureCode: undefined,
+        },
+        'complete'
+      );
+      await cleanupItemArtifacts(latestItem);
+      return;
+    }
+
+    const nextWatchId = resolveWatchId(latestWatch) ?? item.watchId;
+    const nextAttempt = (currentItem.remotePollAttempt ?? 0) + 1;
+    await updateItem(
+      item.id,
+      {
+        status: 'processing_remote',
+        watchProcessingStatus,
+        watchId: nextWatchId,
+        remotePollAttempt: nextAttempt,
+        remotePollStartedAt: currentItem.remotePollStartedAt ?? nowIsoString,
+        nextRemotePollAt: resolveNextRemotePollAt(
+          {
+            ...currentItem,
+            remotePollAttempt: nextAttempt,
+          },
+          nowIsoString
+        ),
+        lastError: undefined,
+        failureCode: undefined,
+      },
+      'processing-remote'
+    );
+  };
+
   const processSingleItem = async (nextItem: PendingVideoUpload) => {
     try {
-      const sourceExists = await dependencies.fileExists(nextItem.recipe.sourceUri);
-      if (!sourceExists) {
-        throw new QueueError('missing-source', 'Selected video file is no longer available.');
+      if (isNativeMuxUploadItem(nextItem)) {
+        await processNativeUploadingItem(nextItem);
+        return;
+      }
+
+      if (nextItem.status === 'processing_remote') {
+        await processRemoteItem(nextItem);
+        return;
+      }
+
+      if (!nextItem.processedVideoUri) {
+        const sourceExists = await dependencies.fileExists(nextItem.recipe.sourceUri);
+        if (!sourceExists) {
+          throw new QueueError('missing-source', 'Selected video file is no longer available.');
+        }
       }
 
       if (
@@ -583,6 +1089,14 @@ export const createVideoUploadQueue = (
       }
 
       await postItem(afterUpload);
+      const afterPosting = getItemById(nextItem.id);
+      if (!afterPosting || afterPosting.status === 'failed') {
+        return;
+      }
+
+      if (afterPosting.status === 'processing_remote') {
+        await processRemoteItem(afterPosting);
+      }
     } catch (error) {
       const currentItem = getItemById(nextItem.id);
       if (currentItem) {
@@ -594,11 +1108,20 @@ export const createVideoUploadQueue = (
   const processQueue = async () => {
     await hydrate();
 
-    let nextItem = items.find((item) => item.status === 'queued');
-    while (nextItem) {
-      // eslint-disable-next-line no-await-in-loop
-      await processSingleItem(nextItem);
-      nextItem = items.find((item) => item.status === 'queued');
+    while (true) {
+      const nextItem = getNextProcessableItem();
+      if (nextItem) {
+        // eslint-disable-next-line no-await-in-loop
+        await processSingleItem(nextItem);
+      } else {
+        const nextRemoteDelay = getNextRemotePollDelay();
+        if (nextRemoteDelay === null) {
+          return;
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        await waitForWakeOrTimeout(nextRemoteDelay);
+      }
     }
   };
 
@@ -640,6 +1163,7 @@ export const createVideoUploadQueue = (
     items = [...items, item];
     await persist();
     notifyListeners();
+    wakeQueue();
     if (options?.startImmediately !== false) {
       ensureProcessing().catch(() => undefined);
     }
@@ -648,10 +1172,12 @@ export const createVideoUploadQueue = (
 
   const resume = async () => {
     await hydrate();
+    await dependencies.resumeNativeUploads();
     const normalized = items.map(normalizePendingItemForResume);
     items = normalized;
     await persist();
     notifyListeners();
+    wakeQueue();
     await ensureProcessing();
   };
 

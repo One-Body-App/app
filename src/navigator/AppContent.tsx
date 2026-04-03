@@ -8,7 +8,7 @@ import {
   useNavigationContainerRef,
   CommonActions,
 } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -209,7 +209,7 @@ function AppContent() {
     [navigationRef, token]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     toast.hideAll();
 
     if (loader) {
@@ -291,7 +291,7 @@ function AppContent() {
 
   ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (Platform.OS !== 'android') {
       return () => undefined;
     }
@@ -333,7 +333,7 @@ function AppContent() {
     return () => subscription.remove();
   }, [navigationRef, token]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!token) {
       hasFetchedProfileRef.current = false;
       mfaOnboardingRequestedUserRef.current = null;
@@ -349,7 +349,7 @@ function AppContent() {
     dispatch(getProfile.Request({ token }));
   }, [dispatch, token]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (authChecked) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -369,7 +369,7 @@ function AppContent() {
     }
   }, [authChecked, fadeAnim, overlayTranslate, screenHeight]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!navigationReady) {
       if (__DEV__) {
         console.log('[AppContent Navigation] Skipping - navigation not ready');
@@ -549,7 +549,7 @@ function AppContent() {
     beginMandatoryMfaGate,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!navigationReady || !token || authState.isLoading) {
       return;
     }
@@ -761,7 +761,7 @@ function AppContent() {
   const handleLocalNotificationOpenRef = useRef(handleLocalNotificationOpen);
   handleLocalNotificationOpenRef.current = handleLocalNotificationOpen;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!token) {
       disconnectChatSocket();
       clearCachedPushToken().catch(() => undefined);

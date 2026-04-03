@@ -19,7 +19,10 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import LinearGradient from 'react-native-linear-gradient';
 import NetworkPinIcon from '@/assets/svg/Network-Pin--Streamline-Ultimate.svg';
+import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
+import BusinessUserCurriculumIcon from '@/assets/svg/Business-User-Curriculum--Streamline-Core.svg';
+import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
@@ -37,7 +40,6 @@ import type {
   ConnectPlaceFilters,
   ConnectPlaceRecord,
   ConnectPlacesQuickChip,
-  ConnectQuickChip,
   ConnectServeFilters,
   ConnectServeQuickChip,
 } from '@/src/services/connectPortal';
@@ -57,7 +59,7 @@ export const CONNECT_BRAND = {
   gray400: '#9aacb1',
 };
 
-export const CONNECT_TABS: ConnectTab[] = ['Go!', 'Serve', 'Places'];
+export const CONNECT_TABS: ConnectTab[] = ['Go!', 'Places', 'Serve'];
 export const CONNECT_PLACE_QUICK_CHIPS: ConnectPlacesQuickChip[] = [
   'Nearby',
   'Non-Profits',
@@ -89,6 +91,8 @@ type ChromeProps = {
   onTabChange: (tab: ConnectTab) => void;
   userAvatarUri?: string;
   overlay?: boolean;
+  onAddPress?: () => void;
+  addAccessibilityLabel?: string;
   headerActionIcon?: (color: string) => ReactNode;
   headerActionIconName?: ComponentProps<typeof MaterialIcons>['name'];
   onHeaderActionPress?: () => void;
@@ -112,12 +116,22 @@ type RetractableSearchBarProps = {
   searchText: string;
   onSearchChange: (text: string) => void;
   searchPlaceholder?: string;
-  onOpenFilters?: () => void;
   onAddPress?: () => void;
-  onSecondaryActionPress?: () => void;
-  renderSecondaryActionIcon?: (color: string) => ReactNode;
-  secondaryActionAccessibilityLabel?: string;
+  viewToggle?: {
+    toMap: boolean;
+    onPress: () => void;
+    accessibilityLabel?: string;
+    testID?: string;
+  };
+  tertiaryAction?: RetractableSearchBarTertiaryAction;
   onExpandedChange?: (expanded: boolean) => void;
+};
+
+type RetractableSearchBarTertiaryAction = {
+  icon: 'serveManager' | 'eventManager';
+  onPress: () => void;
+  accessibilityLabel: string;
+  testID?: string;
 };
 
 type MapTabRowProps = {
@@ -130,11 +144,16 @@ type ConnectGlassTabBarProps = {
   onTabChange: (tab: ConnectTab) => void;
 };
 
-type QuickChipProps<T extends ConnectQuickChip = ConnectQuickChip> = {
-  selectedChip: T;
+type QuickChipProps<T extends string = ConnectPlacesQuickChip> = {
+  selectedChip?: T | null;
   onSelect: (chip: T) => void;
   chips?: T[];
   variant?: 'default' | 'bottomOverlay';
+  actionChip?: {
+    label: string;
+    onPress: () => void;
+    testID?: string;
+  };
 };
 
 type ConnectPortalFilterSheetProps = {
@@ -154,7 +173,9 @@ type ConnectPortalFilterSheetProps = {
     sortOptions: ConnectPlaceFilterOption[];
     eventTypeOptions: ConnectPlaceFilterOption[];
     categoryOptions: ConnectPlaceFilterOption[];
-    modeOptions: ConnectPlaceFilterOption[];
+    quickFilterOptions: ConnectPlaceFilterOption[];
+    quickFilterValue: ConnectGoQuickChip;
+    onQuickFilterChange: (value: ConnectGoQuickChip) => void;
     onApply: (updates: Partial<ConnectGoFilters>) => void;
     onReset: () => void;
   };
@@ -162,7 +183,6 @@ type ConnectPortalFilterSheetProps = {
     filters: ConnectServeFilters;
     sortOptions: ConnectPlaceFilterOption[];
     roleTypeOptions: ConnectPlaceFilterOption[];
-    tagOptions: ConnectPlaceFilterOption[];
     onApply: (updates: Partial<ConnectServeFilters>) => void;
     onReset: () => void;
   };
@@ -918,7 +938,11 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
               >
                 <View style={styles.mapTabLabelWrap}>
                   <StyledText
-                    style={[styles.mapTabText, { color: palette.liquidTabTextMuted }]}
+                    style={[
+                      styles.mapTabText,
+                      { color: palette.liquidTabTextMuted },
+                      tab === 'Go!' ? styles.mapTabTextGo : null,
+                    ]}
                     numberOfLines={1}
                   >
                     {tab}
@@ -937,7 +961,8 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
                       style={[
                         styles.mapTabText,
                         styles.mapTabTextActive,
-                        { color: palette.liquidTabText },
+                        { color: palette.isDark ? palette.liquidTabText : '#032f3c' },
+                        tab === 'Go!' ? styles.mapTabTextGo : null,
                       ]}
                       numberOfLines={1}
                     >
@@ -959,9 +984,8 @@ export function ConnectRetractableSearchBar({
   onSearchChange,
   searchPlaceholder,
   onAddPress,
-  onSecondaryActionPress,
-  renderSecondaryActionIcon,
-  secondaryActionAccessibilityLabel,
+  viewToggle,
+  tertiaryAction,
   onExpandedChange,
 }: RetractableSearchBarProps) {
   const palette = useConnectPalette();
@@ -972,7 +996,7 @@ export function ConnectRetractableSearchBar({
   const expandAnim = useRef(new Animated.Value(searchText ? 1 : 0)).current;
   const inputRef = useRef<TextInput>(null);
   const actionButtonCount =
-    1 + (onAddPress ? 1 : 0) + (onSecondaryActionPress && renderSecondaryActionIcon ? 1 : 0);
+    1 + (onAddPress ? 1 : 0) + (viewToggle ? 1 : 0) + (tertiaryAction ? 1 : 0);
   const collapsedWidth = Math.max(
     22 + actionButtonCount * 38 + (actionButtonCount - 1) * spacing.x8,
     CONNECT_BOTTOM_SEARCH_ROW_HEIGHT
@@ -1134,6 +1158,8 @@ export function ConnectRetractableSearchBar({
             placeholder={inputFocused ? '' : searchPlaceholder || 'Search...'}
             placeholderTextColor={palette.mapSearchText}
             style={[styles.retractableInput, { color: palette.textPrimary }]}
+            cursorColor="#12d2d9"
+            selectionColor="#12d2d9"
             onFocus={() => {
               setInputFocused(true);
             }}
@@ -1149,6 +1175,7 @@ export function ConnectRetractableSearchBar({
         <View style={styles.retractableActionRow}>
           <TouchableOpacity
             onPress={handleSearchPress}
+            testID="connect-retractable-search-action"
             style={[
               styles.retractableIconButton,
               {
@@ -1163,6 +1190,7 @@ export function ConnectRetractableSearchBar({
           {onAddPress ? (
             <TouchableOpacity
               onPress={onAddPress}
+              testID="connect-retractable-add-action"
               style={[
                 styles.retractableIconButton,
                 {
@@ -1175,11 +1203,11 @@ export function ConnectRetractableSearchBar({
             </TouchableOpacity>
           ) : null}
 
-          {onSecondaryActionPress && renderSecondaryActionIcon ? (
+          {viewToggle ? (
             <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={secondaryActionAccessibilityLabel}
-              onPress={onSecondaryActionPress}
+              onPress={viewToggle.onPress}
+              accessibilityLabel={viewToggle.accessibilityLabel}
+              testID={viewToggle.testID || 'connect-retractable-view-toggle'}
               style={[
                 styles.retractableIconButton,
                 {
@@ -1188,7 +1216,34 @@ export function ConnectRetractableSearchBar({
                 },
               ]}
             >
-              {renderSecondaryActionIcon(palette.mapSearchIcon)}
+              {viewToggle.toMap ? (
+                <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />
+              ) : (
+                <MaterialIcons name="view-list" size={22} color={palette.mapSearchIcon} />
+              )}
+            </TouchableOpacity>
+          ) : null}
+
+          {tertiaryAction ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={tertiaryAction.accessibilityLabel}
+              onPress={tertiaryAction.onPress}
+              testID={tertiaryAction.testID || 'connect-retractable-tertiary-action'}
+              style={[
+                styles.retractableIconButton,
+                {
+                  backgroundColor: palette.mapActionBg,
+                  borderColor: palette.mapActionBorder,
+                },
+              ]}
+            >
+              {tertiaryAction.icon === 'serveManager' ? (
+                <BusinessUserCurriculumIcon width={18} height={18} color={palette.mapSearchIcon} />
+              ) : null}
+              {tertiaryAction.icon === 'eventManager' ? (
+                <CalendarEditIcon width={18} height={18} color={palette.mapSearchIcon} />
+              ) : null}
             </TouchableOpacity>
           ) : null}
         </View>
@@ -1202,6 +1257,8 @@ export function ConnectPortalChrome({
   onTabChange,
   userAvatarUri,
   overlay,
+  onAddPress,
+  addAccessibilityLabel,
   headerActionIcon,
   headerActionIconName,
   onHeaderActionPress,
@@ -1210,6 +1267,56 @@ export function ConnectPortalChrome({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const palette = useConnectPalette();
+  let headerAction: ReactNode = <View style={styles.chromeHeaderActionSpacer} />;
+
+  if (onAddPress) {
+    headerAction = (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={addAccessibilityLabel}
+        onPress={onAddPress}
+        style={[
+          styles.chromeHeaderAction,
+          {
+            backgroundColor: palette.mapActionBg,
+            borderColor: palette.mapActionBorder,
+          },
+        ]}
+      >
+        <MaterialIcons name="add" size={22} color={palette.mapSearchIcon} />
+      </TouchableOpacity>
+    );
+  } else if ((headerActionIcon || headerActionIconName) && onHeaderActionPress) {
+    headerAction = (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={headerActionAccessibilityLabel}
+        onPress={onHeaderActionPress}
+        style={[
+          styles.chromeHeaderAction,
+          {
+            backgroundColor: palette.mapActionBg,
+            borderColor: palette.mapActionBorder,
+          },
+        ]}
+      >
+        {(() => {
+          if (headerActionIcon) {
+            return headerActionIcon(palette.mapSearchIcon);
+          }
+          if (headerActionIconName === 'map') {
+            return <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />;
+          }
+          if (headerActionIconName) {
+            return (
+              <MaterialIcons name={headerActionIconName} size={22} color={palette.mapSearchIcon} />
+            );
+          }
+          return null;
+        })()}
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <View
@@ -1242,11 +1349,11 @@ export function ConnectPortalChrome({
           onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
           style={styles.chromeAvatarButton}
         >
-          <Image
-            source={{ uri: userAvatarUri || NO_PROFILE_IMAGE }}
-            style={styles.userAvatar}
-            resizeMode="cover"
-          />
+          {userAvatarUri ? (
+            <Image source={{ uri: userAvatarUri }} style={styles.userAvatar} resizeMode="cover" />
+          ) : (
+            <ProfileFill width={32} height={32} color={CONNECT_BRAND.primaryDark} />
+          )}
         </TouchableOpacity>
 
         <View style={styles.titleWrap}>
@@ -1255,41 +1362,7 @@ export function ConnectPortalChrome({
           </StyledText>
         </View>
 
-        {(headerActionIcon || headerActionIconName) && onHeaderActionPress ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={headerActionAccessibilityLabel}
-            onPress={onHeaderActionPress}
-            style={[
-              styles.chromeHeaderAction,
-              {
-                backgroundColor: palette.mapActionBg,
-                borderColor: palette.mapActionBorder,
-              },
-            ]}
-          >
-            {(() => {
-              if (headerActionIcon) {
-                return headerActionIcon(palette.mapSearchIcon);
-              }
-              if (headerActionIconName === 'map') {
-                return <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />;
-              }
-              if (headerActionIconName) {
-                return (
-                  <MaterialIcons
-                    name={headerActionIconName}
-                    size={22}
-                    color={palette.mapSearchIcon}
-                  />
-                );
-              }
-              return null;
-            })()}
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.chromeHeaderActionSpacer} />
-        )}
+        {headerAction}
       </View>
 
       <View style={styles.headerGlassTabsWrap}>
@@ -1381,11 +1454,11 @@ export function ConnectMapAvatarButton({ userAvatarUri }: MapAvatarButtonProps) 
       onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
       style={styles.mapAvatarButton}
     >
-      <Image
-        source={{ uri: userAvatarUri || NO_PROFILE_IMAGE }}
-        style={styles.mapAvatar}
-        resizeMode="cover"
-      />
+      {userAvatarUri ? (
+        <Image source={{ uri: userAvatarUri }} style={styles.mapAvatar} resizeMode="cover" />
+      ) : (
+        <ProfileFill width={40} height={40} color={CONNECT_BRAND.primaryDark} />
+      )}
     </TouchableOpacity>
   );
 }
@@ -1434,11 +1507,12 @@ export function ConnectMapMarker({ iconName, active = false }: ConnectMapMarkerP
   );
 }
 
-export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlacesQuickChip>({
+export function ConnectPlacesQuickChips<T extends string = ConnectPlacesQuickChip>({
   selectedChip,
   onSelect,
   chips,
   variant = 'default',
+  actionChip,
 }: QuickChipProps<T>) {
   const palette = useConnectPalette();
   const resolvedChips: T[] = chips ?? (CONNECT_PLACE_QUICK_CHIPS as unknown as T[]);
@@ -1513,6 +1587,54 @@ export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlac
           </TouchableOpacity>
         );
       })}
+      {actionChip ? (
+        <TouchableOpacity
+          key={`action-${actionChip.label}`}
+          testID={actionChip.testID}
+          activeOpacity={0.9}
+          onPress={actionChip.onPress}
+          style={[
+            styles.quickChip,
+            variant === 'bottomOverlay'
+              ? [
+                  styles.quickChipBottomOverlay,
+                  {
+                    backgroundColor: palette.chipGlassBg,
+                    borderWidth: 1,
+                    borderColor: palette.chipGlassBorder,
+                  },
+                  Platform.OS !== 'android' && {
+                    shadowColor: '#000',
+                    shadowOpacity: 0.1,
+                    shadowRadius: 5,
+                    shadowOffset: { width: 0, height: 3 },
+                    elevation: 2,
+                  },
+                ]
+              : { backgroundColor: palette.chip },
+          ]}
+        >
+          {variant === 'bottomOverlay' ? (
+            <BlurView
+              blurType={palette.isDark ? 'dark' : 'light'}
+              blurAmount={12}
+              style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+            />
+          ) : null}
+          <StyledText
+            style={[
+              styles.quickChipText,
+              variant === 'bottomOverlay' ? styles.quickChipTextBottomOverlay : null,
+              {
+                color:
+                  variant === 'bottomOverlay' ? palette.chipGlassMutedText : palette.textPrimary,
+              },
+            ]}
+          >
+            {actionChip.label}
+          </StyledText>
+        </TouchableOpacity>
+      ) : null}
     </ScrollView>
   );
 }
@@ -1643,8 +1765,8 @@ export function ConnectPortalFilterSheet({
         {renderOptionGroup('Category', go.categoryOptions, go.filters.category, (value) =>
           go.onApply({ category: value })
         )}
-        {renderOptionGroup('Mode', go.modeOptions, go.filters.mode, (value) =>
-          go.onApply({ mode: value as ConnectGoFilters['mode'] })
+        {renderOptionGroup('Quick Filter', go.quickFilterOptions, go.quickFilterValue, (value) =>
+          go.onQuickFilterChange((value || 'Upcoming') as ConnectGoQuickChip)
         )}
       </>
     );
@@ -1656,11 +1778,8 @@ export function ConnectPortalFilterSheet({
         {renderOptionGroup('Sort', serve.sortOptions, serve.filters.sort, (value) =>
           serve.onApply({ sort: (value || 'alphabetical') as ConnectServeFilters['sort'] })
         )}
-        {renderOptionGroup('Role Type', serve.roleTypeOptions, serve.filters.roleType, (value) =>
+        {renderOptionGroup('Role', serve.roleTypeOptions, serve.filters.roleType, (value) =>
           serve.onApply({ roleType: value })
-        )}
-        {renderOptionGroup('Tags', serve.tagOptions, serve.filters.tag, (value) =>
-          serve.onApply({ tag: value })
         )}
       </>
     );
@@ -2174,10 +2293,10 @@ const styles = StyleSheet.create({
     textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   userAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
     borderColor: CONNECT_BRAND.infoBase,
   },
   headerGlassTabsWrap: {
@@ -2477,12 +2596,17 @@ const styles = StyleSheet.create({
     ...Typography.body.x2M,
     color: 'rgba(230,234,236,0.7)',
     fontWeight: '700',
-    fontFamily: 'Rubik',
+    fontFamily: 'Rubik-Regular',
     letterSpacing: 0.15,
   },
   mapTabTextActive: {
-    color: CONNECT_BRAND.infoBase,
-    fontWeight: '800',
+    fontFamily: 'Rubik-Bold',
+    fontWeight: '700',
+  },
+  mapTabTextGo: {
+    fontFamily: 'Rubik-Italic',
+    fontStyle: 'italic',
+    paddingRight: Platform.OS === 'android' ? 5 : 0,
   },
   quickChipRow: {
     alignItems: 'center',

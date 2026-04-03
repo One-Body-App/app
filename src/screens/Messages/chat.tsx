@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import ChatIcon from '@/assets/icons/chat.svg';
+import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import {
@@ -402,7 +403,6 @@ function ChatListScreen({ navigation }: Props) {
   const shouldCenterEmptyState = !hasFilteredConversations;
   const hasProfileImage =
     typeof currentUser?.profileImage === 'string' && currentUser.profileImage.length > 0;
-  const headerAvatarUri = hasProfileImage ? currentUser.profileImage : NO_PROFILE_IMAGE;
   const fabBottom = insets.bottom + 78;
   const encryptedBottom = insets.bottom + 88;
 
@@ -874,10 +874,14 @@ function ChatListScreen({ navigation }: Props) {
         ]}
       >
         <View style={styles.headerSideSlot}>
-          <Image
-            source={{ uri: headerAvatarUri }}
-            style={[styles.headerAvatar, { borderColor: colors.border }]}
-          />
+          {hasProfileImage ? (
+            <Image
+              source={{ uri: currentUser!.profileImage }}
+              style={[styles.headerAvatar, { borderColor: colors.border }]}
+            />
+          ) : (
+            <ProfileFill width={32} height={32} color="#126b87" />
+          )}
         </View>
 
         {isIOS ? (
@@ -965,9 +969,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 1,
   },
   settingsButton: {

@@ -144,6 +144,17 @@ describe('VideoProcessingRuntime', () => {
     });
   });
 
+  it('does not emit a terminal toast while the backend is still processing remotely', () => {
+    expect(
+      getPendingVideoUploadToastEvent(
+        createPendingUpload({
+          status: 'processing_remote',
+          watchProcessingStatus: 'PROCESSING',
+        })
+      )
+    ).toBeNull();
+  });
+
   it('dedupes complete and failed terminal notifications across repeated snapshots', () => {
     const deliveredKeys = new Set<string>();
     const completeItem = createPendingUpload({

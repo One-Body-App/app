@@ -228,8 +228,8 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "prettier --write",
-      "eslint --fix --quiet"
+      "prettier --check",
+      "eslint --quiet"
     ]
   },
   "resolutions": {

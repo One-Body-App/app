@@ -6,7 +6,6 @@ import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import StyledText from '@/components/styled/Text';
 import { ConnectStackParamsList } from '@/src/navigator/types';
@@ -80,11 +79,6 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
   } = useConnectPortalData();
   const [refreshing, setRefreshing] = useState(false);
   const { keyboardHeight, keyboardVisible } = useConnectKeyboardMetrics();
-  const renderEventManageIcon = React.useCallback(
-    (color: string) => <CalendarEditIcon width={18} height={18} fill={color} color={color} />,
-    []
-  );
-
   useFocusEffect(
     React.useCallback(() => {
       setActiveTab('Go!');
@@ -232,6 +226,11 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
         activeTab="Go!"
         onTabChange={handleTabChange}
         userAvatarUri={currentUser?.profileImage || NO_PROFILE_IMAGE}
+        onAddPress={async () => {
+          const draft = await createConnectPortalDraft();
+          navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+        }}
+        addAccessibilityLabel="Create event"
         headerActionIconName="map"
         headerActionAccessibilityLabel="Switch to map view"
         onHeaderActionPress={() => handleViewModeChange('map')}
@@ -546,13 +545,17 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
           searchText={searchByTab['Go!']}
           onSearchChange={(text) => setSearchText('Go!', text)}
           searchPlaceholder="Search events..."
-          onAddPress={async () => {
-            const draft = await createConnectPortalDraft();
-            navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+          tertiaryAction={{
+            icon: 'eventManager',
+            accessibilityLabel: 'Open event management',
+            onPress: () => navigation.navigate('ConnectGoEventDash'),
+            testID: 'connect-go-event-manager-action',
           }}
-          onSecondaryActionPress={() => navigation.navigate('ConnectGoEventDash')}
-          renderSecondaryActionIcon={renderEventManageIcon}
-          secondaryActionAccessibilityLabel="Open event management"
+          viewToggle={{
+            toMap: true,
+            onPress: () => handleViewModeChange('map'),
+            accessibilityLabel: 'Switch to map view',
+          }}
         />
       </View>
 
@@ -573,7 +576,9 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
           sortOptions: go.sortOptions,
           eventTypeOptions: go.eventTypeOptions,
           categoryOptions: go.categoryOptions,
-          modeOptions: go.modeOptions,
+          quickFilterOptions: CONNECT_GO_QUICK_CHIPS.map((chip) => ({ label: chip, value: chip })),
+          quickFilterValue: go.quickChip,
+          onQuickFilterChange: go.setQuickChip,
           onApply: go.setFilters,
           onReset: go.resetFilters,
         }}
@@ -581,7 +586,6 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
           filters: serve.filters,
           sortOptions: serve.sortOptions,
           roleTypeOptions: serve.roleTypeOptions,
-          tagOptions: serve.tagOptions,
           onApply: serve.setFilters,
           onReset: serve.resetFilters,
         }}

@@ -69,7 +69,6 @@ import {
   User,
   WatchPost,
 } from '@/utils/types';
-import { refreshConnectPortalPublishedEvents } from '@/src/services/connectPortal';
 import getDeviceLocation from '@/src/services/deviceLocation';
 import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal/types';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -209,14 +208,6 @@ interface ServeOpportunityItem {
   distance: string;
 }
 
-interface GoEventItem {
-  id: string;
-  backgroundImageUri: string;
-  dateString: string;
-  title: string;
-  buttonText: string;
-}
-
 interface PopularTopicItem {
   id: string;
   title: string;
@@ -252,6 +243,25 @@ const toDate = (value?: string | Date) => {
   if (!value) return new Date();
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? new Date() : date;
+};
+
+const MS_PER_DAY = 86_400_000;
+
+const getTrendingScore = (item: BaseSearchHit, now = Date.now()) => {
+  const reactionCount = Array.isArray(item.reactions) ? item.reactions.length : 0;
+  const ageInDays = Math.max(0, (now - toDate(item.created).getTime()) / MS_PER_DAY);
+  return reactionCount * 10 - ageInDays * 0.5;
+};
+
+const getDailySeed = (date = new Date()) =>
+  date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+
+const getSeededIndex = (count: number, seed: number) => {
+  if (count <= 1) return 0;
+
+  let current = Math.abs(seed) % 2147483647 || 1;
+  current = (current * 48271) % 2147483647;
+  return Math.floor((current / 2147483647) * count);
 };
 
 const resolveTitle = (value?: string | { a?: { $text?: string } }) => {
@@ -799,6 +809,7 @@ function Explore({ navigation }: Props) {
         params: { text: '', type: 'posts', limit: 40, skip: 0 },
       });
       if (res?.status === 200 && Array.isArray(res.response)) {
+        const now = Date.now();
         const watchPosts = res.response
           .filter(
             (item: any) => item.playBackId || item.sourceIndex?.toLowerCase().includes('watch')
@@ -809,7 +820,7 @@ function Explore({ navigation }: Props) {
             const w = Number(item.videoWidth ?? 1);
             return !(h > w * 1.4);
           })
-          .sort((a: any, b: any) => (b.reactions?.length ?? 0) - (a.reactions?.length ?? 0))
+          .sort((a: any, b: any) => getTrendingScore(b, now) - getTrendingScore(a, now))
           .slice(0, 20)
           .map(
             (raw: any) =>
@@ -976,20 +987,32 @@ function Explore({ navigation }: Props) {
   const fetchGoEvents = useCallback(async () => {
     setIsEventsLoading(true);
     try {
-      const cache = await refreshConnectPortalPublishedEvents();
-      const eventList = cache?.publicPublished ?? cache?.organizerPublished ?? [];
-      const allEvents = Array.isArray(eventList) ? eventList : [];
+      const res = await ApiCall<
+        ConnectPortalPublishedEvent[] | { data?: ConnectPortalPublishedEvent[] }
+      >({
+        route: 'connect/events/public?page=1&limit=10',
+        token,
+        verb: 'get',
+      });
+      const raw = res?.response;
+      let allEvents: ConnectPortalPublishedEvent[] = [];
+      if (Array.isArray(raw)) {
+        allEvents = raw;
+      } else if (Array.isArray(raw?.data)) {
+        allEvents = raw.data;
+      }
       const today = new Date();
       const upcoming = allEvents
-        .filter((e: any) => e.status === 'published' && new Date(e.startDate) >= today)
+        .filter((event: any) => event.status === 'published' && new Date(event.startDate) >= today)
         .sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
         .slice(0, 7);
       setGoEvents(upcoming as ConnectPortalPublishedEvent[]);
     } catch {
       // Network failure — section stays empty
+    } finally {
+      setIsEventsLoading(false);
     }
-    setIsEventsLoading(false);
-  }, []);
+  }, [token]);
 
   const fetchTrendingTopics = useCallback(async () => {
     try {
@@ -1429,7 +1452,10 @@ function Explore({ navigation }: Props) {
     );
   };
 
-  const featuredVoice = newCreatorsItems.length > 0 ? newCreatorsItems[0] : null;
+  const featuredVoice =
+    newCreatorsItems.length > 0
+      ? newCreatorsItems[getSeededIndex(newCreatorsItems.length, getDailySeed())]
+      : null;
 
   const browseContent = (
     <ScrollView
@@ -1874,9 +1900,7 @@ function Explore({ navigation }: Props) {
               {userAvatar ? (
                 <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
               ) : (
-                <View style={styles.headerAvatarFallback}>
-                  <ProfileFill width={22} height={22} />
-                </View>
+                <ProfileFill width={32} height={32} color={Colors.primarySapphire.brand} />
               )}
             </TouchableOpacity>
           </View>
@@ -2060,18 +2084,10 @@ const createStyles = (dark: boolean) =>
       textAlign: Platform.OS === 'android' ? 'left' : 'center',
     },
     headerAvatar: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: Colors.neutral[700],
-    },
-    headerAvatarFallback: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      backgroundColor: Colors.primarySapphire.brand,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     searchContainer: {
       paddingHorizontal: spacing.x16,

@@ -60,6 +60,7 @@ buildscript {
 allprojects {
     repositories {
         maven { url 'https://api.mapbox.com/downloads/v2/releases/maven' }
+        maven { url 'https://muxinc.jfrog.io/artifactory/default-maven-release-local' }
         google()
         mavenCentral()
     }
