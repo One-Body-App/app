@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +28,7 @@ import { HomeStackParamsList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import {
   QueuedPushNotification,
   getQueuedNotifications,
@@ -40,10 +41,15 @@ import {
   normalizeNotificationTapUrl,
   resolveNotificationTargetUrl,
 } from './notificationLinking';
+import {
+  getNotificationCategories,
+  getPrimaryNotificationCategory,
+  type NotificationCategoryKey,
+} from './notificationCategories';
 
 type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
 
-type CategoryKey = 'all' | 'tagged' | 'feed' | 'prayers' | 'blog_posts' | 'serve' | 'go';
+type CategoryKey = NotificationCategoryKey;
 
 type CategoryOption = {
   key: CategoryKey;
@@ -114,15 +120,6 @@ const CATEGORY_LABELS: Record<CategoryKey, string> = CATEGORY_OPTIONS.reduce(
   },
   {} as Record<CategoryKey, string>
 );
-
-const MATCHERS: Record<Exclude<CategoryKey, 'all'>, RegExp> = {
-  tagged: /\btag|mention|@/i,
-  feed: /\bfeed|post|comment|like|reaction|share|campaign|activity/i,
-  prayers: /\bprayer|pray|bless|intercession/i,
-  blog_posts: /\bblog|rss|article|read|story/i,
-  serve: /\bserve|service|volunteer|ministry/i,
-  go: /\bgo\b|mission|missions|outreach/i,
-};
 
 const ACTIVITY_SIGNAL_REGEX = /\bcomment|reaction|reacted|message|messaged|reply|replied|like\b/i;
 
@@ -242,30 +239,6 @@ const isCreatorNotification = (
   return approvedCreatorFollowingSet.has(actorId);
 };
 
-const getNotificationCategories = (item: InboxNotification): CategoryKey[] => {
-  const text = `${item.title} ${item.body}`.toLowerCase();
-  const categories: CategoryKey[] = [];
-
-  (Object.keys(MATCHERS) as Array<Exclude<CategoryKey, 'all'>>).forEach((key) => {
-    if (MATCHERS[key].test(text)) {
-      categories.push(key);
-    }
-  });
-
-  if (!categories.length) {
-    categories.push('feed');
-  }
-
-  return Array.from(new Set(categories));
-};
-
-const getPrimaryCategory = (item: InboxNotification): Exclude<CategoryKey, 'all'> => {
-  const categories = getNotificationCategories(item).filter(
-    (entry): entry is Exclude<CategoryKey, 'all'> => entry !== 'all'
-  );
-  return categories[0] || 'feed';
-};
-
 function NotificationScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
@@ -282,6 +255,7 @@ function NotificationScreen({ navigation }: Props) {
   const [listInstanceKey, setListInstanceKey] = useState(0);
   const [failedRemoteIcons, setFailedRemoteIcons] = useState<Record<string, true>>({});
   const [approvedCreatorFollowingIds, setApprovedCreatorFollowingIds] = useState<string[]>([]);
+  const hasCompletedInitialLoadRef = useRef(false);
 
   const logNotificationDebug = useCallback((event: string, details: Record<string, unknown>) => {
     if (!__DEV__) {
@@ -292,12 +266,13 @@ function NotificationScreen({ navigation }: Props) {
   }, []);
 
   const loadNotifications = useCallback(
-    async (showLoader = false) => {
+    async ({ showLoader = false }: { showLoader?: boolean } = {}) => {
       if (!token) {
         logNotificationDebug('load_skipped_missing_token', {});
         setNotifications([]);
         setLoading(false);
         setRefreshing(false);
+        hasCompletedInitialLoadRef.current = false;
         return;
       }
 
@@ -423,35 +398,28 @@ function NotificationScreen({ navigation }: Props) {
       } finally {
         setLoading(false);
         setRefreshing(false);
+        hasCompletedInitialLoadRef.current = true;
       }
     },
     [logNotificationDebug, token, toast]
   );
 
-  useEffect(() => {
-    loadNotifications(true);
-  }, [loadNotifications]);
+  useMountEffect(() => {
+    loadNotifications({ showLoader: true });
+  });
 
   useFocusEffect(
     useCallback(() => {
-      loadNotifications(false);
+      setListInstanceKey((current) => current + 1);
+
+      if (!hasCompletedInitialLoadRef.current) {
+        return undefined;
+      }
+
+      loadNotifications();
       return undefined;
     }, [loadNotifications])
   );
-
-  useEffect(() => {
-    if (navigation.isFocused()) {
-      setListInstanceKey((current) => current + 1);
-    }
-
-    const unsubscribeFocus = navigation.addListener('focus', () => {
-      setListInstanceKey((current) => current + 1);
-    });
-
-    return () => {
-      unsubscribeFocus();
-    };
-  }, [navigation]);
 
   const markAsRead = useCallback(
     async (item: InboxNotification) => {
@@ -524,7 +492,7 @@ function NotificationScreen({ navigation }: Props) {
 
   const visibleNotifications = useMemo(() => {
     const withoutMuted = notifications.filter((item) => {
-      const primary = getPrimaryCategory(item);
+      const primary = getPrimaryNotificationCategory(item);
       return !mutedCategories.includes(primary);
     });
 
@@ -597,7 +565,7 @@ function NotificationScreen({ navigation }: Props) {
     return nextRows;
   }, [creatorNotifications, regularNotifications]);
 
-  const menuCategory = menuNotification ? getPrimaryCategory(menuNotification) : 'feed';
+  const menuCategory = menuNotification ? getPrimaryNotificationCategory(menuNotification) : 'feed';
 
   if (loading) {
     return (
@@ -718,7 +686,7 @@ function NotificationScreen({ navigation }: Props) {
             tintColor={colors.text}
             onRefresh={() => {
               setRefreshing(true);
-              loadNotifications(false);
+              loadNotifications();
             }}
           />
         }
@@ -824,7 +792,7 @@ function NotificationScreen({ navigation }: Props) {
               style={styles.menuItem}
               onPress={() => {
                 if (menuNotification) {
-                  const category = getPrimaryCategory(menuNotification);
+                  const category = getPrimaryNotificationCategory(menuNotification);
                   setMutedCategories((current) =>
                     current.includes(category) ? current : [...current, category]
                   );
