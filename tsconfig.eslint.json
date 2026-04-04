@@ -5,7 +5,12 @@
     "checkJs": false,
     "noEmit": true
   },
-  "include": ["**/*.tsx", "**/*.ts", "jest/**/*.js", "jest.setup.js"],
+  "include": [
+    "**/*.tsx",
+    "**/*.ts",
+    "jest/**/*.js",
+    "jest.setup.js",
+    "scripts/**/*.js"
+  ],
   "exclude": ["node_modules", "ios/Pods", "ios/build", "android/build", "vendor"]
 }
-

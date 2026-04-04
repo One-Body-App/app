@@ -442,7 +442,7 @@ index e9a9fdb..8b618c6 100644
      if (ffmpegSession != null) {
        ffmpegSession.cancel();
 diff --git a/node_modules/react-native-video-trim/ios/VideoTrim.mm b/node_modules/react-native-video-trim/ios/VideoTrim.mm
-index 1c94327..fab59a2 100644
+index 1c94327..78e5a39 100644
 --- a/node_modules/react-native-video-trim/ios/VideoTrim.mm
 +++ b/node_modules/react-native-video-trim/ios/VideoTrim.mm
 @@ -102,6 +102,16 @@ RCT_EXPORT_MODULE()
@@ -511,7 +511,7 @@ index 1c94327..fab59a2 100644
      if (!inputURL) {
          reject(@"INVALID_URL", @"Invalid input URL", nil);
          return;
-@@ -292,6 +328,244 @@ RCT_EXPORT_MODULE()
+@@ -292,6 +328,289 @@ RCT_EXPORT_MODULE()
      } withLogCallback:nil withStatisticsCallback:nil];
  }
  
@@ -706,7 +706,6 @@ index 1c94327..fab59a2 100644
 +                             (long)cropRect.origin.y,
 +                             (long)outputWidth,
 +                             (long)outputHeight];
-+
 +    NSString *encoder = @"libx264";
 +
 +    NSMutableArray *cmds = [NSMutableArray arrayWithObjects:
@@ -729,7 +728,6 @@ index 1c94327..fab59a2 100644
 +        @"-ar", @"44100",
 +        outputURL.absoluteString,
 +        nil];
-+
 +    NSString *debugCommand = [cmds componentsJoinedByString:@" "];
 +    NSMutableArray<NSString *> *logMessages = [NSMutableArray array];
 +    const NSUInteger maxLogMessages = 40;

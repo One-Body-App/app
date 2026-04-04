@@ -3,12 +3,11 @@ import validator from './validator';
 export const validateFields = async (
   value: string,
   type: string,
-
   func: (error: string) => void,
-  extraFieldData?: Object
+  extraFieldData?: Record<string, any>
 ) => {
   const error = await validator(type, value, extraFieldData);
 
-  error ? func(error) : func('');
+  func(error || '');
   return error;
 };

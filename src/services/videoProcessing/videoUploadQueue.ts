@@ -498,7 +498,7 @@ const defaultDependencies: QueueDependencies = {
       },
     });
 
-    if (response.status !== 200) {
+    if (response.status !== 200 && response.status !== 201) {
       throw new QueueError(
         'network',
         response.response?.message || 'Unable to create watch post.',

@@ -183,7 +183,7 @@ const VideoItem = gestureHandlerRootHOC(
             muted={false}
             repeat={false}
             controls={false}
-            poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp`}
+            poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp?width=${Math.round(videoLayout.frameWidth)}&height=${Math.round(videoLayout.frameHeight)}`}
             videoRef={videRef}
             onLoad={(loadData) => {
               setIsLoading(false);

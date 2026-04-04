@@ -5,6 +5,7 @@ import {
   VIDEO_UPLOAD_QUEUE_STORAGE_KEY,
   createVideoUploadQueue,
 } from '../videoUploadQueue';
+import { ApiCall } from '@/src/services/api';
 
 jest.mock('react-native-fs', () => ({
   TemporaryDirectoryPath: '/tmp',
@@ -25,6 +26,10 @@ jest.mock('react-native-video-trim', () => ({
     width: 1080,
     height: 1920,
   })),
+}));
+
+jest.mock('@/src/services/api', () => ({
+  ApiCall: jest.fn(),
 }));
 
 const baseRecipe: VideoEditRecipe = {
@@ -74,6 +79,10 @@ const createUploadedResult = (uploadId: string) => ({
 });
 
 describe('videoUploadQueue', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('moves a queued item through moderation, compression, upload, and posting', async () => {
     const events: string[] = [];
     const storage = createMemoryStorage();
@@ -191,6 +200,56 @@ describe('videoUploadQueue', () => {
         status: 'complete',
         watchId: 'watch-remote-1',
         watchProcessingStatus: 'READY',
+      }),
+    ]);
+  });
+
+  it('treats a 201 watch post response as a successful create', async () => {
+    const storage = createMemoryStorage();
+    const apiCallMock = ApiCall as jest.MockedFunction<typeof ApiCall>;
+    apiCallMock.mockResolvedValue({
+      status: 201,
+      response: {
+        _id: 'watch-created-201',
+        playBackId: 'playback-created-201',
+        processingStatus: 'READY',
+      },
+    } as any);
+
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported-created-201.mp4',
+        processedDuration: 12_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_created_201')),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+
+    expect(apiCallMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        route: 'watch/post',
+        verb: 'post',
+      })
+    );
+    expect(queue.getItems()).toEqual([
+      expect.objectContaining({
+        status: 'complete',
+        watchId: 'watch-created-201',
+        watchProcessingStatus: 'READY',
+        uploadId: 'mux_upload_created_201',
       }),
     ]);
   });

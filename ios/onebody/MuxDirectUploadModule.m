@@ -13,6 +13,9 @@ RCT_EXTERN_METHOD(resumeCachedUploads:(RCTPromiseResolveBlock)resolve
 RCT_EXTERN_METHOD(getCachedUploads:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(addListener:(NSString *)eventName)
+RCT_EXTERN_METHOD(removeListeners:(double)count)
+
 + (BOOL)requiresMainQueueSetup
 {
   return YES;

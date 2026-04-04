@@ -9,9 +9,10 @@ final class MuxDirectUpload: RCTEventEmitter {
   private static let uploadRecordsKey = "mux_direct_upload_records"
   private static let terminalStatesKey = "mux_direct_upload_terminal_states"
 
-  private let uploadManager = DirectUploadManager.shared
+  private let uploadManager = UploadManager.shared
   private var uploadRecordsById: [String: String] = [:]
   private var activeUploadsById: [String: DirectUpload] = [:]
+  private var hasListeners = false
 
   override init() {
     super.init()
@@ -24,6 +25,24 @@ final class MuxDirectUpload: RCTEventEmitter {
 
   override func supportedEvents() -> [String]! {
     [Self.eventName]
+  }
+
+  override func startObserving() {
+    hasListeners = true
+  }
+
+  override func stopObserving() {
+    hasListeners = false
+  }
+
+  @objc(addListener:)
+  override func addListener(_ eventName: String!) {
+    super.addListener(eventName)
+  }
+
+  @objc(removeListeners:)
+  override func removeListeners(_ count: Double) {
+    super.removeListeners(count)
   }
 
   @objc(startUpload:resolver:rejecter:)
@@ -67,22 +86,19 @@ final class MuxDirectUpload: RCTEventEmitter {
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
     DispatchQueue.main.async {
-      Task { @MainActor in
-        self.uploadManager.resumeAllDirectUploads()
+      self.uploadManager.resumeAllUploads()
 
-        for (uploadId, fileUri) in self.uploadRecordsById {
-          guard let fileURL = self.resolveFileURL(fileUri) else {
-            continue
-          }
-
-          if let activeUpload = self.findManagedUpload(fileURL: fileURL)
-            ?? await self.uploadManager.resumeDirectUpload(ofFile: fileURL) {
-            self.attach(uploadId: uploadId, fileUri: fileUri, upload: activeUpload)
-          }
+      for (uploadId, fileUri) in self.uploadRecordsById {
+        guard let fileURL = self.resolveFileURL(fileUri) else {
+          continue
         }
 
-        resolve(self.buildSnapshots())
+        if let activeUpload = self.findManagedUpload(fileURL: fileURL) {
+          self.attach(uploadId: uploadId, fileUri: fileUri, upload: activeUpload)
+        }
       }
+
+      resolve(self.buildSnapshots())
     }
   }
 
@@ -118,9 +134,8 @@ final class MuxDirectUpload: RCTEventEmitter {
         )
       }
 
-      self.sendEvent(
-        withName: Self.eventName,
-        body: self.makeEventPayload(
+      self.emitEvent(
+        self.makeEventPayload(
           uploadId: uploadId,
           fileUri: fileUri,
           state: "progress",
@@ -147,9 +162,8 @@ final class MuxDirectUpload: RCTEventEmitter {
           errorCode: nil,
           errorMessage: nil
         )
-        self.sendEvent(
-          withName: Self.eventName,
-          body: self.makeEventPayload(
+        self.emitEvent(
+          self.makeEventPayload(
             uploadId: uploadId,
             fileUri: fileUri,
             state: "success",
@@ -168,9 +182,8 @@ final class MuxDirectUpload: RCTEventEmitter {
           errorCode: String(describing: type(of: error)),
           errorMessage: error.localizedDescription
         )
-        self.sendEvent(
-          withName: Self.eventName,
-          body: self.makeEventPayload(
+        self.emitEvent(
+          self.makeEventPayload(
             uploadId: uploadId,
             fileUri: fileUri,
             state: "failure",
@@ -328,6 +341,21 @@ final class MuxDirectUpload: RCTEventEmitter {
     return payload
   }
 
+  private func emitEvent(_ payload: [String: Any]) {
+    guard hasListeners else {
+      return
+    }
+
+    if Thread.isMainThread {
+      sendEvent(withName: Self.eventName, body: payload)
+      return
+    }
+
+    DispatchQueue.main.async {
+      self.sendEvent(withName: Self.eventName, body: payload)
+    }
+  }
+
   private func resolveFileURL(_ fileUri: String) -> URL? {
     if fileUri.isEmpty {
       return nil
@@ -341,7 +369,7 @@ final class MuxDirectUpload: RCTEventEmitter {
   }
 
   private func findManagedUpload(fileURL: URL) -> DirectUpload? {
-    uploadManager.allManagedDirectUploads().first { managedUpload in
+    uploadManager.allManagedUploads().first { managedUpload in
       managedUpload.videoFile?.standardizedFileURL == fileURL.standardizedFileURL
     }
   }

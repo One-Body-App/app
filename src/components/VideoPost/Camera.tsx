@@ -24,7 +24,7 @@ import {
   useCameraFormat,
 } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
 import {
   NavigationProp,

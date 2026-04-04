@@ -49,7 +49,7 @@ const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
         muted={muted}
         controls={controls}
         poster={poster}
-        posterResizeMode="contain"
+        posterResizeMode={resizeMode}
         onEnd={onEnd}
         onLoad={onLoad}
         onProgress={onProgress}

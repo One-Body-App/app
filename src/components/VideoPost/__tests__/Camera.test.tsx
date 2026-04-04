@@ -106,7 +106,7 @@ jest.mock('react-native-fast-image', () => {
 
   return MockFastImage;
 });
-jest.mock('react-native-vector-icons/MaterialIcons', () => {
+jest.mock('@react-native-vector-icons/material-icons', () => {
   const { View: NativeView } = require('react-native');
 
   return function MockMaterialIcons(props: any) {

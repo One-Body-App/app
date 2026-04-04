@@ -10,6 +10,7 @@ import ReactAppDependencyProvider
 import react_native_lottie_splash_screen
 import Firebase
 import FirebaseMessaging
+import MuxUploadSDK
 import UserNotifications
 
 @main
@@ -135,6 +136,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
       return
     }
     completionHandler([.alert, .sound, .badge])
+  }
+
+  func applicationDidBecomeActive(_ application: UIApplication) {
+    UploadManager.shared.resumeAllUploads()
+  }
+
+  func applicationDidEnterBackground(_ application: UIApplication) {
+    UploadManager.shared.allManagedUploads().forEach { upload in
+      upload.pause()
+    }
+  }
+
+  func applicationWillTerminate(_ application: UIApplication) {
+    UploadManager.shared.allManagedUploads().forEach { upload in
+      upload.pause()
+    }
   }
 
   private func cleanupSplashVideoPlayer() {

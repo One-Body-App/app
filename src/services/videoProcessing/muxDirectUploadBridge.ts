@@ -22,6 +22,8 @@ type NativeMuxDirectUploadModule = {
   startUpload: (params: NativeMuxDirectUploadStartParams) => Promise<void>;
   resumeCachedUploads: () => Promise<NativeMuxDirectUploadRecord[]>;
   getCachedUploads: () => Promise<NativeMuxDirectUploadRecord[]>;
+  addListener: (eventName: string) => void;
+  removeListeners: (count: number) => void;
 };
 
 type NativeMuxDirectUploadEvent = NativeMuxDirectUploadRecord & {
@@ -35,7 +37,9 @@ type UploadWaiter = {
 
 const EVENT_NAME = 'muxDirectUploadEvent';
 
-const nativeModule = NativeModules.MuxDirectUpload as NativeMuxDirectUploadModule | undefined;
+const nativeModule = NativeModules.MuxDirectUpload as
+  | Partial<NativeMuxDirectUploadModule>
+  | undefined;
 
 const uploadStateById = new Map<string, NativeMuxDirectUploadRecord>();
 const waitersById = new Map<string, UploadWaiter[]>();
@@ -178,17 +182,37 @@ const handleNativeEvent = (rawEvent: Partial<NativeMuxDirectUploadEvent>) => {
   );
 };
 
+const hasNativeModuleContract = (
+  value: Partial<NativeMuxDirectUploadModule> | undefined
+): value is NativeMuxDirectUploadModule =>
+  Boolean(
+    value &&
+      typeof value.startUpload === 'function' &&
+      typeof value.resumeCachedUploads === 'function' &&
+      typeof value.getCachedUploads === 'function' &&
+      typeof value.addListener === 'function' &&
+      typeof value.removeListeners === 'function'
+  );
+
 const ensureEmitter = () => {
-  if (!nativeModule || emitterSubscription) {
+  if (!hasNativeModuleContract(nativeModule) || emitterSubscription) {
     return;
   }
 
-  const emitter = new NativeEventEmitter(nativeModule as never);
-  emitterSubscription = emitter.addListener(EVENT_NAME, handleNativeEvent);
+  try {
+    const emitter = new NativeEventEmitter(nativeModule as never);
+    emitterSubscription = emitter.addListener(EVENT_NAME, handleNativeEvent);
+  } catch (error) {
+    throw new NativeMuxDirectUploadError(
+      error instanceof Error
+        ? error.message
+        : 'Native Mux uploader event bridge is unavailable on this device.'
+    );
+  }
 };
 
 const getNativeModule = () => {
-  if (!nativeModule) {
+  if (!hasNativeModuleContract(nativeModule)) {
     throw new NativeMuxDirectUploadError('Native Mux uploader is unavailable on this device.');
   }
 
@@ -219,7 +243,9 @@ const waitForUploadTerminalState = async (uploadId: string) => {
 };
 
 export const isNativeMuxDirectUploadAvailable = () =>
-  Platform.OS === 'ios' || Platform.OS === 'android' ? Boolean(nativeModule) : false;
+  Platform.OS === 'ios' || Platform.OS === 'android'
+    ? hasNativeModuleContract(nativeModule)
+    : false;
 
 export const startNativeMuxDirectUpload = async (params: NativeMuxDirectUploadStartParams) => {
   const module = getNativeModule();

@@ -2,21 +2,13 @@ import { View, TextInput } from 'react-native';
 import React, { useRef, useState } from 'react';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch } from 'react-redux';
-import Toast from 'react-native-simple-toast';
 
 import {
   confirmPasswordReset,
   getAuth,
   verifyPasswordResetCode,
 } from '@react-native-firebase/auth';
-import { StackScreenProps } from '@react-navigation/stack';
-import {
-  CompositeScreenProps,
-  RouteProp,
-  useNavigation,
-  useRoute,
-  useTheme,
-} from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute, useTheme } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
 
@@ -24,7 +16,6 @@ import GeneralStyle from '../../constants/GeneralStyle';
 import Button from '../../components/Button';
 
 import { validateFields } from '@/utils/validation/validate-fields';
-import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { MainStackParamList } from '@/src/navigator/types';
@@ -40,7 +31,7 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList,
 
 type Props = MainStackParamList['ConfirmLogin'];
 
-function NewPassword({ oobCode, ...props }: Props) {
+function NewPassword({ oobCode }: Props) {
   const dispatch = useDispatch();
   const inputRefs = {
     passwordN: useRef<TextInput>(null),
@@ -119,14 +110,8 @@ function NewPassword({ oobCode, ...props }: Props) {
 
     dispatch(setLoader(true));
     try {
-      const email = await verifyPasswordResetCode(firebaseAuth, resetCode);
+      await verifyPasswordResetCode(firebaseAuth, resetCode);
       await confirmPasswordReset(firebaseAuth, resetCode, passwordN);
-
-      await ApiCall({
-        route: 'auth/sendPasswordChangeConfirmation',
-        params: { email },
-        verb: 'post',
-      });
 
       navigation.navigate('Login', { resetPassword: true });
       toast.show('Password Reset Sucessfuly', {
@@ -153,12 +138,6 @@ function NewPassword({ oobCode, ...props }: Props) {
             const apiError = data?.error?.message ?? 'UNKNOWN';
             throw new Error(apiError);
           }
-
-          await ApiCall({
-            route: 'auth/sendPasswordChangeConfirmation',
-            params: { email: data?.email },
-            verb: 'post',
-          });
 
           navigation.navigate('Login', { resetPassword: true });
           toast.show('Password Reset Sucessfuly', {

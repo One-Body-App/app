@@ -1,7 +1,8 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   ActivityIndicator,
+  Easing,
   FlatList,
   Image,
   ImageBackground,
@@ -75,6 +76,11 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
 import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
 import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
+import TrendingTopicsBubbles, {
+  mapTrendingTopicResponse,
+  TRENDING_TOPICS_MOCK_DATA,
+  type TrendingTopicBubbleItem,
+} from './TrendingTopicsBubbles';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'Explore'>,
@@ -208,11 +214,6 @@ interface ServeOpportunityItem {
   distance: string;
 }
 
-interface PopularTopicItem {
-  id: string;
-  title: string;
-}
-
 interface CommunityPrayerItem {
   post: PrayerPost;
   reactionCount: number;
@@ -224,6 +225,9 @@ const EXPLORE_HEADER_COLOR = '#032f3c';
 const EXPLORE_HEADER_FONT_FAMILY = 'Rubik-Bold';
 const EXPLORE_SUBHEADER_FONT_FAMILY = 'OpenSans-Regular';
 const CHIP_ROW_HEIGHT = 46;
+const BROWSE_TRANSITION_OUT_MS = 180;
+const SEARCH_TRANSITION_IN_MS = 220;
+export const TRENDING_TOPICS_ROUTE = 'tags/interest?sort=trending&limit=24';
 
 const isKnownSubtype = (value?: string): value is SearchPostSubtype =>
   value === 'social' || value === 'rss' || value === 'prayer' || value === 'watch';
@@ -392,12 +396,8 @@ function Explore({ navigation }: Props) {
   const [isServeLoading, setIsServeLoading] = useState(true);
   const [goEvents, setGoEvents] = useState<ConnectPortalPublishedEvent[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
-  const [popularTopicItems, setPopularTopicItems] = useState<PopularTopicItem[]>([
-    { id: 'topic-1', title: 'Theology & Life' },
-    { id: 'topic-2', title: 'Tech & Ethics' },
-    { id: 'topic-3', title: 'Prayer Habits' },
-    { id: 'topic-4', title: 'Church Leadership' },
-  ]);
+  const [popularTopicItems, setPopularTopicItems] =
+    useState<TrendingTopicBubbleItem[]>(TRENDING_TOPICS_MOCK_DATA);
   const [isRefreshingBrowse, setIsRefreshingBrowse] = useState(false);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
     null
@@ -415,6 +415,10 @@ function Explore({ navigation }: Props) {
   const requestSequenceRef = useRef(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chipOffset = useRef(new Animated.Value(0)).current;
+  const browseOpacity = useRef(new Animated.Value(1)).current;
+  const browseTranslateY = useRef(new Animated.Value(0)).current;
+  const searchOpacity = useRef(new Animated.Value(0)).current;
+  const searchTranslateY = useRef(new Animated.Value(12)).current;
   const lastScrollYRef = useRef(0);
   const chipHiddenRef = useRef(false);
 
@@ -799,6 +803,72 @@ function Explore({ navigation }: Props) {
     [resetSearchState, runSearch]
   );
 
+  const handleTrendingTopicPress = useCallback(
+    (topic: string) => {
+      handleSearchTextChange(topic);
+    },
+    [handleSearchTextChange]
+  );
+
+  useEffect(() => {
+    if (isSearchMode) {
+      Animated.parallel([
+        Animated.timing(browseOpacity, {
+          toValue: 0,
+          duration: BROWSE_TRANSITION_OUT_MS,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(browseTranslateY, {
+          toValue: -8,
+          duration: BROWSE_TRANSITION_OUT_MS,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(searchOpacity, {
+          toValue: 1,
+          duration: SEARCH_TRANSITION_IN_MS,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(searchTranslateY, {
+          toValue: 0,
+          duration: SEARCH_TRANSITION_IN_MS,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(browseOpacity, {
+        toValue: 1,
+        duration: SEARCH_TRANSITION_IN_MS,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(browseTranslateY, {
+        toValue: 0,
+        duration: SEARCH_TRANSITION_IN_MS,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchOpacity, {
+        toValue: 0,
+        duration: BROWSE_TRANSITION_OUT_MS,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchTranslateY, {
+        toValue: 12,
+        duration: BROWSE_TRANSITION_OUT_MS,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [browseOpacity, browseTranslateY, isSearchMode, searchOpacity, searchTranslateY]);
+
   const fetchTrending = useCallback(async () => {
     setIsTrendingLoading(true);
     try {
@@ -1016,15 +1086,11 @@ function Explore({ navigation }: Props) {
 
   const fetchTrendingTopics = useCallback(async () => {
     try {
-      const res = await ApiCall({ route: 'tags/interest', token, verb: 'get' });
+      const res = await ApiCall({ route: TRENDING_TOPICS_ROUTE, token, verb: 'get' });
       const tags = Array.isArray(res?.response) ? res.response : res?.response?.data;
-      if (res?.status === 200 && Array.isArray(tags) && tags.length > 0) {
-        setPopularTopicItems(
-          tags.map((t: any, idx: number) => ({
-            id: t._id ?? t.id ?? `topic-${idx}`,
-            title: t.title ?? t.name ?? 'Topic',
-          }))
-        );
+      if (res?.status === 200 && Array.isArray(tags)) {
+        const mappedTopics = mapTrendingTopicResponse(tags);
+        setPopularTopicItems(mappedTopics.length > 0 ? mappedTopics : TRENDING_TOPICS_MOCK_DATA);
       }
     } catch {
       // Network failure — section stays empty
@@ -1851,18 +1917,11 @@ function Explore({ navigation }: Props) {
         >
           Trending Topics
         </StyledText>
-        <View style={styles.topicsPillWrap}>
-          {popularTopicItems.map((topic) => (
-            <TouchableOpacity
-              key={topic.id}
-              style={styles.topicPill}
-              activeOpacity={0.8}
-              onPress={() => handleSearchTextChange(topic.title)}
-            >
-              <StyledText style={styles.topicPillText}>{topic.title}</StyledText>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <TrendingTopicsBubbles
+          onTopicPress={handleTrendingTopicPress}
+          style={styles.topicsCloud}
+          topics={popularTopicItems}
+        />
       </View>
     </ScrollView>
   );
@@ -1947,8 +2006,33 @@ function Explore({ navigation }: Props) {
         </View>
       </Animated.View>
 
-      {isSearchMode ? (
-        <Animated.View style={[styles.searchContentWrap, getSpringboardStyle(1)]}>
+      <View style={styles.contentStack}>
+        <Animated.View
+          pointerEvents={isSearchMode ? 'none' : 'auto'}
+          style={[
+            styles.browseLayer,
+            getSpringboardStyle(1),
+            {
+              opacity: browseOpacity,
+              transform: [{ translateY: browseTranslateY }],
+            },
+          ]}
+        >
+          {browseContent}
+        </Animated.View>
+
+        <Animated.View
+          pointerEvents={isSearchMode ? 'auto' : 'none'}
+          style={[
+            styles.searchContentWrap,
+            getSpringboardStyle(1),
+            {
+              backgroundColor: screenBackgroundColor,
+              opacity: searchOpacity,
+              transform: [{ translateY: searchTranslateY }],
+            },
+          ]}
+        >
           <Animated.View
             style={[
               styles.chipOverlay,
@@ -2040,9 +2124,7 @@ function Explore({ navigation }: Props) {
             }
           />
         </Animated.View>
-      ) : (
-        <Animated.View style={[{ flex: 1 }, getSpringboardStyle(1)]}>{browseContent}</Animated.View>
-      )}
+      </View>
     </View>
   );
 }
@@ -2055,6 +2137,13 @@ const createStyles = (dark: boolean) =>
     headerWrap: {
       borderBottomWidth: 1,
       zIndex: 8,
+    },
+    contentStack: {
+      flex: 1,
+      position: 'relative',
+    },
+    browseLayer: {
+      flex: 1,
     },
     headerRow: {
       minHeight: 52,
@@ -2352,22 +2441,9 @@ const createStyles = (dark: boolean) =>
       backgroundColor: '#41dbe1',
       marginRight: spacing.x8,
     },
-    topicsPillWrap: {
+    topicsCloud: {
       paddingHorizontal: spacing.x16,
       marginTop: 12,
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-    },
-    topicPill: {
-      backgroundColor: dark ? '#1a1e23' : '#e6eaec',
-      borderRadius: 20,
-      paddingHorizontal: 14,
-      paddingVertical: 7,
-    },
-    topicPillText: {
-      color: dark ? Colors.neutral[200] : '#032f3c',
-      fontWeight: '600',
     },
     featuredBanner: {
       marginHorizontal: spacing.x16,
@@ -2421,7 +2497,8 @@ const createStyles = (dark: boolean) =>
       fontSize: 12,
     },
     searchContentWrap: {
-      flex: 1,
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 2,
     },
     chipOverlay: {
       position: 'absolute',
