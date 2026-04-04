@@ -9,7 +9,7 @@ final class MuxDirectUpload: RCTEventEmitter {
   private static let uploadRecordsKey = "mux_direct_upload_records"
   private static let terminalStatesKey = "mux_direct_upload_terminal_states"
 
-  private let uploadManager = UploadManager.shared
+  private let uploadManager = DirectUploadManager.shared
   private var uploadRecordsById: [String: String] = [:]
   private var activeUploadsById: [String: DirectUpload] = [:]
   private var hasListeners = false
@@ -86,7 +86,7 @@ final class MuxDirectUpload: RCTEventEmitter {
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
     DispatchQueue.main.async {
-      self.uploadManager.resumeAllUploads()
+      self.uploadManager.resumeAllDirectUploads()
 
       for (uploadId, fileUri) in self.uploadRecordsById {
         guard let fileURL = self.resolveFileURL(fileUri) else {
@@ -369,7 +369,7 @@ final class MuxDirectUpload: RCTEventEmitter {
   }
 
   private func findManagedUpload(fileURL: URL) -> DirectUpload? {
-    uploadManager.allManagedUploads().first { managedUpload in
+    uploadManager.allManagedDirectUploads().first { managedUpload in
       managedUpload.videoFile?.standardizedFileURL == fileURL.standardizedFileURL
     }
   }

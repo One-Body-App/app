@@ -139,17 +139,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   }
 
   func applicationDidBecomeActive(_ application: UIApplication) {
-    UploadManager.shared.resumeAllUploads()
+    DirectUploadManager.shared.resumeAllDirectUploads()
   }
 
   func applicationDidEnterBackground(_ application: UIApplication) {
-    UploadManager.shared.allManagedUploads().forEach { upload in
+    DirectUploadManager.shared.allManagedDirectUploads().forEach { upload in
       upload.pause()
     }
   }
 
   func applicationWillTerminate(_ application: UIApplication) {
-    UploadManager.shared.allManagedUploads().forEach { upload in
+    DirectUploadManager.shared.allManagedDirectUploads().forEach { upload in
       upload.pause()
     }
   }
