@@ -25,6 +25,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { persistor, store } from './src/redux/store'; // Make sure this path is correct
 import AppContent from './src/navigator/AppContent'; // Import the new component
 import { getFirebaseApp } from './src/services/firebaseApp';
+import VideoUploadRuntimeHost from './src/components/post/VideoUploadRuntimeHost';
 import VideoModerationBridge from './src/components/post/VideoModerationBridge';
 import useMountEffect from './src/hooks/useMountEffect';
 
@@ -67,6 +68,7 @@ function App() {
                 <PersistGate loading={null} persistor={persistor}>
                   {/* Render the new AppContent component here */}
                   <AppContent />
+                  <VideoUploadRuntimeHost />
                   <VideoModerationBridge />
                 </PersistGate>
               </ToastProvider>

@@ -4,12 +4,17 @@ import VideoProcessingRuntime, {
   collectPendingVideoUploadToastEvents,
   getPendingVideoUploadToastEvent,
   shouldAutoResumePendingVideoUploads,
+  shouldResumePendingVideoUploadsOnLifecycle,
   VIDEO_UPLOAD_RESUME_DELAY_MS,
 } from '../VideoProcessingRuntime';
 import type { PendingVideoUpload } from '@/src/services/videoProcessing/types';
 
 jest.mock('@/src/services/videoProcessing/videoUploadQueue', () => ({
+  getPendingVideoUploadsSnapshot: jest.fn(() => []),
+  hydratePendingVideoUploads: jest.fn(async () => []),
+  startPendingVideoUploads: jest.fn().mockResolvedValue(undefined),
   resumePendingVideoUploads: jest.fn().mockResolvedValue(undefined),
+  subscribePendingVideoUploadsStartRequests: jest.fn(() => () => undefined),
   subscribePendingVideoUploads: jest.fn(() => () => undefined),
 }));
 
@@ -61,8 +66,36 @@ describe('VideoProcessingRuntime', () => {
     expect(shouldAutoResumePendingVideoUploads('android')).toBe(true);
   });
 
-  it('resumes queued uploads on iOS start and foreground', async () => {
+  it('resumes only remote or native in-flight uploads on lifecycle events', () => {
+    expect(shouldResumePendingVideoUploadsOnLifecycle([createPendingUpload()])).toBe(false);
+    expect(
+      shouldResumePendingVideoUploadsOnLifecycle([
+        createPendingUpload({
+          status: 'processing_remote',
+          watchProcessingStatus: 'PROCESSING',
+        }),
+      ])
+    ).toBe(true);
+    expect(
+      shouldResumePendingVideoUploadsOnLifecycle([
+        createPendingUpload({
+          status: 'uploading',
+          uploadTransport: 'mux_sdk',
+          nativeUploadState: 'uploading',
+        }),
+      ])
+    ).toBe(true);
+  });
+
+  it('hydrates on mount and resumes only on eligible foreground transitions', async () => {
     const onResumeUploads = jest.fn().mockResolvedValue(undefined);
+    const onHydrateUploads = jest.fn(async () => []);
+    const getUploadsSnapshot = jest.fn().mockReturnValue([
+      createPendingUpload({
+        status: 'processing_remote',
+        watchProcessingStatus: 'PROCESSING',
+      }),
+    ]);
     const remove = jest.fn();
     let appStateHandler: ((nextAppState: string) => void) | undefined;
 
@@ -88,16 +121,15 @@ describe('VideoProcessingRuntime', () => {
           appState={appState as any}
           interactionManager={interactionManager as any}
           onResumeUploads={onResumeUploads}
+          onHydrateUploads={onHydrateUploads}
+          getUploadsSnapshot={getUploadsSnapshot}
         />
       );
     });
     expect(tree!.toJSON()).toBeNull();
 
-    await act(async () => {
-      jest.advanceTimersByTime(VIDEO_UPLOAD_RESUME_DELAY_MS);
-    });
-
-    expect(onResumeUploads).toHaveBeenCalledTimes(1);
+    expect(onHydrateUploads).toHaveBeenCalledTimes(1);
+    expect(onResumeUploads).toHaveBeenCalledTimes(0);
 
     await act(async () => {
       appStateHandler?.('background');
@@ -105,13 +137,47 @@ describe('VideoProcessingRuntime', () => {
       jest.advanceTimersByTime(VIDEO_UPLOAD_RESUME_DELAY_MS);
     });
 
-    expect(onResumeUploads).toHaveBeenCalledTimes(2);
+    expect(onResumeUploads).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       tree!.unmount();
     });
 
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts queued uploads after receiving a deferred start request', async () => {
+    const onStartUploads = jest.fn().mockResolvedValue(undefined);
+    let startRequestHandler: (() => void) | undefined;
+
+    const interactionManager = {
+      runAfterInteractions: jest.fn((callback: () => void) => {
+        callback();
+        return { cancel: jest.fn() };
+      }),
+    };
+    const subscribeToStartRequests = jest.fn((listener: () => void) => {
+      startRequestHandler = listener;
+      return () => undefined;
+    });
+
+    await act(async () => {
+      TestRenderer.create(
+        <VideoProcessingRuntime
+          platformOS="android"
+          interactionManager={interactionManager as any}
+          onStartUploads={onStartUploads}
+          subscribeToStartRequests={subscribeToStartRequests}
+        />
+      );
+    });
+
+    await act(async () => {
+      startRequestHandler?.();
+      jest.advanceTimersByTime(VIDEO_UPLOAD_RESUME_DELAY_MS);
+    });
+
+    expect(onStartUploads).toHaveBeenCalledTimes(1);
   });
 
   it('builds a success toast event for completed uploads', () => {

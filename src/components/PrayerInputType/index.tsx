@@ -9,6 +9,12 @@ import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
+import {
+  buildPendingModerationReviewPayload,
+  callBackendFallbackModeration,
+  moderateClientText,
+} from '@/src/services/moderation/clientModeration';
+import type { ModerationReviewCheckPayload } from '@/src/services/moderation/types';
 import Button from '../Button';
 import { sanitizeComposerText } from '@/components/composer/composerText';
 import StyledText from '../styled/Text';
@@ -47,6 +53,48 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
 
   const createPrayer = async () => {
     dispatch(setLoader(true));
+    const moderation = await moderateClientText(prayer);
+    let pendingReviewCheck: ModerationReviewCheckPayload | undefined;
+    if (moderation.action === 'block') {
+      dispatch(setLoader(false));
+      Toast.show('This prayer was screened because it violates our Terms of Use.', Toast.LONG);
+      return;
+    }
+
+    if (moderation.action === 'fallback') {
+      try {
+        const fallbackResponse = await callBackendFallbackModeration({
+          type: 'text',
+          content: prayer,
+          clientMetadata: {
+            source: moderation.source,
+            scores: moderation.scores,
+            reason: moderation.reason,
+            model: moderation.model,
+          },
+        });
+
+        if (fallbackResponse.finalAction === 'flag_for_admin_review') {
+          pendingReviewCheck = {
+            type: 'text',
+            clientSource: moderation.source,
+            clientScores: moderation.scores,
+            clientReason: moderation.reason,
+            clientModel: moderation.model,
+            fallbackAction: fallbackResponse.finalAction,
+            fallbackProvider: fallbackResponse.provider,
+            fallbackFlagged: fallbackResponse.flagged,
+            fallbackModel: fallbackResponse.model,
+            fallbackResults: fallbackResponse.results,
+          };
+        }
+      } catch (error) {
+        dispatch(setLoader(false));
+        Toast.show('Unable to complete moderation right now. Please try again.', Toast.LONG);
+        return;
+      }
+    }
+
     if (payerType === 'answer') {
       dispatch(setLoader(true));
       try {
@@ -91,7 +139,13 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
     } else {
       try {
         const res = await ApiCall({
-          params: { prayer, prayerType: payerType },
+          params: {
+            prayer,
+            prayerType: payerType,
+            moderationReview: buildPendingModerationReviewPayload(
+              [pendingReviewCheck].filter(Boolean) as ModerationReviewCheckPayload[]
+            ),
+          },
           token,
           route: 'prayers/new-prayer',
           verb: 'post',
@@ -102,7 +156,7 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
           setPrayerTypeShow(false);
           setPrayerType(null);
           setPrayer('');
-          Toast.show(res?.response?.message, Toast.LONG);
+          Toast.show(res?.response?.message || 'Your prayer was submitted.', Toast.LONG);
 
           dispatch(
             getMyPrayer({

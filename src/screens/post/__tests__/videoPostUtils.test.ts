@@ -1,9 +1,17 @@
+/* eslint-disable import/first */
+jest.mock('@/src/services/videoProcessing/videoUploadQueue', () => ({
+  enqueuePendingVideoUpload: jest.fn(),
+  requestPendingVideoUploadsStart: jest.fn(),
+}));
+
 import {
+  BLOCKED_WATCH_CAPTION_MESSAGE,
   buildPendingVideoUploadRecipe,
   copyVideoSourceToAppCache,
   formatAspectRatioLabel,
   getVideoFitSize,
   isSuccessfulStatus,
+  moderateWatchCaptionLocally,
 } from '../videoPostUtils';
 
 describe('videoPostUtils', () => {
@@ -105,6 +113,28 @@ describe('videoPostUtils', () => {
           },
         })
       ).toThrow('Video trim settings are invalid.');
+    });
+  });
+
+  describe('moderateWatchCaptionLocally', () => {
+    it('blocks obvious unsafe captions locally', () => {
+      expect(moderateWatchCaptionLocally('Subscribe for nudes and porn')).toEqual({
+        blocked: true,
+        matchedRuleIds: ['explicit-sexual-content'],
+      });
+    });
+
+    it('does not block ordinary captions', () => {
+      expect(moderateWatchCaptionLocally('Sunday morning encouragement')).toEqual({
+        blocked: false,
+        matchedRuleIds: [],
+      });
+    });
+
+    it('exposes the user-facing blocked message constant', () => {
+      expect(BLOCKED_WATCH_CAPTION_MESSAGE).toBe(
+        'This caption violates content standards and cannot be posted to Watch.'
+      );
     });
   });
 

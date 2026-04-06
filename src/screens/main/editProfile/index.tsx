@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput } from 'react-native';
+import {
+  ActionSheetIOS,
+  Alert,
+  Dimensions,
+  Platform,
+  ScrollView,
+  Switch,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {
   CameraOptions,
   ImageLibraryOptions,
@@ -22,7 +32,6 @@ import Button from '@/components/Button';
 
 import { styles } from './styles';
 import { profileUpdate } from '@/src/redux/actions/AuthActions';
-import ImagePickerModal from '@/components/ImagePickerModal';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 
@@ -121,8 +130,6 @@ function EditProfile({ navigation, route }: Props) {
   }, []);
 
   const [gender] = useState(user?.gender);
-  const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
-  const [headerImagePickerModalVisibile, setHeaderImagePickerModalVisibile] = useState(false);
   const [imageToUpload, setImageToUpload] = useState('');
   const [imageObject, setImageObject] = useState<{ uri: string; type: string; name: string }>();
 
@@ -211,22 +218,6 @@ function EditProfile({ navigation, route }: Props) {
 
   const { colors } = useTheme();
 
-  useFocusEffect(
-    useCallback(() => {
-      const intent = route.params?.openMediaPicker;
-
-      if (shouldOpenPhotoPicker(intent)) {
-        setPickerModalVisibile(true);
-      } else if (shouldOpenHeaderPicker(intent)) {
-        setHeaderImagePickerModalVisibile(true);
-      }
-
-      if (shouldConsumeMediaPickerIntent(intent)) {
-        navigation.setParams({ openMediaPicker: undefined });
-      }
-    }, [navigation, route.params?.openMediaPicker])
-  );
-
   useEffect(() => {
     if (newLocation && latitude && longitude) {
       setLocation({
@@ -294,51 +285,6 @@ function EditProfile({ navigation, route }: Props) {
     }
   }, [devLog, token]);
 
-  const captureImage = async (contentType: MediaType, imageType: 'header' | 'photo') => {
-    const options: CameraOptions = {
-      mediaType: contentType,
-      quality: 0.8,
-      // noData: true,
-    };
-    // let isCameraPermitted = await requestCameraPermission();
-    const isStoragePermitted = await requestExternalWritePermission();
-    if (isStoragePermitted) {
-      const response = await launchCamera(options);
-
-      devLog('Response = ', response);
-
-      if (response.didCancel) {
-        devLog('User cancelled camera picker');
-
-        return;
-      }
-      if (response.errorCode === 'camera_unavailable') {
-        devLog('Camera not available on device');
-
-        return;
-      }
-      if (response.errorCode === 'permission') {
-        devLog('Permission not satisfied');
-
-        return;
-      }
-      if (response.errorCode === 'others') {
-        devLog(response.errorMessage);
-
-        return;
-      }
-      const uri = response?.assets?.at(0)?.uri ?? '';
-      const type = response?.assets?.at(0)?.type ?? '';
-      const name = response?.assets?.at(0)?.fileName ?? '';
-
-      setImageObject({ uri, type, name });
-      setImageToUpload(uri);
-
-      cropimage(uri, imageType);
-    } else {
-      // console.log('no ', isCameraPermitted);
-    }
-  };
   const getWhatIDo = useCallback(async () => {
     try {
       const res = await ApiCall({
@@ -392,79 +338,187 @@ function EditProfile({ navigation, route }: Props) {
     }
   };
 
-  const chooseImageGallery = async (imageType: 'header' | 'photo') => {
-    const options: ImageLibraryOptions = {
-      mediaType: 'photo',
+  const cropimage = useCallback(
+    async (uri: string, imageType: 'header' | 'photo') => {
+      try {
+        setTimeout(async () => {
+          const image = await ImagePicker.openCropper({
+            height: imageType === 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
+            width: imageType === 'header' ? Dimensions.get('screen').width : undefined,
+            mediaType: 'photo',
+            cropperCircleOverlay: imageType === 'photo',
+            path: uri,
+            forceJpg: true,
+            maxFiles: 1,
+            compressImageMaxHeight: 150,
+          });
+          const croppedMedia = buildCroppedMediaState({
+            image,
+            imageType,
+            userId: user?._id,
+          });
 
-      // noData: true,
-      selectionLimit: 0.8,
-    };
-    const response = await launchImageLibrary(options);
+          if (imageType === 'photo') {
+            setImageToUpload(croppedMedia.previewUri);
+            setImageObject(croppedMedia.upload);
+          } else {
+            setHeaderImageToUpload(croppedMedia.previewUri);
+            setHeaderImageObject(croppedMedia.upload);
+          }
+        }, 500);
+      } catch (e) {
+        devLog(e);
+      }
+    },
+    [devLog, user?._id]
+  );
 
-    if (response.didCancel) {
-      devLog('User cancelled camera picker');
+  const captureImage = useCallback(
+    async (contentType: MediaType, imageType: 'header' | 'photo') => {
+      const options: CameraOptions = {
+        mediaType: contentType,
+        quality: 0.8,
+        // noData: true,
+      };
+      // let isCameraPermitted = await requestCameraPermission();
+      const isStoragePermitted = await requestExternalWritePermission();
+      if (isStoragePermitted) {
+        const response = await launchCamera(options);
 
-      return;
-    }
-    if (response.errorCode === 'camera_unavailable') {
-      devLog('Camera not available on device');
+        devLog('Response = ', response);
 
-      return;
-    }
-    if (response.errorCode === 'permission') {
-      devLog('Permission not satisfied');
+        if (response.didCancel) {
+          devLog('User cancelled camera picker');
 
-      return;
-    }
-    if (response.errorCode === 'others') {
-      devLog(response.errorMessage);
-      return;
-    }
-    const uri = response?.assets ? response?.assets[0]?.uri : '';
-    // if (imageType == 'photo') {
-    //   setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
-    //   setImageToUpload(uri ?? '');
-    // } else {
-    //   setHeaderImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
-    //   setHeaderImageToUpload(uri ?? '');
-    // }
-
-    cropimage(uri ?? '', imageType);
-  };
-
-  const cropimage = async (uri: string, imageType: 'header' | 'photo') => {
-    try {
-      setTimeout(async () => {
-        const image = await ImagePicker.openCropper({
-          height: imageType === 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
-          width: imageType === 'header' ? Dimensions.get('screen').width : undefined,
-          mediaType: 'photo',
-          cropperCircleOverlay: imageType === 'photo',
-          path: uri,
-          forceJpg: true,
-          maxFiles: 1,
-          compressImageMaxHeight: 150,
-        });
-        const croppedMedia = buildCroppedMediaState({
-          image,
-          imageType,
-          userId: user?._id,
-        });
-
-        if (imageType === 'photo') {
-          setImageToUpload(croppedMedia.previewUri);
-          setImageObject(croppedMedia.upload);
-          setPickerModalVisibile(false);
-        } else {
-          setHeaderImageToUpload(croppedMedia.previewUri);
-          setHeaderImageObject(croppedMedia.upload);
-          setHeaderImagePickerModalVisibile(false);
+          return;
         }
-      }, 500);
-    } catch (e) {
-      devLog(e);
-    }
-  };
+        if (response.errorCode === 'camera_unavailable') {
+          devLog('Camera not available on device');
+
+          return;
+        }
+        if (response.errorCode === 'permission') {
+          devLog('Permission not satisfied');
+
+          return;
+        }
+        if (response.errorCode === 'others') {
+          devLog(response.errorMessage);
+
+          return;
+        }
+        const uri = response?.assets?.at(0)?.uri ?? '';
+        const type = response?.assets?.at(0)?.type ?? '';
+        const name = response?.assets?.at(0)?.fileName ?? '';
+
+        setImageObject({ uri, type, name });
+        setImageToUpload(uri);
+
+        cropimage(uri, imageType);
+      } else {
+        // console.log('no ', isCameraPermitted);
+      }
+    },
+    [cropimage, devLog]
+  );
+
+  const chooseImageGallery = useCallback(
+    async (imageType: 'header' | 'photo') => {
+      const options: ImageLibraryOptions = {
+        mediaType: 'photo',
+
+        // noData: true,
+        selectionLimit: 0.8,
+      };
+      const response = await launchImageLibrary(options);
+
+      if (response.didCancel) {
+        devLog('User cancelled camera picker');
+
+        return;
+      }
+      if (response.errorCode === 'camera_unavailable') {
+        devLog('Camera not available on device');
+
+        return;
+      }
+      if (response.errorCode === 'permission') {
+        devLog('Permission not satisfied');
+
+        return;
+      }
+      if (response.errorCode === 'others') {
+        devLog(response.errorMessage);
+        return;
+      }
+      const uri = response?.assets ? response?.assets[0]?.uri : '';
+      // if (imageType == 'photo') {
+      //   setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
+      //   setImageToUpload(uri ?? '');
+      // } else {
+      //   setHeaderImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
+      //   setHeaderImageToUpload(uri ?? '');
+      // }
+
+      cropimage(uri ?? '', imageType);
+    },
+    [cropimage, devLog]
+  );
+
+  const showImageSourceOptions = useCallback(
+    (imageType: 'header' | 'photo') => {
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['Cancel', 'Choose From Gallery', 'Open Camera'],
+            cancelButtonIndex: 0,
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) {
+              chooseImageGallery(imageType).catch(() => undefined);
+            }
+            if (buttonIndex === 2) {
+              captureImage('photo', imageType).catch(() => undefined);
+            }
+          }
+        );
+        return;
+      }
+
+      Alert.alert('Select image source', undefined, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Choose From Gallery',
+          onPress: () => {
+            chooseImageGallery(imageType).catch(() => undefined);
+          },
+        },
+        {
+          text: 'Open Camera',
+          onPress: () => {
+            captureImage('photo', imageType).catch(() => undefined);
+          },
+        },
+      ]);
+    },
+    [captureImage, chooseImageGallery]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const intent = route.params?.openMediaPicker;
+
+      if (shouldOpenPhotoPicker(intent)) {
+        showImageSourceOptions('photo');
+      } else if (shouldOpenHeaderPicker(intent)) {
+        showImageSourceOptions('header');
+      }
+
+      if (shouldConsumeMediaPickerIntent(intent)) {
+        navigation.setParams({ openMediaPicker: undefined });
+      }
+    }, [navigation, route.params?.openMediaPicker, showImageSourceOptions])
+  );
   const go = () => {
     navigation.goBack();
   };
@@ -650,17 +704,9 @@ function EditProfile({ navigation, route }: Props) {
                 width: 42,
               }}
             >
-              <ImagePickerModal
-                visible={headerImagePickerModalVisibile}
-                hideVisible={() => setHeaderImagePickerModalVisibile(false)}
-                galleryImage={() => chooseImageGallery('header')}
-                cameraImage={() => captureImage('photo', 'header')}
-              />
-
               <TouchableOpacity
-                onPress={() => {
-                  setHeaderImagePickerModalVisibile(true);
-                }}
+                onPress={() => showImageSourceOptions('header')}
+                testID="edit-profile-header-image-button"
               >
                 <GalleryEdit size={22} color={Colors.neutral[200]} />
               </TouchableOpacity>
@@ -673,15 +719,10 @@ function EditProfile({ navigation, route }: Props) {
                 marginLeft: spacing.x24,
               }}
             >
-              <ImagePickerModal
-                visible={pickerModalVisibile}
-                hideVisible={() => setPickerModalVisibile(false)}
-                galleryImage={() => chooseImageGallery('photo')}
-                cameraImage={() => captureImage('photo', 'photo')}
-              />
               <TouchableOpacity
-                onPress={() => setPickerModalVisibile(true)}
+                onPress={() => showImageSourceOptions('photo')}
                 style={styles.imageContainer}
+                testID="edit-profile-avatar-image-button"
               >
                 <View
                   style={{

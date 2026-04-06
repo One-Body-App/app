@@ -10,7 +10,8 @@
     "**/*.ts",
     "jest/**/*.js",
     "jest.setup.js",
-    "scripts/**/*.js"
+    "scripts/**/*.js",
+    "stubs/**/*.js"
   ],
   "exclude": ["node_modules", "ios/Pods", "ios/build", "android/build", "vendor"]
 }

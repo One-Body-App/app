@@ -1,8 +1,6 @@
-diff --git a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt
-index f82a833..c2fd471 100644
 --- a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt
 +++ b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt
-@@ -10,6 +10,9 @@ import android.content.DialogInterface
+@@ -10,6 +10,9 @@
  import android.content.Intent
  import android.content.pm.PackageManager
  import android.content.res.ColorStateList
@@ -12,7 +10,7 @@ index f82a833..c2fd471 100644
  import android.os.Build
  import android.util.Log
  import android.util.TypedValue
-@@ -39,9 +42,12 @@ import com.videotrim.widgets.VideoTrimmerView
+@@ -39,9 +42,12 @@
  import iknow.android.utils.BaseUtils
  import java.io.File
  import java.io.FileInputStream
@@ -25,7 +23,7 @@ index f82a833..c2fd471 100644
  import java.util.TimeZone
  
  @ReactModule(name = VideoTrimModule.NAME)
-@@ -310,7 +316,11 @@ class VideoTrimModule(reactContext: ReactApplicationContext) :
+@@ -310,7 +316,11 @@
  
    override fun onSave() {
      if (!editorConfig?.getBoolean("enableSaveDialog")!!) {
@@ -38,7 +36,7 @@ index f82a833..c2fd471 100644
        return
      }
  
-@@ -320,7 +330,11 @@ class VideoTrimModule(reactContext: ReactApplicationContext) :
+@@ -320,7 +330,11 @@
      builder.setCancelable(false)
      builder.setPositiveButton(editorConfig?.getString("saveDialogConfirmText")) { dialog: DialogInterface, _: Int ->
        dialog.cancel()
@@ -51,7 +49,7 @@ index f82a833..c2fd471 100644
      }
      builder.setNegativeButton(
        editorConfig?.getString("saveDialogCancelText") ?: "Cancel"
-@@ -339,6 +353,25 @@ class VideoTrimModule(reactContext: ReactApplicationContext) :
+@@ -339,6 +353,25 @@
      emitOnStatistics(statistics)
    }
  
@@ -77,10 +75,12 @@ index f82a833..c2fd471 100644
    private fun startTrim() {
      val activity = reactApplicationContext.currentActivity
      // Create the parent layout for the dialog
-@@ -623,6 +656,336 @@ class VideoTrimModule(reactContext: ReactApplicationContext) :
+@@ -621,8 +654,336 @@
+     }, { statistics ->
+       // Handle statistics if needed
      })
-   }
- 
++  }
++
 +  override fun extractEditedFrames(url: String, options: ReadableMap, promise: Promise) {
 +    Thread {
 +      var releaseInputPath: String? = null
@@ -166,8 +166,8 @@ index f82a833..c2fd471 100644
 +        }
 +      }
 +    }.start()
-+  }
-+
+   }
+ 
 +  override fun exportEditedVideo(url: String, options: ReadableMap, promise: Promise) {
 +    var releaseInputPath: String? = null
 +    try {
@@ -233,9 +233,7 @@ index f82a833..c2fd471 100644
 +        "-map",
 +        "0:a?",
 +        "-c:v",
-+        "libx264",
-+        "-preset",
-+        "faster",
++        "mpeg4",
 +        "-pix_fmt",
 +        "yuv420p",
 +        "-b:v",
@@ -414,14 +412,32 @@ index f82a833..c2fd471 100644
    private fun saveFileToExternalStorage(file: File) {
      val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
      intent.addCategory(Intent.CATEGORY_OPENABLE)
-diff --git a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.java b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.java
-index e9a9fdb..8b618c6 100644
+--- a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/utils/VideoTrimmerUtil.java
++++ b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/utils/VideoTrimmerUtil.java
+@@ -32,8 +32,8 @@
+ 
+   private static final String TAG = VideoTrimmerUtil.class.getSimpleName();
+   public static final String FILE_PREFIX = "trimmedVideo";
+-  public static final long MIN_SHOOT_DURATION = 1000L;// min 3 seconds for trimming
+-  public static final int VIDEO_MAX_TIME = 10;// max 10 seconds for trimming
++  public static final long MIN_SHOOT_DURATION = 1000L;
++  public static final int VIDEO_MAX_TIME = 60;
+   public static final long MAX_SHOOT_DURATION = VIDEO_MAX_TIME * 1000L;
+ //  public static long maxShootDuration = 10 * 1000L;
+   public static int MAX_COUNT_RANGE = 10;  // how many images in the highlight range of seek bar
+@@ -164,4 +164,3 @@
+     });
+   }
+ }
+-
 --- a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.java
 +++ b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.java
-@@ -385,6 +385,22 @@ public class VideoTrimmerView extends FrameLayout implements IVideoTrimmerView {
+@@ -383,8 +383,24 @@
+       rotationAngle,
+       mOnTrimVideoListener
      );
-   }
- 
++  }
++
 +  public long getSelectedStartTimeMs() {
 +    return startTime;
 +  }
@@ -432,8 +448,8 @@ index e9a9fdb..8b618c6 100644
 +
 +  public int getVideoDurationMs() {
 +    return mDuration;
-+  }
-+
+   }
+ 
 +  public String getSourceUriString() {
 +    return mSourceUri != null ? mSourceUri.toString() : "";
 +  }
@@ -441,11 +457,18 @@ index e9a9fdb..8b618c6 100644
    public void onCancelTrimClicked() {
      if (ffmpegSession != null) {
        ffmpegSession.cancel();
-diff --git a/node_modules/react-native-video-trim/ios/VideoTrim.mm b/node_modules/react-native-video-trim/ios/VideoTrim.mm
-index 1c94327..78e5a39 100644
+--- a/node_modules/react-native-video-trim/ios/VideoTrim.h
++++ b/node_modules/react-native-video-trim/ios/VideoTrim.h
+@@ -27,5 +27,6 @@
+ - (void)shareFile:(NSURL *)fileURL;
+ - (int)deleteFileAtURL:(NSURL *)url;
+ - (void)onError:(NSString *)message code:(NSString *)code;
++- (NSURL *)resolveInputURL:(NSString *)value;
+ 
+ @end
 --- a/node_modules/react-native-video-trim/ios/VideoTrim.mm
 +++ b/node_modules/react-native-video-trim/ios/VideoTrim.mm
-@@ -102,6 +102,16 @@ RCT_EXPORT_MODULE()
+@@ -102,6 +102,16 @@
      resolve(result);
  }
  
@@ -462,7 +485,7 @@ index 1c94327..78e5a39 100644
  - (void)listFiles:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject { 
      NSMutableArray *files = [NSMutableArray array];
      NSURL *documentsDirectory = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject];
-@@ -193,6 +203,19 @@ RCT_EXPORT_MODULE()
+@@ -193,6 +203,19 @@
          
          self.vc.saveBtnClicked = ^(CMTimeRange selectedRange) {
              if (!weakSelf.editorConfig.enableSaveDialog()) {
@@ -482,7 +505,7 @@ index 1c94327..78e5a39 100644
                  [weakSelf trimWithViewController:weakSelf.vc
                                         inputFile:destPath
                                     videoDuration:CMTimeGetSeconds(weakSelf.vc.asset.duration)
-@@ -209,6 +232,19 @@ RCT_EXPORT_MODULE()
+@@ -209,6 +232,19 @@
              UIAlertAction *ok = [UIAlertAction actionWithTitle:weakSelf.editorConfig.saveDialogConfirmText()
                                                           style:UIAlertActionStyleDefault
                                                         handler:^(UIAlertAction *action) {
@@ -502,7 +525,7 @@ index 1c94327..78e5a39 100644
                  [weakSelf trimWithViewController:weakSelf.vc
                                         inputFile:destPath
                                     videoDuration:CMTimeGetSeconds(weakSelf.vc.asset.duration)
-@@ -251,7 +287,7 @@ RCT_EXPORT_MODULE()
+@@ -251,7 +287,7 @@
  }
  
  - (void)trim:(nonnull NSString *)url options:(JS::NativeVideoTrim::TrimOptions &)options resolve:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject { 
@@ -511,10 +534,12 @@ index 1c94327..78e5a39 100644
      if (!inputURL) {
          reject(@"INVALID_URL", @"Invalid input URL", nil);
          return;
-@@ -292,6 +328,289 @@ RCT_EXPORT_MODULE()
+@@ -290,8 +326,290 @@
+             reject(@"TRIMMING_FAILED", errorMessage, nil);
+         }
      } withLogCallback:nil withStatisticsCallback:nil];
- }
- 
++}
++
 +- (CGRect)normalizedCropRectForWidth:(NSInteger)width
 +                              height:(NSInteger)height
 +                               cropX:(double)cropX
@@ -658,8 +683,8 @@ index 1c94327..78e5a39 100644
 +
 +        resolve(framePaths);
 +    });
-+}
-+
+ }
+ 
 +- (void)exportEditedVideo:(nonnull NSString *)url options:(JS::NativeVideoTrim::ExportVideoOptions &)options resolve:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject {
 +    NSURL *inputURL = [self resolveInputURL:url];
 +    if (!inputURL) {
@@ -706,7 +731,7 @@ index 1c94327..78e5a39 100644
 +                             (long)cropRect.origin.y,
 +                             (long)outputWidth,
 +                             (long)outputHeight];
-+    NSString *encoder = @"libx264";
++    NSString *encoder = @"mpeg4";
 +
 +    NSMutableArray *cmds = [NSMutableArray arrayWithObjects:
 +        @"-y",
@@ -717,7 +742,6 @@ index 1c94327..78e5a39 100644
 +        @"-map", @"0:v:0",
 +        @"-map", @"0:a?",
 +        @"-c:v", encoder,
-+        @"-preset", @"faster",
 +        @"-pix_fmt", @"yuv420p",
 +        @"-b:v", [NSString stringWithFormat:@"%.0f", options.videoBitrate()],
 +        @"-maxrate", [NSString stringWithFormat:@"%.0f", options.videoBitrate()],
@@ -801,11 +825,119 @@ index 1c94327..78e5a39 100644
  - (void)trimWithViewController:(VideoTrimmerViewController *)viewController 
                       inputFile:(NSURL *)inputFile 
                   videoDuration:(double)videoDuration 
-diff --git a/node_modules/react-native-video-trim/src/NativeVideoTrim.ts b/node_modules/react-native-video-trim/src/NativeVideoTrim.ts
-index ca35ef9..3af737b 100644
+--- a/node_modules/react-native-video-trim/lib/module/index.js
++++ b/node_modules/react-native-video-trim/lib/module/index.js
+@@ -24,6 +24,7 @@
+ function createEditorConfig(overrides = {}) {
+   return {
+     enableHapticFeedback: true,
++    emitTrimSelectionOnly: false,
+     maxDuration: -1,
+     minDuration: -1,
+     cancelButtonText: 'Cancel',
+@@ -147,6 +148,15 @@
+ export function trim(url, options) {
+   return VideoTrim.trim(url, createTrimOptions(options));
+ }
++export function extractEditedFrames(url, options) {
++  return VideoTrim.extractEditedFrames(url, options);
++}
++export function exportEditedVideo(url, options) {
++  return VideoTrim.exportEditedVideo(url, {
++    ...createBaseOptions(options),
++    ...options
++  });
++}
+ export * from "./NativeVideoTrim.js";
+ export default VideoTrim;
+-//# sourceMappingURL=index.js.map
+\ No newline at end of file
++//# sourceMappingURL=index.js.map
+--- a/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
++++ b/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
+@@ -17,6 +17,7 @@
+ }
+ export interface EditorConfig extends BaseOptions {
+     enableHapticFeedback: boolean;
++    emitTrimSelectionOnly: boolean;
+     maxDuration: number;
+     minDuration: number;
+     cancelButtonText: string;
+@@ -60,6 +61,35 @@
+     fileType: string;
+     duration: number;
+ }
++export interface EditedFrameOptions {
++    startTime: number;
++    endTime: number;
++    cropX: number;
++    cropY: number;
++    cropWidth: number;
++    cropHeight: number;
++    outputWidth: number;
++    outputHeight: number;
++    frameCount: number;
++}
++export interface ExportVideoOptions extends BaseOptions {
++    startTime: number;
++    endTime: number;
++    cropX: number;
++    cropY: number;
++    cropWidth: number;
++    cropHeight: number;
++    outputWidth: number;
++    outputHeight: number;
++    videoBitrate: number;
++    audioBitrate: number;
++}
++export interface ExportedVideoResult {
++    outputPath: string;
++    duration: number;
++    width: number;
++    height: number;
++}
+ export interface Spec extends TurboModule {
+     showEditor(filePath: string, config: EditorConfig): void;
+     listFiles(): Promise<string[]>;
+@@ -68,6 +98,8 @@
+     closeEditor(): void;
+     isValidFile(url: string): Promise<FileValidationResult>;
+     trim(url: string, options: TrimOptions): Promise<string>;
++    extractEditedFrames(url: string, options: EditedFrameOptions): Promise<string[]>;
++    exportEditedVideo(url: string, options: ExportVideoOptions): Promise<ExportedVideoResult>;
+     readonly onStartTrimming: EventEmitter<void>;
+     readonly onCancelTrimming: EventEmitter<void>;
+     readonly onCancel: EventEmitter<void>;
+@@ -104,4 +136,4 @@
+ }
+ declare const _default: Spec;
+ export default _default;
+-//# sourceMappingURL=NativeVideoTrim.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=NativeVideoTrim.d.ts.map
+--- a/node_modules/react-native-video-trim/lib/typescript/src/index.d.ts
++++ b/node_modules/react-native-video-trim/lib/typescript/src/index.d.ts
+@@ -1,5 +1,5 @@
+ import VideoTrim from './NativeVideoTrim';
+-import type { EditorConfig, FileValidationResult, TrimOptions } from './NativeVideoTrim';
++import type { EditedFrameOptions, EditorConfig, ExportedVideoResult, ExportVideoOptions, FileValidationResult, TrimOptions } from './NativeVideoTrim';
+ export * from './NativeVideoTrim';
+ /**
+  * Show video editor
+@@ -50,6 +50,8 @@
+  * @returns {Promise<string>} A **Promise** which resolves to the trimmed file path
+  */
+ export declare function trim(url: string, options: Partial<TrimOptions>): Promise<string>;
++export declare function extractEditedFrames(url: string, options: EditedFrameOptions): Promise<string[]>;
++export declare function exportEditedVideo(url: string, options: ExportVideoOptions): Promise<ExportedVideoResult>;
+ export * from './NativeVideoTrim';
+ export default VideoTrim;
+-//# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=index.d.ts.map
 --- a/node_modules/react-native-video-trim/src/NativeVideoTrim.ts
 +++ b/node_modules/react-native-video-trim/src/NativeVideoTrim.ts
-@@ -20,6 +20,7 @@ export interface BaseOptions {
+@@ -20,6 +20,7 @@
  
  export interface EditorConfig extends BaseOptions {
    enableHapticFeedback: boolean;
@@ -813,7 +945,7 @@ index ca35ef9..3af737b 100644
    maxDuration: number;
    minDuration: number;
    cancelButtonText: string;
-@@ -66,6 +67,38 @@ export interface FileValidationResult {
+@@ -66,6 +67,38 @@
    duration: number;
  }
  
@@ -852,7 +984,7 @@ index ca35ef9..3af737b 100644
  export interface Spec extends TurboModule {
    showEditor(filePath: string, config: EditorConfig): void;
    listFiles(): Promise<string[]>;
-@@ -74,6 +107,8 @@ export interface Spec extends TurboModule {
+@@ -74,6 +107,8 @@
    closeEditor(): void;
    isValidFile(url: string): Promise<FileValidationResult>;
    trim(url: string, options: TrimOptions): Promise<string>;
@@ -861,8 +993,6 @@ index ca35ef9..3af737b 100644
  
    readonly onStartTrimming: EventEmitter<void>;
    readonly onCancelTrimming: EventEmitter<void>;
-diff --git a/node_modules/react-native-video-trim/src/index.tsx b/node_modules/react-native-video-trim/src/index.tsx
-index 7c22f93..6288eb1 100644
 --- a/node_modules/react-native-video-trim/src/index.tsx
 +++ b/node_modules/react-native-video-trim/src/index.tsx
 @@ -1,7 +1,10 @@
@@ -876,7 +1006,7 @@ index 7c22f93..6288eb1 100644
    FileValidationResult,
    TrimOptions,
  } from './NativeVideoTrim';
-@@ -32,6 +35,7 @@ function createEditorConfig(
+@@ -32,6 +35,7 @@
  ): EditorConfig {
    return {
      enableHapticFeedback: true,
@@ -884,7 +1014,7 @@ index 7c22f93..6288eb1 100644
      maxDuration: -1,
      minDuration: -1,
      cancelButtonText: 'Cancel',
-@@ -168,5 +172,22 @@ export function trim(
+@@ -168,5 +172,22 @@
    return VideoTrim.trim(url, createTrimOptions(options));
  }
  
@@ -907,97 +1037,3 @@ index 7c22f93..6288eb1 100644
 +
  export * from './NativeVideoTrim';
  export default VideoTrim;
-diff --git a/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts b/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
-index f0e7f7e..967f813 100644
---- a/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
-+++ b/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
-@@ -17,6 +17,7 @@ export interface BaseOptions {
- }
- export interface EditorConfig extends BaseOptions {
-     enableHapticFeedback: boolean;
-+    emitTrimSelectionOnly: boolean;
-     maxDuration: number;
-     minDuration: number;
-     cancelButtonText: string;
-@@ -60,6 +61,35 @@ export interface FileValidationResult {
-     fileType: string;
-     duration: number;
- }
-+export interface EditedFrameOptions {
-+    startTime: number;
-+    endTime: number;
-+    cropX: number;
-+    cropY: number;
-+    cropWidth: number;
-+    cropHeight: number;
-+    outputWidth: number;
-+    outputHeight: number;
-+    frameCount: number;
-+}
-+export interface ExportVideoOptions extends BaseOptions {
-+    startTime: number;
-+    endTime: number;
-+    cropX: number;
-+    cropY: number;
-+    cropWidth: number;
-+    cropHeight: number;
-+    outputWidth: number;
-+    outputHeight: number;
-+    videoBitrate: number;
-+    audioBitrate: number;
-+}
-+export interface ExportedVideoResult {
-+    outputPath: string;
-+    duration: number;
-+    width: number;
-+    height: number;
-+}
- export interface Spec extends TurboModule {
-     showEditor(filePath: string, config: EditorConfig): void;
-     listFiles(): Promise<string[]>;
-@@ -68,6 +98,8 @@ export interface Spec extends TurboModule {
-     closeEditor(): void;
-     isValidFile(url: string): Promise<FileValidationResult>;
-     trim(url: string, options: TrimOptions): Promise<string>;
-+    extractEditedFrames(url: string, options: EditedFrameOptions): Promise<string[]>;
-+    exportEditedVideo(url: string, options: ExportVideoOptions): Promise<ExportedVideoResult>;
-     readonly onStartTrimming: EventEmitter<void>;
-     readonly onCancelTrimming: EventEmitter<void>;
-     readonly onCancel: EventEmitter<void>;
-@@ -104,4 +136,4 @@ export interface Spec extends TurboModule {
- }
- declare const _default: Spec;
- export default _default;
--//# sourceMappingURL=NativeVideoTrim.d.ts.map
-\ No newline at end of file
-+//# sourceMappingURL=NativeVideoTrim.d.ts.map
-diff --git a/node_modules/react-native-video-trim/lib/module/index.js b/node_modules/react-native-video-trim/lib/module/index.js
-index e8fcab0..25c3878 100644
---- a/node_modules/react-native-video-trim/lib/module/index.js
-+++ b/node_modules/react-native-video-trim/lib/module/index.js
-@@ -24,6 +24,7 @@ function createBaseOptions(overrides = {}) {
- function createEditorConfig(overrides = {}) {
-   return {
-     enableHapticFeedback: true,
-+    emitTrimSelectionOnly: false,
-     maxDuration: -1,
-     minDuration: -1,
-     cancelButtonText: 'Cancel',
-@@ -147,6 +148,15 @@ export function isValidFile(url) {
- export function trim(url, options) {
-   return VideoTrim.trim(url, createTrimOptions(options));
- }
-+export function extractEditedFrames(url, options) {
-+  return VideoTrim.extractEditedFrames(url, options);
-+}
-+export function exportEditedVideo(url, options) {
-+  return VideoTrim.exportEditedVideo(url, {
-+    ...createBaseOptions(options),
-+    ...options
-+  });
-+}
- export * from "./NativeVideoTrim.js";
- export default VideoTrim;
--//# sourceMappingURL=index.js.map
-\ No newline at end of file
-+//# sourceMappingURL=index.js.map

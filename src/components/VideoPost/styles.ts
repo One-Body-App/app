@@ -89,7 +89,7 @@ const videoPostStyles = StyleSheet.create({
   btnSubContainerLandscape: {
     position: 'absolute',
     right: spacing.x16,
-    top: spacing.x120,
+    top: spacing.x104,
     marginHorizontal: 0,
     paddingBottom: 0,
     height: 224,
@@ -119,7 +119,7 @@ const videoPostStyles = StyleSheet.create({
   ratioSelectorRowLandscape: {
     position: 'absolute',
     left: spacing.x16,
-    bottom: spacing.x22,
+    bottom: spacing.x24,
     marginLeft: 0,
     marginBottom: 0,
     zIndex: 9,
@@ -128,7 +128,7 @@ const videoPostStyles = StyleSheet.create({
     minWidth: 54,
     borderRadius: 16,
     paddingHorizontal: spacing.x10,
-    paddingVertical: spacing.x7,
+    paddingVertical: spacing.x8,
     marginHorizontal: 2,
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderWidth: 1,
@@ -356,7 +356,7 @@ const videoPostStyles = StyleSheet.create({
   cameraSettingsCardPortrait: {
     position: 'absolute',
     top: spacing.x72,
-    right: spacing.x66,
+    right: spacing.x64,
     width: 180,
     borderRadius: 12,
     backgroundColor: 'rgba(9, 16, 24, 0.88)',
@@ -366,8 +366,8 @@ const videoPostStyles = StyleSheet.create({
     paddingHorizontal: spacing.x10,
   },
   cameraSettingsCardLandscape: {
-    left: spacing.x66,
-    top: spacing.x120,
+    left: spacing.x64,
+    top: spacing.x104,
     position: 'absolute',
     width: 180,
     borderRadius: 12,

@@ -74,7 +74,6 @@ import {
 import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
-import { resumePendingVideoUploads } from '@/src/services/videoProcessing/videoUploadQueue';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
@@ -276,17 +275,12 @@ function AppContent() {
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
         refreshTokenOnResumeRef.current().catch(() => undefined);
-        resumePendingVideoUploads().catch(() => undefined);
       }
     });
 
     return () => {
       subscription.remove();
     };
-  });
-
-  useMountEffect(() => {
-    resumePendingVideoUploads().catch(() => undefined);
   });
 
   ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;

@@ -25,10 +25,12 @@ class MuxDirectUploadModule(
     private const val PREFS_NAME = "mux_direct_upload_module"
     private const val KEY_UPLOAD_FILES = "upload_files"
     private const val KEY_TERMINAL_STATES = "terminal_states"
+    private const val PROGRESS_EMIT_INTERVAL_MS = 500L
   }
 
   private val uploadRecordsById = mutableMapOf<String, String>()
   private val activeUploadsById = mutableMapOf<String, MuxUpload>()
+  private val lastProgressEmitMs = mutableMapOf<String, Long>()
 
   override fun getName(): String = MODULE_NAME
 
@@ -106,13 +108,18 @@ class MuxDirectUploadModule(
     activeUploadsById[uploadId] = upload
 
     upload.setProgressListener { progress ->
-      emitEvent(
-        uploadId = uploadId,
-        fileUri = fileUri,
-        state = "progress",
-        bytesUploaded = progress.bytesUploaded,
-        bytesTotal = progress.totalBytes,
-      )
+      val now = System.currentTimeMillis()
+      val last = lastProgressEmitMs[uploadId] ?: 0L
+      if (now - last >= PROGRESS_EMIT_INTERVAL_MS) {
+        lastProgressEmitMs[uploadId] = now
+        emitEvent(
+          uploadId = uploadId,
+          fileUri = fileUri,
+          state = "progress",
+          bytesUploaded = progress.bytesUploaded,
+          bytesTotal = progress.totalBytes,
+        )
+      }
     }
 
     upload.setStatusListener { status ->
@@ -172,6 +179,7 @@ class MuxDirectUploadModule(
       }
 
       activeUploadsById.remove(uploadId)
+      lastProgressEmitMs.remove(uploadId)
     }
   }
 

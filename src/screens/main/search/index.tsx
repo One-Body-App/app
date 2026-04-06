@@ -116,7 +116,7 @@ function Search() {
       return () => clearTimeout(timer);
     }
     setResults([]);
-  }, [input, searchType]);
+  }, [fetchData, input, searchType]);
 
   useEffect(() => {
     const getSearchData = async () => {
@@ -178,7 +178,7 @@ function Search() {
 
   const renderSearchResult = useCallback(
     ({ item }: { item: any }) => {
-      if (item.type == 'posts') {
+      if (item.type === 'posts') {
         return (
           <ArticleItem
             key={item.id}
@@ -297,7 +297,7 @@ function Search() {
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => {
-            setRecentSearches(recentSearches.filter((search) => search.item != item.item));
+            setRecentSearches(recentSearches.filter((search) => search.item !== item.item));
           }}
         >
           <Ionicons name="close-outline" size={20} />
@@ -324,13 +324,13 @@ function Search() {
             let addItem = true;
             if (recentSearches.length > 0) {
               recentSearches.forEach((search) => {
-                if (search.item == input) {
+                if (search.item === input) {
                   addItem = false;
                 }
               });
             }
 
-            if (addItem && input != '') {
+            if (addItem && input !== '') {
               setRecentSearches([{ item: input, type: SearchType.search }, ...recentSearches]);
             }
           }}
@@ -381,14 +381,14 @@ function Search() {
               >
                 <TouchableOpacity
                   onPress={() => {
-                    if (searchType != 'users') setSearchType('users');
+                    if (searchType !== 'users') setSearchType('users');
                   }}
                 >
                   <View
                     style={{
                       paddingBottom: 10,
                       borderBottomColor: Colors.neutral.brand,
-                      borderBottomWidth: searchType == 'users' ? 3 : 0,
+                      borderBottomWidth: searchType === 'users' ? 3 : 0,
                       alignSelf: 'flex-start',
                     }}
                   >
@@ -396,7 +396,7 @@ function Search() {
                       style={[
                         header.h3,
                         {
-                          color: searchType == 'users' ? Colors.main.black : Colors.neutral[400],
+                          color: searchType === 'users' ? Colors.main.black : Colors.neutral[400],
                         },
                       ]}
                     >
@@ -408,14 +408,14 @@ function Search() {
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <TouchableOpacity
                   onPress={() => {
-                    if (searchType != 'posts') setSearchType('posts');
+                    if (searchType !== 'posts') setSearchType('posts');
                   }}
                 >
                   <View
                     style={{
                       paddingBottom: 10,
                       borderBottomColor: Colors.neutral.brand,
-                      borderBottomWidth: searchType == 'posts' ? 3 : 0,
+                      borderBottomWidth: searchType === 'posts' ? 3 : 0,
                       alignSelf: 'flex-start',
                     }}
                   >
@@ -423,7 +423,7 @@ function Search() {
                       style={[
                         header.h3,
                         {
-                          color: searchType == 'posts' ? Colors.main.black : Colors.neutral[400],
+                          color: searchType === 'posts' ? Colors.main.black : Colors.neutral[400],
                         },
                       ]}
                     >

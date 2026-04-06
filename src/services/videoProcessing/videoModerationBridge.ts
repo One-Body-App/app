@@ -13,6 +13,8 @@ type VideoModerationRequest = {
 
 type DispatchHandler = (request: VideoModerationRequest) => void;
 
+const MODERATION_TIMEOUT_MS = 30_000;
+
 let dispatchHandler: DispatchHandler | null = null;
 let inFlightRequestId: string | null = null;
 const queuedRequests: VideoModerationRequest[] = [];
@@ -55,32 +57,50 @@ export const requestVideoModeration = (frameDataUris: string[]) =>
     pendingResolvers.set(id, { resolve, reject });
     queuedRequests.push({ id, frameDataUris });
     flushNextRequest();
+
+    setTimeout(() => {
+      if (!pendingResolvers.has(id)) {
+        return;
+      }
+      pendingResolvers.delete(id);
+      const queueIndex = queuedRequests.findIndex((r) => r.id === id);
+      if (queueIndex !== -1) {
+        queuedRequests.splice(queueIndex, 1);
+      }
+      if (inFlightRequestId === id) {
+        inFlightRequestId = null;
+        flushNextRequest();
+      }
+      reject(new Error('Video moderation timed out.'));
+    }, MODERATION_TIMEOUT_MS);
   });
 
 export const resolveVideoModerationRequest = (requestId: string, result: VideoModerationResult) => {
   const resolver = pendingResolvers.get(requestId);
-  if (!resolver) {
+  if (inFlightRequestId === requestId) {
     inFlightRequestId = null;
+  }
+  if (!resolver) {
     flushNextRequest();
     return;
   }
 
   pendingResolvers.delete(requestId);
-  inFlightRequestId = null;
   resolver.resolve(result);
   flushNextRequest();
 };
 
 export const rejectVideoModerationRequest = (requestId: string, error: Error) => {
   const resolver = pendingResolvers.get(requestId);
-  if (!resolver) {
+  if (inFlightRequestId === requestId) {
     inFlightRequestId = null;
+  }
+  if (!resolver) {
     flushNextRequest();
     return;
   }
 
   pendingResolvers.delete(requestId);
-  inFlightRequestId = null;
   resolver.reject(error);
   flushNextRequest();
 };

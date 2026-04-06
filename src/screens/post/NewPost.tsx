@@ -62,6 +62,14 @@ import {
   CLIENT_IMAGE_PICKER_QUALITY,
 } from '@/src/screens/post/uploadImageConfig';
 import { extractExifOrientation } from '@/src/screens/post/uploadImageOrientation';
+import {
+  buildImageDataUri,
+  buildPendingModerationReviewPayload,
+  callBackendFallbackModeration,
+  moderateClientImages,
+  moderateClientText,
+} from '@/src/services/moderation/clientModeration';
+import type { ModerationReviewCheckPayload } from '@/src/services/moderation/types';
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 type AttachmentMode = 'link' | 'document' | null;
@@ -78,6 +86,11 @@ type ProfileSummary = {
   profile_image?: string;
   name?: string;
 };
+
+const TEXT_MODERATION_BLOCK_MESSAGE =
+  'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
+const IMAGE_MODERATION_BLOCK_MESSAGE = 'Photo violates terms of use ';
+const FALLBACK_FLAGGED_MESSAGE = 'Your post was submitted for review.';
 
 function NewPost({ navigation, route }: Props) {
   const MAX_CONTENT_LENGHT = 300;
@@ -129,6 +142,129 @@ function NewPost({ navigation, route }: Props) {
   });
   const content = mentionComposer.text;
   const setContent = mentionComposer.setText;
+
+  const runTextModeration = useCallback(
+    async (value: string) => {
+      const normalizedValue = value.trim();
+      if (!normalizedValue) {
+        return { blocked: false } as const;
+      }
+
+      const result = await moderateClientText(normalizedValue);
+      if (result.action === 'block') {
+        toast.show(TEXT_MODERATION_BLOCK_MESSAGE, {
+          type: 'danger',
+          placement: 'bottom',
+        });
+        return { blocked: true } as const;
+      }
+
+      if (result.action === 'fallback') {
+        try {
+          const fallbackResponse = await callBackendFallbackModeration({
+            type: 'text',
+            content: normalizedValue,
+            clientMetadata: {
+              source: result.source,
+              scores: result.scores,
+              reason: result.reason,
+              model: result.model,
+            },
+          });
+
+          if (fallbackResponse.finalAction === 'flag_for_admin_review') {
+            return {
+              blocked: false,
+              pendingReviewCheck: {
+                type: 'text',
+                clientSource: result.source,
+                clientScores: result.scores,
+                clientReason: result.reason,
+                clientModel: result.model,
+                fallbackAction: fallbackResponse.finalAction,
+                fallbackProvider: fallbackResponse.provider,
+                fallbackFlagged: fallbackResponse.flagged,
+                fallbackModel: fallbackResponse.model,
+                fallbackResults: fallbackResponse.results,
+              } satisfies ModerationReviewCheckPayload,
+            } as const;
+          }
+        } catch (error) {
+          toast.show('Unable to complete moderation right now. Please try again.', {
+            type: 'danger',
+            placement: 'bottom',
+          });
+          return { blocked: true } as const;
+        }
+      }
+
+      return { blocked: false } as const;
+    },
+    [toast]
+  );
+
+  const runImageModeration = useCallback(
+    async (uris: string[]) => {
+      const normalizedUris = uris.map((uri) => String(uri ?? '').trim()).filter(Boolean);
+      if (normalizedUris.length === 0) {
+        return { blocked: false } as const;
+      }
+
+      const result = await moderateClientImages(normalizedUris);
+      if (result.action === 'block') {
+        toast.show(IMAGE_MODERATION_BLOCK_MESSAGE, {
+          type: 'danger',
+          placement: 'bottom',
+        });
+        return { blocked: true } as const;
+      }
+
+      if (result.action === 'fallback') {
+        try {
+          const imagePayload = await Promise.all(
+            normalizedUris.map((uri) => buildImageDataUri(uri))
+          );
+          const fallbackResponse = await callBackendFallbackModeration({
+            type: 'image',
+            content: imagePayload,
+            clientMetadata: {
+              source: result.source,
+              scores: result.scores,
+              reason: result.reason,
+              model: result.model,
+            },
+          });
+
+          if (fallbackResponse.finalAction === 'flag_for_admin_review') {
+            return {
+              blocked: false,
+              pendingReviewCheck: {
+                type: 'image',
+                clientSource: result.source,
+                clientScores: result.scores,
+                clientReason: result.reason,
+                clientModel: result.model,
+                fallbackAction: fallbackResponse.finalAction,
+                fallbackProvider: fallbackResponse.provider,
+                fallbackFlagged: fallbackResponse.flagged,
+                fallbackModel: fallbackResponse.model,
+                fallbackResults: fallbackResponse.results,
+              } satisfies ModerationReviewCheckPayload,
+            } as const;
+          }
+        } catch (error) {
+          toast.show('Unable to complete moderation right now. Please try again.', {
+            type: 'danger',
+            placement: 'bottom',
+          });
+          return { blocked: true } as const;
+        }
+      }
+
+      return { blocked: false } as const;
+    },
+    [toast]
+  );
 
   const navigateToHomeFallback = useCallback(
     (reason: string) => {
@@ -336,6 +472,12 @@ function NewPost({ navigation, route }: Props) {
       .filter((value) => value.length > 0)
       .join('\n\n');
     try {
+      const textModeration = await runTextModeration(mergedContent);
+      if (textModeration.blocked) {
+        setIsLoading(false);
+        return;
+      }
+
       const result = await ApiCall({
         route: `social/post/${route.params?.postId}`,
         token,
@@ -380,6 +522,26 @@ function NewPost({ navigation, route }: Props) {
       .join('\n\n');
 
     try {
+      const textModeration = await runTextModeration(mergedContent);
+      if (textModeration.blocked) {
+        setIsLoading(false);
+        return;
+      }
+
+      const imageModeration = await runImageModeration(
+        imagesToUpload.map((image) => String(image?.uri ?? ''))
+      );
+      if (imageModeration.blocked) {
+        setIsLoading(false);
+        return;
+      }
+
+      const moderationReview = buildPendingModerationReviewPayload(
+        [textModeration.pendingReviewCheck, imageModeration.pendingReviewCheck].filter(
+          Boolean
+        ) as ModerationReviewCheckPayload[]
+      );
+
       const result = await ApiCall({
         route: 'social/post',
         token,
@@ -389,6 +551,7 @@ function NewPost({ navigation, route }: Props) {
             mentionedUserIds: mentionComposer.mentionedUserIds,
             images: uploadImagesObject?.length ? uploadImagesObject : imagesObject,
             gif: mediaGif,
+            moderationReview,
             location: location
               ? {
                   coordinates: location?.geometry.coordinates,
@@ -409,6 +572,19 @@ function NewPost({ navigation, route }: Props) {
 
       console.log('postSocial result', result.status, result.response);
       if (result.status === 200) {
+        const responseMessage =
+          typeof (result.response as { message?: unknown })?.message === 'string'
+            ? String((result.response as { message?: string }).message)
+            : '';
+        const pendingReview = Boolean(
+          (result.response as { pendingReview?: unknown })?.pendingReview
+        );
+        if (pendingReview || responseMessage) {
+          toast.show(responseMessage || FALLBACK_FLAGGED_MESSAGE, {
+            type: 'success',
+            placement: 'bottom',
+          });
+        }
         mentionComposer.reset();
         navigateAfterSocialPostSuccess('create');
       } else if (result.status === 413) {
@@ -470,6 +646,12 @@ function NewPost({ navigation, route }: Props) {
 
     setIsLoading(true);
     try {
+      const textModeration = await runTextModeration(quoteContent);
+      if (textModeration.blocked) {
+        setIsLoading(false);
+        return;
+      }
+
       const result = await ApiCall({
         route: 'social/repost',
         token,
@@ -478,6 +660,9 @@ function NewPost({ navigation, route }: Props) {
           sourceId: repostDraft.sourceId,
           quoteContent,
           mentionedUserIds: mentionComposer.mentionedUserIds,
+          moderationReview: buildPendingModerationReviewPayload(
+            [textModeration.pendingReviewCheck].filter(Boolean) as ModerationReviewCheckPayload[]
+          ),
         },
         verb: 'post',
       });

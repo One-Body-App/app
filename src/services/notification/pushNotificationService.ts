@@ -472,3 +472,22 @@ export const subscribeToForegroundPushMessages = (
 export const clearCachedPushToken = async () => {
   await AsyncStorage.removeItem(FCM_TOKEN_CACHE_KEY);
 };
+
+export const displayVideoUploadLocalNotification = async (id: string, body: string) => {
+  const channelId = await ensureAndroidDefaultChannel();
+  await notifee.displayNotification({
+    id,
+    title: 'Watch',
+    body,
+    android: {
+      channelId,
+      pressAction: { id: 'default' },
+      smallIcon: 'ic_stat_notification',
+      color: '#0A84FF',
+      sound: 'onebodynotificationwave',
+    },
+    ios: {
+      sound: 'onebodynotificationwave',
+    },
+  });
+};

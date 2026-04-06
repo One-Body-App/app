@@ -9,9 +9,11 @@ final class MuxDirectUpload: RCTEventEmitter {
   private static let uploadRecordsKey = "mux_direct_upload_records"
   private static let terminalStatesKey = "mux_direct_upload_terminal_states"
 
+  private static let progressEmitIntervalMs: Double = 500
   private let uploadManager = DirectUploadManager.shared
   private var uploadRecordsById: [String: String] = [:]
   private var activeUploadsById: [String: DirectUpload] = [:]
+  private var lastProgressEmitMs: [String: Double] = [:]
   private var hasListeners = false
 
   override init() {
@@ -134,15 +136,20 @@ final class MuxDirectUpload: RCTEventEmitter {
         )
       }
 
-      self.emitEvent(
-        self.makeEventPayload(
-          uploadId: uploadId,
-          fileUri: fileUri,
-          state: "progress",
-          bytesUploaded: transportStatus.progress?.completedUnitCount,
-          bytesTotal: transportStatus.progress?.totalUnitCount
+      let now = Date().timeIntervalSince1970 * 1000
+      let last = self.lastProgressEmitMs[uploadId] ?? 0
+      if now - last >= Self.progressEmitIntervalMs {
+        self.lastProgressEmitMs[uploadId] = now
+        self.emitEvent(
+          self.makeEventPayload(
+            uploadId: uploadId,
+            fileUri: fileUri,
+            state: "progress",
+            bytesUploaded: transportStatus.progress?.completedUnitCount,
+            bytesTotal: transportStatus.progress?.totalUnitCount
+          )
         )
-      )
+      }
     }
 
     upload.resultHandler = { [weak self] result in
@@ -196,6 +203,7 @@ final class MuxDirectUpload: RCTEventEmitter {
       }
 
       self.activeUploadsById.removeValue(forKey: uploadId)
+      self.lastProgressEmitMs.removeValue(forKey: uploadId)
     }
   }
 

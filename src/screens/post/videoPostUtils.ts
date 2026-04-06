@@ -1,4 +1,8 @@
 import { AUDIO_BITRATE } from '@/src/services/videoProcessing/videoEditMath';
+import {
+  enqueuePendingVideoUpload,
+  requestPendingVideoUploadsStart,
+} from '@/src/services/videoProcessing/videoUploadQueue';
 import type {
   VideoCropRect,
   VideoEditRecipe,
@@ -19,6 +23,56 @@ export type ConfirmedVideoCropSelection = {
   transform: VideoTransformState;
 };
 
+export const QUEUED_WATCH_UPLOAD_TOAST_MESSAGE =
+  "Your Watch video was queued for background processing. We'll notify you when it's live.";
+export const BLOCKED_WATCH_CAPTION_MESSAGE =
+  'This caption violates content standards and cannot be posted to Watch.';
+
+type VideoPostNavigation = {
+  canGoBack: () => boolean;
+  goBack: () => void;
+  navigate: (routeName: string, params?: object) => void;
+};
+
+type QueuePendingWatchUpload = typeof enqueuePendingVideoUpload;
+type RequestQueuedWatchUploadStart = typeof requestPendingVideoUploadsStart;
+type ShowQueuedWatchUploadToast = (
+  message: string,
+  options: {
+    type: 'success';
+    placement: 'bottom';
+  }
+) => void;
+
+type ClientWatchCaptionModerationRule = {
+  id: string;
+  pattern: RegExp;
+};
+
+export type ClientWatchCaptionModerationResult = {
+  blocked: boolean;
+  matchedRuleIds: string[];
+};
+
+const CLIENT_WATCH_CAPTION_BLOCK_RULES: ClientWatchCaptionModerationRule[] = [
+  {
+    id: 'explicit-sexual-content',
+    pattern: /\b(?:porn|xxx|onlyfans|nudes?|sex\s*tape)\b/i,
+  },
+  {
+    id: 'sexual-violence',
+    pattern: /\b(?:rape|raped|raping)\b/i,
+  },
+  {
+    id: 'extreme-hate-slur',
+    pattern: /\b(?:nigg(?:er|a)|fagg?(?:ot)?)\b/i,
+  },
+  {
+    id: 'self-harm-threat',
+    pattern: /\b(?:kill yourself|kys)\b/i,
+  },
+];
+
 const sanitizeRatio = (ratio?: number) => {
   if (!Number.isFinite(ratio) || !ratio || ratio <= 0) {
     return FALLBACK_ASPECT_RATIO;
@@ -28,6 +82,27 @@ const sanitizeRatio = (ratio?: number) => {
 
 export const isSuccessfulStatus = (status?: number) =>
   Number.isFinite(status) && Number(status) >= 200 && Number(status) < 300;
+
+export const moderateWatchCaptionLocally = (
+  caption: string
+): ClientWatchCaptionModerationResult => {
+  const normalizedCaption = String(caption ?? '').trim();
+  if (!normalizedCaption) {
+    return {
+      blocked: false,
+      matchedRuleIds: [],
+    };
+  }
+
+  const matchedRuleIds = CLIENT_WATCH_CAPTION_BLOCK_RULES.filter(({ pattern }) =>
+    pattern.test(normalizedCaption)
+  ).map(({ id }) => id);
+
+  return {
+    blocked: matchedRuleIds.length > 0,
+    matchedRuleIds,
+  };
+};
 
 const ensureFileUri = (value: string) => {
   if (!value) {
@@ -197,4 +272,46 @@ export const buildPendingVideoUploadRecipe = ({
     videoBitrate: confirmedCropSelection.videoBitrate,
     audioBitrate: AUDIO_BITRATE,
   };
+};
+
+const navigateAfterQueueingWatchUpload = (navigation: VideoPostNavigation) => {
+  if (navigation.canGoBack()) {
+    navigation.goBack();
+    return;
+  }
+
+  navigation.navigate('MainRoot', {
+    screen: 'Main',
+    params: {
+      screen: 'HomeTab',
+      params: {
+        screen: 'Home',
+        params: {},
+      },
+    },
+  });
+};
+
+export const finalizeQueuedWatchUpload = async ({
+  navigation,
+  recipe,
+  showQueuedUploadToast,
+  enqueueUpload = enqueuePendingVideoUpload,
+  requestUploadStart = requestPendingVideoUploadsStart,
+}: {
+  navigation: VideoPostNavigation;
+  recipe: VideoEditRecipe;
+  showQueuedUploadToast: ShowQueuedWatchUploadToast;
+  enqueueUpload?: QueuePendingWatchUpload;
+  requestUploadStart?: RequestQueuedWatchUploadStart;
+}) => {
+  await enqueueUpload(recipe, { startImmediately: false });
+
+  showQueuedUploadToast(QUEUED_WATCH_UPLOAD_TOAST_MESSAGE, {
+    type: 'success',
+    placement: 'bottom',
+  });
+
+  requestUploadStart();
+  navigateAfterQueueingWatchUpload(navigation);
 };

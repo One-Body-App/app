@@ -43,11 +43,11 @@ jest.mock('../src/navigator/AppContent', () => {
     return <NativeView testID="mock-app-content" />;
   };
 });
-jest.mock('../src/components/post/VideoModerationBridge', () => {
+jest.mock('../src/components/post/VideoUploadRuntimeHost', () => {
   const { View: NativeView } = require('react-native');
 
-  return function MockVideoModerationBridge() {
-    return <NativeView testID="mock-video-moderation-bridge" />;
+  return function MockVideoUploadRuntimeHost() {
+    return <NativeView testID="mock-video-upload-runtime-host" />;
   };
 });
 jest.mock('../src/services/firebaseApp', () => ({
@@ -59,7 +59,7 @@ jest.mock('../src/hooks/useMountEffect', () => ({
 }));
 
 describe('App', () => {
-  it('renders a single moderation bridge at the root', async () => {
+  it('renders a single upload runtime host at the root', async () => {
     const App = require('../App').default;
     let tree: TestRenderer.ReactTestRenderer;
 
@@ -67,10 +67,12 @@ describe('App', () => {
       tree = TestRenderer.create(<App />);
     });
 
-    const bridgeHosts = tree!.root.findAll((node) => {
-      return node.props.testID === 'mock-video-moderation-bridge' && typeof node.type === 'string';
+    const uploadRuntimeHosts = tree!.root.findAll((node) => {
+      return (
+        node.props.testID === 'mock-video-upload-runtime-host' && typeof node.type === 'string'
+      );
     });
 
-    expect(bridgeHosts).toHaveLength(1);
+    expect(uploadRuntimeHosts).toHaveLength(1);
   });
 });

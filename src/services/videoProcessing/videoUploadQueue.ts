@@ -19,8 +19,13 @@ import {
   normalizeVideoProcessingUri,
   stripFileScheme,
 } from './nativeVideoProcessing';
-import { requestVideoModeration } from './videoModerationBridge';
 import { ApiCall } from '@/src/services/api';
+import {
+  buildImageDataUri,
+  callBackendFallbackModeration,
+  moderateClientText,
+} from '@/src/services/moderation/clientModeration';
+import { requestVideoModeration } from './videoModerationBridge';
 
 const VIDEO_UPLOAD_QUEUE_STORAGE_KEY = 'video-processing.pending-watch-posts.v1';
 const MAX_RETRY_COUNT = 3;
@@ -73,6 +78,7 @@ type QueueDependencies = {
 };
 
 type VideoUploadQueueListener = (items: PendingVideoUpload[]) => void;
+type PendingVideoUploadsStartRequestListener = () => void;
 
 type VideoUploadQueue = {
   hydrate: () => Promise<PendingVideoUpload[]>;
@@ -100,6 +106,27 @@ class QueueError extends Error {
     this.retryable = retryable;
   }
 }
+
+const pendingVideoUploadsStartRequestListeners = new Set<PendingVideoUploadsStartRequestListener>();
+let pendingVideoUploadsStartRequestCount = 0;
+
+const flushPendingVideoUploadsStartRequests = () => {
+  if (
+    pendingVideoUploadsStartRequestCount <= 0 ||
+    pendingVideoUploadsStartRequestListeners.size === 0
+  ) {
+    return;
+  }
+
+  const pendingRequestCount = pendingVideoUploadsStartRequestCount;
+  pendingVideoUploadsStartRequestCount = 0;
+
+  pendingVideoUploadsStartRequestListeners.forEach((listener) => {
+    for (let index = 0; index < pendingRequestCount; index += 1) {
+      listener();
+    }
+  });
+};
 
 const cloneItems = (items: PendingVideoUpload[]) => items.map((item) => ({ ...item }));
 const ACTIVE_QUEUE_STATUSES = new Set<PendingVideoUpload['status']>([
@@ -151,7 +178,8 @@ const normalizeWatchProcessingStatus = (
   if (
     watch?.processingStatus === 'READY' ||
     watch?.processingStatus === 'PROCESSING' ||
-    watch?.processingStatus === 'FAILED_SYNC'
+    watch?.processingStatus === 'FAILED_SYNC' ||
+    watch?.processingStatus === 'FAILED_REVIEW'
   ) {
     return watch.processingStatus;
   }
@@ -228,11 +256,6 @@ const isNativeMuxUploadItem = (item: PendingVideoUpload) =>
 const isNativeMuxUploadRecordActive = (record?: NativeMuxDirectUploadRecord | null) =>
   record?.state === 'uploading' || record?.state === 'paused';
 
-const createFrameDataUri = async (uri: string) => {
-  const base64 = await RNFS.readFile(stripFileScheme(uri), 'base64');
-  return `data:image/jpeg;base64,${base64}`;
-};
-
 const defaultDependencies: QueueDependencies = {
   storage: AsyncStorage,
   fileExists: async (uri) => {
@@ -266,34 +289,128 @@ const defaultDependencies: QueueDependencies = {
       recipe.trimDurationMs ?? recipe.trimEndMs - recipe.trimStartMs
     );
     const frameCount = resolveModerationFrameCount(trimDurationMs);
-    const framePaths = await extractEditedFrames(recipe.sourceUri, {
-      startTime: recipe.trimStartMs,
-      endTime: recipe.trimEndMs,
-      cropX: recipe.cropRect.x,
-      cropY: recipe.cropRect.y,
-      cropWidth: recipe.cropRect.width,
-      cropHeight: recipe.cropRect.height,
-      outputWidth,
-      outputHeight,
-      frameCount,
-    });
+    let framePaths: string[];
+    try {
+      framePaths = await extractEditedFrames(recipe.sourceUri, {
+        startTime: recipe.trimStartMs,
+        endTime: recipe.trimEndMs,
+        cropX: recipe.cropRect.x,
+        cropY: recipe.cropRect.y,
+        cropWidth: recipe.cropRect.width,
+        cropHeight: recipe.cropRect.height,
+        outputWidth,
+        outputHeight,
+        frameCount,
+      });
+    } catch {
+      return {
+        moderationDecision: 'unsure',
+        moderationScores: null,
+        moderationError: 'frame-extraction-failed',
+      };
+    }
 
-    const frameDataUris = await Promise.all(
-      framePaths.map((framePath) => createFrameDataUri(framePath))
-    );
-    const moderationResult = await requestVideoModeration(frameDataUris);
+    try {
+      // Step 1: Visual frame moderation via nsfwjs (WebView bridge)
+      const frameDataUris = await Promise.all(framePaths.map(buildImageDataUri));
+      const bridgeResult = await requestVideoModeration(frameDataUris);
+      const visualResult = {
+        action: (bridgeResult.moderationDecision === 'blocked'
+          ? 'block'
+          : bridgeResult.moderationDecision === 'safe'
+            ? 'allow'
+            : 'fallback') as 'allow' | 'block' | 'fallback',
+        source: 'nsfwjs' as const,
+        scores: bridgeResult.moderationScores ?? {
+          neutral: 0,
+          drawing: 0,
+          sexy: 0,
+          porn: 0,
+          hentai: 0,
+        },
+        reason: bridgeResult.moderationError,
+        model: 'nsfwjs' as const,
+      };
+      if (visualResult.action === 'block') {
+        return {
+          moderationDecision: 'blocked' as const,
+          moderationScores: visualResult.scores,
+          moderationError: visualResult.reason,
+        };
+      }
 
-    await Promise.all(
-      framePaths.map(async (framePath) => {
-        try {
-          await RNFS.unlink(stripFileScheme(framePath));
-        } catch {
-          // ignore temporary frame cleanup failures
+      let visualFallbackAllowed = false;
+      if (visualResult.action === 'fallback') {
+        const visualFallback = await callBackendFallbackModeration({
+          type: 'video',
+          content: frameDataUris,
+          clientMetadata: {
+            source: visualResult.source,
+            scores: visualResult.scores,
+            reason: visualResult.reason,
+            model: visualResult.model,
+          },
+        });
+
+        if (visualFallback.finalAction === 'flag_for_admin_review') {
+          return {
+            moderationDecision: 'blocked' as const,
+            moderationScores: visualResult.scores,
+            moderationError: 'video-flagged-for-review',
+          };
         }
-      })
-    );
+        visualFallbackAllowed = true;
+      }
 
-    return moderationResult;
+      // Step 2: Caption text moderation via TF.js toxicity (OpenAI fallback)
+      const captionResult = await moderateClientText(recipe.caption);
+      if (captionResult.action === 'block') {
+        return {
+          moderationDecision: 'blocked' as const,
+          moderationScores: null,
+          moderationError: captionResult.reason ?? 'caption-blocked',
+        };
+      }
+
+      if (captionResult.action === 'fallback') {
+        const captionFallback = await callBackendFallbackModeration({
+          type: 'text',
+          content: recipe.caption,
+          clientMetadata: {
+            source: captionResult.source,
+            scores: captionResult.scores,
+            reason: captionResult.reason,
+            model: captionResult.model,
+          },
+        });
+
+        return {
+          moderationDecision:
+            captionFallback.finalAction === 'flag_for_admin_review' ? 'blocked' : 'unsure',
+          moderationScores: visualResult.scores,
+          moderationError:
+            captionFallback.finalAction === 'flag_for_admin_review'
+              ? 'caption-flagged-for-review'
+              : captionResult.reason,
+        };
+      }
+
+      return {
+        moderationDecision: visualFallbackAllowed ? 'unsure' : ('safe' as const),
+        moderationScores: visualResult.scores,
+        moderationError: visualFallbackAllowed ? visualResult.reason : undefined,
+      };
+    } finally {
+      await Promise.all(
+        framePaths.map(async (framePath) => {
+          try {
+            await RNFS.unlink(stripFileScheme(framePath));
+          } catch {
+            // ignore temporary frame cleanup failures
+          }
+        })
+      );
+    }
   },
   exportVideo: async (recipe) => {
     const result = await exportEditedVideo(recipe.sourceUri, {
@@ -340,7 +457,12 @@ const defaultDependencies: QueueDependencies = {
       token: true,
     });
 
-    if (uploadLink.status !== 200 || !uploadLink.response?.url || !uploadLink.response?.id) {
+    if (
+      uploadLink.status < 200 ||
+      uploadLink.status >= 300 ||
+      !uploadLink.response?.url ||
+      !uploadLink.response?.id
+    ) {
       throw new QueueError(
         'network',
         uploadLink.response?.message || 'Unable to initialize video upload.',
@@ -431,7 +553,11 @@ const defaultDependencies: QueueDependencies = {
         await cleanupUploadCopy();
       }
     }
-    const { status } = uploadResponse.info();
+    const uploadInfo = uploadResponse?.info?.();
+    if (!uploadInfo) {
+      throw new QueueError('network', 'Video upload returned an empty response.', true);
+    }
+    const { status } = uploadInfo;
     if (status < 200 || status >= 300) {
       throw new QueueError('network', `Video upload failed (${status}).`, true);
     }
@@ -841,7 +967,7 @@ export const createVideoUploadQueue = (
     const watchProcessingStatus = normalizeWatchProcessingStatus(createdWatch, 'READY');
     const watchId = resolveWatchId(createdWatch) ?? item.watchId;
 
-    if (watchProcessingStatus === 'FAILED_SYNC') {
+    if (watchProcessingStatus === 'FAILED_SYNC' || watchProcessingStatus === 'FAILED_REVIEW') {
       throw new QueueError('processing', resolveWatchFailureMessage(createdWatch));
     }
 
@@ -986,7 +1112,7 @@ export const createVideoUploadQueue = (
 
     const watchProcessingStatus = normalizeWatchProcessingStatus(latestWatch, 'PROCESSING');
 
-    if (watchProcessingStatus === 'FAILED_SYNC') {
+    if (watchProcessingStatus === 'FAILED_SYNC' || watchProcessingStatus === 'FAILED_REVIEW') {
       throw new QueueError('processing', resolveWatchFailureMessage(latestWatch));
     }
 
@@ -1038,6 +1164,21 @@ export const createVideoUploadQueue = (
     try {
       if (isNativeMuxUploadItem(nextItem)) {
         await processNativeUploadingItem(nextItem);
+        const afterNativeUpload = getItemById(nextItem.id);
+        if (!afterNativeUpload || afterNativeUpload.status === 'failed') {
+          return;
+        }
+        if (afterNativeUpload.nativeUploadState !== 'success') {
+          return;
+        }
+        await postItem(afterNativeUpload);
+        const afterPosting = getItemById(nextItem.id);
+        if (!afterPosting || afterPosting.status === 'failed') {
+          return;
+        }
+        if (afterPosting.status === 'processing_remote') {
+          await processRemoteItem(afterPosting);
+        }
         return;
       }
 
@@ -1221,6 +1362,19 @@ export const getPendingVideoUploadsSnapshot = () => defaultQueue.getItems();
 export const waitForPendingVideoUploadsIdle = () => defaultQueue.waitForIdle();
 export const subscribePendingVideoUploads = (listener: VideoUploadQueueListener) =>
   defaultQueue.subscribe(listener);
+export const requestPendingVideoUploadsStart = () => {
+  pendingVideoUploadsStartRequestCount += 1;
+  flushPendingVideoUploadsStartRequests();
+};
+export const subscribePendingVideoUploadsStartRequests = (
+  listener: PendingVideoUploadsStartRequestListener
+) => {
+  pendingVideoUploadsStartRequestListeners.add(listener);
+  flushPendingVideoUploadsStartRequests();
+  return () => {
+    pendingVideoUploadsStartRequestListeners.delete(listener);
+  };
+};
 
 export {
   MAX_RETRY_COUNT,

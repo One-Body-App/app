@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Animated,
-  Easing,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TabView } from 'react-native-tab-view';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -32,6 +25,7 @@ type PrayerRoute = {
 
 function Prayer({ navigation }: Props) {
   const isIOS = Platform.OS === 'ios';
+  const insets = useSafeAreaInsets();
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState<PrayerRoute[]>([
     { key: 'Wall', title: 'Wall', inverted: true },
@@ -178,7 +172,7 @@ function Prayer({ navigation }: Props) {
   );
   const prayerSubtabContainerHeight = prayerSubtabsVisibility.interpolate({
     inputRange: [0, 1],
-    outputRange: [14, 52],
+    outputRange: [14, 70],
     extrapolate: 'clamp',
   });
   const prayerTabBarOpacity = prayerSubtabsVisibility.interpolate({
@@ -215,7 +209,7 @@ function Prayer({ navigation }: Props) {
     }
   };
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingTop: insets.top }}>
       <View style={{ flex: 1 }}>
         <TabView
           navigationState={{ index, routes }}
@@ -290,7 +284,7 @@ function Prayer({ navigation }: Props) {
           </StyledText>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

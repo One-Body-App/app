@@ -64,7 +64,7 @@ export const extractEditedFrames = async (url: string, options: EditedFrameOptio
 };
 
 export const exportEditedVideo = async (url: string, options: ExportVideoOptions) => {
-  const encoder = Platform.OS === 'ios' ? 'libx264' : 'platform-default';
+  const encoder = Platform.OS === 'ios' || Platform.OS === 'android' ? 'mpeg4' : 'platform-default';
   logVideoProcessing('export-start', {
     encoder,
     inputScheme: getUriScheme(url),

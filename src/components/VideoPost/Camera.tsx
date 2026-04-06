@@ -355,7 +355,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     cameraViewportSize.width > cameraViewportSize.height;
   const isLandscapeMode = isLandscapeViewport;
   const isWideLandscapeCapture = selectedRatio === '16:9' && isLandscapeViewport;
-  const landscapeUtilityTop = useMemo(() => topInset + spacing.x56, [topInset]);
+  const landscapeUtilityTop = useMemo(() => topInset + spacing.x60, [topInset]);
   const landscapeRatioBottom = useMemo(
     () => landscapeBottomInset + spacing.x10,
     [landscapeBottomInset]
@@ -906,7 +906,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
       setCameraRuntimeErrorMessage(null);
       setIsCameraInitialized(true);
     },
-    onError: (error) => {
+    onError: (error: { message: string; code: any }) => {
       if (teardownInProgressRef.current || !sessionActiveRef.current) {
         return;
       }

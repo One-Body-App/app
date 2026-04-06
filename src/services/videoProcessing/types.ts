@@ -80,7 +80,7 @@ export type PendingVideoUpload = {
   uploadTransport?: 'mux_sdk' | 'raw_put_fallback';
   nativeUploadState?: 'uploading' | 'paused' | 'failed' | 'success';
   watchId?: string;
-  watchProcessingStatus?: 'PROCESSING' | 'READY' | 'FAILED_SYNC';
+  watchProcessingStatus?: 'PROCESSING' | 'READY' | 'FAILED_SYNC' | 'FAILED_REVIEW';
   remotePollAttempt?: number;
   remotePollStartedAt?: string;
   nextRemotePollAt?: string;

@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Dimensions,
   Image,
   SafeAreaView,
   ScrollView,
@@ -10,57 +9,26 @@ import {
   View,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import { launchImageLibrary } from 'react-native-image-picker';
-import ImagePicker from 'react-native-image-crop-picker';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { Add, Calendar, Link21, Location, ShieldTick, HomeHashtag } from 'iconsax-react-native';
 import { format, parseISO } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { getBadges, profileUpdate, setUserBadges } from '@/src/redux/actions/AuthActions';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { OpenURLButton } from '@/services/constants';
-import { AccountType, Badge } from '@/utils/types';
+import { Badge } from '@/utils/types';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
 import Selected from '@/assets/svg/Selected.svg';
 import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import { ProfileProps } from './profileTypes';
 import { getProfileDisplayName, getProfileRoleLabel, getProfileTypeLabel } from './profileUtils';
-
-const PROFILE_PIC_RATE_KEY = '@profile_pic_changes';
-const RATE_LIMIT_MAX = 3;
-const RATE_LIMIT_WINDOW_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
-
-async function getRecentProfilePicChanges(): Promise<number[]> {
-  try {
-    const raw = await AsyncStorage.getItem(PROFILE_PIC_RATE_KEY);
-    if (!raw) return [];
-    const all: number[] = JSON.parse(raw);
-    const cutoff = Date.now() - RATE_LIMIT_WINDOW_MS;
-    return all.filter((ts) => ts > cutoff);
-  } catch {
-    return [];
-  }
-}
-
-async function recordProfilePicChange(recentTimestamps: number[]): Promise<void> {
-  try {
-    await AsyncStorage.setItem(
-      PROFILE_PIC_RATE_KEY,
-      JSON.stringify([...recentTimestamps, Date.now()])
-    );
-  } catch {
-    // Storage failure is non-critical
-  }
-}
 
 const COVER_HEIGHT = 150;
 const AVATAR_SIZE = 84;
@@ -184,95 +152,6 @@ function ProfileHeader({
     setRequestModal(true);
   };
 
-  const handlePickAvatar = async () => {
-    try {
-      const recentChanges = await getRecentProfilePicChanges();
-      if (recentChanges.length >= RATE_LIMIT_MAX) {
-        const oldestTs = Math.min(...recentChanges);
-        const resetDate = new Date(oldestTs + RATE_LIMIT_WINDOW_MS);
-        Toast.show(
-          `Profile picture limit reached. You can update again after ${format(resetDate, 'MMM d, yyyy')}.`,
-          Toast.LONG
-        );
-        return;
-      }
-
-      const response = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
-      if (response.didCancel || !response.assets?.length) return;
-
-      const sourceUri = response.assets[0].uri ?? '';
-      const cropped = await ImagePicker.openCropper({
-        path: sourceUri,
-        mediaType: 'photo',
-        cropperCircleOverlay: true,
-        forceJpg: true,
-        compressImageMaxHeight: 150,
-      });
-
-      await recordProfilePicChange(recentChanges);
-      const remaining = RATE_LIMIT_MAX - (recentChanges.length + 1);
-
-      const formData = new FormData();
-      formData.append('photo', {
-        name: `profileImage${profileData._id}`,
-        type: cropped.mime ?? 'image/jpeg',
-        uri: cropped.path ?? '',
-      } as any);
-      dispatch(setLoader(true));
-      dispatch(
-        profileUpdate({
-          data: formData,
-          token,
-          accountType: (profileData.accountType ?? AccountType.individual) as AccountType,
-        })
-      );
-
-      const noticeMsg =
-        remaining > 0
-          ? `Profile picture updated. ${remaining} update${remaining === 1 ? '' : 's'} remaining in the next 60 days.`
-          : 'Profile picture updated. This was your last update for the next 60 days.';
-      Toast.show(noticeMsg, Toast.LONG);
-    } catch {
-      // User cancelled picker or cropper
-    }
-  };
-
-  const handlePickHeader = async () => {
-    try {
-      const response = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
-      if (response.didCancel || !response.assets?.length) return;
-
-      const sourceUri = response.assets[0].uri ?? '';
-      const screenWidth = Dimensions.get('screen').width;
-      const cropped = await ImagePicker.openCropper({
-        path: sourceUri,
-        width: screenWidth,
-        height: COVER_HEIGHT,
-        mediaType: 'photo',
-        forceJpg: true,
-        compressImageMaxWidth: screenWidth,
-        compressImageMaxHeight: COVER_HEIGHT,
-      });
-
-      const formData = new FormData();
-      formData.append('headerImage', {
-        name: `headerImage${profileData._id}`,
-        type: cropped.mime ?? 'image/jpeg',
-        uri: cropped.path ?? '',
-      } as any);
-      dispatch(setLoader(true));
-      dispatch(
-        profileUpdate({
-          data: formData,
-          token,
-          accountType: (profileData.accountType ?? AccountType.individual) as AccountType,
-        })
-      );
-    } catch {
-      // User cancelled picker or cropper
-    }
-  };
-
   const openDirectMessage = () => {
     if (isOwnProfile) {
       return;
@@ -372,9 +251,7 @@ function ProfileHeader({
           {showSelfProfileMediaControls ? (
             <TouchableOpacity
               accessibilityLabel="Edit cover image"
-              onPress={() => {
-                handlePickHeader().catch(() => undefined);
-              }}
+              onPress={() => openEditProfile('header')}
               style={styles.coverEditButton}
               testID="profile-cover-edit-button"
             >
@@ -430,9 +307,7 @@ function ProfileHeader({
                 <TouchableOpacity
                   accessibilityLabel="Edit profile photo"
                   activeOpacity={0.85}
-                  onPress={() => {
-                    handlePickAvatar().catch(() => undefined);
-                  }}
+                  onPress={() => openEditProfile('photo')}
                   style={styles.avatarEditButton}
                   testID="profile-avatar-edit-button"
                 >

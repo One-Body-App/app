@@ -3,7 +3,6 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
-  InteractionManager,
   KeyboardAvoidingView,
   LayoutChangeEvent,
   Platform,
@@ -52,13 +51,16 @@ import type {
   VideoTransformState,
 } from '@/src/services/videoProcessing/types';
 import {
-  enqueuePendingVideoUpload,
-  startPendingVideoUploads,
-} from '@/src/services/videoProcessing/videoUploadQueue';
+  callBackendFallbackModeration,
+  moderateClientText,
+} from '@/src/services/moderation/clientModeration';
 import {
+  BLOCKED_WATCH_CAPTION_MESSAGE,
   buildPendingVideoUploadRecipe,
   ConfirmedVideoCropSelection,
   copyVideoSourceToAppCache,
+  finalizeQueuedWatchUpload,
+  moderateWatchCaptionLocally,
 } from './videoPostUtils';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
@@ -112,8 +114,6 @@ const LIGHT_PALETTE: ThemePalette = {
 };
 
 const RATIO_OPTIONS: VideoRatioId[] = ['1:1', '4:3', '16:9', '9:16'];
-const IOS_UPLOAD_QUEUE_START_DELAY_MS = 450;
-const DEFAULT_UPLOAD_QUEUE_START_DELAY_MS = 150;
 
 type VideoEditorMode = 'crop' | 'edit';
 
@@ -738,14 +738,51 @@ export default function VideoPost({ navigation, route }: Props) {
       return;
     }
 
+    const captionModeration = moderateWatchCaptionLocally(caption);
+    if (captionModeration.blocked) {
+      toast.show(BLOCKED_WATCH_CAPTION_MESSAGE, { type: 'danger' });
+      return;
+    }
+
+    const nativeCaptionModeration = await moderateClientText(caption);
+    if (nativeCaptionModeration.action === 'block') {
+      toast.show(BLOCKED_WATCH_CAPTION_MESSAGE, { type: 'danger' });
+      return;
+    }
+
+    if (nativeCaptionModeration.action === 'fallback') {
+      try {
+        const fallbackResponse = await callBackendFallbackModeration({
+          type: 'text',
+          content: caption,
+          clientMetadata: {
+            source: nativeCaptionModeration.source,
+            scores: nativeCaptionModeration.scores,
+            reason: nativeCaptionModeration.reason,
+            model: nativeCaptionModeration.model,
+          },
+        });
+
+        if (fallbackResponse.finalAction === 'flag_for_admin_review') {
+          toast.show(
+            'This Watch caption was flagged for review and cannot be published right now.',
+            { type: 'danger' }
+          );
+          return;
+        }
+      } catch {
+        toast.show('Unable to complete moderation right now. Please try again.', {
+          type: 'danger',
+        });
+        return;
+      }
+    }
+
     const activeCropSelection = confirmedCropSelection ?? resolveCurrentCropSelection();
     if (!activeCropSelection?.sourceWidth || !activeCropSelection?.sourceHeight) {
       toast.show('Wait for the video to finish loading before posting.', { type: 'warning' });
       return;
     }
-
-    const uploadQueueStartDelayMs =
-      Platform.OS === 'ios' ? IOS_UPLOAD_QUEUE_START_DELAY_MS : DEFAULT_UPLOAD_QUEUE_START_DELAY_MS;
 
     setLoading(true);
     setIsPlaying(false);
@@ -759,35 +796,10 @@ export default function VideoPost({ navigation, route }: Props) {
         confirmedCropSelection: activeCropSelection,
       });
 
-      await enqueuePendingVideoUpload(recipe, { startImmediately: false });
-
-      toast.show(
-        "Your Watch video was queued for background processing. We'll notify you when it's live.",
-        {
-          type: 'success',
-          placement: 'bottom',
-        }
-      );
-
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        navigation.navigate('MainRoot', {
-          screen: 'Main',
-          params: {
-            screen: 'HomeTab',
-            params: {
-              screen: 'Home',
-              params: {},
-            },
-          },
-        });
-      }
-
-      InteractionManager.runAfterInteractions(() => {
-        setTimeout(() => {
-          startPendingVideoUploads().catch(() => undefined);
-        }, uploadQueueStartDelayMs);
+      await finalizeQueuedWatchUpload({
+        navigation,
+        recipe,
+        showQueuedUploadToast: toast.show,
       });
     } catch (error) {
       toast.show(error instanceof Error ? error.message : 'Unable to upload video.', {

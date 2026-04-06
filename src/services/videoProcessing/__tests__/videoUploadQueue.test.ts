@@ -32,6 +32,29 @@ jest.mock('@/src/services/api', () => ({
   ApiCall: jest.fn(),
 }));
 
+jest.mock('@/src/services/moderation/clientModeration', () => ({
+  buildImageDataUri: jest.fn(async () => 'data:image/jpeg;base64,frame'),
+  callBackendFallbackModeration: jest.fn(async () => ({
+    finalAction: 'allow',
+    provider: 'openai',
+    flagged: false,
+    model: 'omni-moderation-latest',
+    results: [],
+  })),
+  moderateClientVideoFrames: jest.fn(async () => ({
+    action: 'allow',
+    source: 'nsfwjs',
+    scores: {
+      neutral: 1,
+      drawing: 0,
+      sexy: 0,
+      porn: 0,
+      hentai: 0,
+    },
+    model: 'nsfwjs',
+  })),
+}));
+
 const baseRecipe: VideoEditRecipe = {
   sourceUri: 'file:///tmp/source.mp4',
   caption: 'queued video',
