@@ -23,7 +23,6 @@ import { ApiCall } from '@/src/services/api';
 import {
   buildImageDataUri,
   callBackendFallbackModeration,
-  moderateClientText,
 } from '@/src/services/moderation/clientModeration';
 import { requestVideoModeration } from './videoModerationBridge';
 
@@ -360,39 +359,6 @@ const defaultDependencies: QueueDependencies = {
           };
         }
         visualFallbackAllowed = true;
-      }
-
-      // Step 2: Caption text moderation via TF.js toxicity (OpenAI fallback)
-      const captionResult = await moderateClientText(recipe.caption);
-      if (captionResult.action === 'block') {
-        return {
-          moderationDecision: 'blocked' as const,
-          moderationScores: null,
-          moderationError: captionResult.reason ?? 'caption-blocked',
-        };
-      }
-
-      if (captionResult.action === 'fallback') {
-        const captionFallback = await callBackendFallbackModeration({
-          type: 'text',
-          content: recipe.caption,
-          clientMetadata: {
-            source: captionResult.source,
-            scores: captionResult.scores,
-            reason: captionResult.reason,
-            model: captionResult.model,
-          },
-        });
-
-        return {
-          moderationDecision:
-            captionFallback.finalAction === 'flag_for_admin_review' ? 'blocked' : 'unsure',
-          moderationScores: visualResult.scores,
-          moderationError:
-            captionFallback.finalAction === 'flag_for_admin_review'
-              ? 'caption-flagged-for-review'
-              : captionResult.reason,
-        };
       }
 
       return {
