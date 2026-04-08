@@ -1,4 +1,11 @@
-import React, { ComponentType, ReactElement, useCallback, useRef, useState } from 'react';
+import React, {
+  ComponentType,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { FlatList, RefreshControl, ListRenderItem, useWindowDimensions } from 'react-native';
 import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -13,6 +20,11 @@ import { MainStackParamList } from '@/src/navigator/types';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import { PostType, WatchPost } from '@/utils/types';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
+import {
+  getRecentCompletedWatchUploadsSnapshot,
+  mergeRecentCompletedWatchUploads,
+  subscribeRecentCompletedWatchUploads,
+} from '@/src/services/recentCompletedWatchUploads';
 
 type WatchFlatlistProps = {
   userId: string;
@@ -28,6 +40,7 @@ function WatchFlatlist({
   useTabsFlatList = false,
 }: WatchFlatlistProps) {
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
   const [posts, setPosts] = useState<WatchPost[]>([]);
   const [page, setPage] = useState(1);
@@ -39,6 +52,18 @@ function WatchFlatlist({
   const { imageViewer, openImages } = useSharedImageViewer();
   const ListComponent = useTabsFlatList ? Tabs.FlatList : FlatList;
   const socialItemContentWidth = Math.max(width - spacing.x16 * 2 - 14, 0);
+  const shouldMergeRecentCompletedUploads = currentUser?._id === userId;
+  const mergeOptimisticWatchPosts = useCallback(
+    (nextPosts: WatchPost[]) =>
+      shouldMergeRecentCompletedUploads
+        ? mergeRecentCompletedWatchUploads({
+            posts: nextPosts,
+            recentUploads: getRecentCompletedWatchUploadsSnapshot(),
+            user: currentUser,
+          })
+        : nextPosts,
+    [currentUser, shouldMergeRecentCompletedUploads]
+  );
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (!viewableItems || viewableItems.length < 1) {
       setVisibleItemsIndex([]);
@@ -84,7 +109,9 @@ function WatchFlatlist({
 
       try {
         const res = await ApiCall({
-          route: `watch/user/${userId}?page=${pageNumber}&itemsPerPage=5`,
+          route: `watch/user/${userId}?page=${pageNumber}&itemsPerPage=5${
+            pageNumber === 1 ? `&refresh=${Date.now()}` : ''
+          }`,
           verb: 'get',
           token,
         });
@@ -93,12 +120,12 @@ function WatchFlatlist({
           const nextPosts = Array.isArray(res.response) ? res.response : [];
 
           if (pageNumber === 1) {
-            setPosts(nextPosts);
+            setPosts(mergeOptimisticWatchPosts(nextPosts));
             setIsEndOfList(false);
           } else if (nextPosts.length < 1) {
             setIsEndOfList(true);
           } else {
-            setPosts((previous) => [...previous, ...nextPosts]);
+            setPosts((previous) => mergeOptimisticWatchPosts([...previous, ...nextPosts]));
           }
         }
       } catch (error) {
@@ -109,7 +136,7 @@ function WatchFlatlist({
         setPage(pageNumber);
       }
     },
-    [token, userId]
+    [mergeOptimisticWatchPosts, token, userId]
   );
 
   useFocusEffect(
@@ -117,6 +144,16 @@ function WatchFlatlist({
       getWatchPosts(1).then(() => undefined);
     }, [getWatchPosts])
   );
+
+  useEffect(() => {
+    if (!shouldMergeRecentCompletedUploads) {
+      return undefined;
+    }
+
+    return subscribeRecentCompletedWatchUploads(() => {
+      setPosts((previous) => mergeOptimisticWatchPosts(previous));
+    });
+  }, [mergeOptimisticWatchPosts, shouldMergeRecentCompletedUploads]);
 
   return (
     <>

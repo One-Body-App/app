@@ -39,10 +39,10 @@ import {
   MIN_VIDEO_EDITOR_SCALE,
   VIDEO_RATIO_CONFIG,
   clampVideoTransform,
-  resolveClosestVideoRatioId,
   resolveDisplayedVideoFrame,
   resolveSourceCrop,
   resolveCropRect as resolveEditorCropRect,
+  resolveSupportedUploadRatioId,
 } from '@/src/services/videoProcessing/videoEditMath';
 import type {
   SelectedVideoSource,
@@ -61,6 +61,8 @@ import {
   copyVideoSourceToAppCache,
   finalizeQueuedWatchUpload,
   moderateWatchCaptionLocally,
+  resolveInitialVideoRatioId,
+  UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE,
 } from './videoPostUtils';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
@@ -146,24 +148,6 @@ const normalizeVideoDimension = (value?: number) => {
     return undefined;
   }
   return Math.round(value);
-};
-
-const resolveInitialRatioId = (
-  preferredRatioId?: VideoRatioId,
-  width?: number,
-  height?: number
-): VideoRatioId | null => {
-  if (preferredRatioId) {
-    return preferredRatioId;
-  }
-
-  const normalizedWidth = normalizeVideoDimension(width);
-  const normalizedHeight = normalizeVideoDimension(height);
-  if (!normalizedWidth || !normalizedHeight) {
-    return null;
-  }
-
-  return resolveClosestVideoRatioId(normalizedWidth, normalizedHeight);
 };
 
 function ActionButton({
@@ -299,6 +283,28 @@ export default function VideoPost({ navigation, route }: Props) {
     setTrimEndMs(0);
   }, []);
 
+  const clearSelectedVideo = useCallback(() => {
+    setOriginalVideoUri('');
+    setEditableVideoUri('');
+    setCurrentTime(0);
+    setVideoDuration(0);
+    setVideoNaturalSize({ width: 0, height: 0 });
+    setIsPlaying(false);
+    setShouldInferRatioOnLoad(false);
+    setEditorMode('crop');
+    setConfirmedCropSelection(null);
+    setPendingAutoTrimUri(null);
+    setRequiresInitialTrim(false);
+    setIsTrimEditorVisible(false);
+    resetTrimState();
+    resetCropState();
+  }, [resetCropState, resetTrimState]);
+
+  const rejectUnsupportedUploadedVideo = useCallback(() => {
+    clearSelectedVideo();
+    toast.show(UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE, { type: 'danger' });
+  }, [clearSelectedVideo, toast]);
+
   const applySelectedVideo = useCallback(
     (
       nextPath: string,
@@ -404,7 +410,13 @@ export default function VideoPost({ navigation, route }: Props) {
       ) {
         setVideoNaturalSize({ width: rawWidth, height: rawHeight });
         if (shouldInferRatioOnLoad) {
-          setSelectedRatio(resolveClosestVideoRatioId(rawWidth, rawHeight));
+          const inferredRatioId = resolveSupportedUploadRatioId(rawWidth, rawHeight);
+          if (!inferredRatioId) {
+            setShouldInferRatioOnLoad(false);
+            rejectUnsupportedUploadedVideo();
+            return;
+          }
+          setSelectedRatio(inferredRatioId);
           setShouldInferRatioOnLoad(false);
         }
       }
@@ -425,7 +437,13 @@ export default function VideoPost({ navigation, route }: Props) {
         setIsPlaying(true);
       });
     },
-    [hasTrimSelection, resolvedTrimStartMs, shouldInferRatioOnLoad, toast]
+    [
+      hasTrimSelection,
+      rejectUnsupportedUploadedVideo,
+      resolvedTrimStartMs,
+      shouldInferRatioOnLoad,
+      toast,
+    ]
   );
 
   const handleVideoProgress = useCallback(
@@ -480,11 +498,19 @@ export default function VideoPost({ navigation, route }: Props) {
           return;
         }
 
-        const nextRatioId = resolveInitialRatioId(
+        const normalizedWidth = normalizeVideoDimension(selectedAsset.width);
+        const normalizedHeight = normalizeVideoDimension(selectedAsset.height);
+        const hasKnownDimensions = Boolean(normalizedWidth && normalizedHeight);
+
+        const nextRatioId = resolveInitialVideoRatioId(
           undefined,
           selectedAsset.width,
           selectedAsset.height
         );
+        if (hasKnownDimensions && !nextRatioId) {
+          toast.show(UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE, { type: 'danger' });
+          return;
+        }
         setSelectedRatio(nextRatioId ?? '9:16');
         setShouldInferRatioOnLoad(!nextRatioId);
         applySelectedVideo(nextPath, nextPath, { autoOpenTrimEditor: true });
@@ -534,7 +560,7 @@ export default function VideoPost({ navigation, route }: Props) {
             return;
           }
 
-          const nextRatioId = resolveInitialRatioId(
+          const nextRatioId = resolveInitialVideoRatioId(
             selection.ratioId,
             selection.width,
             selection.height
@@ -898,11 +924,18 @@ export default function VideoPost({ navigation, route }: Props) {
       try {
         const resolvedPath = await resolveVideoUri(undefined, incomingVideoPath);
         if (!cancelled && resolvedPath) {
-          const nextRatioId = resolveInitialRatioId(
+          const normalizedWidth = normalizeVideoDimension(incomingVideoWidth);
+          const normalizedHeight = normalizeVideoDimension(incomingVideoHeight);
+          const hasKnownDimensions = Boolean(normalizedWidth && normalizedHeight);
+          const nextRatioId = resolveInitialVideoRatioId(
             incomingVideoRatioId,
             incomingVideoWidth,
             incomingVideoHeight
           );
+          if (hasKnownDimensions && !incomingVideoRatioId && !nextRatioId) {
+            toast.show(UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE, { type: 'danger' });
+            return;
+          }
           setSelectedRatio(nextRatioId ?? '9:16');
           setShouldInferRatioOnLoad(!nextRatioId);
           applySelectedVideo(resolvedPath, resolvedPath, { autoOpenTrimEditor: true });

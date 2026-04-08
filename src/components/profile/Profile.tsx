@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 
@@ -12,6 +12,10 @@ import WatchFlatlist from '../WatchFlatlist';
 import ProfileHeader from './ProfileHeader';
 import { ProfileProps, ProfileVariant } from './profileTypes';
 import { getVisibleProfileTabs, ProfileTabKey } from './profileUtils';
+import {
+  getRecentCompletedWatchUploadsSnapshot,
+  subscribeRecentCompletedWatchUploads,
+} from '@/src/services/recentCompletedWatchUploads';
 
 const TAB_LABELS: Record<ProfileTabKey, string> = {
   post: 'Post',
@@ -116,10 +120,33 @@ function Profile({
   variant = 'public',
 }: ProfileProps) {
   const { colors } = useTheme();
-  const visibleTabs = useMemo(() => getVisibleProfileTabs(profileData), [profileData]);
+  const [recentCompletedWatchUploadsCount, setRecentCompletedWatchUploadsCount] = useState(
+    getRecentCompletedWatchUploadsSnapshot().filter(
+      (upload) => upload.ownerUserId === currentUser._id
+    ).length
+  );
+  const visibleTabs = useMemo(() => {
+    const baseTabs = getVisibleProfileTabs(profileData);
+    if (variant === 'self' && recentCompletedWatchUploadsCount > 0 && !baseTabs.includes('watch')) {
+      return [...baseTabs, 'watch'];
+    }
+    return baseTabs;
+  }, [profileData, recentCompletedWatchUploadsCount, variant]);
   const initialTab = visibleTabs[0] ?? 'post';
   const [requestedTab, setRequestedTab] = useState<ProfileTabKey>(initialTab);
   const activeTab = visibleTabs.includes(requestedTab) ? requestedTab : initialTab;
+
+  useEffect(() => {
+    if (variant !== 'self') {
+      return undefined;
+    }
+
+    return subscribeRecentCompletedWatchUploads((uploads) => {
+      setRecentCompletedWatchUploadsCount(
+        uploads.filter((upload) => upload.ownerUserId === currentUser._id).length
+      );
+    });
+  }, [currentUser._id, variant]);
   const headerContent = (
     <>
       <ProfileHeader

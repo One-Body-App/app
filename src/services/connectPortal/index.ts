@@ -93,6 +93,11 @@ const createSeededPublishedEvent = (
       (Boolean(overrides.startDate || overrides.endDate) &&
         (overrides.endDate || overrides.startDate || '2026-06-01') ===
           (overrides.startDate || '2026-06-01')),
+    isRecurring: overrides.isRecurring ?? false,
+    recurrenceFrequency: overrides.recurrenceFrequency,
+    recurrenceEndType: overrides.recurrenceEndType,
+    recurrenceEndDate: overrides.recurrenceEndDate,
+    recurrenceOccurrenceCount: overrides.recurrenceOccurrenceCount,
     isOnline: overrides.isOnline ?? false,
     onlineEventUrl: overrides.onlineEventUrl || '',
     externalEventUrl: overrides.externalEventUrl || '',
@@ -338,6 +343,15 @@ const normalizeDraft = (value: unknown): ConnectPortalEventDraft | null => {
     onlineEventUrl: String(
       item.onlineEventUrl || (item.isOnline ? item.externalEventUrl : '') || ''
     ),
+    isRecurring: item.isRecurring === true,
+    recurrenceFrequency: item.recurrenceFrequency,
+    recurrenceEndType: item.recurrenceEndType,
+    recurrenceEndDate:
+      typeof item.recurrenceEndDate === 'string' ? item.recurrenceEndDate : undefined,
+    recurrenceOccurrenceCount:
+      typeof item.recurrenceOccurrenceCount === 'string'
+        ? item.recurrenceOccurrenceCount
+        : undefined,
     externalEventUrl: String((item as Partial<ConnectPortalEventDraft>).externalEventUrl || ''),
     locationQuery: String(item.locationQuery || ''),
     venueName: String(item.venueName || ''),
@@ -411,6 +425,15 @@ const normalizePublishedEvent = (value: unknown): ConnectPortalPublishedEvent | 
     onlineEventUrl: String(
       item.onlineEventUrl || (item.isOnline ? item.externalEventUrl : '') || ''
     ),
+    isRecurring: item.isRecurring === true,
+    recurrenceFrequency: item.recurrenceFrequency,
+    recurrenceEndType: item.recurrenceEndType,
+    recurrenceEndDate:
+      typeof item.recurrenceEndDate === 'string' ? item.recurrenceEndDate : undefined,
+    recurrenceOccurrenceCount:
+      typeof item.recurrenceOccurrenceCount === 'string'
+        ? item.recurrenceOccurrenceCount
+        : undefined,
     externalEventUrl: String((item as Partial<ConnectPortalPublishedEvent>).externalEventUrl || ''),
     locationQuery: String(item.locationQuery || ''),
     venueName: String(item.venueName || ''),
@@ -527,6 +550,11 @@ const createEmptyDraft = (
     overrides?.isSingleDayEvent ??
     (Boolean(overrides?.startDate) &&
       (overrides?.endDate || overrides?.startDate || '') === (overrides?.startDate || '')),
+  isRecurring: overrides?.isRecurring ?? false,
+  recurrenceFrequency: overrides?.recurrenceFrequency,
+  recurrenceEndType: overrides?.recurrenceEndType,
+  recurrenceEndDate: overrides?.recurrenceEndDate,
+  recurrenceOccurrenceCount: overrides?.recurrenceOccurrenceCount,
   isOnline: overrides?.isOnline ?? false,
   onlineEventUrl: overrides?.onlineEventUrl || '',
   externalEventUrl: overrides?.externalEventUrl || '',

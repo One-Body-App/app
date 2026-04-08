@@ -290,14 +290,14 @@ function Prayer({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   tabBarContainer: {
-    paddingHorizontal: spacing.x16,
+    paddingHorizontal: spacing.x5,
     paddingTop: spacing.x8,
     overflow: 'hidden',
   },
   restoreRailWrap: {
     position: 'absolute',
-    left: spacing.x16,
-    right: spacing.x16,
+    left: spacing.x5,
+    right: spacing.x5,
     bottom: 0,
     alignItems: 'center',
   },

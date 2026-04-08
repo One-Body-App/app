@@ -16,6 +16,7 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { getInitialNotification, getMessaging } from '@react-native-firebase/messaging';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { NotificationBing } from 'iconsax-react-native';
@@ -33,7 +34,9 @@ import {
   QueuedPushNotification,
   getQueuedNotifications,
   markQueuedNotificationAsRead,
+  queueRemoteNotificationPayload,
   removeQueuedNotification,
+  syncIosDisplayedRemoteNotifications,
 } from '@/src/services/notification/pushNotificationStorage';
 import { formatRelativeTime, nowUtcIso, parseIsoOrNull } from '@/src/utils/time';
 import {
@@ -281,6 +284,21 @@ function NotificationScreen({ navigation }: Props) {
       }
 
       try {
+        if (Platform.OS === 'ios') {
+          const initialMessage = await getInitialNotification(getMessaging()).catch(() => null);
+          if (initialMessage) {
+            await queueRemoteNotificationPayload(initialMessage).catch(() => null);
+            logNotificationDebug('ios_initial_message_queued', {
+              messageId: initialMessage.messageId || '',
+            });
+          }
+
+          const syncedCount = await syncIosDisplayedRemoteNotifications().catch(() => 0);
+          logNotificationDebug('ios_displayed_sync', {
+            syncedCount,
+          });
+        }
+
         const [serverResult, queuedPushResult, followingResult] = await Promise.allSettled([
           ApiCall<{ data?: any[] }>({
             route: 'user/notifications',
@@ -597,12 +615,7 @@ function NotificationScreen({ navigation }: Props) {
 
         <Pressable
           onPress={() => {
-            const parent = navigation.getParent();
-            if (parent) {
-              (parent as any).navigate('Settings', { screen: 'NotificationSettings' });
-              return;
-            }
-            navigation.goBack();
+            (navigation as any).navigate('NotificationSettings');
           }}
           style={styles.headerActionButton}
         >

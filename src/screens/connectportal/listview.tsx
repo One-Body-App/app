@@ -288,9 +288,6 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           userAvatarUri={currentUser?.profileImage}
           onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
           addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
-          headerActionIconName={activeTab === 'Places' ? 'map' : undefined}
-          headerActionAccessibilityLabel={activeTab === 'Places' ? 'Switch to map view' : undefined}
-          onHeaderActionPress={activeTab === 'Places' ? () => onChangeViewMode('map') : undefined}
         />
       </Animated.View>
 
@@ -469,15 +466,11 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
             }
             return undefined;
           })()}
-          viewToggle={
-            activeTab !== 'Places'
-              ? {
-                  toMap: true,
-                  onPress: () => onChangeViewMode('map'),
-                  accessibilityLabel: 'Switch to map view',
-                }
-              : undefined
-          }
+          viewToggle={{
+            toMap: true,
+            onPress: () => onChangeViewMode('map'),
+            accessibilityLabel: 'Switch to map view',
+          }}
         />
       </Animated.View>
 

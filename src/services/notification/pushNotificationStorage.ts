@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
+import notifee, { DisplayedNotification } from '@notifee/react-native';
 import { Platform } from 'react-native';
 import { isIsoWithZone, nowUtcIso, parseIsoOrNull } from '@/src/utils/time';
 
@@ -68,6 +69,50 @@ const resolveNotificationIconUrl = (messageData: Record<string, string>) => {
   return /^https?:\/\//i.test(trimmed) ? trimmed : undefined;
 };
 
+const getDisplayedNotificationCreatedAt = (
+  displayed: DisplayedNotification,
+  messageData: Record<string, string>
+) => {
+  const dataCreatedAt = messageData.createdAt;
+  if (typeof dataCreatedAt === 'string' && isIsoWithZone(dataCreatedAt)) {
+    return dataCreatedAt.trim();
+  }
+
+  const displayedDate = parseIsoOrNull(displayed.date);
+  if (displayedDate) {
+    return displayedDate.toISOString();
+  }
+
+  return nowUtcIso();
+};
+
+const mergeQueuedNotifications = (
+  existing: QueuedPushNotification[],
+  incoming: QueuedPushNotification[]
+) => {
+  if (!incoming.length) {
+    return existing;
+  }
+
+  const mergedById = new Map(existing.map((item) => [item.id, item]));
+  incoming.forEach((item) => {
+    const current = mergedById.get(item.id);
+    mergedById.set(item.id, {
+      ...current,
+      ...item,
+      read: current?.read === true ? true : Boolean(item.read),
+    });
+  });
+
+  return Array.from(mergedById.values())
+    .sort(
+      (first, second) =>
+        (parseIsoOrNull(second.createdAt)?.getTime() || 0) -
+        (parseIsoOrNull(first.createdAt)?.getTime() || 0)
+    )
+    .slice(0, MAX_QUEUED_NOTIFICATIONS);
+};
+
 export const buildQueuedNotificationFromRemoteMessage = (
   message?: FirebaseMessagingTypes.RemoteMessage | null
 ): QueuedPushNotification | null => {
@@ -113,6 +158,48 @@ export const buildQueuedNotificationFromRemoteMessage = (
   };
 };
 
+export const buildQueuedNotificationFromDisplayedNotification = (
+  displayed?: DisplayedNotification | null
+): QueuedPushNotification | null => {
+  const notification = displayed?.notification;
+  if (!notification?.remote) {
+    return null;
+  }
+
+  const messageData = toStringRecord(notification.data);
+  const notificationId =
+    (typeof notification.id === 'string' && notification.id.trim()) ||
+    notification.remote.messageId ||
+    messageData.notificationId ||
+    messageData.id ||
+    messageData.campaignId ||
+    '';
+
+  if (!notificationId) {
+    return null;
+  }
+
+  return {
+    id: notificationId,
+    title:
+      notification.title ||
+      messageData.title ||
+      messageData.notificationTitle ||
+      messageData.campaignTitle ||
+      'New notification',
+    body:
+      notification.body || messageData.body || messageData.description || messageData.message || '',
+    url: messageData.url || messageData.deepLink || messageData.link || undefined,
+    iconUrl: resolveNotificationIconUrl(messageData),
+    type: messageData.type || messageData.notificationType || messageData.targetType || undefined,
+    campaignId: messageData.campaignId || messageData.campaignID || undefined,
+    data: messageData,
+    createdAt: getDisplayedNotificationCreatedAt(displayed, messageData),
+    read: false,
+    source: 'push',
+  };
+};
+
 const readQueuedNotificationsRaw = async (): Promise<QueuedPushNotification[]> => {
   const rawValue = await AsyncStorage.getItem(QUEUED_NOTIFICATIONS_KEY);
   if (!rawValue) {
@@ -133,6 +220,17 @@ const readQueuedNotificationsRaw = async (): Promise<QueuedPushNotification[]> =
 
 const writeQueuedNotificationsRaw = async (items: QueuedPushNotification[]) => {
   await AsyncStorage.setItem(QUEUED_NOTIFICATIONS_KEY, JSON.stringify(items));
+};
+
+const upsertQueuedNotifications = async (items: QueuedPushNotification[]) => {
+  if (!items.length) {
+    return [];
+  }
+
+  const existing = await readQueuedNotificationsRaw();
+  const nextQueue = mergeQueuedNotifications(existing, items);
+  await writeQueuedNotificationsRaw(nextQueue);
+  return nextQueue;
 };
 
 export const getQueuedNotifications = async (): Promise<QueuedPushNotification[]> => {
@@ -167,13 +265,26 @@ export const queueRemoteNotificationPayload = async (
     return null;
   }
 
-  const existing = await readQueuedNotificationsRaw();
-  const withoutDuplicate = existing.filter((item) => item.id !== nextItem.id);
-  const nextQueue = [nextItem, ...withoutDuplicate].slice(0, MAX_QUEUED_NOTIFICATIONS);
-
-  await writeQueuedNotificationsRaw(nextQueue);
-
+  await upsertQueuedNotifications([nextItem]);
   return nextItem;
+};
+
+export const syncIosDisplayedRemoteNotifications = async (): Promise<number> => {
+  if (Platform.OS !== 'ios') {
+    return 0;
+  }
+
+  const displayedNotifications = await notifee.getDisplayedNotifications();
+  const queuedNotifications = displayedNotifications
+    .map(buildQueuedNotificationFromDisplayedNotification)
+    .filter((item): item is QueuedPushNotification => item !== null);
+
+  if (!queuedNotifications.length) {
+    return 0;
+  }
+
+  await upsertQueuedNotifications(queuedNotifications);
+  return queuedNotifications.length;
 };
 
 export const markQueuedNotificationAsRead = async (notificationId: string) => {

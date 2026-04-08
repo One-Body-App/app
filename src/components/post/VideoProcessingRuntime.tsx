@@ -7,7 +7,6 @@ import {
   hydratePendingVideoUploads,
   startPendingVideoUploads,
   resumePendingVideoUploads,
-  subscribePendingVideoUploadsStartRequests,
   subscribePendingVideoUploads,
 } from '@/src/services/videoProcessing/videoUploadQueue';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -24,11 +23,12 @@ export const shouldResumePendingVideoUploadsOnLifecycle = (items: PendingVideoUp
       (item.status === 'uploading' && item.uploadTransport === 'mux_sdk')
   );
 
+export const shouldStartPendingVideoUploadsOnRuntime = (items: PendingVideoUpload[]) =>
+  items.some((item) => item.status === 'queued');
+
 type InteractionManagerLike = Pick<typeof InteractionManager, 'runAfterInteractions'>;
 type AppStateLike = Pick<typeof AppState, 'currentState' | 'addEventListener'>;
 type SubscribeToUploads = (listener: (items: PendingVideoUpload[]) => void) => () => void;
-type SubscribeToStartRequests = (listener: () => void) => () => void;
-type StartUploads = () => Promise<void> | void;
 type HydrateUploads = () => Promise<PendingVideoUpload[]>;
 type GetUploadsSnapshot = () => PendingVideoUpload[];
 type ShowUploadToast = (
@@ -40,6 +40,7 @@ type ShowUploadToast = (
 ) => void;
 
 type ShowUploadNotification = (id: string, message: string) => void;
+type OnCompleteUpload = (item: PendingVideoUpload) => void;
 
 export type VideoUploadTerminalToastEvent = {
   dedupeKey: string;
@@ -116,14 +117,14 @@ type Props = {
   delayMs?: number;
   appState?: AppStateLike;
   interactionManager?: InteractionManagerLike;
+  onStartUploads?: () => Promise<void> | void;
   onResumeUploads?: () => Promise<void> | void;
-  onStartUploads?: StartUploads;
   onHydrateUploads?: HydrateUploads;
   getUploadsSnapshot?: GetUploadsSnapshot;
   subscribeToUploads?: SubscribeToUploads;
-  subscribeToStartRequests?: SubscribeToStartRequests;
   showUploadToast?: ShowUploadToast;
   showUploadNotification?: ShowUploadNotification;
+  onCompleteUpload?: OnCompleteUpload;
 };
 
 export default function VideoProcessingRuntime({
@@ -131,39 +132,39 @@ export default function VideoProcessingRuntime({
   delayMs = VIDEO_UPLOAD_RESUME_DELAY_MS,
   appState = AppState,
   interactionManager = InteractionManager,
-  onResumeUploads = resumePendingVideoUploads,
   onStartUploads = startPendingVideoUploads,
+  onResumeUploads = resumePendingVideoUploads,
   onHydrateUploads = hydratePendingVideoUploads,
   getUploadsSnapshot = getPendingVideoUploadsSnapshot,
   subscribeToUploads = subscribePendingVideoUploads,
-  subscribeToStartRequests = subscribePendingVideoUploadsStartRequests,
   showUploadToast,
   showUploadNotification,
+  onCompleteUpload,
 }: Props) {
-  const resumeCleanupRef = useRef<(() => void) | null>(null);
   const startCleanupRef = useRef<(() => void) | null>(null);
+  const resumeCleanupRef = useRef<(() => void) | null>(null);
   const appStateRef = useRef<AppStateStatus>(appState.currentState);
   const deliveredTerminalKeysRef = useRef(new Set<string>());
   const appStateApiRef = useRef(appState);
   appStateApiRef.current = appState;
-  const onResumeUploadsRef = useRef(onResumeUploads);
-  onResumeUploadsRef.current = onResumeUploads;
   const onStartUploadsRef = useRef(onStartUploads);
   onStartUploadsRef.current = onStartUploads;
+  const onResumeUploadsRef = useRef(onResumeUploads);
+  onResumeUploadsRef.current = onResumeUploads;
   const onHydrateUploadsRef = useRef(onHydrateUploads);
   onHydrateUploadsRef.current = onHydrateUploads;
   const getUploadsSnapshotRef = useRef(getUploadsSnapshot);
   getUploadsSnapshotRef.current = getUploadsSnapshot;
   const subscribeToUploadsRef = useRef(subscribeToUploads);
   subscribeToUploadsRef.current = subscribeToUploads;
-  const subscribeToStartRequestsRef = useRef(subscribeToStartRequests);
-  subscribeToStartRequestsRef.current = subscribeToStartRequests;
   const showUploadToastRef = useRef<ShowUploadToast>(showUploadToast ?? (() => undefined));
   showUploadToastRef.current = showUploadToast ?? (() => undefined);
   const showUploadNotificationRef = useRef<ShowUploadNotification>(
     showUploadNotification ?? (() => undefined)
   );
   showUploadNotificationRef.current = showUploadNotification ?? (() => undefined);
+  const onCompleteUploadRef = useRef<OnCompleteUpload>(onCompleteUpload ?? (() => undefined));
+  onCompleteUploadRef.current = onCompleteUpload ?? (() => undefined);
 
   const scheduleDeferredAction = useCallback(
     (
@@ -214,6 +215,14 @@ export default function VideoProcessingRuntime({
   const scheduleStartRef = useRef(scheduleStart);
   scheduleStartRef.current = scheduleStart;
 
+  const scheduleStartIfNeeded = useCallback((items?: PendingVideoUpload[]) => {
+    const snapshot = items ?? getUploadsSnapshotRef.current();
+    if (!shouldStartPendingVideoUploadsOnRuntime(snapshot)) {
+      return;
+    }
+    scheduleStartRef.current();
+  }, []);
+
   const scheduleResumeIfNeeded = useCallback(() => {
     if (!shouldResumePendingVideoUploadsOnLifecycle(getUploadsSnapshotRef.current())) {
       return;
@@ -223,14 +232,22 @@ export default function VideoProcessingRuntime({
 
   useMountEffect(() => {
     Promise.resolve()
-      .then(() => onHydrateUploadsRef.current())
+      .then(async () => {
+        const hydratedItems = await onHydrateUploadsRef.current();
+        scheduleStartIfNeeded(hydratedItems);
+      })
       .catch(() => undefined);
     const unsubscribeUploads = subscribeToUploadsRef.current((items) => {
+      scheduleStartIfNeeded(items);
       const nextEvents = collectPendingVideoUploadToastEvents(
         items,
         deliveredTerminalKeysRef.current
       );
       nextEvents.forEach((event) => {
+        const matchedItem = items.find((item) => `${item.id}:${item.status}` === event.dedupeKey);
+        if (event.type === 'success' && matchedItem?.status === 'complete') {
+          onCompleteUploadRef.current(matchedItem);
+        }
         showUploadToastRef.current(event.message, {
           type: event.type,
           placement: 'bottom',
@@ -239,9 +256,6 @@ export default function VideoProcessingRuntime({
           showUploadNotificationRef.current(event.dedupeKey, event.message);
         }
       });
-    });
-    const unsubscribeStartRequests = subscribeToStartRequestsRef.current(() => {
-      scheduleStartRef.current();
     });
     const subscription = appStateApiRef.current.addEventListener('change', (nextAppState) => {
       const wasBackground = appStateRef.current.match(/inactive|background/);
@@ -253,10 +267,9 @@ export default function VideoProcessingRuntime({
     });
 
     return () => {
-      resumeCleanupRef.current?.();
       startCleanupRef.current?.();
+      resumeCleanupRef.current?.();
       unsubscribeUploads();
-      unsubscribeStartRequests();
       subscription.remove();
     };
   });

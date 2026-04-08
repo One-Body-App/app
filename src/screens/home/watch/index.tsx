@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
 import {
@@ -37,9 +37,15 @@ import {
 } from '@/src/components/video/universalVideoLayout';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import useObservedEffect from '@/src/hooks/useObservedEffect';
+import {
+  getRecentCompletedWatchUploadsSnapshot,
+  mergeRecentCompletedWatchUploads,
+  subscribeRecentCompletedWatchUploads,
+} from '@/src/services/recentCompletedWatchUploads';
 
 function Watch({ navigation, route }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const initialPostId = route?.params?.initialPostId
     ? String(route?.params?.initialPostId)
     : undefined;
@@ -61,6 +67,15 @@ function Watch({ navigation, route }: any) {
   const entryOpacity = useRef(new Animated.Value(0)).current;
   const entryScale = useRef(new Animated.Value(0.985)).current;
   const insets = useSafeAreaInsets();
+  const mergeOptimisticWatchPosts = useCallback(
+    (nextPosts: WatchPost[]) =>
+      mergeRecentCompletedWatchUploads({
+        posts: nextPosts,
+        recentUploads: getRecentCompletedWatchUploadsSnapshot(),
+        user: currentUser,
+      }),
+    [currentUser]
+  );
 
   const getWatchPostId = useCallback((post?: WatchPost | null) => {
     if (!post) return null;
@@ -124,7 +139,9 @@ function Watch({ navigation, route }: any) {
     setIsLoading(true);
     try {
       const res = await ApiCall({
-        route: `user/get-following-feed/${FeedTypes.Watch}/${page}`,
+        route: `user/get-following-feed/${FeedTypes.Watch}/${page}${
+          page === 1 ? `?refresh=${Date.now()}` : ''
+        }`,
         token,
         verb: 'get',
       });
@@ -138,9 +155,10 @@ function Watch({ navigation, route }: any) {
             const dateB = new Date(b.created);
             return dateB.getTime() - dateA.getTime(); // Newest first
           });
+        const mergedFeedPosts = mergeOptimisticWatchPosts(feedPosts);
 
         if (page === 1) {
-          let initialFeedData = feedPosts ?? [];
+          let initialFeedData = mergedFeedPosts ?? [];
           if (initialWatchPost?.playBackId) {
             const initialWatchPostId =
               initialWatchPost.postId ?? initialWatchPost.id ?? initialWatchPost._id;
@@ -163,11 +181,13 @@ function Watch({ navigation, route }: any) {
           setFeedData(initialFeedData);
         } else {
           setFeedData((previous) =>
-            [...previous, ...(feedPosts ?? [])].sort((a: any, b: any) => {
-              const dateA = new Date(a.created);
-              const dateB = new Date(b.created);
-              return dateB.getTime() - dateA.getTime(); // Newest first
-            })
+            mergeOptimisticWatchPosts(
+              [...previous, ...(feedPosts ?? [])].sort((a: any, b: any) => {
+                const dateA = new Date(a.created);
+                const dateB = new Date(b.created);
+                return dateB.getTime() - dateA.getTime(); // Newest first
+              })
+            )
           );
         }
       } else {
@@ -185,7 +205,7 @@ function Watch({ navigation, route }: any) {
       setIsRefreshing(false);
       // console.log('watch feed error -- ', e.toString());
     }
-  }, [initialPlaybackId, initialPostId, initialWatchPost, page, token]);
+  }, [initialPlaybackId, initialPostId, initialWatchPost, mergeOptimisticWatchPosts, page, token]);
 
   useObservedEffect(() => {
     // getData(page);
@@ -225,6 +245,12 @@ function Watch({ navigation, route }: any) {
       setIsRefreshing(true);
     }, [])
   );
+
+  useEffect(() => {
+    return subscribeRecentCompletedWatchUploads(() => {
+      setFeedData((previous) => mergeOptimisticWatchPosts(previous));
+    });
+  }, [mergeOptimisticWatchPosts]);
 
   useObservedEffect(() => {
     hasAppliedInitialSelectionRef.current = false;

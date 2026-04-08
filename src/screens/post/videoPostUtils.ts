@@ -1,8 +1,9 @@
-import { AUDIO_BITRATE } from '@/src/services/videoProcessing/videoEditMath';
+import { CommonActions } from '@react-navigation/native';
 import {
-  enqueuePendingVideoUpload,
-  requestPendingVideoUploadsStart,
-} from '@/src/services/videoProcessing/videoUploadQueue';
+  AUDIO_BITRATE,
+  resolveSupportedUploadRatioId,
+} from '@/src/services/videoProcessing/videoEditMath';
+import { enqueuePendingVideoUpload } from '@/src/services/videoProcessing/videoUploadQueue';
 import type {
   VideoCropRect,
   VideoEditRecipe,
@@ -27,15 +28,17 @@ export const QUEUED_WATCH_UPLOAD_TOAST_MESSAGE =
   "Your Watch video was queued for background processing. We'll notify you when it's live.";
 export const BLOCKED_WATCH_CAPTION_MESSAGE =
   'This caption violates content standards and cannot be posted to Watch.';
+export const UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE =
+  'Only 1:1, 4:3, 16:9, and 9:16 videos can be uploaded to Watch.';
 
 type VideoPostNavigation = {
   canGoBack: () => boolean;
   goBack: () => void;
   navigate: (routeName: string, params?: object) => void;
+  dispatch: (action: unknown) => void;
 };
 
 type QueuePendingWatchUpload = typeof enqueuePendingVideoUpload;
-type RequestQueuedWatchUploadStart = typeof requestPendingVideoUploadsStart;
 type ShowQueuedWatchUploadToast = (
   message: string,
   options: {
@@ -78,6 +81,31 @@ const sanitizeRatio = (ratio?: number) => {
     return FALLBACK_ASPECT_RATIO;
   }
   return ratio;
+};
+
+const normalizeVideoDimension = (value?: number) => {
+  if (!Number.isFinite(value) || !value || value <= 0) {
+    return undefined;
+  }
+  return Math.round(value);
+};
+
+export const resolveInitialVideoRatioId = (
+  preferredRatioId?: VideoRatioId,
+  width?: number,
+  height?: number
+): VideoRatioId | null => {
+  if (preferredRatioId) {
+    return preferredRatioId;
+  }
+
+  const normalizedWidth = normalizeVideoDimension(width);
+  const normalizedHeight = normalizeVideoDimension(height);
+  if (!normalizedWidth || !normalizedHeight) {
+    return null;
+  }
+
+  return resolveSupportedUploadRatioId(normalizedWidth, normalizedHeight);
 };
 
 export const isSuccessfulStatus = (status?: number) =>
@@ -275,21 +303,26 @@ export const buildPendingVideoUploadRecipe = ({
 };
 
 const navigateAfterQueueingWatchUpload = (navigation: VideoPostNavigation) => {
-  if (navigation.canGoBack()) {
-    navigation.goBack();
-    return;
-  }
-
-  navigation.navigate('MainRoot', {
-    screen: 'Main',
-    params: {
-      screen: 'HomeTab',
-      params: {
-        screen: 'Home',
-        params: {},
-      },
-    },
-  });
+  navigation.dispatch(
+    CommonActions.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'MainRoot',
+          params: {
+            screen: 'Main',
+            params: {
+              screen: 'HomeTab',
+              params: {
+                screen: 'Home',
+                params: {},
+              },
+            },
+          },
+        } as never,
+      ],
+    })
+  );
 };
 
 export const finalizeQueuedWatchUpload = async ({
@@ -297,13 +330,11 @@ export const finalizeQueuedWatchUpload = async ({
   recipe,
   showQueuedUploadToast,
   enqueueUpload = enqueuePendingVideoUpload,
-  requestUploadStart = requestPendingVideoUploadsStart,
 }: {
   navigation: VideoPostNavigation;
   recipe: VideoEditRecipe;
   showQueuedUploadToast: ShowQueuedWatchUploadToast;
   enqueueUpload?: QueuePendingWatchUpload;
-  requestUploadStart?: RequestQueuedWatchUploadStart;
 }) => {
   await enqueueUpload(recipe, { startImmediately: false });
 
@@ -312,6 +343,5 @@ export const finalizeQueuedWatchUpload = async ({
     placement: 'bottom',
   });
 
-  requestUploadStart();
   navigateAfterQueueingWatchUpload(navigation);
 };

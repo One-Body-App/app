@@ -127,6 +127,7 @@ const DEFAULT_GO_FILTERS: ConnectGoFilters = {
   sort: 'upcoming',
   eventType: '',
   category: '',
+  mode: '',
 };
 
 const DEFAULT_SERVE_FILTERS: ConnectServeFilters = {

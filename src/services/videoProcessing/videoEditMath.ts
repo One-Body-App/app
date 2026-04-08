@@ -1,6 +1,7 @@
 import { VideoCropRect, VideoDimensions, VideoRatioId, VideoTransformState } from './types';
 
 export const SUPPORTED_VIDEO_RATIO_IDS: VideoRatioId[] = ['1:1', '4:3', '16:9', '9:16'];
+export const SUPPORTED_UPLOAD_RATIO_TOLERANCE = 0.02;
 
 export const MIN_VIDEO_EDITOR_SCALE = 1;
 export const MAX_VIDEO_EDITOR_SCALE = 6;
@@ -175,6 +176,43 @@ export const resolveClosestVideoRatioId = (
     const bestDelta = Math.abs(VIDEO_RATIO_CONFIG[closestRatioId].ratio - targetRatio);
     return currentDelta < bestDelta ? ratioId : closestRatioId;
   }, fallbackRatioId);
+};
+
+export const resolveSupportedUploadRatioId = (
+  width?: number,
+  height?: number,
+  tolerance: number = SUPPORTED_UPLOAD_RATIO_TOLERANCE
+): VideoRatioId | null => {
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    !width ||
+    !height ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null;
+  }
+
+  const targetRatio = width / height;
+  const matchingRatioId = SUPPORTED_VIDEO_RATIO_IDS.reduce<VideoRatioId | null>(
+    (closestRatioId, ratioId) => {
+      const currentDelta = Math.abs(VIDEO_RATIO_CONFIG[ratioId].ratio - targetRatio);
+      if (currentDelta > tolerance) {
+        return closestRatioId;
+      }
+
+      if (!closestRatioId) {
+        return ratioId;
+      }
+
+      const bestDelta = Math.abs(VIDEO_RATIO_CONFIG[closestRatioId].ratio - targetRatio);
+      return currentDelta < bestDelta ? ratioId : closestRatioId;
+    },
+    null
+  );
+
+  return matchingRatioId;
 };
 
 export const resolveModerationFrameCount = (durationMs: number) => {

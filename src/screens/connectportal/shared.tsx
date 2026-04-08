@@ -25,6 +25,7 @@ import BusinessUserCurriculumIcon from '@/assets/svg/Business-User-Curriculum--S
 import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
+import HeaderGradientOverlay from '@/components/HeaderGradientOverlay';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import { HapticService } from '@/src/services/haptic';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -1323,7 +1324,7 @@ export function ConnectPortalChrome({
       style={[
         styles.chromeWrap,
         overlay ? styles.chromeWrapOverlay : null,
-        { backgroundColor: overlay ? 'transparent' : palette.screenBackground },
+        { backgroundColor: 'transparent' },
         { paddingTop: insets.top + (overlay ? spacing.x5 : spacing.x8) },
       ]}
     >
@@ -1342,6 +1343,8 @@ export function ConnectPortalChrome({
           />
         </>
       ) : null}
+
+      <HeaderGradientOverlay color={overlay ? palette.overlayScrim : palette.screenBackground} />
 
       <View style={styles.topBar}>
         <TouchableOpacity

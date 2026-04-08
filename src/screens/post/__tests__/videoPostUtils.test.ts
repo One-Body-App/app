@@ -1,7 +1,6 @@
 /* eslint-disable import/first */
 jest.mock('@/src/services/videoProcessing/videoUploadQueue', () => ({
   enqueuePendingVideoUpload: jest.fn(),
-  requestPendingVideoUploadsStart: jest.fn(),
 }));
 
 import {
@@ -12,6 +11,8 @@ import {
   getVideoFitSize,
   isSuccessfulStatus,
   moderateWatchCaptionLocally,
+  resolveInitialVideoRatioId,
+  UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE,
 } from '../videoPostUtils';
 
 describe('videoPostUtils', () => {
@@ -113,6 +114,27 @@ describe('videoPostUtils', () => {
           },
         })
       ).toThrow('Video trim settings are invalid.');
+    });
+  });
+
+  describe('resolveInitialVideoRatioId', () => {
+    it('preserves an explicit recorder ratio instead of re-inferring from dimensions', () => {
+      expect(resolveInitialVideoRatioId('4:3', 1920, 1080)).toBe('4:3');
+    });
+
+    it('maps uploaded video dimensions to supported watch ratios', () => {
+      expect(resolveInitialVideoRatioId(undefined, 1080, 1080)).toBe('1:1');
+      expect(resolveInitialVideoRatioId(undefined, 1440, 1080)).toBe('4:3');
+      expect(resolveInitialVideoRatioId(undefined, 1920, 1080)).toBe('16:9');
+      expect(resolveInitialVideoRatioId(undefined, 1080, 1920)).toBe('9:16');
+    });
+
+    it('rejects unsupported uploaded video ratios', () => {
+      expect(resolveInitialVideoRatioId(undefined, 1620, 1080)).toBeNull();
+      expect(resolveInitialVideoRatioId(undefined, 1000, 1600)).toBeNull();
+      expect(UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE).toBe(
+        'Only 1:1, 4:3, 16:9, and 9:16 videos can be uploaded to Watch.'
+      );
     });
   });
 

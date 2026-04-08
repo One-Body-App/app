@@ -71,10 +71,15 @@ import {
   subscribeToForegroundPushMessages,
   subscribeToPushTokenRefresh,
 } from '@/src/services/notification/pushNotificationService';
-import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
+import {
+  queueRemoteNotificationPayload,
+  syncIosDisplayedRemoteNotifications,
+} from '@/src/services/notification/pushNotificationStorage';
+import { subscribeToIosForegroundNotificationFeed } from '@/src/services/notification/iosNotificationsFeedBridge';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import useMountEffect from '@/src/hooks/useMountEffect';
+import VideoUploadRuntimeHost from '@/src/components/post/VideoUploadRuntimeHost';
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
@@ -113,6 +118,8 @@ function AppContent() {
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const appStateRef = useRef(AppState.currentState);
   const token = authState.userToken;
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
   const hasFetchedProfileRef = useRef(false);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
   const mfaOnboardingInFlightRef = useRef(false);
@@ -268,12 +275,24 @@ function AppContent() {
   }, [dispatch, token]);
   const refreshTokenOnResumeRef = useRef(refreshTokenOnResume);
   refreshTokenOnResumeRef.current = refreshTokenOnResume;
+  const syncIosDisplayedNotifications = useCallback(async () => {
+    if (Platform.OS !== 'ios') {
+      return 0;
+    }
+
+    return syncIosDisplayedRemoteNotifications();
+  }, []);
+  const syncIosDisplayedNotificationsRef = useRef(syncIosDisplayedNotifications);
+  syncIosDisplayedNotificationsRef.current = syncIosDisplayedNotifications;
 
   useMountEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       const wasBackground = appStateRef.current.match(/inactive|background/);
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
+        if (tokenRef.current) {
+          syncIosDisplayedNotificationsRef.current().catch(() => undefined);
+        }
         refreshTokenOnResumeRef.current().catch(() => undefined);
       }
     });
@@ -778,40 +797,45 @@ function AppContent() {
         await disablePushNotifications(token);
       }
 
+      await syncIosDisplayedNotifications();
       await ensureChatReady(token).catch(() => undefined);
     };
 
     bootstrapPush().catch(() => undefined);
 
     const unsubscribeTokenRefresh = subscribeToPushTokenRefresh(() => token, shouldKeepSyncing);
-    const unsubscribeForeground = subscribeToForegroundPushMessages(
-      async (payload, remoteMessage) => {
-        if (!isMounted) {
-          return;
-        }
+    const unsubscribeForeground =
+      Platform.OS === 'android'
+        ? subscribeToForegroundPushMessages(async (payload, remoteMessage) => {
+            if (!isMounted) {
+              return;
+            }
 
-        if (Platform.OS === 'android') {
-          await displayAndroidLocalNotificationIfNeeded(remoteMessage, {
-            isForeground: true,
-            payload,
+            await displayAndroidLocalNotificationIfNeeded(remoteMessage, {
+              isForeground: true,
+              payload,
+            });
+          })
+        : subscribeToIosForegroundNotificationFeed(async (payload) => {
+            if (!isMounted) {
+              return;
+            }
+
+            await queueRemoteNotificationPayload(payload);
           });
-          return;
-        }
-
-        const toastMessage = payload.body ? `${payload.title}\n${payload.body}` : payload.title;
-        toast.show(toastMessage, {
-          placement: 'top',
-          type: 'normal',
-        });
-      }
-    );
 
     return () => {
       isMounted = false;
       unsubscribeTokenRefresh();
       unsubscribeForeground();
     };
-  }, [authState.getProfileData, authState.getProfileData?.pushNotificationsEnabled, token, toast]);
+  }, [
+    authState.getProfileData,
+    authState.getProfileData?.pushNotificationsEnabled,
+    syncIosDisplayedNotifications,
+    token,
+    toast,
+  ]);
 
   useMountEffect(() => {
     const unsubscribeForegroundNotificationEvent = notifee.onForegroundEvent(
@@ -1225,6 +1249,7 @@ function AppContent() {
     >
       <ReactionProvider>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+          <VideoUploadRuntimeHost />
           <MainStack.Navigator
             initialRouteName="Intro"
             screenOptions={{

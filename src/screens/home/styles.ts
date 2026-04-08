@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.1,
-    color: BRAND.gray400,
+    color: BRAND.gray800,
   },
   tabTextSelected: {
     color: BRAND.primaryDark,

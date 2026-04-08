@@ -42,7 +42,6 @@ export type ConnectPlaceFilters = {
 
 export type ConnectGoFilters = {
   mode: string;
-  mode: string;
   sort: ConnectGoSort;
   eventType: string;
   category: string;

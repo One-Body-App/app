@@ -105,7 +105,36 @@ function SettingsStack() {
       <Stack.Screen
         name="NotificationSettings"
         component={NotificationSettings}
-        options={headerOptions}
+        options={({ navigation }) => ({
+          ...headerOptions,
+          title: 'Notification Settings',
+          headerTransparent: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: dark ? colors.text : Colors.primary.brand,
+          headerTitleAlign: Platform.OS === 'android' ? 'left' : 'center',
+          headerTitleStyle: { color: dark ? colors.text : Colors.primary.brand },
+          headerLeftContainerStyle: { paddingLeft: spacing.x8 },
+          headerRightContainerStyle: { paddingRight: spacing.x8 },
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                  return;
+                }
+                navigation.getParent()?.navigate('HomeTab', { screen: 'Home' });
+              }}
+              style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={28}
+                color={dark ? colors.text : Colors.primary.brand}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => <View style={{ width: 40, height: 40 }} />,
+        })}
       />
       <Stack.Screen
         name="InfluencerSettings"

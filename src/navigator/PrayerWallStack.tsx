@@ -6,7 +6,8 @@ import React from 'react';
 
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { HeaderBackButton } from '@react-navigation/elements';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { BlurView } from '@react-native-community/blur';
 import { PrayerWallStackParamsList } from './types';
 import { Colors } from '../styles';
 import Prayer from '../screens/main/prayer';
@@ -15,6 +16,7 @@ import UserProfile from '../screens/main/userProfile';
 import NewPrayer from '../screens/main/prayer/NewPrayer';
 import SinglePrayer from '../screens/main/prayer/Single';
 import mainPageOptions from './global';
+import HeaderGradientOverlay from '../components/HeaderGradientOverlay';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 type PrayerWallNavigationProp = NativeStackNavigationProp<PrayerWallStackParamsList>;
@@ -53,6 +55,21 @@ function PrayerWall() {
         headerTransparent: Platform.OS === 'ios',
         headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
         headerStyle: Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined,
+        headerBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
+            {Platform.OS === 'ios' ? (
+              <BlurView
+                style={StyleSheet.absoluteFill}
+                blurType={dark ? 'materialDark' : 'materialLight'}
+                blurAmount={20}
+                reducedTransparencyFallbackColor={colors.background}
+              />
+            ) : (
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
+            )}
+            <HeaderGradientOverlay color={colors.background} />
+          </View>
+        ),
       }}
     >
       <Stack.Screen

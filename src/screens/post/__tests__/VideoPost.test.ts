@@ -1,7 +1,8 @@
+import { CommonActions } from '@react-navigation/native';
+
 /* eslint-disable import/first */
 jest.mock('@/src/services/videoProcessing/videoUploadQueue', () => ({
   enqueuePendingVideoUpload: jest.fn(),
-  requestPendingVideoUploadsStart: jest.fn(),
 }));
 
 import { finalizeQueuedWatchUpload, QUEUED_WATCH_UPLOAD_TOAST_MESSAGE } from '../videoPostUtils';
@@ -34,14 +35,14 @@ const baseRecipe: VideoEditRecipe = {
 };
 
 describe('VideoPost queued upload handoff', () => {
-  it('enqueues the upload, shows the queued toast, delegates queue start, and exits the screen', async () => {
+  it('enqueues the upload, shows the queued toast, and exits the screen', async () => {
     const enqueueUpload = jest.fn().mockResolvedValue(undefined);
-    const requestUploadStart = jest.fn();
     const showQueuedUploadToast = jest.fn();
     const navigation = {
       canGoBack: jest.fn(() => true),
       goBack: jest.fn(),
       navigate: jest.fn(),
+      dispatch: jest.fn(),
     };
 
     await finalizeQueuedWatchUpload({
@@ -49,7 +50,6 @@ describe('VideoPost queued upload handoff', () => {
       recipe: baseRecipe,
       showQueuedUploadToast,
       enqueueUpload,
-      requestUploadStart,
     });
 
     expect(enqueueUpload).toHaveBeenCalledWith(baseRecipe, { startImmediately: false });
@@ -57,8 +57,27 @@ describe('VideoPost queued upload handoff', () => {
       type: 'success',
       placement: 'bottom',
     });
-    expect(requestUploadStart).toHaveBeenCalledTimes(1);
-    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    expect(navigation.dispatch).toHaveBeenCalledWith(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainRoot',
+            params: {
+              screen: 'Main',
+              params: {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'Home',
+                  params: {},
+                },
+              },
+            },
+          },
+        ],
+      })
+    );
+    expect(navigation.goBack).not.toHaveBeenCalled();
     expect(navigation.navigate).not.toHaveBeenCalled();
   });
 });

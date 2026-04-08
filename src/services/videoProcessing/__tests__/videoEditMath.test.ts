@@ -8,6 +8,8 @@ import {
   resolveCropRect,
   resolveModerationFrameCount,
   resolveSourceCrop,
+  resolveSupportedUploadRatioId,
+  SUPPORTED_UPLOAD_RATIO_TOLERANCE,
 } from '../videoEditMath';
 
 describe('videoEditMath', () => {
@@ -34,6 +36,20 @@ describe('videoEditMath', () => {
     expect(resolveClosestVideoRatioId(1440, 1080)).toBe('4:3');
     expect(resolveClosestVideoRatioId(1080, 1080)).toBe('1:1');
     expect(resolveClosestVideoRatioId(undefined, 1080)).toBe('9:16');
+  });
+
+  it('classifies supported uploaded video ratios and rejects unsupported families', () => {
+    expect(resolveSupportedUploadRatioId(1080, 1080)).toBe('1:1');
+    expect(resolveSupportedUploadRatioId(1440, 1080)).toBe('4:3');
+    expect(resolveSupportedUploadRatioId(1920, 1080)).toBe('16:9');
+    expect(resolveSupportedUploadRatioId(1080, 1920)).toBe('9:16');
+    expect(resolveSupportedUploadRatioId(1910, 1080)).toBe('16:9');
+    expect(resolveSupportedUploadRatioId(1088, 1920)).toBe('9:16');
+    expect(resolveSupportedUploadRatioId(1620, 1080)).toBeNull();
+    expect(resolveSupportedUploadRatioId(2390, 1000)).toBeNull();
+    expect(resolveSupportedUploadRatioId(1000, 1600)).toBeNull();
+    expect(resolveSupportedUploadRatioId(undefined, 1080)).toBeNull();
+    expect(SUPPORTED_UPLOAD_RATIO_TOLERANCE).toBe(0.02);
   });
 
   it('centers the crop rect for the selected ratio', () => {

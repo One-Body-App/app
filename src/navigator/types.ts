@@ -127,6 +127,7 @@ export type HomeStackParamsList = {
   };
   Search: undefined;
   Notifications: undefined;
+  NotificationSettings: undefined;
   UserProfile: {
     id?: string;
     handle?: string;

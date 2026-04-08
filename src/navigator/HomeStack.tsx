@@ -1,13 +1,16 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { Platform } from 'react-native';
+import { Platform, TouchableOpacity } from 'react-native';
 import Home, { FeedTypes } from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
+import NotificationSettings from '../screens/main/notificationSettings';
 import { Colors } from '../styles';
+import { spacing } from '../styles/spacing';
 import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
@@ -62,6 +65,35 @@ function HomeStack() {
           title: '',
           contentStyle: { backgroundColor: colors.background },
         }}
+      />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettings}
+        options={({ navigation }) => ({
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+          title: 'Notification Settings',
+          headerShadowVisible: false,
+          headerBackTitleVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: dark ? colors.text : Colors.primary.brand,
+          headerTitleAlign: Platform.OS === 'android' ? 'left' : 'center',
+          headerTitleStyle: { color: dark ? colors.text : Colors.primary.brand },
+          headerLeftContainerStyle: { paddingLeft: spacing.x8 },
+          headerRightContainerStyle: { paddingRight: spacing.x8 },
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={28}
+                color={dark ? colors.text : Colors.primary.brand}
+              />
+            </TouchableOpacity>
+          ),
+        })}
       />
     </Stack.Navigator>
   );

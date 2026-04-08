@@ -8,11 +8,13 @@ final class MuxDirectUpload: RCTEventEmitter {
   private static let eventName = "muxDirectUploadEvent"
   private static let uploadRecordsKey = "mux_direct_upload_records"
   private static let terminalStatesKey = "mux_direct_upload_terminal_states"
+  private static let startupStatesKey = "mux_direct_upload_startup_states"
 
   private static let progressEmitIntervalMs: Double = 500
   private let uploadManager = DirectUploadManager.shared
   private var uploadRecordsById: [String: String] = [:]
   private var activeUploadsById: [String: DirectUpload] = [:]
+  private var attachedUploadIdentifiersById: [String: ObjectIdentifier] = [:]
   private var lastProgressEmitMs: [String: Double] = [:]
   private var hasListeners = false
 
@@ -68,6 +70,40 @@ final class MuxDirectUpload: RCTEventEmitter {
         return
       }
 
+      if let activeUpload = self.activeUploadsById[uploadId] {
+        self.attach(uploadId: uploadId, fileUri: fileUri, upload: activeUpload)
+        resolve(nil)
+        return
+      }
+
+      if let managedUpload = self.findManagedUpload(fileURL: fileURL) {
+        let existingUploadId =
+          self.findRecordedUploadId(fileURL: fileURL) ?? self.findActiveUploadId(fileURL: fileURL)
+        if let existingUploadId, existingUploadId != uploadId {
+          reject(
+            "duplicate_upload_active",
+            "A native upload is already active for this file.",
+            nil
+          )
+          return
+        }
+
+        self.attach(uploadId: uploadId, fileUri: fileUri, upload: managedUpload)
+        resolve(nil)
+        return
+      }
+
+      if let existingUploadId = self.findActiveUploadId(fileURL: fileURL), existingUploadId != uploadId {
+        reject(
+          "duplicate_upload_active",
+          "A native upload is already active for this file.",
+          nil
+        )
+        return
+      }
+
+      self.persistStartupState(for: uploadId, fileUri: fileUri, state: "starting", step: "params_accepted")
+      self.persistStartupState(for: uploadId, fileUri: fileUri, state: "starting", step: "file_resolved")
       let options = DirectUploadOptions(inputStandardization: .skipped)
       let upload = DirectUpload(
         uploadURL: uploadURL,
@@ -75,8 +111,11 @@ final class MuxDirectUpload: RCTEventEmitter {
         options: options
       )
 
+      self.persistStartupState(for: uploadId, fileUri: fileUri, state: "starting", step: "upload_built")
       self.clearTerminalState(for: uploadId)
+      self.persistStartupState(for: uploadId, fileUri: fileUri, state: "starting", step: "listeners_attached")
       self.attach(uploadId: uploadId, fileUri: fileUri, upload: upload)
+      self.persistStartupState(for: uploadId, fileUri: fileUri, state: "starting", step: "start_called")
       upload.start()
       resolve(nil)
     }
@@ -115,7 +154,18 @@ final class MuxDirectUpload: RCTEventEmitter {
   }
 
   private func attach(uploadId: String, fileUri: String, upload: DirectUpload) {
+    let uploadIdentifier = ObjectIdentifier(upload)
+    if attachedUploadIdentifiersById[uploadId] == uploadIdentifier {
+      activeUploadsById[uploadId] = upload
+      if uploadRecordsById[uploadId] != fileUri {
+        uploadRecordsById[uploadId] = fileUri
+        persistUploadRecords()
+      }
+      return
+    }
+
     activeUploadsById[uploadId] = upload
+    attachedUploadIdentifiersById[uploadId] = uploadIdentifier
     uploadRecordsById[uploadId] = fileUri
     persistUploadRecords()
 
@@ -135,6 +185,8 @@ final class MuxDirectUpload: RCTEventEmitter {
           errorMessage: nil
         )
       }
+
+      self.markFirstCallbackReceived(for: uploadId, fileUri: fileUri)
 
       let now = Date().timeIntervalSince1970 * 1000
       let last = self.lastProgressEmitMs[uploadId] ?? 0
@@ -159,6 +211,7 @@ final class MuxDirectUpload: RCTEventEmitter {
 
       switch result {
       case .success(let success):
+        self.markTerminalStartupState(for: uploadId, fileUri: fileUri, step: "result_success")
         let finalProgress = success.finalState.progress
         self.persistTerminalState(
           for: uploadId,
@@ -179,6 +232,7 @@ final class MuxDirectUpload: RCTEventEmitter {
           )
         )
       case .failure(let error):
+        self.markTerminalStartupState(for: uploadId, fileUri: fileUri, step: "result_failure")
         let snapshot = self.snapshot(for: uploadId, fileUri: fileUri, upload: upload)
         self.persistTerminalState(
           for: uploadId,
@@ -203,12 +257,14 @@ final class MuxDirectUpload: RCTEventEmitter {
       }
 
       self.activeUploadsById.removeValue(forKey: uploadId)
+      self.attachedUploadIdentifiersById.removeValue(forKey: uploadId)
       self.lastProgressEmitMs.removeValue(forKey: uploadId)
     }
   }
 
   private func buildSnapshots() -> [[String: Any]] {
     let terminalStates = readTerminalStates()
+    let startupStates = readStartupStates()
 
     return uploadRecordsById.compactMap { uploadId, fileUri in
       guard let fileURL = resolveFileURL(fileUri) else {
@@ -217,7 +273,12 @@ final class MuxDirectUpload: RCTEventEmitter {
 
       if let activeUpload = activeUploadsById[uploadId] ?? findManagedUpload(fileURL: fileURL) {
         attach(uploadId: uploadId, fileUri: fileUri, upload: activeUpload)
-        return snapshot(for: uploadId, fileUri: fileUri, upload: activeUpload)
+        var activeSnapshot = snapshot(for: uploadId, fileUri: fileUri, upload: activeUpload)
+        appendStartupDiagnostics(
+          to: &activeSnapshot,
+          diagnostics: startupStates[uploadId] as? [String: Any]
+        )
+        return activeSnapshot
       }
 
       guard let terminalState = terminalStates[uploadId] as? [String: Any] else {
@@ -237,6 +298,10 @@ final class MuxDirectUpload: RCTEventEmitter {
       if let errorMessage = terminalState["errorMessage"] as? String {
         snapshot["errorMessage"] = errorMessage
       }
+      appendStartupDiagnostics(
+        to: &snapshot,
+        diagnostics: startupStates[uploadId] as? [String: Any]
+      )
       return snapshot
     }
   }
@@ -345,6 +410,10 @@ final class MuxDirectUpload: RCTEventEmitter {
     if let errorMessage {
       payload["errorMessage"] = errorMessage
     }
+    appendStartupDiagnostics(
+      to: &payload,
+      diagnostics: readStartupStates()[uploadId] as? [String: Any]
+    )
 
     return payload
   }
@@ -382,8 +451,96 @@ final class MuxDirectUpload: RCTEventEmitter {
     }
   }
 
+  private func findActiveUploadId(fileURL: URL) -> String? {
+    uploadRecordsById.first { uploadId, _ in
+      guard
+        let activeUpload = activeUploadsById[uploadId],
+        let activeFileURL = activeUpload.videoFile?.standardizedFileURL
+      else {
+        return false
+      }
+      return activeFileURL == fileURL.standardizedFileURL
+    }?.key
+  }
+
+  private func findRecordedUploadId(fileURL: URL) -> String? {
+    uploadRecordsById.first { _, recordedFileUri in
+      guard let recordedFileURL = resolveFileURL(recordedFileUri)?.standardizedFileURL else {
+        return false
+      }
+      return recordedFileURL == fileURL.standardizedFileURL
+    }?.key
+  }
+
   private func persistUploadRecords() {
     UserDefaults.standard.set(uploadRecordsById, forKey: Self.uploadRecordsKey)
+  }
+
+  private func readStartupStates() -> [String: [String: Any]] {
+    UserDefaults.standard.dictionary(forKey: Self.startupStatesKey) as? [String: [String: Any]] ?? [:]
+  }
+
+  private func persistStartupState(
+    for uploadId: String,
+    fileUri: String,
+    state: String,
+    step: String,
+    firstCallbackAt: String? = nil
+  ) {
+    var startupStates = readStartupStates()
+    var startupState = startupStates[uploadId] ?? [:]
+    startupState["fileUri"] = fileUri
+    startupState["startupState"] = state
+    startupState["startupStep"] = step
+    startupState["startupUpdatedAt"] = timestampNow()
+    if let firstCallbackAt {
+      startupState["firstCallbackAt"] = firstCallbackAt
+    }
+    startupStates[uploadId] = startupState
+    UserDefaults.standard.set(startupStates, forKey: Self.startupStatesKey)
+  }
+
+  private func markFirstCallbackReceived(for uploadId: String, fileUri: String) {
+    let existingDiagnostics = readStartupStates()[uploadId]
+    let firstCallbackAt = existingDiagnostics?["firstCallbackAt"] as? String ?? timestampNow()
+    persistStartupState(
+      for: uploadId,
+      fileUri: fileUri,
+      state: "active",
+      step: "first_callback_received",
+      firstCallbackAt: firstCallbackAt
+    )
+  }
+
+  private func markTerminalStartupState(for uploadId: String, fileUri: String, step: String) {
+    let existingDiagnostics = readStartupStates()[uploadId]
+    let firstCallbackAt = existingDiagnostics?["firstCallbackAt"] as? String ?? timestampNow()
+    persistStartupState(
+      for: uploadId,
+      fileUri: fileUri,
+      state: "terminal",
+      step: step,
+      firstCallbackAt: firstCallbackAt
+    )
+  }
+
+  private func appendStartupDiagnostics(to payload: inout [String: Any], diagnostics: [String: Any]?) {
+    guard let diagnostics else {
+      return
+    }
+
+    if let startupState = diagnostics["startupState"] as? String {
+      payload["startupState"] = startupState
+    }
+    if let startupStep = diagnostics["startupStep"] as? String {
+      payload["startupStep"] = startupStep
+    }
+    if let startupUpdatedAt = diagnostics["startupUpdatedAt"] as? String {
+      payload["startupUpdatedAt"] = startupUpdatedAt
+    }
+    if let firstCallbackAt = diagnostics["firstCallbackAt"] as? String {
+      payload["firstCallbackAt"] = firstCallbackAt
+    }
   }
 
   private func readTerminalStates() -> [String: [String: Any]] {
@@ -436,6 +593,10 @@ final class MuxDirectUpload: RCTEventEmitter {
       return Int64(value)
     }
     return 0
+  }
+
+  private func timestampNow() -> String {
+    ISO8601DateFormatter().string(from: Date())
   }
 }
 #endif

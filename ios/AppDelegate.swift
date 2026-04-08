@@ -10,7 +10,6 @@ import ReactAppDependencyProvider
 import react_native_lottie_splash_screen
 import Firebase
 import FirebaseMessaging
-import MuxUploadSDK
 import UserNotifications
 
 @main
@@ -131,6 +130,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
+    IOSNotificationsFeedBridge.emitRemoteNotificationRequest(notification.request)
+
     if #available(iOS 14.0, *) {
       completionHandler([.banner, .sound, .badge, .list])
       return
@@ -138,20 +139,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     completionHandler([.alert, .sound, .badge])
   }
 
-  func applicationDidBecomeActive(_ application: UIApplication) {
-    DirectUploadManager.shared.resumeAllDirectUploads()
-  }
-
-  func applicationDidEnterBackground(_ application: UIApplication) {
-    DirectUploadManager.shared.allManagedDirectUploads().forEach { upload in
-      upload.pause()
-    }
-  }
-
-  func applicationWillTerminate(_ application: UIApplication) {
-    DirectUploadManager.shared.allManagedDirectUploads().forEach { upload in
-      upload.pause()
-    }
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    IOSNotificationsFeedBridge.emitRemoteNotificationRequest(response.notification.request)
+    completionHandler()
   }
 
   private func cleanupSplashVideoPlayer() {

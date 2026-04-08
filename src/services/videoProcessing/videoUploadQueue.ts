@@ -2,9 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 import { Platform } from 'react-native';
 import type { ClientModerationScores, PendingVideoUpload, VideoEditRecipe } from './types';
-import { AUDIO_BITRATE, VIDEO_RATIO_CONFIG, resolveModerationFrameCount } from './videoEditMath';
+import { AUDIO_BITRATE } from './videoEditMath';
 import { deriveVideoAspectRatio, validateExportedVideoForWatch } from './videoUploadValidation';
 import {
+  hasTimedOutNativeMuxStartup,
   NativeMuxDirectUploadError,
   getNativeMuxDirectUploads,
   isNativeMuxDirectUploadAvailable,
@@ -14,17 +15,11 @@ import {
   type NativeMuxDirectUploadRecord,
 } from './muxDirectUploadBridge';
 import {
-  extractEditedFrames,
   exportEditedVideo,
   normalizeVideoProcessingUri,
   stripFileScheme,
 } from './nativeVideoProcessing';
 import { ApiCall } from '@/src/services/api';
-import {
-  buildImageDataUri,
-  callBackendFallbackModeration,
-} from '@/src/services/moderation/clientModeration';
-import { requestVideoModeration } from './videoModerationBridge';
 
 const VIDEO_UPLOAD_QUEUE_STORAGE_KEY = 'video-processing.pending-watch-posts.v1';
 const MAX_RETRY_COUNT = 3;
@@ -33,6 +28,8 @@ const REMOTE_POLL_MULTIPLIER = 1.8;
 const REMOTE_POLL_MAX_INTERVAL_MS = process.env.JEST_WORKER_ID ? 0 : 30000;
 const REMOTE_POLL_JITTER_RATIO = 0.2;
 const REMOTE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
+const MISSING_VIDEO_TRACK_GRACE_MS = 90 * 1000;
+const MAX_NATIVE_CRASH_RECOVERY_COUNT = 1;
 
 type QueueFailureCode = NonNullable<PendingVideoUpload['failureCode']>;
 type WatchBackendProcessingStatus = NonNullable<PendingVideoUpload['watchProcessingStatus']>;
@@ -45,10 +42,34 @@ type WatchPostResponse = {
   message?: string;
   syncFailureReason?: string;
 };
+type WatchSyncFailureReason =
+  | 'missing_video_track'
+  | 'invalid_duration'
+  | 'invalid_dimensions'
+  | 'unsupported_aspect_ratio';
+type TerminalWatchSyncFailureReason = Exclude<WatchSyncFailureReason, 'missing_video_track'>;
+type WatchResponseDisposition =
+  | 'ready'
+  | 'pending'
+  | 'grace_period_pending_sync_failure'
+  | 'terminal_review_failure'
+  | 'terminal_sync_failure';
+type ClassifiedWatchResponse = {
+  disposition: WatchResponseDisposition;
+  watchId?: string;
+  playBackId?: string;
+  watchProcessingStatus: WatchBackendProcessingStatus;
+  syncFailureReason?: WatchSyncFailureReason;
+  downgradedByMissingVideoTrackGrace?: boolean;
+};
 type UploadVideoResult = {
   uploadId: string;
   uploadTransport: UploadTransport;
   nativeUploadState?: NonNullable<PendingVideoUpload['nativeUploadState']>;
+};
+type UploadVideoOptions = {
+  forceUploadTransport?: NonNullable<PendingVideoUpload['forcedUploadTransport']>;
+  onNativeUploadPrepared?: (preparedUpload: UploadVideoResult) => Promise<void> | void;
 };
 
 type QueueDependencies = {
@@ -66,7 +87,10 @@ type QueueDependencies = {
     processedWidth: number;
     processedHeight: number;
   }>;
-  uploadVideo: (processedVideoUri: string) => Promise<UploadVideoResult>;
+  uploadVideo: (
+    processedVideoUri: string,
+    options?: UploadVideoOptions
+  ) => Promise<UploadVideoResult>;
   resumeNativeUploads: () => Promise<NativeMuxDirectUploadRecord[]>;
   getNativeUploads: () => Promise<NativeMuxDirectUploadRecord[]>;
   waitForNativeUpload: (uploadId: string) => Promise<void>;
@@ -77,7 +101,6 @@ type QueueDependencies = {
 };
 
 type VideoUploadQueueListener = (items: PendingVideoUpload[]) => void;
-type PendingVideoUploadsStartRequestListener = () => void;
 
 type VideoUploadQueue = {
   hydrate: () => Promise<PendingVideoUpload[]>;
@@ -105,27 +128,6 @@ class QueueError extends Error {
     this.retryable = retryable;
   }
 }
-
-const pendingVideoUploadsStartRequestListeners = new Set<PendingVideoUploadsStartRequestListener>();
-let pendingVideoUploadsStartRequestCount = 0;
-
-const flushPendingVideoUploadsStartRequests = () => {
-  if (
-    pendingVideoUploadsStartRequestCount <= 0 ||
-    pendingVideoUploadsStartRequestListeners.size === 0
-  ) {
-    return;
-  }
-
-  const pendingRequestCount = pendingVideoUploadsStartRequestCount;
-  pendingVideoUploadsStartRequestCount = 0;
-
-  pendingVideoUploadsStartRequestListeners.forEach((listener) => {
-    for (let index = 0; index < pendingRequestCount; index += 1) {
-      listener();
-    }
-  });
-};
 
 const cloneItems = (items: PendingVideoUpload[]) => items.map((item) => ({ ...item }));
 const ACTIVE_QUEUE_STATUSES = new Set<PendingVideoUpload['status']>([
@@ -170,6 +172,11 @@ const resolveWatchId = (watch: WatchPostResponse | void) => {
   return typeof candidate === 'string' && candidate.trim() !== '' ? candidate.trim() : undefined;
 };
 
+const resolveWatchPlaybackId = (watch: WatchPostResponse | void) => {
+  const candidate = watch?.playBackId;
+  return typeof candidate === 'string' && candidate.trim() !== '' ? candidate.trim() : undefined;
+};
+
 const normalizeWatchProcessingStatus = (
   watch: WatchPostResponse | void,
   fallback: WatchBackendProcessingStatus
@@ -190,6 +197,102 @@ const normalizeWatchProcessingStatus = (
   return fallback;
 };
 
+const TERMINAL_WATCH_SYNC_FAILURE_REASONS = new Set<TerminalWatchSyncFailureReason>([
+  'invalid_duration',
+  'invalid_dimensions',
+  'unsupported_aspect_ratio',
+]);
+
+const resolveWatchSyncFailureReason = (
+  watch: WatchPostResponse | void
+): WatchSyncFailureReason | undefined => {
+  const candidate = watch?.syncFailureReason;
+  return candidate === 'missing_video_track' ||
+    TERMINAL_WATCH_SYNC_FAILURE_REASONS.has(candidate as TerminalWatchSyncFailureReason)
+    ? (candidate as WatchSyncFailureReason)
+    : undefined;
+};
+
+const classifyWatchResponse = (
+  watch: WatchPostResponse | void,
+  fallback: WatchBackendProcessingStatus,
+  options?: {
+    remoteProcessingAgeMs?: number;
+  }
+): ClassifiedWatchResponse => {
+  if (!watch) {
+    return {
+      disposition: fallback === 'READY' ? 'ready' : 'pending',
+      watchProcessingStatus: fallback,
+    };
+  }
+
+  const watchId = resolveWatchId(watch);
+  const playBackId = resolveWatchPlaybackId(watch);
+  const watchProcessingStatus = normalizeWatchProcessingStatus(watch, fallback);
+  const syncFailureReason = resolveWatchSyncFailureReason(watch);
+  const remoteProcessingAgeMs = options?.remoteProcessingAgeMs ?? 0;
+
+  if (playBackId) {
+    return {
+      disposition: 'ready',
+      watchId,
+      playBackId,
+      watchProcessingStatus: 'READY',
+      syncFailureReason,
+    };
+  }
+
+  if (watchProcessingStatus === 'FAILED_REVIEW') {
+    return {
+      disposition: 'terminal_review_failure',
+      watchId,
+      watchProcessingStatus,
+      syncFailureReason,
+    };
+  }
+
+  if (
+    watchProcessingStatus === 'FAILED_SYNC' &&
+    syncFailureReason === 'missing_video_track' &&
+    remoteProcessingAgeMs < MISSING_VIDEO_TRACK_GRACE_MS
+  ) {
+    return {
+      disposition: 'grace_period_pending_sync_failure',
+      watchId,
+      watchProcessingStatus,
+      syncFailureReason,
+      downgradedByMissingVideoTrackGrace: true,
+    };
+  }
+
+  if (watchProcessingStatus === 'FAILED_SYNC' && syncFailureReason) {
+    return {
+      disposition: 'terminal_sync_failure',
+      watchId,
+      watchProcessingStatus,
+      syncFailureReason,
+    };
+  }
+
+  if (watchProcessingStatus === 'READY') {
+    return {
+      disposition: 'ready',
+      watchId,
+      playBackId,
+      watchProcessingStatus,
+      syncFailureReason,
+    };
+  }
+
+  return {
+    disposition: 'pending',
+    watchId,
+    watchProcessingStatus,
+    syncFailureReason,
+  };
+};
+
 const resolveWatchFailureMessage = (watch: WatchPostResponse | void) => {
   const normalizedMessage = normalizeFailureMessage(watch?.message);
   if (normalizedMessage && normalizedMessage !== 'Video processing failed.') {
@@ -206,6 +309,18 @@ const parseTimestampMs = (value?: string) => {
 
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const resolveRemoteProcessingAgeMs = (
+  remotePollStartedAt: string | undefined,
+  nowIsoString: string
+) => {
+  const startedAtMs = parseTimestampMs(remotePollStartedAt);
+  const nowMs = parseTimestampMs(nowIsoString) ?? Date.now();
+  if (typeof startedAtMs !== 'number') {
+    return 0;
+  }
+  return Math.max(0, nowMs - startedAtMs);
 };
 
 const clampRemotePollDelay = (value: number) =>
@@ -255,6 +370,20 @@ const isNativeMuxUploadItem = (item: PendingVideoUpload) =>
 const isNativeMuxUploadRecordActive = (record?: NativeMuxDirectUploadRecord | null) =>
   record?.state === 'uploading' || record?.state === 'paused';
 
+const hasNativeCrashRecoveryRemaining = (item: PendingVideoUpload) =>
+  (item.nativeCrashRecoveryCount ?? 0) < MAX_NATIVE_CRASH_RECOVERY_COUNT;
+
+const buildNativeStartupFailureMessage = (record?: NativeMuxDirectUploadRecord | null) => {
+  const startupStep = typeof record?.startupStep === 'string' ? record.startupStep.trim() : '';
+  if (startupStep) {
+    return `Native Mux upload stalled before its first callback (${startupStep}).`;
+  }
+
+  return 'Native Mux upload stalled before its first callback.';
+};
+
+const DEVICE_VIDEO_MODERATION_BYPASSED_ERROR = 'device-video-moderation-bypassed';
+
 const defaultDependencies: QueueDependencies = {
   storage: AsyncStorage,
   fileExists: async (uri) => {
@@ -277,107 +406,11 @@ const defaultDependencies: QueueDependencies = {
       // ignore temporary file cleanup failures
     }
   },
-  moderateVideo: async (recipe) => {
-    const ratioConfig = VIDEO_RATIO_CONFIG[recipe.ratioId];
-    const longerSide = Math.max(ratioConfig.outputWidth, ratioConfig.outputHeight);
-    const scale = longerSide > 720 ? 720 / longerSide : 1;
-    const outputWidth = Math.max(180, Math.round(ratioConfig.outputWidth * scale));
-    const outputHeight = Math.max(180, Math.round(ratioConfig.outputHeight * scale));
-    const trimDurationMs = Math.max(
-      1,
-      recipe.trimDurationMs ?? recipe.trimEndMs - recipe.trimStartMs
-    );
-    const frameCount = resolveModerationFrameCount(trimDurationMs);
-    let framePaths: string[];
-    try {
-      framePaths = await extractEditedFrames(recipe.sourceUri, {
-        startTime: recipe.trimStartMs,
-        endTime: recipe.trimEndMs,
-        cropX: recipe.cropRect.x,
-        cropY: recipe.cropRect.y,
-        cropWidth: recipe.cropRect.width,
-        cropHeight: recipe.cropRect.height,
-        outputWidth,
-        outputHeight,
-        frameCount,
-      });
-    } catch {
-      return {
-        moderationDecision: 'unsure',
-        moderationScores: null,
-        moderationError: 'frame-extraction-failed',
-      };
-    }
-
-    try {
-      // Step 1: Visual frame moderation via nsfwjs (WebView bridge)
-      const frameDataUris = await Promise.all(framePaths.map(buildImageDataUri));
-      const bridgeResult = await requestVideoModeration(frameDataUris);
-      const visualResult = {
-        action: (bridgeResult.moderationDecision === 'blocked'
-          ? 'block'
-          : bridgeResult.moderationDecision === 'safe'
-            ? 'allow'
-            : 'fallback') as 'allow' | 'block' | 'fallback',
-        source: 'nsfwjs' as const,
-        scores: bridgeResult.moderationScores ?? {
-          neutral: 0,
-          drawing: 0,
-          sexy: 0,
-          porn: 0,
-          hentai: 0,
-        },
-        reason: bridgeResult.moderationError,
-        model: 'nsfwjs' as const,
-      };
-      if (visualResult.action === 'block') {
-        return {
-          moderationDecision: 'blocked' as const,
-          moderationScores: visualResult.scores,
-          moderationError: visualResult.reason,
-        };
-      }
-
-      let visualFallbackAllowed = false;
-      if (visualResult.action === 'fallback') {
-        const visualFallback = await callBackendFallbackModeration({
-          type: 'video',
-          content: frameDataUris,
-          clientMetadata: {
-            source: visualResult.source,
-            scores: visualResult.scores,
-            reason: visualResult.reason,
-            model: visualResult.model,
-          },
-        });
-
-        if (visualFallback.finalAction === 'flag_for_admin_review') {
-          return {
-            moderationDecision: 'blocked' as const,
-            moderationScores: visualResult.scores,
-            moderationError: 'video-flagged-for-review',
-          };
-        }
-        visualFallbackAllowed = true;
-      }
-
-      return {
-        moderationDecision: visualFallbackAllowed ? 'unsure' : ('safe' as const),
-        moderationScores: visualResult.scores,
-        moderationError: visualFallbackAllowed ? visualResult.reason : undefined,
-      };
-    } finally {
-      await Promise.all(
-        framePaths.map(async (framePath) => {
-          try {
-            await RNFS.unlink(stripFileScheme(framePath));
-          } catch {
-            // ignore temporary frame cleanup failures
-          }
-        })
-      );
-    }
-  },
+  moderateVideo: async () => ({
+    moderationDecision: 'unsure',
+    moderationScores: null,
+    moderationError: DEVICE_VIDEO_MODERATION_BYPASSED_ERROR,
+  }),
   exportVideo: async (recipe) => {
     const result = await exportEditedVideo(recipe.sourceUri, {
       saveToPhoto: false,
@@ -412,7 +445,7 @@ const defaultDependencies: QueueDependencies = {
       processedHeight: result.height,
     };
   },
-  uploadVideo: async (processedVideoUri) => {
+  uploadVideo: async (processedVideoUri, options = {}) => {
     const uploadLink = await ApiCall<{
       url?: string;
       id?: string;
@@ -470,10 +503,18 @@ const defaultDependencies: QueueDependencies = {
       ? uploadSourcePath
       : `file://${uploadSourcePath}`;
     const prefersNativeUpload =
-      (Platform.OS === 'ios' || Platform.OS === 'android') && isNativeMuxDirectUploadAvailable();
+      options.forceUploadTransport !== 'raw_put_fallback' &&
+      (Platform.OS === 'ios' || Platform.OS === 'android') &&
+      isNativeMuxDirectUploadAvailable();
 
     if (prefersNativeUpload) {
       try {
+        await options.onNativeUploadPrepared?.({
+          uploadId: uploadLink.response.id,
+          uploadTransport: 'mux_sdk',
+          nativeUploadState: 'uploading',
+        });
+
         await startNativeMuxDirectUpload({
           uploadId: uploadLink.response.id,
           uploadUrl,
@@ -496,6 +537,12 @@ const defaultDependencies: QueueDependencies = {
             : new NativeMuxDirectUploadError(normalizeFailureMessage(error));
 
         if (!nativeError.startedBytes) {
+          if (nativeError.code === 'startup_timeout') {
+            if (cleanupUploadCopy) {
+              await cleanupUploadCopy();
+            }
+            throw nativeError;
+          }
           // fall through to the existing raw PUT implementation before any bytes have been sent
         } else {
           if (cleanupUploadCopy) {
@@ -715,10 +762,56 @@ export const createVideoUploadQueue = (
 
   const getItemById = (id: string) => items.find((item) => item.id === id);
 
+  const logStage = (
+    item: Pick<PendingVideoUpload, 'id' | 'status' | 'uploadId' | 'watchId'>,
+    processingStage:
+      | 'queued'
+      | 'start'
+      | 'moderation_bypassed'
+      | 'exporting'
+      | 'uploading'
+      | 'posting'
+      | 'processing_remote',
+    payload?: Record<string, unknown>
+  ) => {
+    dependencies.log('queue-stage', {
+      id: item.id,
+      status: item.status,
+      uploadId: item.uploadId,
+      watchId: item.watchId,
+      processingStage,
+      ...(payload ?? {}),
+    });
+  };
+
   const cleanupItemArtifacts = async (item: PendingVideoUpload) => {
     if (item.processedVideoUri) {
       await dependencies.deleteFile(item.processedVideoUri);
     }
+  };
+
+  const logWatchResponse = (
+    event: 'watch-post-response' | 'watch-status-response',
+    item: PendingVideoUpload,
+    watch: WatchPostResponse | void,
+    classified: ClassifiedWatchResponse,
+    options?: {
+      remotePollStartedAt?: string;
+      remoteProcessingAgeMs?: number;
+    }
+  ) => {
+    dependencies.log(event, {
+      uploadId: item.uploadId,
+      watchId: classified.watchId,
+      processingStatus: watch?.processingStatus,
+      playBackId: resolveWatchPlaybackId(watch),
+      syncFailureReason: watch?.syncFailureReason,
+      remotePollStartedAt: options?.remotePollStartedAt,
+      remoteProcessingAgeMs: options?.remoteProcessingAgeMs,
+      message: watch?.message,
+      disposition: classified.disposition,
+      downgradedByMissingVideoTrackGrace: classified.downgradedByMissingVideoTrackGrace ?? false,
+    });
   };
 
   const updateItem = async (
@@ -741,6 +834,92 @@ export const createVideoUploadQueue = (
     await persist();
     notifyListeners();
     wakeQueue();
+  };
+
+  const recoverItemFromNativeStartupTimeout = async (
+    item: PendingVideoUpload,
+    reason: string,
+    record?: NativeMuxDirectUploadRecord | null
+  ) => {
+    const currentItem = getItemById(item.id) ?? item;
+    if (!hasNativeCrashRecoveryRemaining(currentItem)) {
+      return false;
+    }
+
+    await updateItem(
+      currentItem.id,
+      {
+        status: 'queued',
+        uploadId: undefined,
+        uploadTransport: undefined,
+        nativeUploadState: undefined,
+        forcedUploadTransport: 'raw_put_fallback',
+        nativeCrashRecoveryCount: (currentItem.nativeCrashRecoveryCount ?? 0) + 1,
+        lastError: undefined,
+        failureCode: undefined,
+      },
+      'native-startup-recovered'
+    );
+    dependencies.log('native-startup-recovery', {
+      id: currentItem.id,
+      uploadId: currentItem.uploadId,
+      reason,
+      startupState: record?.startupState,
+      startupStep: record?.startupStep,
+      startupUpdatedAt: record?.startupUpdatedAt,
+      firstCallbackAt: record?.firstCallbackAt,
+    });
+    return true;
+  };
+
+  const recoverItemsWithTimedOutNativeStartup = (
+    source: 'hydrate' | 'resume',
+    value: PendingVideoUpload[],
+    nativeUploads: NativeMuxDirectUploadRecord[]
+  ) => {
+    const nativeUploadsById = new Map(nativeUploads.map((record) => [record.uploadId, record]));
+    let didRecoverItem = false;
+
+    const nextItems = value.map((item) => {
+      if (
+        !item.uploadId ||
+        item.uploadTransport !== 'mux_sdk' ||
+        !hasNativeCrashRecoveryRemaining(item)
+      ) {
+        return item;
+      }
+
+      const nativeUpload = nativeUploadsById.get(item.uploadId);
+      if (!hasTimedOutNativeMuxStartup(nativeUpload)) {
+        return item;
+      }
+
+      didRecoverItem = true;
+      dependencies.log('native-startup-recovered-on-resume', {
+        id: item.id,
+        source,
+        uploadId: item.uploadId,
+        startupStep: nativeUpload?.startupStep,
+        startupUpdatedAt: nativeUpload?.startupUpdatedAt,
+      });
+      return {
+        ...item,
+        status: 'queued',
+        uploadId: undefined,
+        uploadTransport: undefined,
+        nativeUploadState: undefined,
+        forcedUploadTransport: 'raw_put_fallback',
+        nativeCrashRecoveryCount: (item.nativeCrashRecoveryCount ?? 0) + 1,
+        updatedAt: dependencies.now(),
+        lastError: undefined,
+        failureCode: undefined,
+      };
+    });
+
+    return {
+      items: nextItems,
+      didRecoverItem,
+    };
   };
 
   const hydrate = async () => {
@@ -770,7 +949,13 @@ export const createVideoUploadQueue = (
             return normalizePendingItemForResume(item);
           })
         );
-        items = nextItems.filter(Boolean) as PendingVideoUpload[];
+        const hydratedItems = nextItems.filter(Boolean) as PendingVideoUpload[];
+        const nativeUploads = await dependencies.getNativeUploads();
+        items = recoverItemsWithTimedOutNativeStartup(
+          'hydrate',
+          hydratedItems,
+          nativeUploads
+        ).items;
       } else {
         items = [];
       }
@@ -839,6 +1024,13 @@ export const createVideoUploadQueue = (
       );
     }
 
+    if (moderation.moderationError === DEVICE_VIDEO_MODERATION_BYPASSED_ERROR) {
+      logStage(item, 'moderation_bypassed', {
+        moderationDecision: moderation.moderationDecision,
+        moderationError: moderation.moderationError,
+      });
+    }
+
     await updateItem(
       item.id,
       {
@@ -867,7 +1059,30 @@ export const createVideoUploadQueue = (
     }
 
     await updateItem(item.id, { status: 'compressing' }, 'compressing');
-    const exported = await dependencies.exportVideo(item.recipe);
+    logStage(item, 'exporting', {
+      sourceUri: item.recipe.sourceUri,
+    });
+    let exported: Awaited<ReturnType<QueueDependencies['exportVideo']>>;
+    try {
+      exported = await dependencies.exportVideo(item.recipe);
+    } catch (error) {
+      dependencies.log('export-failed', {
+        id: item.id,
+        uploadId: item.uploadId,
+        processingStage: 'exporting',
+        message: normalizeFailureMessage(error),
+      });
+      throw error;
+    }
+    dependencies.log('export-success', {
+      id: item.id,
+      uploadId: item.uploadId,
+      processingStage: 'exporting',
+      processedVideoUri: exported.processedVideoUri,
+      processedDuration: exported.processedDuration,
+      processedWidth: exported.processedWidth,
+      processedHeight: exported.processedHeight,
+    });
     const validation = await validateExportedVideoForWatch({
       recipe: item.recipe,
       exported,
@@ -908,13 +1123,44 @@ export const createVideoUploadQueue = (
     }
 
     await updateItem(item.id, { status: 'uploading' }, 'uploading');
-    const uploaded = await dependencies.uploadVideo(item.processedVideoUri);
+    logStage(item, 'uploading', {
+      forcedUploadTransport: item.forcedUploadTransport,
+      processedVideoUri: item.processedVideoUri,
+    });
+    let uploaded: UploadVideoResult;
+    try {
+      uploaded = await dependencies.uploadVideo(item.processedVideoUri, {
+        forceUploadTransport: item.forcedUploadTransport,
+        onNativeUploadPrepared: async (preparedUpload) => {
+          await updateItem(
+            item.id,
+            {
+              uploadId: preparedUpload.uploadId,
+              uploadTransport: preparedUpload.uploadTransport,
+              nativeUploadState: preparedUpload.nativeUploadState,
+            },
+            'native-upload-started'
+          );
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof NativeMuxDirectUploadError &&
+        error.code === 'startup_timeout' &&
+        (await recoverItemFromNativeStartupTimeout(item, error.message))
+      ) {
+        return;
+      }
+
+      throw error;
+    }
     await updateItem(
       item.id,
       {
         uploadId: uploaded.uploadId,
         uploadTransport: uploaded.uploadTransport,
         nativeUploadState: uploaded.nativeUploadState,
+        forcedUploadTransport: undefined,
       },
       'uploaded'
     );
@@ -926,18 +1172,36 @@ export const createVideoUploadQueue = (
     }
 
     await updateItem(item.id, { status: 'posting' }, 'posting');
+    logStage(item, 'posting');
+    const nowIsoString = dependencies.now();
     const createdWatch = await dependencies.createWatchPost({
       ...item,
       status: 'posting',
     });
-    const watchProcessingStatus = normalizeWatchProcessingStatus(createdWatch, 'READY');
-    const watchId = resolveWatchId(createdWatch) ?? item.watchId;
+    const classifiedWatch = classifyWatchResponse(createdWatch, 'READY', {
+      remoteProcessingAgeMs: 0,
+    });
+    const watchId = classifiedWatch.watchId ?? item.watchId;
 
-    if (watchProcessingStatus === 'FAILED_SYNC' || watchProcessingStatus === 'FAILED_REVIEW') {
+    logWatchResponse('watch-post-response', item, createdWatch, classifiedWatch, {
+      remotePollStartedAt:
+        classifiedWatch.disposition === 'grace_period_pending_sync_failure'
+          ? nowIsoString
+          : undefined,
+      remoteProcessingAgeMs: 0,
+    });
+
+    if (
+      classifiedWatch.disposition === 'terminal_sync_failure' ||
+      classifiedWatch.disposition === 'terminal_review_failure'
+    ) {
       throw new QueueError('processing', resolveWatchFailureMessage(createdWatch));
     }
 
-    if (watchProcessingStatus === 'PROCESSING') {
+    if (
+      classifiedWatch.disposition === 'pending' ||
+      classifiedWatch.disposition === 'grace_period_pending_sync_failure'
+    ) {
       if (!watchId) {
         throw new QueueError(
           'processing',
@@ -950,10 +1214,10 @@ export const createVideoUploadQueue = (
         {
           status: 'processing_remote',
           watchId,
-          watchProcessingStatus,
+          watchProcessingStatus: classifiedWatch.watchProcessingStatus,
           remotePollAttempt: 0,
-          remotePollStartedAt: dependencies.now(),
-          nextRemotePollAt: dependencies.now(),
+          remotePollStartedAt: nowIsoString,
+          nextRemotePollAt: nowIsoString,
           lastError: undefined,
           failureCode: undefined,
         },
@@ -967,6 +1231,7 @@ export const createVideoUploadQueue = (
       {
         status: 'complete',
         watchId,
+        playBackId: classifiedWatch.playBackId,
         watchProcessingStatus: 'READY',
         remotePollAttempt: undefined,
         remotePollStartedAt: undefined,
@@ -988,6 +1253,20 @@ export const createVideoUploadQueue = (
     const currentNativeUpload = nativeUploads.find(
       (nativeUpload) => nativeUpload.uploadId === item.uploadId
     );
+
+    if (hasTimedOutNativeMuxStartup(currentNativeUpload)) {
+      if (
+        await recoverItemFromNativeStartupTimeout(
+          item,
+          buildNativeStartupFailureMessage(currentNativeUpload),
+          currentNativeUpload
+        )
+      ) {
+        return;
+      }
+
+      throw new QueueError('network', buildNativeStartupFailureMessage(currentNativeUpload), true);
+    }
 
     if (currentNativeUpload?.state === 'success') {
       await updateItem(
@@ -1018,7 +1297,19 @@ export const createVideoUploadQueue = (
       'native-upload-waiting'
     );
 
-    await dependencies.waitForNativeUpload(item.uploadId);
+    try {
+      await dependencies.waitForNativeUpload(item.uploadId);
+    } catch (error) {
+      if (
+        error instanceof NativeMuxDirectUploadError &&
+        error.code === 'startup_timeout' &&
+        (await recoverItemFromNativeStartupTimeout(item, error.message, currentNativeUpload))
+      ) {
+        return;
+      }
+
+      throw error;
+    }
 
     await updateItem(
       item.id,
@@ -1036,6 +1327,10 @@ export const createVideoUploadQueue = (
 
     const currentItem = getItemById(item.id) ?? item;
     const nowIsoString = dependencies.now();
+    const remoteProcessingAgeMs = resolveRemoteProcessingAgeMs(
+      currentItem.remotePollStartedAt,
+      nowIsoString
+    );
     const nextRemotePollAtMs = parseTimestampMs(currentItem.nextRemotePollAt);
     if (typeof nextRemotePollAtMs === 'number' && nextRemotePollAtMs > Date.now()) {
       return;
@@ -1050,6 +1345,10 @@ export const createVideoUploadQueue = (
 
     let latestWatch: WatchPostResponse;
     try {
+      logStage(currentItem, 'processing_remote', {
+        remotePollAttempt: currentItem.remotePollAttempt ?? 0,
+        nextRemotePollAt: currentItem.nextRemotePollAt,
+      });
       latestWatch = await dependencies.getWatchPostStatus(item.watchId);
     } catch (error) {
       const nextAttempt = (currentItem.remotePollAttempt ?? 0) + 1;
@@ -1076,20 +1375,31 @@ export const createVideoUploadQueue = (
       return;
     }
 
-    const watchProcessingStatus = normalizeWatchProcessingStatus(latestWatch, 'PROCESSING');
+    const remoteWatch = classifyWatchResponse(latestWatch, 'PROCESSING', {
+      remoteProcessingAgeMs,
+    });
 
-    if (watchProcessingStatus === 'FAILED_SYNC' || watchProcessingStatus === 'FAILED_REVIEW') {
+    logWatchResponse('watch-status-response', item, latestWatch, remoteWatch, {
+      remotePollStartedAt: currentItem.remotePollStartedAt,
+      remoteProcessingAgeMs,
+    });
+
+    if (
+      remoteWatch.disposition === 'terminal_sync_failure' ||
+      remoteWatch.disposition === 'terminal_review_failure'
+    ) {
       throw new QueueError('processing', resolveWatchFailureMessage(latestWatch));
     }
 
-    if (watchProcessingStatus === 'READY') {
+    if (remoteWatch.disposition === 'ready') {
       const latestItem = getItemById(item.id) ?? item;
       await updateItem(
         item.id,
         {
           status: 'complete',
-          watchProcessingStatus,
-          watchId: resolveWatchId(latestWatch) ?? latestItem.watchId ?? item.watchId,
+          watchProcessingStatus: 'READY',
+          watchId: remoteWatch.watchId ?? latestItem.watchId ?? item.watchId,
+          playBackId: remoteWatch.playBackId,
           remotePollAttempt: undefined,
           remotePollStartedAt: undefined,
           nextRemotePollAt: undefined,
@@ -1108,7 +1418,7 @@ export const createVideoUploadQueue = (
       item.id,
       {
         status: 'processing_remote',
-        watchProcessingStatus,
+        watchProcessingStatus: remoteWatch.watchProcessingStatus,
         watchId: nextWatchId,
         remotePollAttempt: nextAttempt,
         remotePollStartedAt: currentItem.remotePollStartedAt ?? nowIsoString,
@@ -1194,6 +1504,9 @@ export const createVideoUploadQueue = (
       if (!afterUpload || afterUpload.status === 'failed') {
         return;
       }
+      if (afterUpload.status === 'queued' || !afterUpload.uploadId) {
+        return;
+      }
 
       await postItem(afterUpload);
       const afterPosting = getItemById(nextItem.id);
@@ -1237,6 +1550,11 @@ export const createVideoUploadQueue = (
       return processingPromise;
     }
 
+    dependencies.log('queue-start', {
+      queuedCount: items.filter((item) => item.status === 'queued').length,
+      activeCount: items.length,
+      processingStage: 'start',
+    });
     processingPromise = processQueue()
       .catch((error) => {
         dependencies.log('queue-crashed', { message: normalizeFailureMessage(error) });
@@ -1271,6 +1589,9 @@ export const createVideoUploadQueue = (
     await persist();
     notifyListeners();
     wakeQueue();
+    logStage(item, 'queued', {
+      startImmediately: options?.startImmediately !== false,
+    });
     if (options?.startImmediately !== false) {
       ensureProcessing().catch(() => undefined);
     }
@@ -1279,9 +1600,9 @@ export const createVideoUploadQueue = (
 
   const resume = async () => {
     await hydrate();
-    await dependencies.resumeNativeUploads();
+    const nativeUploads = await dependencies.resumeNativeUploads();
     const normalized = items.map(normalizePendingItemForResume);
-    items = normalized;
+    items = recoverItemsWithTimedOutNativeStartup('resume', normalized, nativeUploads).items;
     await persist();
     notifyListeners();
     wakeQueue();
@@ -1328,21 +1649,9 @@ export const getPendingVideoUploadsSnapshot = () => defaultQueue.getItems();
 export const waitForPendingVideoUploadsIdle = () => defaultQueue.waitForIdle();
 export const subscribePendingVideoUploads = (listener: VideoUploadQueueListener) =>
   defaultQueue.subscribe(listener);
-export const requestPendingVideoUploadsStart = () => {
-  pendingVideoUploadsStartRequestCount += 1;
-  flushPendingVideoUploadsStartRequests();
-};
-export const subscribePendingVideoUploadsStartRequests = (
-  listener: PendingVideoUploadsStartRequestListener
-) => {
-  pendingVideoUploadsStartRequestListeners.add(listener);
-  flushPendingVideoUploadsStartRequests();
-  return () => {
-    pendingVideoUploadsStartRequestListeners.delete(listener);
-  };
-};
 
 export {
+  MISSING_VIDEO_TRACK_GRACE_MS,
   MAX_RETRY_COUNT,
   VIDEO_UPLOAD_QUEUE_STORAGE_KEY,
   QueueError,
