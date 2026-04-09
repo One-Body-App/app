@@ -409,6 +409,7 @@ export const disablePushNotifications = async (authToken?: string) => {
       token: authToken,
       params: { FCM: '', deviceId, platform: Platform.OS === 'ios' ? 'ios' : 'android' },
       verb: 'patch',
+      suppressErrorLog: true,
     });
 
     await unregisterChatDeviceToken(deviceId, authToken).catch(() => undefined);

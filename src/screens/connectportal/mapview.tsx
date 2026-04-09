@@ -716,11 +716,6 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           overlay
           onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
           addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
-          headerActionIconName={activeTab === 'Places' ? 'view-list' : undefined}
-          headerActionAccessibilityLabel={
-            activeTab === 'Places' ? 'Switch to list view' : undefined
-          }
-          onHeaderActionPress={activeTab === 'Places' ? () => onChangeViewMode('list') : undefined}
         />
       </Animated.View>
 
@@ -760,15 +755,11 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
             }
             return undefined;
           })()}
-          viewToggle={
-            activeTab !== 'Places'
-              ? {
-                  toMap: false,
-                  onPress: () => onChangeViewMode('list'),
-                  accessibilityLabel: 'Switch to list view',
-                }
-              : undefined
-          }
+          viewToggle={{
+            toMap: false,
+            onPress: () => onChangeViewMode('list'),
+            accessibilityLabel: 'Switch to list view',
+          }}
         />
       </Animated.View>
 

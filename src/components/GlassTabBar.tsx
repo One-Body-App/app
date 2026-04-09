@@ -635,14 +635,24 @@ export default function GlassTabBar({
                   renderLabel(tab, index, index === activeIndex)
                 ) : (
                   <View style={styles.tabLabelWrap}>
-                    <StyledText
-                      style={[styles.tabText, { color: palette.liquidTabTextMuted }]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.85}
+                    <Animated.View
+                      style={[
+                        styles.tabTextBaseLayer,
+                        {
+                          opacity: activeOpacity.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 0],
+                          }),
+                        },
+                      ]}
                     >
-                      {getTabLabel(tab)}
-                    </StyledText>
+                      <StyledText
+                        style={[styles.tabText, { color: palette.liquidTabTextMuted }]}
+                        numberOfLines={1}
+                      >
+                        {getTabLabel(tab)}
+                      </StyledText>
+                    </Animated.View>
                     <Animated.View
                       pointerEvents="none"
                       style={[
@@ -660,8 +670,6 @@ export default function GlassTabBar({
                           { color: palette.liquidTabText },
                         ]}
                         numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.85}
                       >
                         {getTabLabel(tab)}
                       </StyledText>
@@ -848,11 +856,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.x8,
   },
   tabLabelWrap: {
-    minHeight: 22,
-    minWidth: 52,
+    height: 24,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  tabTextBaseLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabTextActiveLayer: {
     position: 'absolute',
@@ -864,12 +881,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabText: {
-    ...Typography.body.x2M,
+    fontSize: 15,
+    lineHeight: 20,
     color: 'rgba(230,234,236,0.7)',
-    fontWeight: '700',
-    letterSpacing: 0.15,
+    fontFamily: 'Rubik-Regular',
+    fontWeight: '400',
+    letterSpacing: 0.1,
   },
   tabTextActive: {
-    fontWeight: '800',
+    fontFamily: 'Rubik-SemiBold',
+    fontWeight: '600',
   },
 });

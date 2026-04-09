@@ -7,6 +7,7 @@ const mockChips: jest.Mock = jest.fn();
 const mockMarkerView: jest.Mock = jest.fn();
 const mockChrome: jest.Mock = jest.fn();
 const mockFilterSheet: jest.Mock = jest.fn();
+const mockSearchBar: jest.Mock = jest.fn();
 const mockUseConnectPortalData = jest.fn(() => ({}));
 const mockUseSelector = jest.fn();
 const mockUseFocusEffect = jest.fn((callback: () => void) => callback());
@@ -100,7 +101,10 @@ jest.mock('../shared', () => ({
     mockFilterSheet(props);
     return null;
   },
-  ConnectRetractableSearchBar: () => null,
+  ConnectRetractableSearchBar: (props: any) => {
+    mockSearchBar(props);
+    return null;
+  },
   ConnectPlacesQuickChips: (props: any) => {
     const ReactLocal = require('react');
     const { View: MockView } = require('react-native');
@@ -184,6 +188,7 @@ describe('MapViewScreen', () => {
     mockMarkerView.mockClear();
     mockChrome.mockClear();
     mockFilterSheet.mockClear();
+    mockSearchBar.mockClear();
     mockUseSelector.mockReturnValue({ profileImage: '' });
   });
 
@@ -462,5 +467,43 @@ describe('MapViewScreen', () => {
 
     expect(portalData.setActiveTab).toHaveBeenCalledWith('Go!');
     expect(navigation.setParams).toHaveBeenCalledWith({ initialTab: 'Go!' });
+  });
+
+  it('moves the Places list toggle into the retractable search bar', () => {
+    const navigation = {
+      navigate: jest.fn(),
+      setParams: jest.fn(),
+    };
+    const portalData = createPortalData();
+    portalData.activeTab = 'Places';
+    mockUseConnectPortalData.mockReturnValue(portalData);
+
+    act(() => {
+      TestRenderer.create(
+        <MapViewScreen
+          navigation={navigation as any}
+          route={
+            { key: 'connect-map', name: 'ConnectMap', params: { initialTab: 'Places' } } as any
+          }
+        />
+      );
+    });
+
+    const chromeProps = mockChrome.mock.calls.at(-1)?.[0] as any;
+    const searchBarProps = mockSearchBar.mock.calls.at(-1)?.[0] as any;
+
+    expect(chromeProps?.headerActionIconName).toBeUndefined();
+    expect(chromeProps?.onHeaderActionPress).toBeUndefined();
+    expect(searchBarProps?.viewToggle).toMatchObject({
+      toMap: false,
+      accessibilityLabel: 'Switch to list view',
+    });
+
+    act(() => {
+      searchBarProps.viewToggle.onPress();
+    });
+
+    expect(portalData.setViewMode).toHaveBeenCalledWith('Places', 'list');
+    expect(navigation.navigate).toHaveBeenCalledWith('ConnectPortal', { initialTab: 'Places' });
   });
 });

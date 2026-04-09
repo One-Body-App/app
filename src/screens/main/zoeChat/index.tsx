@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { CommonActions, useFocusEffect, useIsFocused, useTheme } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import type { DrawerScreenProps } from '@react-navigation/drawer';
@@ -17,6 +18,7 @@ import Config from 'react-native-config';
 import StyledText from '@/components/styled/Text';
 import { FeedTypes } from '@/src/screens/home';
 import type { MainDrawerParamsList } from '@/src/navigator/types';
+import type { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors } from '@/src/styles';
 import {
   APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
@@ -26,14 +28,19 @@ import {
   APP_HEADER_TITLE_LINE_HEIGHT,
 } from '@/src/styles/headerLayout';
 import { spacing } from '@/src/styles/spacing';
-
-const ZOE_CHAT_URL = String(Config.ZOE_CHAT_URL ?? '').trim();
+import { isZoeAiEligibleUser } from '@/src/utils/zoeAccess';
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'ZoeAI'>;
 
-function getAllowedChatOrigin() {
+function getZoeChatUrl() {
+  return String(
+    (Config as any)?.ZOE_CHAT_URL ?? (Config as any)?.default?.ZOE_CHAT_URL ?? ''
+  ).trim();
+}
+
+function getAllowedChatOrigin(zoeChatUrl: string) {
   try {
-    const parsed = new URL(ZOE_CHAT_URL);
+    const parsed = new URL(zoeChatUrl);
     if (parsed.protocol !== 'https:') {
       return null;
     }
@@ -41,6 +48,12 @@ function getAllowedChatOrigin() {
   } catch {
     return null;
   }
+}
+
+function getAllowedChatOriginWhitelist(allowedOrigin: string | null) {
+  return ['about:blank', 'about:srcdoc', allowedOrigin].filter((value): value is string =>
+    Boolean(value)
+  );
 }
 
 function isAllowedTopLevelNavigation(url: string, allowedOrigin: string | null) {
@@ -61,13 +74,13 @@ function isAllowedTopLevelNavigation(url: string, allowedOrigin: string | null) 
 }
 
 function ZoeChat({ navigation }: Props) {
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const canAccessZoeAi = isZoeAiEligibleUser(user);
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const statusBarStyle = dark ? 'light-content' : 'dark-content';
   const statusBarBackgroundColor = dark ? '#0D0D0D' : '#FFFFFF';
-  const allowedOrigin = getAllowedChatOrigin();
-  const headerBorderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(3,47,60,0.08)';
   const handleBackPress = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
@@ -93,7 +106,17 @@ function ZoeChat({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS !== 'android') {
+      if (!canAccessZoeAi) {
+        handleBackPress();
+      }
+
+      return undefined;
+    }, [canAccessZoeAi, handleBackPress])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!canAccessZoeAi || Platform.OS !== 'android') {
         return undefined;
       }
 
@@ -110,8 +133,17 @@ function ZoeChat({ navigation }: Props) {
       return () => {
         cancelAnimationFrame(frame);
       };
-    }, [statusBarBackgroundColor, statusBarStyle])
+    }, [canAccessZoeAi, statusBarBackgroundColor, statusBarStyle])
   );
+
+  if (!canAccessZoeAi) {
+    return null;
+  }
+
+  const zoeChatUrl = getZoeChatUrl();
+  const allowedOrigin = getAllowedChatOrigin(zoeChatUrl);
+  const allowedOriginWhitelist = getAllowedChatOriginWhitelist(allowedOrigin);
+  const headerBorderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(3,47,60,0.08)';
 
   return (
     <View
@@ -178,7 +210,8 @@ function ZoeChat({ navigation }: Props) {
         </View>
       ) : (
         <WebView
-          source={{ uri: ZOE_CHAT_URL }}
+          source={{ uri: zoeChatUrl }}
+          originWhitelist={allowedOriginWhitelist}
           style={{ flex: 1, backgroundColor: colors.background }}
           automaticallyAdjustContentInsets={false}
           contentInsetAdjustmentBehavior="never"

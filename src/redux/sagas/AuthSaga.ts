@@ -1,5 +1,5 @@
 // --------------- LIBRARIES ---------------
-import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
+import { call, put, select, takeEvery, takeLatest } from 'redux-saga/effects';
 import { Alert } from 'react-native';
 import { setAccountType, setLoader } from '../actions/GeneralActions';
 
@@ -17,6 +17,7 @@ import {
 
 // --------------- ACTIONS ---------------
 import {
+  completeLogout,
   setLoginData,
   getProfile,
   setProfile,
@@ -26,7 +27,11 @@ import {
   sendVerificationEmail,
 } from '../actions/AuthActions';
 import { AccountType, ResponseGenerator } from '@/utils/types';
-import { saveAuthTokens } from '@/services/authTokens';
+import { clearAuthTokens, getValidAccessToken, saveAuthTokens } from '@/services/authTokens';
+import { disablePushNotifications } from '@/src/services/notification/pushNotificationService';
+import { disconnectChatSocket } from '@/src/services/chat/socketClient';
+import { signOutSocialProviders } from '@/services/socialAuth';
+import { RootState } from '../reducers/rootReducer';
 
 const resolveProfileUpdateErrorMessage = (response: unknown) => {
   if (typeof response === 'string' && response.trim()) {
@@ -316,6 +321,82 @@ function* sendVerificationEmailSaga(params: {
 }
 export function* SendVerificationEmailSaga() {
   yield takeLatest(SendVerificationEmail.REQUEST, sendVerificationEmailSaga);
+}
+
+export function* logoutSaga(params: {
+  data?: {
+    destination?: 'Intro' | 'Login';
+    revokeServerSession?: boolean;
+    signOutProviders?: boolean;
+  };
+  type: string;
+}) {
+  const destination = params.data?.destination ?? 'Intro';
+  const revokeServerSession = params.data?.revokeServerSession !== false;
+  const shouldSignOutProviders = params.data?.signOutProviders !== false;
+
+  let logoutToken = '';
+
+  try {
+    const reduxToken: string = yield select((state: RootState) => state.auth.userToken);
+
+    try {
+      const managedToken: string | null = yield call(getValidAccessToken);
+      logoutToken = managedToken ?? reduxToken ?? '';
+    } catch (_error) {
+      logoutToken = reduxToken ?? '';
+    }
+
+    try {
+      yield call(disablePushNotifications, logoutToken || undefined);
+    } catch (_error) {
+      // continue with local cleanup
+    }
+
+    try {
+      yield call(disconnectChatSocket);
+    } catch (_error) {
+      // continue with local cleanup
+    }
+
+    if (shouldSignOutProviders) {
+      try {
+        yield call(signOutSocialProviders);
+      } catch (_error) {
+        // continue with local cleanup
+      }
+    }
+
+    if (revokeServerSession && logoutToken) {
+      try {
+        yield call(ApiCall, {
+          route: 'auth/logout',
+          verb: 'post',
+          token: logoutToken,
+          suppressErrorLog: true,
+        });
+      } catch (_error) {
+        // continue with local cleanup
+      }
+    }
+  } finally {
+    try {
+      yield call(clearAuthTokens);
+    } catch (_error) {
+      // continue with auth state reset
+    }
+
+    yield put(
+      completeLogout({
+        destination,
+        completedAt: Date.now(),
+      })
+    );
+  }
+}
+
+export function* LogoutSaga() {
+  yield takeLatest(ACTIONS.LOGOUT, logoutSaga);
 }
 
 function* getBadgesSaga(params: { token: string; type: string }) {

@@ -279,6 +279,7 @@ export const unregisterChatDeviceToken = async (deviceId: string, token?: string
     route: `chat/device-tokens/${encodeURIComponent(deviceId)}`,
     verb: 'delete',
     token: withToken(token),
+    suppressErrorLog: true,
   });
 };
 

@@ -20,6 +20,7 @@ import { MainBottomStackParamsList } from './types';
 import ConnectStack from './ConnectStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
+import getHomeTabFocusedRouteName from './homeTabRouteVisibility';
 import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationContext';
 import { RootTabTransitionProvider, useRootTabTransition } from './RootTabTransitionContext';
 import { ROOT_TAB_SCENE_MOTION_MODE } from './motionPolicy';
@@ -33,45 +34,6 @@ import { useChatUnreadCount } from '@/src/services/chat/unreadIndicator';
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const getScreenParam = (params: unknown): string | undefined => {
-  if (!isRecord(params)) {
-    return undefined;
-  }
-  const { screen } = params;
-  return typeof screen === 'string' ? screen : undefined;
-};
-
-const getNestedScreenParam = (params: unknown): string | undefined => {
-  if (!isRecord(params)) {
-    return undefined;
-  }
-  return getScreenParam(params.params);
-};
-
-const getActiveNestedRouteName = (route: any): string | undefined => {
-  if (!route) {
-    return undefined;
-  }
-
-  const { state } = route;
-  if (!state || !Array.isArray(state.routes) || typeof state.index !== 'number') {
-    if (typeof route.params?.screen === 'string') {
-      return route.params.screen;
-    }
-    return route.name;
-  }
-
-  const childRoute = state.routes[state.index];
-  if (!childRoute) {
-    return route.name;
-  }
-
-  return getActiveNestedRouteName(childRoute) ?? childRoute.name;
-};
 
 function DirectionalTabScene({
   children,
@@ -368,68 +330,74 @@ ConnectTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
 };
 
-function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
+function ChatTabIcon({ color }: { color: string }) {
   const size = 22;
   const unreadCount = useChatUnreadCount();
+  let badgeLabel: string | null = null;
+  let badge = null;
 
-  const badgeLabel =
-    unreadCount < 2
-      ? null
-      : unreadCount < 20
-        ? String(unreadCount)
-        : unreadCount < 100
-          ? '20+'
-          : '100+';
+  if (unreadCount >= 2 && unreadCount < 20) {
+    badgeLabel = String(unreadCount);
+  } else if (unreadCount >= 20 && unreadCount < 100) {
+    badgeLabel = '20+';
+  } else if (unreadCount >= 100) {
+    badgeLabel = '100+';
+  }
+
+  if (unreadCount === 1) {
+    badge = (
+      <View
+        style={{
+          position: 'absolute',
+          top: -2,
+          right: -3,
+          width: 10,
+          height: 10,
+          borderRadius: 5,
+          backgroundColor: '#12d2d9',
+        }}
+      />
+    );
+  } else if (badgeLabel) {
+    badge = (
+      <View
+        style={{
+          position: 'absolute',
+          top: -5,
+          right: -8,
+          minWidth: 16,
+          height: 14,
+          borderRadius: 7,
+          backgroundColor: '#12d2d9',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: 3,
+        }}
+      >
+        <Text
+          style={{
+            color: '#032f3c',
+            fontSize: 8,
+            fontWeight: 'bold',
+            lineHeight: 14,
+          }}
+        >
+          {badgeLabel}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ width: size, height: size, position: 'relative' }}>
       <MessagesIcon width={size} height={size} color={color} />
-      {unreadCount === 1 ? (
-        <View
-          style={{
-            position: 'absolute',
-            top: -2,
-            right: -3,
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-            backgroundColor: '#12d2d9',
-          }}
-        />
-      ) : badgeLabel ? (
-        <View
-          style={{
-            position: 'absolute',
-            top: -5,
-            right: -8,
-            minWidth: 16,
-            height: 14,
-            borderRadius: 7,
-            backgroundColor: '#12d2d9',
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingHorizontal: 3,
-          }}
-        >
-          <Text
-            style={{
-              color: '#032f3c',
-              fontSize: 8,
-              fontWeight: 'bold',
-              lineHeight: 14,
-            }}
-          >
-            {badgeLabel}
-          </Text>
-        </View>
-      ) : null}
+      {badge}
     </View>
   );
 }
 
 ChatTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
-  focused: PropTypes.bool,
 };
 
 function BottomStack() {
@@ -546,14 +514,7 @@ function BottomStack() {
               },
             }}
             options={({ route }) => {
-              const pendingScreen = getScreenParam(route.params);
-              const nestedPendingScreen = getNestedScreenParam(route.params);
-              const focusedRouteName =
-                getActiveNestedRouteName(route) ??
-                (typeof pendingScreen === 'string' ? pendingScreen : undefined) ??
-                (typeof nestedPendingScreen === 'string' ? nestedPendingScreen : undefined) ??
-                getFocusedRouteNameFromRoute(route) ??
-                'Home';
+              const focusedRouteName = getHomeTabFocusedRouteName(route);
               const shouldHideTabBar = focusedRouteName === 'Notifications';
 
               return {

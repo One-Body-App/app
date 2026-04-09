@@ -257,8 +257,8 @@ function Connected({ navigation }: Props) {
 
   const formatCount = useCallback((value?: number) => {
     const count = value ?? 0;
-    if (count > 999999) return `${(count / 1000000).toFixed(2)}m`;
-    if (count > 999) return `${(count / 1000).toFixed(2)}k`;
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}m`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
     return `${count}`;
   }, []);
 

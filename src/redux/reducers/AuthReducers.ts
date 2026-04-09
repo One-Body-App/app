@@ -37,6 +37,9 @@ type AuthReducer = {
   FcmToken: string;
   error: string[] | null;
   isLoading: boolean;
+  logoutPending: boolean;
+  logoutCompletedAt?: number;
+  logoutDestination?: 'Intro' | 'Login';
 };
 
 const initialState: AuthReducer = {
@@ -54,6 +57,15 @@ const initialState: AuthReducer = {
   getProfileData: null,
   getProfileError: null,
   isLoading: false,
+  logoutPending: false,
+  logoutCompletedAt: undefined,
+  logoutDestination: undefined,
+};
+
+const resetLogoutState = {
+  logoutPending: false,
+  logoutCompletedAt: undefined,
+  logoutDestination: undefined,
 };
 
 const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
@@ -62,6 +74,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userToken: action.data?.token,
+        ...resetLogoutState,
       };
 
     case ACTIONS.FETCH_SIGN_UP:
@@ -69,12 +82,14 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         ...state,
         // otpToken:action.data.token,
         userProfile: action.data,
+        ...resetLogoutState,
       };
 
     case ACTIONS.FETCH_OTP:
       return {
         ...state,
         otpToken: action.data.token,
+        ...resetLogoutState,
       };
 
     case ACTIONS.ERRORS: {
@@ -94,12 +109,14 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userProfile: action.data,
+        ...resetLogoutState,
       };
 
     case ACTIONS.UPDATE_USER:
       return {
         ...state,
         userData: action.data,
+        ...resetLogoutState,
       };
     case ACTIONS.FIRST_LUNCH:
       return {
@@ -108,15 +125,22 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case ACTIONS.LOGOUT:
       return {
         ...state,
-        userToken: '',
-        userProfile: null,
-        errors: null,
-        otpToken: '',
-        loginErrors: [],
-        userData: null,
-        getProfileData: null,
-        getProfileError: null,
-        isLoading: false,
+        logoutPending: true,
+        logoutDestination: action.data?.destination ?? 'Intro',
+      };
+
+    case ACTIONS.LOGOUT_COMPLETE:
+      return {
+        ...initialState,
+        logoutPending: false,
+        logoutCompletedAt: action.data?.completedAt ?? Date.now(),
+        logoutDestination: action.data?.destination ?? 'Intro',
+      };
+
+    case ACTIONS.CLEAR_AUTH_STATE:
+      return {
+        ...initialState,
+        ...resetLogoutState,
       };
 
     case ACTIONS.SET_USER_NOTIFICATIONS:
@@ -142,6 +166,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         signUpSuccess: true,
         signUpData: action.payload,
         userProfile: action.payload,
+        ...resetLogoutState,
       };
     case SignUp.FAILED:
       return {
@@ -234,6 +259,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         getProfileError: null,
         isLoading: false,
         getProfileData: action.payload,
+        ...resetLogoutState,
       };
     case GetProfile.FAILED:
       return {

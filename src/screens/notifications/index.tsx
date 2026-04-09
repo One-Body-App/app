@@ -16,11 +16,11 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
-import { getInitialNotification, getMessaging } from '@react-native-firebase/messaging';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { NotificationBing } from 'iconsax-react-native';
 
+import { useTabBarAnimation } from '@/navigator/TabBarAnimationContext';
 import StyledText from '@/components/styled/Text';
 import { ApiCall } from '@/services/api';
 import Logo from '@/assets/icons/logo.svg';
@@ -34,10 +34,9 @@ import {
   QueuedPushNotification,
   getQueuedNotifications,
   markQueuedNotificationAsRead,
-  queueRemoteNotificationPayload,
   removeQueuedNotification,
-  syncIosDisplayedRemoteNotifications,
 } from '@/src/services/notification/pushNotificationStorage';
+import { preloadIosNotificationFeed } from '@/src/services/notification/iosNotificationPreflight';
 import { formatRelativeTime, nowUtcIso, parseIsoOrNull } from '@/src/utils/time';
 import {
   isOneBodyDeepLinkCandidate,
@@ -49,6 +48,7 @@ import {
   getPrimaryNotificationCategory,
   type NotificationCategoryKey,
 } from './notificationCategories';
+import { cleanupNotificationsDismissal, closeNotifications } from './dismissNotifications';
 
 type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
 
@@ -246,6 +246,7 @@ function NotificationScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
   const { colors, dark } = useTheme();
+  const tabBarAnimation = useTabBarAnimation();
   const styles = createStyles(dark, colors);
 
   const [notifications, setNotifications] = useState<InboxNotification[]>([]);
@@ -284,39 +285,40 @@ function NotificationScreen({ navigation }: Props) {
       }
 
       try {
-        if (Platform.OS === 'ios') {
-          const initialMessage = await getInitialNotification(getMessaging()).catch(() => null);
-          if (initialMessage) {
-            await queueRemoteNotificationPayload(initialMessage).catch(() => null);
-            logNotificationDebug('ios_initial_message_queued', {
-              messageId: initialMessage.messageId || '',
-            });
-          }
+        const serverNotificationsPromise = ApiCall<{ data?: any[] }>({
+          route: 'user/notifications',
+          verb: 'get',
+          token,
+        });
+        const followingPromise = ApiCall<{ data?: any[] }>({
+          route: 'user/get-following',
+          verb: 'get',
+          token,
+        });
+        const iosPreflightPromise =
+          Platform.OS === 'ios' ? preloadIosNotificationFeed() : Promise.resolve(null);
 
-          const syncedCount = await syncIosDisplayedRemoteNotifications().catch(() => 0);
-          logNotificationDebug('ios_displayed_sync', {
-            syncedCount,
+        const [serverResult, followingResult, iosPreflightResult] = await Promise.allSettled([
+          serverNotificationsPromise,
+          followingPromise,
+          iosPreflightPromise,
+        ]);
+
+        if (iosPreflightResult.status === 'fulfilled' && iosPreflightResult.value) {
+          logNotificationDebug('ios_preflight_complete', iosPreflightResult.value);
+        } else if (Platform.OS === 'ios') {
+          logNotificationDebug('ios_preflight_complete', {
+            initialQueued: false,
+            syncedCount: 0,
+            didTimeout: false,
           });
         }
 
-        const [serverResult, queuedPushResult, followingResult] = await Promise.allSettled([
-          ApiCall<{ data?: any[] }>({
-            route: 'user/notifications',
-            verb: 'get',
-            token,
-          }),
-          getQueuedNotifications(),
-          ApiCall<{ data?: any[] }>({
-            route: 'user/get-following',
-            verb: 'get',
-            token,
-          }),
-        ]);
+        const queuedPush = await getQueuedNotifications().catch(() => []);
 
-        const queuedPush = queuedPushResult.status === 'fulfilled' ? queuedPushResult.value : [];
         logNotificationDebug('queue_loaded', {
           queuedCount: queuedPush.length,
-          queuedStatus: queuedPushResult.status,
+          queuedStatus: 'fulfilled',
         });
 
         let serverNotifications: InboxNotification[] = [];
@@ -437,6 +439,22 @@ function NotificationScreen({ navigation }: Props) {
       loadNotifications();
       return undefined;
     }, [loadNotifications])
+  );
+
+  const runDismissalCleanup = useCallback(() => {
+    cleanupNotificationsDismissal({ navigation, tabBarAnimation });
+  }, [navigation, tabBarAnimation]);
+
+  const handleCloseNotifications = useCallback(() => {
+    closeNotifications({ navigation, tabBarAnimation });
+  }, [navigation, tabBarAnimation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        runDismissalCleanup();
+      };
+    }, [runDismissalCleanup])
   );
 
   const markAsRead = useCallback(
@@ -597,7 +615,7 @@ function NotificationScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+          <Pressable onPress={handleCloseNotifications} style={styles.headerBackButton}>
             <MaterialCommunityIcons
               name="chevron-left"
               size={Platform.OS === 'ios' ? 40 : 30}

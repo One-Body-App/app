@@ -2001,7 +2001,6 @@ function Home({ navigation, route }: Props) {
     );
   }, [
     androidHeaderBackground,
-    androidHeaderBorderColor,
     androidTabContainerStyle,
     dark,
     handleHeaderLayout,
@@ -2652,7 +2651,7 @@ function Home({ navigation, route }: Props) {
       easing: VISIBILITY_EASING,
       useNativeDriver: true,
     }).start();
-  }, [headerVisibility, footerVisibility]);
+  }, [headerVisibility, VISIBILITY_EASING, footerVisibility]);
 
   const hideBars = useCallback(() => {
     Animated.timing(headerVisibility, {
@@ -2667,7 +2666,7 @@ function Home({ navigation, route }: Props) {
       easing: VISIBILITY_EASING,
       useNativeDriver: true,
     }).start();
-  }, [headerVisibility, footerVisibility]);
+  }, [headerVisibility, VISIBILITY_EASING, footerVisibility]);
 
   const handleScroll = useMemo(
     () =>
@@ -2694,7 +2693,7 @@ function Home({ navigation, route }: Props) {
           lastScrollRef.current = nextValue;
         },
       }),
-    [footerVisibility, headerVisibility, scrollY, showBars, hideBars]
+    [scrollY, showBars, hideBars]
   );
 
   const showBlockingLoader =
@@ -3136,7 +3135,7 @@ function Home({ navigation, route }: Props) {
   const listContentContainerStyle = useMemo(
     () => ({
       paddingTop: Platform.OS === 'ios' ? spacing.x10 : headerInset,
-      paddingBottom: footerHeight + spacing.x16,
+      paddingBottom: footerHeight + spacing.x8,
     }),
     [footerHeight, headerInset]
   );

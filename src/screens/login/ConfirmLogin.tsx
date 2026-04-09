@@ -17,7 +17,6 @@ import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
-import { clearAuthTokens } from '@/services/authTokens';
 import { ApiCall } from '@/src/services/api';
 import { ensurePushPermission } from '@/src/services/notification/pushNotificationService';
 
@@ -205,10 +204,8 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, [navigation, profile?.emailVerified]);
 
   const signOut = useCallback(async () => {
-    await clearAuthTokens();
     dispatch(logout());
-    navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
-  }, [dispatch, navigation]);
+  }, [dispatch]);
 
   return (
     <UserStepsLayout

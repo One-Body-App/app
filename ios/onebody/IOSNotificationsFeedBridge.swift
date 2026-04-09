@@ -71,44 +71,7 @@ final class IOSNotificationsFeedBridge: RCTEventEmitter {
   }
 
   private static func normalizedPayload(from request: UNNotificationRequest) -> [String: Any]? {
-    let serializerSelector = NSSelectorFromString("remoteMessageUserInfoToDict:")
-    guard let serializerClass = NSClassFromString("RNFBMessagingSerializer") else {
-      return nil
-    }
-
-    let serializerObject = serializerClass as AnyObject
-    guard
-      let unmanagedPayload = serializerObject.perform(
-        serializerSelector,
-        with: request.content.userInfo as NSDictionary
-      ),
-      let payload = unmanagedPayload.takeUnretainedValue() as? [String: Any]
-    else {
-      return nil
-    }
-
-    let messageId = normalizedString(payload["messageId"])
-    guard !messageId.isEmpty else {
-      return nil
-    }
-
-    return payload
-  }
-
-  private static func normalizedString(_ value: Any?) -> String {
-    if let stringValue = value as? String {
-      return stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    if let numberValue = value as? NSNumber {
-      return numberValue.stringValue
-    }
-
-    if let boolValue = value as? Bool {
-      return boolValue ? "true" : "false"
-    }
-
-    return ""
+    return IOSNotificationsFeedSerializeRemoteMessage(request.content.userInfo as NSDictionary) as? [String: Any]
   }
 }
 #endif

@@ -106,6 +106,7 @@ export type User = {
   profileImage?: string;
   profileHeader?: string;
   accountType: AccountType;
+  role?: string;
   updatedAt: string;
   username: string;
   bio?: string;

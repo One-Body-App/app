@@ -2,7 +2,6 @@ import { Edit, Setting2, ProfileAdd, Star1, UserRemove, LogoutCurve } from 'icon
 import React, { useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import { LoginManager } from 'react-native-fbsdk-next';
 import Rate, { AndroidMarket } from 'react-native-rate';
 import Feather from '@react-native-vector-icons/feather';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -20,7 +19,6 @@ import { Colors, Typography } from '@/src/styles';
 import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import { clearAuthTokens } from '@/services/authTokens';
 import { logout } from '@/src/redux/actions/AuthActions';
 import CustomModal from '@/src/components/CustomModal';
 
@@ -102,10 +100,12 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
         >
           <FastImage
             resizeMode="contain"
-            style={[
-              profileImageList,
-              { height: 40, width: 40, marginBottom: 0, alignSelf: 'flex-start' },
-            ]}
+            style={
+              [
+                profileImageList,
+                { height: 40, width: 40, marginBottom: 0, alignSelf: 'flex-start' },
+              ] as any
+            }
             source={{ uri: userData?.profileImage || NO_PROFILE_IMAGE }}
           />
 
@@ -250,9 +250,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
           />
           <Button
             text="Log out"
-            onPress={async () => {
-              LoginManager.logOut();
-              await clearAuthTokens();
+            onPress={() => {
               dispatch(logout());
             }}
             btnStyle={{ marginBottom: spacing.x32 }}

@@ -76,9 +76,32 @@ export const setOtpData = (data: any) => ({
   type: ACTIONS.FETCH_OTP,
   data,
 });
-export const logout = () => ({
+export const logout = (options?: {
+  destination?: 'Intro' | 'Login';
+  revokeServerSession?: boolean;
+  signOutProviders?: boolean;
+}) => ({
   type: ACTIONS.LOGOUT,
-  data: null,
+  data: {
+    destination: options?.destination ?? 'Intro',
+    revokeServerSession: options?.revokeServerSession ?? true,
+    signOutProviders: options?.signOutProviders ?? true,
+  },
+});
+
+export const completeLogout = (data?: {
+  completedAt?: number;
+  destination?: 'Intro' | 'Login';
+}) => ({
+  type: ACTIONS.LOGOUT_COMPLETE,
+  data: {
+    completedAt: data?.completedAt ?? Date.now(),
+    destination: data?.destination ?? 'Intro',
+  },
+});
+
+export const clearAuthState = () => ({
+  type: ACTIONS.CLEAR_AUTH_STATE,
 });
 export const setFcmToken = (data: any) => ({
   type: ACTIONS.FcmToken,

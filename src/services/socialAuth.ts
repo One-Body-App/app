@@ -1,5 +1,6 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
+import { LoginManager } from 'react-native-fbsdk-next';
 import { ApiCall } from './api';
 import { AuthTokens, saveAuthTokens } from './authTokens';
 import { GOOGLE_LOGIN_CLIENT_ID } from './constants';
@@ -168,4 +169,28 @@ export const exchangeSocialToken = async (params: {
   }
 
   return res;
+};
+
+const runBestEffortProviderSignOut = async (signOutStep: () => Promise<unknown> | unknown) => {
+  try {
+    await signOutStep();
+  } catch (error) {
+    if (__DEV__) {
+      console.log('[Auth Logout] Provider sign-out failed', error);
+    }
+  }
+};
+
+export const signOutSocialProviders = async () => {
+  try {
+    ensureGoogleSigninConfigured();
+  } catch (error) {
+    if (__DEV__) {
+      console.log('[Auth Logout] Google Sign-In configure failed during logout', error);
+    }
+  }
+
+  await runBestEffortProviderSignOut(() => GoogleSignin.revokeAccess());
+  await runBestEffortProviderSignOut(() => GoogleSignin.signOut());
+  await runBestEffortProviderSignOut(() => LoginManager.logOut());
 };

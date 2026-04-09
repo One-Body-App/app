@@ -37,7 +37,7 @@ import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
-import { setLoginData, getProfile, logout } from '../redux/actions/AuthActions'; // Adjust path
+import { setLoginData, getProfile, logout, clearAuthState } from '../redux/actions/AuthActions'; // Adjust path
 import { clearAuthTokens, getValidAccessToken } from '../services/authTokens';
 import { beginAuthenticatedMfaOnboarding } from '../services/login';
 
@@ -123,12 +123,11 @@ function AppContent() {
   const hasFetchedProfileRef = useRef(false);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
   const mfaOnboardingInFlightRef = useRef(false);
+  const handledLogoutCompletedAtRef = useRef<number | undefined>(undefined);
   const scheme = useColorScheme();
-  const handleConfirmBackPress = useCallback(async () => {
-    await clearAuthTokens();
+  const handleConfirmBackPress = useCallback(() => {
     dispatch(logout());
-    navigationRef.navigate('Intro');
-  }, [dispatch, navigationRef]);
+  }, [dispatch]);
   const confirmBackStyle = useMemo<ViewStyle>(
     () => ({
       width: 46,
@@ -240,7 +239,7 @@ function AppContent() {
           dispatch(setLoginData({ token: accessToken }));
         } else {
           await clearAuthTokens();
-          dispatch(logout());
+          dispatch(clearAuthState());
         }
       } finally {
         if (!cancelled) {
@@ -265,7 +264,7 @@ function AppContent() {
         dispatch(setLoginData({ token: accessToken }));
       } else if (!accessToken && token) {
         await clearAuthTokens();
-        dispatch(logout());
+        dispatch(clearAuthState());
       }
     } catch (error) {
       if (__DEV__) {
@@ -384,6 +383,32 @@ function AppContent() {
 
   useLayoutEffect(() => {
     if (!navigationReady) {
+      return;
+    }
+
+    const { logoutCompletedAt } = authState;
+    if (!logoutCompletedAt || handledLogoutCompletedAtRef.current === logoutCompletedAt) {
+      return;
+    }
+
+    handledLogoutCompletedAtRef.current = logoutCompletedAt;
+    hasFetchedProfileRef.current = false;
+    mfaOnboardingRequestedUserRef.current = null;
+    mfaOnboardingInFlightRef.current = false;
+    ignoreAuthLinksRef.current = false;
+
+    const destination = authState.logoutDestination === 'Login' ? 'Login' : 'Intro';
+    lastNavigationRef.current = { route: destination, timestamp: Date.now() };
+    navigationRef.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: destination as any }],
+      })
+    );
+  }, [authState.logoutCompletedAt, authState.logoutDestination, navigationReady, navigationRef]);
+
+  useLayoutEffect(() => {
+    if (!navigationReady) {
       if (__DEV__) {
         console.log('[AppContent Navigation] Skipping - navigation not ready');
       }
@@ -425,6 +450,10 @@ function AppContent() {
     }
 
     if (!hasValidToken) {
+      if (authState.logoutCompletedAt) {
+        return;
+      }
+
       if (currentRouteName && !PUBLIC_ROUTES.has(currentRouteName)) {
         if (__DEV__) {
           console.log(
@@ -433,7 +462,7 @@ function AppContent() {
           );
         }
         clearAuthTokens().catch(() => undefined);
-        dispatch(logout());
+        dispatch(clearAuthState());
         navigationRef.dispatch(
           CommonActions.reset({
             index: 0,
@@ -523,7 +552,12 @@ function AppContent() {
           console.log('[AppContent Navigation] Navigating to MainRoot (email verified)');
         }
         lastNavigationRef.current = { route: 'MainRoot', timestamp: now };
-        navigationRef.dispatch(CommonActions.navigate('MainRoot'));
+        navigationRef.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'MainRoot' }],
+          })
+        );
       } else if (__DEV__) {
         console.log('[AppContent Navigation] Already on MainRoot');
       }

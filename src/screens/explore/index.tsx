@@ -12,7 +12,6 @@ import {
   Platform,
   RefreshControl,
   ScrollView,
-  Share,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -71,7 +70,14 @@ import {
   WatchPost,
 } from '@/utils/types';
 import getDeviceLocation from '@/src/services/deviceLocation';
-import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal/types';
+import {
+  getConnectPortalPublishedGoEvents,
+  listConnectServePublicJobs,
+} from '@/src/services/connectPortal';
+import type {
+  ConnectPortalPublishedEvent,
+  ConnectServeJobPublished,
+} from '@/src/services/connectPortal/types';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
 import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
@@ -208,10 +214,11 @@ interface NewCreatorItem {
 
 interface ServeOpportunityItem {
   id: string;
-  imageUri: string;
   title: string;
   organization: string;
+  opportunityType: string;
   distance: string;
+  distanceMiles: number | null;
 }
 
 interface CommunityPrayerItem {
@@ -1024,26 +1031,41 @@ function Explore({ navigation }: Props) {
   }, [token]);
 
   const fetchServeOpportunities = useCallback(
-    async (_location: { latitude: number; longitude: number } | null) => {
+    async (location: { latitude: number; longitude: number } | null) => {
       setIsServeLoading(true);
       try {
-        const res = await ApiCall({
-          route: 'user/search',
-          token,
-          verb: 'post',
-          params: { text: 'serve', type: 'posts', limit: 10, skip: 0 },
-        });
-        let items: any[] = [];
-        if (res?.status === 200 && Array.isArray(res.response)) {
-          items = res.response.slice(0, 5);
-        }
+        const jobs = await listConnectServePublicJobs();
+        const toMiles = (job: ConnectServeJobPublished): number | null => {
+          if (!location || !job.coordinate) return null;
+          const [lng, lat] = job.coordinate;
+          const R = 3958.8;
+          const dLat = ((lat - location.latitude) * Math.PI) / 180;
+          const dLng = ((lng - location.longitude) * Math.PI) / 180;
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos((location.latitude * Math.PI) / 180) *
+              Math.cos((lat * Math.PI) / 180) *
+              Math.sin(dLng / 2) ** 2;
+          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+        const withDistance = jobs
+          .filter((j) => j.hiringStatus === 'open')
+          .map((j) => ({ job: j, miles: toMiles(j) }))
+          .sort((a, b) => {
+            if (a.miles === null && b.miles === null) return 0;
+            if (a.miles === null) return 1;
+            if (b.miles === null) return -1;
+            return a.miles - b.miles;
+          })
+          .slice(0, 6);
         setServeOpportunityItems(
-          items.map((item: any, idx: number) => ({
-            id: item._id ?? item.id ?? `serve-${idx}`,
-            imageUri: resolveImageUrl(item) || NO_PROFILE_IMAGE,
-            title: resolveTitle(item.title) || item.content?.slice(0, 50) || 'Serve Opportunity',
-            organization: item.userData?.name ?? item.organization ?? 'Community',
-            distance: item.distance ? `${item.distance} miles` : 'Nearby',
+          withDistance.map(({ job, miles }) => ({
+            id: job.id,
+            title: job.title,
+            organization: job.organizationName,
+            opportunityType: job.opportunityType,
+            distance: miles !== null ? `${miles.toFixed(1)} mi` : job.address || 'Nearby',
+            distanceMiles: miles,
           }))
         );
       } catch {
@@ -1051,38 +1073,25 @@ function Explore({ navigation }: Props) {
       }
       setIsServeLoading(false);
     },
-    [token]
+    []
   );
 
   const fetchGoEvents = useCallback(async () => {
     setIsEventsLoading(true);
     try {
-      const res = await ApiCall<
-        ConnectPortalPublishedEvent[] | { data?: ConnectPortalPublishedEvent[] }
-      >({
-        route: 'connect/events/public?page=1&limit=10',
-        token,
-        verb: 'get',
-      });
-      const raw = res?.response;
-      let allEvents: ConnectPortalPublishedEvent[] = [];
-      if (Array.isArray(raw)) {
-        allEvents = raw;
-      } else if (Array.isArray(raw?.data)) {
-        allEvents = raw.data;
-      }
+      const allEvents = await getConnectPortalPublishedGoEvents();
       const today = new Date();
       const upcoming = allEvents
-        .filter((event: any) => event.status === 'published' && new Date(event.startDate) >= today)
-        .sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+        .filter((event) => new Date(event.startDate) >= today)
+        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
         .slice(0, 7);
-      setGoEvents(upcoming as ConnectPortalPublishedEvent[]);
+      setGoEvents(upcoming);
     } catch {
       // Network failure — section stays empty
     } finally {
       setIsEventsLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const fetchTrendingTopics = useCallback(async () => {
     try {
@@ -1430,65 +1439,31 @@ function Explore({ navigation }: Props) {
     return mediaUrl || NO_PROFILE_IMAGE;
   };
 
-  const getAspectRatio = (item: WatchPost): number => {
-    const h = Number((item as any).videoHeight ?? 0);
-    const w = Number((item as any).videoWidth ?? 1);
-    if (w <= 0) return 16 / 9;
-    const ratio = w / h;
-    if (ratio >= 1.5) return 16 / 9;
-    if (ratio >= 1.1) return 4 / 3;
-    return 1;
-  };
-
-  const renderMasonryColumns = () => {
-    const leftCol: WatchPost[] = [];
-    const rightCol: WatchPost[] = [];
-    let leftHeight = 0;
-    let rightHeight = 0;
-
-    trendingVideos.forEach((item) => {
-      const ar = getAspectRatio(item);
-      const cardHeight = 1 / ar;
-      if (leftHeight <= rightHeight) {
-        leftCol.push(item);
-        leftHeight += cardHeight;
-      } else {
-        rightCol.push(item);
-        rightHeight += cardHeight;
-      }
-    });
-
-    const renderCol = (col: WatchPost[]) =>
-      col.map((item) => {
-        const ar = getAspectRatio(item);
+  const renderTrendingScroll = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.horizontalContent}
+    >
+      {trendingVideos.map((item) => {
         const itemId = String(item.postId ?? item.id ?? '');
-        const isVisible = visibleVideoId === itemId;
         const thumbnail = getMuxThumbnail(item.playBackId, item.mediaUrl);
         return (
           <TouchableOpacity
             key={itemId}
             activeOpacity={0.88}
             onPress={() => handleOpenWatchPost(item)}
-            style={styles.masonryCard}
+            style={styles.trendingCard}
           >
-            <View style={[styles.masonryImageWrap, { aspectRatio: ar }]}>
-              {isVisible && item.playBackId ? (
-                <Video
-                  source={{ uri: `https://stream.mux.com/${item.playBackId}.m3u8` }}
-                  style={styles.masonryVideo}
-                  resizeMode="cover"
-                  muted
-                  repeat
-                  paused={!isVisible}
-                />
-              ) : (
-                <FastImage
-                  source={{ uri: thumbnail }}
-                  style={styles.masonryVideo}
-                  resizeMode={FastImage.resizeMode.cover}
-                />
-              )}
-            </View>
+            <ImageBackground
+              source={{ uri: thumbnail }}
+              style={styles.trendingImage}
+              imageStyle={{ borderRadius: 12 }}
+            >
+              <View style={styles.liveBadge}>
+                <StyledText style={styles.liveBadgeText}>WATCH</StyledText>
+              </View>
+            </ImageBackground>
             <StyledText
               numberOfLines={2}
               style={[styles.trendingTitle, { color: primaryTextColor, fontSize: 14 }]}
@@ -1508,15 +1483,9 @@ function Explore({ navigation }: Props) {
             </View>
           </TouchableOpacity>
         );
-      });
-
-    return (
-      <View style={styles.masonryContainer}>
-        <View style={styles.masonryColumn}>{renderCol(leftCol)}</View>
-        <View style={styles.masonryColumn}>{renderCol(rightCol)}</View>
-      </View>
-    );
-  };
+      })}
+    </ScrollView>
+  );
 
   const featuredVoice =
     newCreatorsItems.length > 0
@@ -1595,9 +1564,7 @@ function Explore({ navigation }: Props) {
             style={styles.sectionInlineSpinner}
           />
         )}
-        {!isTrendingLoading && trendingVideos.length > 0 && (
-          <View style={{ paddingHorizontal: spacing.x16 }}>{renderMasonryColumns()}</View>
-        )}
+        {!isTrendingLoading && trendingVideos.length > 0 && renderTrendingScroll()}
         {!isTrendingLoading && trendingVideos.length === 0 && (
           <StyledText style={{ color: secondaryTextColor, paddingHorizontal: spacing.x16 }}>
             No trending content right now
@@ -1752,14 +1719,31 @@ function Explore({ navigation }: Props) {
             contentContainerStyle={styles.horizontalContent}
           >
             {serveOpportunityItems.map((item) => (
-              <View
+              <TouchableOpacity
                 key={item.id}
+                activeOpacity={0.88}
                 style={[
                   styles.serveCardHorizontal,
                   { borderColor: surfaceBorderColor, backgroundColor: surfaceCardColor },
                 ]}
+                onPress={() => {
+                  navigation.push('ConnectServeJobView' as never, { jobId: item.id } as never);
+                }}
               >
-                <FastImage source={{ uri: item.imageUri }} style={styles.serveImageHorizontal} />
+                <View style={styles.serveIconBlock}>
+                  <MaterialCommunityIcons
+                    name="hand-heart-outline"
+                    size={28}
+                    color={Colors.primarySapphire.brand}
+                  />
+                  {item.opportunityType ? (
+                    <View style={styles.serveTypeChip}>
+                      <StyledText style={styles.serveTypeChipText} numberOfLines={1}>
+                        {item.opportunityType}
+                      </StyledText>
+                    </View>
+                  ) : null}
+                </View>
                 <View style={styles.serveContentHorizontal}>
                   <StyledText
                     numberOfLines={2}
@@ -1770,23 +1754,26 @@ function Explore({ navigation }: Props) {
                   <StyledText numberOfLines={1} style={{ color: secondaryTextColor, fontSize: 12 }}>
                     {item.organization}
                   </StyledText>
-                  <StyledText
-                    style={{ color: Colors.primarySapphire.brand, fontSize: 12, marginTop: 4 }}
-                  >
-                    {item.distance}
-                  </StyledText>
+                  <View style={styles.serveDistanceRow}>
+                    <MaterialCommunityIcons
+                      name="map-marker-outline"
+                      size={12}
+                      color={Colors.primarySapphire.brand}
+                    />
+                    <StyledText
+                      style={{ color: Colors.primarySapphire.brand, fontSize: 12, marginLeft: 3 }}
+                    >
+                      {item.distance}
+                    </StyledText>
+                  </View>
                 </View>
-                <TouchableOpacity
-                  style={styles.shareButton}
-                  onPress={() => {
-                    Share.share({
-                      message: `${item.title} -- ${item.organization}`,
-                    });
-                  }}
-                >
-                  <MaterialCommunityIcons name="share-variant" size={14} color="#032f3c" />
-                </TouchableOpacity>
-              </View>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={18}
+                  color={secondaryTextColor}
+                  style={{ alignSelf: 'center' }}
+                />
+              </TouchableOpacity>
             ))}
           </ScrollView>
         )}
@@ -2377,16 +2364,41 @@ const createStyles = (dark: boolean) =>
       borderRadius: 12,
       borderWidth: 1,
       padding: spacing.x10,
+      flexDirection: 'column',
+      gap: spacing.x8,
     },
-    serveImageHorizontal: {
+    serveIconBlock: {
       width: '100%',
-      height: 100,
+      height: 72,
       borderRadius: 8,
-      backgroundColor: Colors.neutral[600],
-      marginBottom: spacing.x8,
+      backgroundColor: dark ? 'rgba(18,107,135,0.15)' : 'rgba(18,107,135,0.08)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    serveTypeChip: {
+      position: 'absolute',
+      bottom: 6,
+      right: 6,
+      backgroundColor: dark ? 'rgba(18,107,135,0.4)' : 'rgba(18,107,135,0.12)',
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    serveTypeChipText: {
+      fontSize: 9,
+      fontWeight: '700',
+      color: Colors.primarySapphire.brand,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
     },
     serveContentHorizontal: {
       flex: 1,
+      gap: 2,
+    },
+    serveDistanceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
     },
     shareButton: {
       position: 'absolute',
