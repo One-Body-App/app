@@ -37,6 +37,7 @@ import {
   removeQueuedNotification,
 } from '@/src/services/notification/pushNotificationStorage';
 import { preloadIosNotificationFeed } from '@/src/services/notification/iosNotificationPreflight';
+import { subscribeToNotificationRefresh } from '@/src/services/notification/notificationRefreshSignal';
 import { formatRelativeTime, nowUtcIso, parseIsoOrNull } from '@/src/utils/time';
 import {
   isOneBodyDeepLinkCandidate,
@@ -426,6 +427,12 @@ function NotificationScreen({ navigation }: Props) {
 
   useMountEffect(() => {
     loadNotifications({ showLoader: true });
+  });
+
+  useMountEffect(() => {
+    return subscribeToNotificationRefresh(() => {
+      loadNotifications();
+    });
   });
 
   useFocusEffect(

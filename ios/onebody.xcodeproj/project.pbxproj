@@ -38,8 +38,6 @@
 		728E61982B1FFDB80013DA59 /* splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 728E61972B1FFDB80013DA59 /* splash.mp4 */; };
 		72A09FE12E1CDE2B00D614D5 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */; };
 		72F05C49289CEB68004C3A5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */; };
-		B1C2D3E4F5061728394A5B6C /* IOSNotificationsFeedBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6D /* IOSNotificationsFeedBridge.swift */; };
-		B1C2D3E4F5061728394A5B6E /* IOSNotificationsFeedBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6F /* IOSNotificationsFeedBridge.m */; };
 		75C41843F4D740D6B7B65DEB /* Rubik-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 46EC12EDA22141A283832781 /* Rubik-SemiBold.ttf */; };
 		76D9A2FE6C4D4C769086867B /* OpenSans_Condensed-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ABA070994F3D498A8F8D1519 /* OpenSans_Condensed-Italic.ttf */; };
 		7B5EF91F1D4D4465B66F95A6 /* Rubik-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 99F8D50C5D4E4E3EA757EF14 /* Rubik-LightItalic.ttf */; };
@@ -54,6 +52,8 @@
 		A13E154280CE4FC297C28CA8 /* Rubik-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 623197AF96CA4AC59747CC1D /* Rubik-BlackItalic.ttf */; };
 		A1B2C3D4E5F6012345678901 /* MessagesConversationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */; };
 		A1B2C3D4E5F6012345678902 /* MessagesConversationListViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */; };
+		B1C2D3E4F5061728394A5B6C /* IOSNotificationsFeedBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6D /* IOSNotificationsFeedBridge.swift */; };
+		B1C2D3E4F5061728394A5B6E /* IOSNotificationsFeedBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6F /* IOSNotificationsFeedBridge.m */; };
 		BC63E9790B59DF51F8397F02 /* Pods_onebody.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 158542D8825809DC65F10471 /* Pods_onebody.framework */; };
 		BDDCE35DB5F843E09FD7C549 /* Rubik-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 87F5E2F724AF465586C9DD83 /* Rubik-Italic.ttf */; };
 		C0D3F7A32F0DF12000652AC4 /* RNReactNativeHapticFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C0D3F7A22F0DF12000652AC4 /* RNReactNativeHapticFeedback.framework */; };
@@ -159,8 +159,6 @@
 		72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		75315A586E0038FD62E6797E /* Pods_OneBodyNotificationServiceExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_OneBodyNotificationServiceExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		B1C2D3E4F5061728394A5B6D /* IOSNotificationsFeedBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = onebody/IOSNotificationsFeedBridge.swift; sourceTree = "<group>"; };
-		B1C2D3E4F5061728394A5B6F /* IOSNotificationsFeedBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = onebody/IOSNotificationsFeedBridge.m; sourceTree = "<group>"; };
 		7A33052A304E4AF1B4A20B1E /* OpenSans_Condensed-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-SemiBold.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-SemiBold.ttf"; sourceTree = "<group>"; };
 		7C83D0FD48824D7E864A921B /* OpenSans-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-BoldItalic.ttf"; path = "../src/assets/fonts/OpenSans-BoldItalic.ttf"; sourceTree = "<group>"; };
 		7E417E7EA4764689BA519E04 /* OpenSans-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-SemiBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
@@ -183,6 +181,8 @@
 		ABB5AA1D3BBE4F9A9B558AF0 /* OpenSans-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-Italic.ttf"; path = "../src/assets/fonts/OpenSans-Italic.ttf"; sourceTree = "<group>"; };
 		ADE340A05EC64B77A41DE098 /* Rubik-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Black.ttf"; path = "../src/assets/fonts/Rubik-Black.ttf"; sourceTree = "<group>"; };
 		AF3A9BB15E764506B2E6F756 /* OpenSans_SemiCondensed-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-SemiBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6D /* IOSNotificationsFeedBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = onebody/IOSNotificationsFeedBridge.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6F /* IOSNotificationsFeedBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = onebody/IOSNotificationsFeedBridge.m; sourceTree = "<group>"; };
 		B24D3A0A4F2F4386998EC860 /* Rubik-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Bold.ttf"; path = "../src/assets/fonts/Rubik-Bold.ttf"; sourceTree = "<group>"; };
 		B6E9CB8240164BF6A6EE9CBB /* Rubik-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Medium.ttf"; path = "../src/assets/fonts/Rubik-Medium.ttf"; sourceTree = "<group>"; };
 		BDC87182345B3F0EBA21FE6B /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
@@ -1050,7 +1050,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = onebody/onebody-Bridging-Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "onebody/onebody-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -1202,7 +1202,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = onebody/onebody-Bridging-Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "onebody/onebody-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";

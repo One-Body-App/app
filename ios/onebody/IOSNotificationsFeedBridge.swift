@@ -71,7 +71,7 @@ final class IOSNotificationsFeedBridge: RCTEventEmitter {
   }
 
   private static func normalizedPayload(from request: UNNotificationRequest) -> [String: Any]? {
-    return IOSNotificationsFeedSerializeRemoteMessage(request.content.userInfo as NSDictionary) as? [String: Any]
+    return IOSNotificationsFeedSerializeRemoteMessage(request.content.userInfo) as? [String: Any]
   }
 }
 #endif

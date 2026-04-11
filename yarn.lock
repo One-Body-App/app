@@ -9437,9 +9437,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-gl@npm:^55.0.11":
-  version: 55.0.11
-  resolution: "expo-gl@npm:55.0.11"
+"expo-gl@npm:~16.0.10":
+  version: 16.0.10
+  resolution: "expo-gl@npm:16.0.10"
   dependencies:
     invariant: "npm:^2.2.4"
   peerDependencies:
@@ -9456,7 +9456,7 @@ __metadata:
       optional: true
     react-native-web:
       optional: true
-  checksum: 10/d11efca3415110c04b5e8c94361ae103bf49e98b1e95259bb9b8427214212f944067826f4a449d33fb5032e5e32ebd98a3ce08148ee9a7abe492bcc4c90cf604
+  checksum: 10/1899b7f2a88ea59fc3387ff730ec4fda928a08b26dab4c5c558b313a1aa755df8c03f3c45a57e160cbd1405fc9f88d3eb3eba57c18ec296c5778769a1e052d3d
   languageName: node
   linkType: hard
 
@@ -13716,7 +13716,7 @@ __metadata:
     eslint-plugin-react: "npm:^7.33.1"
     eslint-plugin-react-hooks: "npm:^4.6.0"
     eslint-plugin-react-native: "npm:^4.0.0"
-    expo-gl: "npm:^55.0.11"
+    expo-gl: "npm:~16.0.10"
     expo-modules-core: "npm:^3.0.29"
     html-entities: "npm:^2.4.0"
     husky: "npm:^8.0.0"
@@ -13745,6 +13745,7 @@ __metadata:
     react-native-clean-project: "npm:^4.0.3"
     react-native-collapsible-tab-view: "npm:^6.2.1"
     react-native-color-matrix-image-filters: "npm:^8.0.2"
+    react-native-confetti-cannon: "npm:^1.5.2"
     react-native-config: "npm:^1.5.1"
     react-native-date-picker: "npm:^4.2.13"
     react-native-device-info: "npm:14.0.4"
@@ -14688,6 +14689,13 @@ __metadata:
   version: 2.2.1
   resolution: "react-native-communications@npm:2.2.1"
   checksum: 10/3f278f2dd44732cb1da2f1dec8403a6030a16d240cb8885ae150218d9e9da1fb9f36b7476ef7052beb014a34b05f83f5984f26983b73dfd7d428f55d68affd69
+  languageName: node
+  linkType: hard
+
+"react-native-confetti-cannon@npm:^1.5.2":
+  version: 1.5.2
+  resolution: "react-native-confetti-cannon@npm:1.5.2"
+  checksum: 10/0ca5d56eef9763e891d228017708c340b54cc87d46d1c38d7aff5b46d511d78b52d884b9492aa1022cdd4772ef974c0e2175831516b1aafda93208e97e5098a1
   languageName: node
   linkType: hard
 

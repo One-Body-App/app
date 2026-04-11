@@ -9,7 +9,7 @@ import {
   syncIosDisplayedRemoteNotifications,
 } from './pushNotificationStorage';
 
-const IOS_NOTIFICATION_PREFLIGHT_TIMEOUT_MS = 1500;
+const IOS_NOTIFICATION_PREFLIGHT_TIMEOUT_MS = 4000;
 
 type IosNotificationPreflightDependencies = {
   getInitialNotification: () => Promise<FirebaseMessagingTypes.RemoteMessage | null>;

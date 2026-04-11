@@ -15,6 +15,7 @@ import { useTheme } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Color from 'color';
 import useMountEffect from '@/src/hooks/useMountEffect';
+import { getCachedIntroAvatars } from '@/src/services/introAvatars';
 import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -37,6 +38,9 @@ const CONTENT_MAX_WIDTH = 720;
 const HERO_MAX_WIDTH = 520;
 const BUTTONS_MAX_WIDTH = 520;
 
+// Stagger offset (ms) between each avatar's pulse so they breathe independently
+const PULSE_STAGGER_MS = 750;
+
 const ASSETS = {
   logogroup: logogroupImg,
   logogroupDark: logogroupDarkImg,
@@ -49,6 +53,13 @@ const ASSETS = {
 };
 
 type Props = StackScreenProps<MainStackParamList, 'Intro'>;
+
+const INTRO_AVATAR_FALLBACKS = [
+  ASSETS.avatar1,
+  ASSETS.avatar2,
+  ASSETS.avatar3,
+  ASSETS.avatar4,
+] as const;
 
 function IntroScreen({ navigation }: Props) {
   const { colors, dark } = useTheme();
@@ -64,7 +75,72 @@ function IntroScreen({ navigation }: Props) {
   // 2. Continuous Loop Animations (Solar System)
   const loopAnim = useRef(new Animated.Value(0)).current;
 
+  // 3. Per-avatar fade-in (triggered when real URL loads)
+  const avatarFade0 = useRef(new Animated.Value(1)).current;
+  const avatarFade1 = useRef(new Animated.Value(1)).current;
+  const avatarFade2 = useRef(new Animated.Value(1)).current;
+  const avatarFade3 = useRef(new Animated.Value(1)).current;
+  const avatarFades = [avatarFade0, avatarFade1, avatarFade2, avatarFade3];
+
+  // 4. Per-avatar pulse (slow breathing scale, staggered)
+  const avatarPulse0 = useRef(new Animated.Value(1)).current;
+  const avatarPulse1 = useRef(new Animated.Value(1)).current;
+  const avatarPulse2 = useRef(new Animated.Value(1)).current;
+  const avatarPulse3 = useRef(new Animated.Value(1)).current;
+  const avatarPulses = [avatarPulse0, avatarPulse1, avatarPulse2, avatarPulse3];
+  const pulseTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const [avatarUrls, setAvatarUrls] = React.useState<(string | null)[]>([null, null, null, null]);
+  const [avatarLoadErrors, setAvatarLoadErrors] = React.useState([false, false, false, false]);
+
   useMountEffect(() => {
+    let isMounted = true;
+
+    getCachedIntroAvatars()
+      .then((urls) => {
+        if (!isMounted) return;
+
+        // For each slot that now has a real URL, cross-fade from current image to new one
+        urls.forEach((url, i) => {
+          if (url) {
+            avatarFades[i].setValue(0);
+            Animated.timing(avatarFades[i], {
+              toValue: 1,
+              duration: 600,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: true,
+            }).start();
+          }
+        });
+        setAvatarLoadErrors([false, false, false, false]);
+        setAvatarUrls(urls);
+      })
+      .catch(() => {}); // fallback state [null,null,null,null] already set
+
+    return () => {
+      isMounted = false;
+    };
+  });
+
+  const handleAvatarLoadError = React.useCallback((index: number) => {
+    setAvatarLoadErrors((prev) => {
+      if (prev[index]) return prev;
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+  }, []);
+
+  const getAvatarSource = React.useCallback(
+    (index: number) =>
+      avatarUrls[index] && !avatarLoadErrors[index]
+        ? { uri: avatarUrls[index] as string }
+        : INTRO_AVATAR_FALLBACKS[index],
+    [avatarLoadErrors, avatarUrls]
+  );
+
+  useMountEffect(() => {
+    const pulseLoops: Animated.CompositeAnimation[] = [];
     const task = InteractionManager.runAfterInteractions(() => {
       const sweepAndWobble = (anim: Animated.Value) =>
         Animated.sequence([
@@ -114,8 +190,41 @@ function IntroScreen({ navigation }: Props) {
           useNativeDriver: true,
         })
       ).start();
+
+      // Start staggered per-avatar pulse (slow breathe: 1.0 -> 1.08 -> 1.0)
+      avatarPulses.forEach((pulse, i) => {
+        const timeoutId = setTimeout(() => {
+          const loop = Animated.loop(
+            Animated.sequence([
+              Animated.timing(pulse, {
+                toValue: 1.08,
+                duration: 1800,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+              }),
+              Animated.timing(pulse, {
+                toValue: 1,
+                duration: 1800,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+              }),
+            ])
+          );
+          pulseLoops.push(loop);
+          loop.start();
+        }, i * PULSE_STAGGER_MS);
+
+        // Stagger each avatar's pulse start so they breathe independently
+        pulseTimeoutsRef.current.push(timeoutId);
+      });
     });
-    return () => task.cancel();
+    return () => {
+      task.cancel();
+      pulseTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      pulseTimeoutsRef.current = [];
+      pulseLoops.forEach((loop) => loop.stop());
+      avatarPulses.forEach((pulse) => pulse.stopAnimation());
+    };
   });
 
   // --- Interpolations ---
@@ -259,20 +368,40 @@ function IntroScreen({ navigation }: Props) {
               <Animated.View
                 style={[
                   styles.planetParams,
-                  { top: 0, right: '20%', transform: [{ rotate: counterRotateCW }] },
+                  {
+                    top: 0,
+                    right: '20%',
+                    transform: [{ rotate: counterRotateCW }, { scale: avatarPulses[0] }],
+                    opacity: avatarFades[0],
+                  },
                 ]}
               >
-                <FastImage source={ASSETS.avatar1} style={styles.avatarLarge} />
+                <FastImage
+                  source={getAvatarSource(0)}
+                  style={styles.avatarLarge}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(0)}
+                />
               </Animated.View>
 
               {/* Avatar 2 (Bottom Left) */}
               <Animated.View
                 style={[
                   styles.planetParams,
-                  { bottom: '10%', left: '20%', transform: [{ rotate: counterRotateCW }] },
+                  {
+                    bottom: '10%',
+                    left: '20%',
+                    transform: [{ rotate: counterRotateCW }, { scale: avatarPulses[1] }],
+                    opacity: avatarFades[1],
+                  },
                 ]}
               >
-                <FastImage source={ASSETS.avatar2} style={styles.avatarMedium} />
+                <FastImage
+                  source={getAvatarSource(1)}
+                  style={styles.avatarMedium}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(1)}
+                />
               </Animated.View>
 
               {/* Discover Icon (Far Right) */}
@@ -296,10 +425,20 @@ function IntroScreen({ navigation }: Props) {
               <Animated.View
                 style={[
                   styles.planetParams,
-                  { top: '15%', left: 0, transform: [{ rotate: counterRotateCCW }] },
+                  {
+                    top: '15%',
+                    left: 0,
+                    transform: [{ rotate: counterRotateCCW }, { scale: avatarPulses[2] }],
+                    opacity: avatarFades[2],
+                  },
                 ]}
               >
-                <FastImage source={ASSETS.avatar3} style={styles.avatarMedium} />
+                <FastImage
+                  source={getAvatarSource(2)}
+                  style={styles.avatarMedium}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(2)}
+                />
               </Animated.View>
 
               {/* Search Icon (Bottom Right) */}
@@ -318,10 +457,20 @@ function IntroScreen({ navigation }: Props) {
               <Animated.View
                 style={[
                   styles.planetParams,
-                  { bottom: -15, left: '50%', transform: [{ rotate: counterRotateCCW }] },
+                  {
+                    bottom: -15,
+                    left: '50%',
+                    transform: [{ rotate: counterRotateCCW }, { scale: avatarPulses[3] }],
+                    opacity: avatarFades[3],
+                  },
                 ]}
               >
-                <FastImage source={ASSETS.avatar4} style={styles.avatarSmall} />
+                <FastImage
+                  source={getAvatarSource(3)}
+                  style={styles.avatarSmall}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(3)}
+                />
               </Animated.View>
             </Animated.View>
           </View>
@@ -384,6 +533,7 @@ function IntroScreen({ navigation }: Props) {
                         color: dark ? '#f6f6f6' : Colors.primary.brand,
                         textAlign: 'center',
                         marginTop: 10,
+                        fontFamily: 'OpenSans-Regular',
                       },
                     ]}
                   >
@@ -442,7 +592,7 @@ function IntroScreen({ navigation }: Props) {
                           navigation.navigate('AccountType');
                         }}
                         text="Join the Family"
-                        btnTextStyle={{ color: 'white' }}
+                        btnTextStyle={{ color: 'white', fontFamily: 'Rubik-Medium' }}
                       />
                     </View>
                   ) : (
@@ -453,7 +603,7 @@ function IntroScreen({ navigation }: Props) {
                         navigation.navigate('AccountType');
                       }}
                       text="Join the Family"
-                      btnTextStyle={{ color: 'white' }}
+                      btnTextStyle={{ color: 'white', fontFamily: 'Rubik-Medium' }}
                     />
                   )}
                 </Animated.View>
@@ -504,7 +654,10 @@ function IntroScreen({ navigation }: Props) {
                           navigation.navigate('Login');
                         }}
                         text="I have an account"
-                        btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
+                        btnTextStyle={{
+                          color: dark ? '#f6f6f6' : Colors.primary.brand,
+                          fontFamily: 'Rubik-Medium',
+                        }}
                       />
                     </View>
                   ) : (
@@ -518,7 +671,10 @@ function IntroScreen({ navigation }: Props) {
                         navigation.navigate('Login');
                       }}
                       text="I have an account"
-                      btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
+                      btnTextStyle={{
+                        color: dark ? '#f6f6f6' : Colors.primary.brand,
+                        fontFamily: 'Rubik-Medium',
+                      }}
                     />
                   )}
                 </Animated.View>

@@ -502,6 +502,7 @@ export type MainStackParamList = {
     resetPassword?: boolean;
     initialMfaChallenge?: LoginMfaChallenge;
     prefillEmail?: string;
+    socialSignupAccountType?: AccountType;
   };
   SignUp: {
     oauth_token?: string;

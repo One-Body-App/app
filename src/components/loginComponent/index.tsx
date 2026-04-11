@@ -9,7 +9,6 @@ import {
   Image,
   Platform,
   PermissionsAndroid,
-  StatusBar,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
@@ -21,8 +20,8 @@ import LottieView from 'lottie-react-native';
 import { noop } from 'lodash';
 import QRCode from 'react-native-qrcode-svg';
 import { MainStackParamList } from '@/src/navigator/types';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { setLoginData } from '@/src/redux/actions/AuthActions';
+import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
+import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
 import {
   beginPasskeyLogin,
   beginPasskeyRegistration,
@@ -44,6 +43,8 @@ import {
   getAppleIdToken,
   getGoogleIdToken,
 } from '@/services/socialAuth';
+import { clearPendingAccountType } from '@/src/services/accountTypeStorage';
+import { AccountType } from '@/utils/types';
 
 import Button from '../Button';
 import CustomClipboard, { CustomClipboardHandle } from '../CustomClipboard';
@@ -78,6 +79,7 @@ type LoginComponentProps = {
   currentUserEmail?: string;
   clearOnMountKey?: string;
   initialMfaChallenge?: MfaChallengeResponse;
+  socialSignupAccountType?: AccountType;
   onMfaLaunchScreenChange?: (isVisible: boolean) => void;
 };
 
@@ -246,6 +248,7 @@ function LoginComponent({
   currentUserEmail,
   clearOnMountKey,
   initialMfaChallenge,
+  socialSignupAccountType,
   onMfaLaunchScreenChange,
 }: LoginComponentProps) {
   const dispatch = useDispatch();
@@ -361,10 +364,24 @@ function LoginComponent({
 
   const completeLogin = useCallback(
     (accessToken: string) => {
+      if (socialSignupAccountType) {
+        dispatch(
+          getProfile.Success({
+            token: accessToken,
+            email: currentUserEmail,
+            emailVerified: true,
+            accountType: socialSignupAccountType,
+            isProfileCompleted: false,
+          })
+        );
+        dispatch(setAccountType(socialSignupAccountType));
+        clearPendingAccountType().catch(() => undefined);
+      }
+
       dispatch(setLoginData({ token: accessToken }));
       navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
     },
-    [dispatch, navigation]
+    [currentUserEmail, dispatch, navigation, socialSignupAccountType]
   );
 
   const handleAuthResult = useCallback(
@@ -1144,13 +1161,6 @@ function LoginComponent({
   if (showMfaLaunchScreen) {
     return (
       <View style={styles.screenContainer}>
-        {Platform.OS === 'android' ? (
-          <StatusBar
-            barStyle={dark ? 'light-content' : 'dark-content'}
-            backgroundColor={dark ? '#202328' : '#F7F7F7'}
-            translucent={false}
-          />
-        ) : null}
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 36, flexGrow: 1 }}

@@ -1,6 +1,11 @@
 import { runSaga } from 'redux-saga';
 import { ACTIONS } from '../action-types';
-import { logoutSaga } from './AuthSaga';
+import {
+  getProfileSaga,
+  logoutSaga,
+  updateOrgProfileRequest,
+  updateProfileRequest,
+} from './AuthSaga';
 
 const mockApiCall = jest.fn();
 const mockClearAuthTokens = jest.fn();
@@ -144,5 +149,169 @@ describe('logoutSaga', () => {
         destination: 'Intro',
       },
     });
+  });
+});
+
+describe('getProfileSaga stale result guards', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockApiCall.mockResolvedValue({
+      status: 200,
+      response: { emailVerified: true, isProfileCompleted: true },
+    });
+  });
+
+  it('drops a profile success when logout completed after the request started', async () => {
+    const dispatched: any[] = [];
+
+    await runSaga(
+      {
+        dispatch: (action) => dispatched.push(action),
+        getState: () => ({
+          auth: {
+            userToken: '',
+            logoutPending: false,
+            logoutCompletedAt: 123,
+          },
+        }),
+      },
+      getProfileSaga,
+      { type: 'get_profile_request', token: 'stale-token', pullSavedData: false }
+    ).toPromise();
+
+    expect(dispatched).toEqual([{ type: ACTIONS.SET_LOADER, data: false }]);
+  });
+
+  it('drops a profile success when the current token no longer matches the request token', async () => {
+    const dispatched: any[] = [];
+
+    await runSaga(
+      {
+        dispatch: (action) => dispatched.push(action),
+        getState: () => ({
+          auth: {
+            userToken: 'new-token',
+            logoutPending: false,
+            logoutCompletedAt: undefined,
+          },
+        }),
+      },
+      getProfileSaga,
+      { type: 'get_profile_request', token: 'old-token', pullSavedData: false }
+    ).toPromise();
+
+    expect(dispatched).toEqual([{ type: ACTIONS.SET_LOADER, data: false }]);
+  });
+});
+
+describe('profile update onboarding completion', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('hydrates auth state directly from individual profile update responses', async () => {
+    mockApiCall.mockResolvedValue({
+      status: 200,
+      response: {
+        userFind: {
+          emailVerified: true,
+          accountType: 'individual',
+          profile: {
+            dateOfBirth: '1990-01-01',
+            location: { address: '123 Main St' },
+          },
+          interests: [{ _id: 'interest-1' }],
+        },
+      },
+    });
+
+    const dispatched: any[] = [];
+
+    await runSaga(
+      {
+        dispatch: (action) => dispatched.push(action),
+      },
+      updateProfileRequest,
+      {
+        type: ACTIONS.Profile_Update,
+        data: {
+          token: 'token-1',
+          accountType: 'individual',
+          data: {} as FormData,
+        },
+      }
+    ).toPromise();
+
+    expect(dispatched).toEqual([
+      { type: ACTIONS.SET_LOADER, data: true },
+      expect.objectContaining({
+        type: ACTIONS.UPDATE_PROFILE,
+        data: expect.objectContaining({
+          token: 'token-1',
+          isProfileCompleted: true,
+        }),
+      }),
+      expect.objectContaining({
+        type: 'get_profile_success',
+        payload: expect.objectContaining({
+          token: 'token-1',
+          isProfileCompleted: true,
+        }),
+      }),
+      { type: ACTIONS.SET_LOADER, data: false },
+    ]);
+  });
+
+  it('hydrates auth state directly from organization profile update responses', async () => {
+    mockApiCall.mockResolvedValue({
+      status: 200,
+      response: {
+        userFind: {
+          emailVerified: true,
+          accountType: 'organization',
+          profile: {
+            companyName: 'One Body Org',
+            contactEmail: 'admin@example.com',
+            contactName: 'Admin User',
+            typeOfOrganization: { _id: 'org-type-1' },
+          },
+        },
+      },
+    });
+
+    const dispatched: any[] = [];
+
+    await runSaga(
+      {
+        dispatch: (action) => dispatched.push(action),
+      },
+      updateOrgProfileRequest,
+      {
+        type: ACTIONS.ORGProfile_Update,
+        data: {
+          token: 'token-2',
+          data: {},
+        },
+      }
+    ).toPromise();
+
+    expect(dispatched).toEqual([
+      { type: ACTIONS.SET_LOADER, data: true },
+      expect.objectContaining({
+        type: ACTIONS.UPDATE_PROFILE,
+        data: expect.objectContaining({
+          token: 'token-2',
+          isProfileCompleted: true,
+        }),
+      }),
+      expect.objectContaining({
+        type: 'get_profile_success',
+        payload: expect.objectContaining({
+          token: 'token-2',
+          isProfileCompleted: true,
+        }),
+      }),
+      { type: ACTIONS.SET_LOADER, data: false },
+    ]);
   });
 });

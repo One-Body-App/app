@@ -1,5 +1,6 @@
 package com.onebody;
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -31,6 +32,11 @@ class MainActivity : ReactActivity() {
         }
         SplashScreen.show(this, R.id.lottie)
         SplashScreen.setAnimationFinished(false)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 
     /**

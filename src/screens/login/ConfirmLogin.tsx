@@ -22,7 +22,7 @@ import { ensurePushPermission } from '@/src/services/notification/pushNotificati
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
-function ConfirmLogin({ route, navigation }: Props) {
+function ConfirmLogin({ route }: Props) {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const profile = useSelector((state: RootState) => state.auth.getProfileData);
@@ -57,6 +57,12 @@ function ConfirmLogin({ route, navigation }: Props) {
     if (verifyHandledRef.current) {
       return;
     }
+    // If the profile already shows emailVerified, the token was already consumed.
+    // Skip the API call — the auth guard will navigate to MainRoot once profile loads.
+    if (profile?.emailVerified) {
+      verifyHandledRef.current = true;
+      return;
+    }
     verifyHandledRef.current = true;
 
     const run = async () => {
@@ -71,6 +77,14 @@ function ConfirmLogin({ route, navigation }: Props) {
 
         if (res?.status === 200) {
           setVerifyStatus('success');
+          dispatch(
+            getProfile.Success({
+              ...(profile ?? {}),
+              email: profile?.email ?? resendTargetEmail ?? undefined,
+              emailVerified: true,
+              isProfileCompleted: profile?.isProfileCompleted ?? false,
+            })
+          );
           if (token) {
             dispatch(getProfile.Request({ token }));
           }
@@ -85,7 +99,7 @@ function ConfirmLogin({ route, navigation }: Props) {
     };
 
     run();
-  }, [dispatch, route?.params?.token, token]);
+  }, [dispatch, profile, profile?.emailVerified, resendTargetEmail, route?.params?.token, token]);
 
   useEffect(() => {
     if (profile?.email && profile.email !== resendTargetEmail) {
@@ -94,10 +108,13 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, [profile?.email, resendTargetEmail]);
 
   useEffect(() => {
+    if (route?.params?.token && verifyStatus !== 'success' && verifyStatus !== 'failed') {
+      return;
+    }
     if (token) {
       dispatch(getProfile.Request({ token }));
     }
-  }, [dispatch, token]);
+  }, [dispatch, route?.params?.token, token, verifyStatus]);
 
   const resendVerificationEmail = useCallback(async () => {
     if (!token && !resendTargetEmail) {
@@ -134,74 +151,33 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, [dispatch, token]);
 
   useEffect(() => {
-    if (verifyStatus === 'success' && !permissionsRequestedRef.current) {
-      const requestPermissions = async () => {
-        try {
-          if (Platform.OS === 'android') {
-            await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, {
-              title: 'Allow location',
-              message: 'We use your city to help secure your account and content.',
-              buttonPositive: 'Allow',
-            });
-          } else {
-            await Geolocation.requestAuthorization();
-          }
+    if (!profile?.emailVerified) {
+      return;
+    }
+    if (permissionsRequestedRef.current) {
+      return;
+    }
+    permissionsRequestedRef.current = true;
 
-          await ensurePushPermission();
-        } catch (e) {
-          // ignore errors
-        } finally {
-          permissionsRequestedRef.current = true;
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'MainRoot' as any }],
+    const requestPermissions = async () => {
+      try {
+        if (Platform.OS === 'android') {
+          await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, {
+            title: 'Allow location',
+            message: 'We use your city to help secure your account and content.',
+            buttonPositive: 'Allow',
           });
+        } else {
+          await Geolocation.requestAuthorization();
         }
-      };
-
-      requestPermissions();
-    }
-  }, [navigation, verifyStatus]);
-
-  useEffect(() => {
-    if (profile?.emailVerified) {
-      if (!permissionsRequestedRef.current) {
-        const requestPermissions = async () => {
-          try {
-            if (Platform.OS === 'android') {
-              await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                {
-                  title: 'Allow location',
-                  message: 'We use your city to help secure your account and content.',
-                  buttonPositive: 'Allow',
-                }
-              );
-            } else {
-              await Geolocation.requestAuthorization();
-            }
-
-            await ensurePushPermission();
-          } catch (e) {
-            // ignore errors
-          } finally {
-            permissionsRequestedRef.current = true;
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainRoot' as any }],
-            });
-          }
-        };
-
-        requestPermissions();
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'MainRoot' as any }],
-        });
+        await ensurePushPermission();
+      } catch (e) {
+        // ignore errors
       }
-    }
-  }, [navigation, profile?.emailVerified]);
+    };
+
+    requestPermissions();
+  }, [profile?.emailVerified]);
 
   const signOut = useCallback(async () => {
     dispatch(logout());
@@ -307,6 +283,32 @@ function ConfirmLogin({ route, navigation }: Props) {
                 Account created. Check your email to verify your account.
               </StyledText>
             </View>
+          ) : null}
+
+          {verifyStatus === 'success' ? (
+            <>
+              <Button
+                text="Continue"
+                btnStyle={{
+                  backgroundColor: palette.primary,
+                  height: 56,
+                  width: '100%',
+                  borderRadius: 999,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                btnTextStyle={{
+                  fontFamily: 'Lato',
+                  fontWeight: '600',
+                  fontSize: 18,
+                  color: '#FFF',
+                }}
+                onPress={refreshProfile}
+                disabled={!token}
+              />
+
+              <View style={{ height: 12 }} />
+            </>
           ) : null}
 
           <Button

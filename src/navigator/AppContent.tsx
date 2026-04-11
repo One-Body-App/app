@@ -38,7 +38,7 @@ import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
 import { setLoginData, getProfile, logout, clearAuthState } from '../redux/actions/AuthActions'; // Adjust path
-import { clearAuthTokens, getValidAccessToken } from '../services/authTokens';
+import { clearAuthTokens, getValidAccessToken, loadAuthTokens } from '../services/authTokens';
 import { beginAuthenticatedMfaOnboarding } from '../services/login';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
@@ -76,10 +76,17 @@ import {
   syncIosDisplayedRemoteNotifications,
 } from '@/src/services/notification/pushNotificationStorage';
 import { subscribeToIosForegroundNotificationFeed } from '@/src/services/notification/iosNotificationsFeedBridge';
+import { emitNotificationRefresh } from '@/src/services/notification/notificationRefreshSignal';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import VideoUploadRuntimeHost from '@/src/components/post/VideoUploadRuntimeHost';
+import {
+  isExplicitLogoutActive,
+  isMfaEnrollmentScreenActive,
+  isPublicAuthRoute,
+  shouldBeginMandatoryMfaOnboarding,
+} from '@/src/utils/authFlow';
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
@@ -94,7 +101,6 @@ function VideoPost({ navigation, route }: { navigation: any; route: any }) {
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
-const PUBLIC_ROUTES = new Set(['Intro', 'Login', 'SignUp', 'ForgotPassword', 'ConfirmLogin']);
 
 // This component now contains all the logic that was in your original Main.tsx
 function AppContent() {
@@ -102,6 +108,14 @@ function AppContent() {
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
   const authState = useSelector((state: RootState) => state.auth);
+  const {
+    getProfileData,
+    getProfileError,
+    isLoading,
+    logoutCompletedAt,
+    logoutDestination,
+    logoutPending,
+  } = authState;
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
@@ -120,6 +134,9 @@ function AppContent() {
   const token = authState.userToken;
   const tokenRef = useRef(token);
   tokenRef.current = token;
+  const explicitLogoutActive = isExplicitLogoutActive({ logoutPending, logoutCompletedAt });
+  const explicitLogoutActiveRef = useRef(explicitLogoutActive);
+  explicitLogoutActiveRef.current = explicitLogoutActive;
   const hasFetchedProfileRef = useRef(false);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
   const mfaOnboardingInFlightRef = useRef(false);
@@ -130,16 +147,17 @@ function AppContent() {
   }, [dispatch]);
   const confirmBackStyle = useMemo<ViewStyle>(
     () => ({
-      width: 46,
-      height: 46,
-      borderRadius: 23,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
+      alignSelf: 'center',
       backgroundColor: scheme === 'dark' ? '#1B1B1B' : '#FFFFFF',
       shadowColor: '#000',
       shadowOpacity: 0.12,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
     }),
     [scheme]
   );
@@ -232,14 +250,26 @@ function AppContent() {
 
     (async () => {
       try {
+        if (explicitLogoutActiveRef.current) {
+          return;
+        }
+
         const accessToken = await getValidAccessToken();
-        if (cancelled) return;
+        if (cancelled || explicitLogoutActiveRef.current) return;
 
         if (accessToken) {
           dispatch(setLoginData({ token: accessToken }));
         } else {
-          await clearAuthTokens();
-          dispatch(clearAuthState());
+          // Only clear the session if tokens are confirmed absent.
+          // A null from getValidAccessToken may be a transient network failure during refresh;
+          // in that case loadAuthTokens still returns the stored refresh token, so we keep it.
+          const stored = await loadAuthTokens();
+          if (!stored) {
+            await clearAuthTokens();
+            if (!explicitLogoutActiveRef.current) {
+              dispatch(clearAuthState());
+            }
+          }
         }
       } finally {
         if (!cancelled) {
@@ -259,12 +289,27 @@ function AppContent() {
 
   const refreshTokenOnResume = useCallback(async () => {
     try {
+      if (explicitLogoutActiveRef.current) {
+        return;
+      }
+
       const accessToken = await getValidAccessToken();
+      if (explicitLogoutActiveRef.current) {
+        return;
+      }
+
       if (accessToken && accessToken !== token) {
         dispatch(setLoginData({ token: accessToken }));
       } else if (!accessToken && token) {
-        await clearAuthTokens();
-        dispatch(clearAuthState());
+        // Only clear the session if the stored tokens are confirmed absent or expired.
+        // Do not log the user out due to a transient network failure during refresh.
+        const stored = await loadAuthTokens();
+        if (!stored) {
+          await clearAuthTokens();
+          if (!explicitLogoutActiveRef.current) {
+            dispatch(clearAuthState());
+          }
+        }
       }
     } catch (error) {
       if (__DEV__) {
@@ -290,7 +335,10 @@ function AppContent() {
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
         if (tokenRef.current) {
-          syncIosDisplayedNotificationsRef.current().catch(() => undefined);
+          syncIosDisplayedNotificationsRef
+            .current()
+            .then(() => emitNotificationRefresh())
+            .catch(() => undefined);
         }
         refreshTokenOnResumeRef.current().catch(() => undefined);
       }
@@ -301,7 +349,7 @@ function AppContent() {
     };
   });
 
-  ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;
+  ignoreAuthLinksRef.current = !!getProfileData?.emailVerified;
 
   useLayoutEffect(() => {
     if (Platform.OS !== 'android') {
@@ -322,7 +370,7 @@ function AppContent() {
           ? rootState.routes[rootIndex - 1]?.name
           : undefined;
 
-      if (token && currentRouteName && PUBLIC_ROUTES.has(currentRouteName)) {
+      if (token && currentRouteName && isPublicAuthRoute(currentRouteName)) {
         navigationRef.dispatch(
           CommonActions.reset({
             index: 0,
@@ -332,7 +380,7 @@ function AppContent() {
         return true;
       }
 
-      if (token && previousRouteName && PUBLIC_ROUTES.has(previousRouteName)) {
+      if (token && previousRouteName && isPublicAuthRoute(previousRouteName)) {
         return true;
       }
 
@@ -346,7 +394,7 @@ function AppContent() {
   }, [navigationRef, token]);
 
   useLayoutEffect(() => {
-    if (!token) {
+    if (!token || explicitLogoutActive) {
       hasFetchedProfileRef.current = false;
       mfaOnboardingRequestedUserRef.current = null;
       mfaOnboardingInFlightRef.current = false;
@@ -359,7 +407,7 @@ function AppContent() {
 
     hasFetchedProfileRef.current = true;
     dispatch(getProfile.Request({ token }));
-  }, [dispatch, token]);
+  }, [dispatch, explicitLogoutActive, token]);
 
   useLayoutEffect(() => {
     if (authChecked) {
@@ -386,7 +434,6 @@ function AppContent() {
       return;
     }
 
-    const { logoutCompletedAt } = authState;
     if (!logoutCompletedAt || handledLogoutCompletedAtRef.current === logoutCompletedAt) {
       return;
     }
@@ -397,7 +444,7 @@ function AppContent() {
     mfaOnboardingInFlightRef.current = false;
     ignoreAuthLinksRef.current = false;
 
-    const destination = authState.logoutDestination === 'Login' ? 'Login' : 'Intro';
+    const destination = logoutDestination === 'Login' ? 'Login' : 'Intro';
     lastNavigationRef.current = { route: destination, timestamp: Date.now() };
     navigationRef.dispatch(
       CommonActions.reset({
@@ -405,7 +452,7 @@ function AppContent() {
         routes: [{ name: destination as any }],
       })
     );
-  }, [authState.logoutCompletedAt, authState.logoutDestination, navigationReady, navigationRef]);
+  }, [logoutCompletedAt, logoutDestination, navigationReady, navigationRef]);
 
   useLayoutEffect(() => {
     if (!navigationReady) {
@@ -420,19 +467,19 @@ function AppContent() {
     const rootState = navigationRef.getRootState();
     const rootRouteName = rootState?.routes?.[rootState.index ?? 0]?.name;
     const hasValidToken = token !== '';
-    const profileData = authState.getProfileData;
+    const profileData = getProfileData;
     const hasProfileData = profileData != null;
     const isProfileCompleted = profileData?.isProfileCompleted === true;
-    const isProfileLoading = authState.isLoading;
-    const hasProfileError = authState.getProfileError;
+    const isProfileLoading = isLoading;
+    const hasProfileError = getProfileError;
     const isEmailVerified = !!profileData?.emailVerified;
     const hasVerifiedEmail = isEmailVerified || isProfileCompleted;
     const hasActiveMfa = profileData?.mfaConfig?.isMfaActive === true;
-    const isMfaEnrollmentScreenActive =
-      currentRouteName === 'Login' &&
-      !!currentRouteParams?.mfaOnboardingFlow &&
-      !!currentRouteParams?.initialMfaChallenge?.enrollmentRequired &&
-      !hasActiveMfa;
+    const isMfaEnrollmentFlowActive = isMfaEnrollmentScreenActive({
+      currentRouteName,
+      currentRouteParams,
+      getProfileData: profileData,
+    });
 
     if (__DEV__) {
       console.log('[AppContent Navigation] Effect triggered:', {
@@ -444,17 +491,24 @@ function AppContent() {
         isProfileCompleted,
         hasProfileError: !!hasProfileError,
         hasActiveMfa,
-        isMfaEnrollmentScreenActive,
+        isMfaEnrollmentScreenActive: isMfaEnrollmentFlowActive,
         platform: Platform.OS,
       });
     }
 
+    if (explicitLogoutActive) {
+      if (__DEV__) {
+        console.log('[AppContent Navigation] Explicit logout active, skipping auth navigation');
+      }
+      return;
+    }
+
     if (!hasValidToken) {
-      if (authState.logoutCompletedAt) {
+      if (logoutCompletedAt) {
         return;
       }
 
-      if (currentRouteName && !PUBLIC_ROUTES.has(currentRouteName)) {
+      if (currentRouteName && !isPublicAuthRoute(currentRouteName)) {
         if (__DEV__) {
           console.log(
             '[AppContent Navigation] Invalid token, resetting to Login',
@@ -473,11 +527,13 @@ function AppContent() {
       return;
     }
 
-    // On iOS, avoid navigation races while email is still unverified on ConfirmLogin.
-    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !hasVerifiedEmail) {
+    // Avoid navigation races while email is still unverified on ConfirmLogin.
+    // Let the screen handle its own verification flow; the guard will fire once
+    // the profile loads with emailVerified=true.
+    if (currentRouteName === 'ConfirmLogin' && !hasVerifiedEmail) {
       if (__DEV__) {
         console.log(
-          '[AppContent Navigation] iOS - on ConfirmLogin (unverified), letting LoginComponent handle navigation'
+          '[AppContent Navigation] On ConfirmLogin (unverified), waiting for profile to confirm verification'
         );
       }
       return;
@@ -511,7 +567,7 @@ function AppContent() {
     // Navigate to MainRoot if user has verified email
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
     if (hasValidToken && hasVerifiedEmail && (shouldNavigate || !isProfileLoading)) {
-      if (isMfaEnrollmentScreenActive) {
+      if (isMfaEnrollmentFlowActive) {
         if (__DEV__) {
           console.log(
             '[AppContent Navigation] Holding on Login for MFA onboarding flow before MainRoot'
@@ -589,44 +645,49 @@ function AppContent() {
     navigationReady,
     navigationRef,
     token,
-    authState.getProfileData,
-    authState.isLoading,
-    authState.getProfileError,
+    getProfileData,
+    isLoading,
+    getProfileError,
     dispatch,
     beginMandatoryMfaGate,
+    explicitLogoutActive,
+    logoutCompletedAt,
   ]);
 
   useLayoutEffect(() => {
-    if (!navigationReady || !token || authState.isLoading) {
+    if (!navigationReady || !navigationRef.isReady()) {
       return;
     }
 
-    const profileData = authState.getProfileData;
-    if (!profileData?.emailVerified) {
-      return;
-    }
-    if (profileData?.isProfileCompleted !== true) {
+    const currentRoute = navigationRef.getCurrentRoute();
+    const currentRouteName = currentRoute?.name;
+    const currentRouteParams = (currentRoute?.params ?? {}) as any;
+    const shouldBeginMfaOnboarding = shouldBeginMandatoryMfaOnboarding({
+      navigationReady,
+      userToken: token,
+      isProfileLoading: isLoading,
+      currentRouteName,
+      currentRouteParams,
+      getProfileData,
+      logoutPending,
+      logoutCompletedAt,
+    });
+
+    if (!shouldBeginMfaOnboarding || explicitLogoutActive) {
       return;
     }
 
-    if (profileData?.mfaConfig?.isMfaActive) {
-      return;
-    }
-
-    const currentRouteName = navigationRef.getCurrentRoute()?.name;
-    const feedLandingRoutes = new Set(['Home', 'HomeTab', 'Main', 'MainRoot']);
-    if (!currentRouteName || !feedLandingRoutes.has(currentRouteName)) {
-      return;
-    }
-
-    beginMandatoryMfaGate(profileData).catch(() => undefined);
+    beginMandatoryMfaGate(getProfileData).catch(() => undefined);
   }, [
     navigationReady,
     token,
-    authState.isLoading,
-    authState.getProfileData,
+    isLoading,
+    getProfileData,
     navigationRef,
     beginMandatoryMfaGate,
+    explicitLogoutActive,
+    logoutCompletedAt,
+    logoutPending,
   ]);
 
   const linkingConfig: LinkingOptions<MainStackParamList>['config'] = {
@@ -856,6 +917,7 @@ function AppContent() {
             }
 
             await queueRemoteNotificationPayload(payload);
+            emitNotificationRefresh();
           });
 
     return () => {
@@ -1263,6 +1325,14 @@ function AppContent() {
       border: '#1B1B1B',
     },
   };
+  const getAndroidAuthRouteOptions = (backgroundColor: string) =>
+    Platform.OS === 'android'
+      ? {
+          statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+          statusBarColor: backgroundColor,
+          statusBarTranslucent: false,
+        }
+      : {};
   // Early return after all hooks have been called
   if (!authChecked && initializing) {
     return null;
@@ -1399,7 +1469,14 @@ function AppContent() {
               component={Intro}
               options={{
                 headerShown: false,
-                ...(Platform.OS === 'android' && { animation: 'slide_from_right' }),
+                ...(Platform.OS === 'android'
+                  ? {
+                      animation: 'slide_from_right',
+                      ...getAndroidAuthRouteOptions(
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
+                      ),
+                    }
+                  : {}),
               }}
             />
             <MainStack.Screen
@@ -1412,6 +1489,9 @@ function AppContent() {
                 ...(Platform.OS === 'android' && {
                   headerShown: false,
                   animation: 'slide_from_right',
+                  ...getAndroidAuthRouteOptions(
+                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
+                  ),
                 }),
               }}
             />
@@ -1430,9 +1510,7 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
-                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                      statusBarColor:
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      ...getAndroidAuthRouteOptions(Colors.neutral[700]),
                     }),
               }}
             />
@@ -1452,6 +1530,7 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      ...getAndroidAuthRouteOptions(Colors.neutral[700]),
                     }),
               }}
             />
@@ -1470,6 +1549,9 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      ...getAndroidAuthRouteOptions(
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
+                      ),
                     }),
               }}
             />
@@ -1488,6 +1570,9 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      ...getAndroidAuthRouteOptions(
+                        scheme === 'dark' ? darkTheme.colors.background : Colors.neutral[700]
+                      ),
                     }),
               })}
             />

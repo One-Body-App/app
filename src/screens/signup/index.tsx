@@ -29,6 +29,7 @@ import { button } from '@/src/styles/buttons';
 // Logic & Types
 import {
   sendVerificationEmail as sendVerificationEmailAction,
+  getProfile,
   signUp,
   setLoginData,
 } from '@/src/redux/actions/AuthActions';
@@ -48,6 +49,7 @@ import {
   getAppleIdToken,
   getGoogleIdToken,
 } from '@/services/socialAuth';
+import { clearPendingAccountType, savePendingAccountType } from '@/src/services/accountTypeStorage';
 import type { MfaChallengeResponse } from '@/services/login';
 import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
@@ -260,6 +262,7 @@ function SignupForm({ navigation, route }: Props) {
   useEffect(() => {
     if (accountType) {
       dispatch(setAccountType(accountType));
+      savePendingAccountType(accountType).catch(() => undefined);
     }
   }, [accountType, dispatch]);
 
@@ -478,6 +481,11 @@ function SignupForm({ navigation, route }: Props) {
       dispatch(setLoader(true));
       setSocialLoading(true);
       try {
+        if (accountType) {
+          dispatch(setAccountType(accountType));
+          await savePendingAccountType(accountType);
+        }
+
         const tokenResult =
           provider === 'google' ? await getGoogleIdToken() : await getAppleIdToken();
 
@@ -499,14 +507,33 @@ function SignupForm({ navigation, route }: Props) {
         });
 
         if (res.status === 200 && res.response?.mfaRequired) {
+          if (!res.response.isNewUser) {
+            await clearPendingAccountType();
+          }
           navigation.replace('Login', {
             initialMfaChallenge: res.response as MfaChallengeResponse,
             prefillEmail: tokenResult.details?.email ?? state.email,
+            socialSignupAccountType: res.response.isNewUser ? accountType : undefined,
           });
           return;
         }
 
         if (res.status === 200 && res.response?.tokens?.accessToken) {
+          if (res.response.isNewUser && accountType) {
+            dispatch(
+              getProfile.Success({
+                token: res.response.tokens.accessToken,
+                email: tokenResult.details?.email ?? state.email,
+                emailVerified: true,
+                accountType,
+                isProfileCompleted: false,
+              })
+            );
+            await clearPendingAccountType();
+          }
+          if (!res.response.isNewUser) {
+            await clearPendingAccountType();
+          }
           dispatch(setLoginData({ token: res.response.tokens.accessToken }));
           navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
           return;

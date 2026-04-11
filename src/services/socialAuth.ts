@@ -1,6 +1,5 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
-import { LoginManager } from 'react-native-fbsdk-next';
 import { ApiCall } from './api';
 import { AuthTokens, saveAuthTokens } from './authTokens';
 import { GOOGLE_LOGIN_CLIENT_ID } from './constants';
@@ -52,11 +51,32 @@ const persistTokensSafely = async (tokens?: AuthTokens) => {
 
 let googleConfigured = false;
 
+const getGoogleWebClientId = () => {
+  const rawValue = GOOGLE_LOGIN_CLIENT_ID?.trim() ?? '';
+  if (!rawValue) {
+    return '';
+  }
+
+  const clientIds = rawValue
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (clientIds.length !== 1) {
+    throw new Error(
+      'Google Sign-In is misconfigured. GOOGLE_LOGIN_CLIENT_ID must be a single web client ID.'
+    );
+  }
+
+  return clientIds[0];
+};
+
 export const ensureGoogleSigninConfigured = () => {
   if (googleConfigured) return;
-  if (GOOGLE_LOGIN_CLIENT_ID) {
+  const webClientId = getGoogleWebClientId();
+  if (webClientId) {
     GoogleSignin.configure({
-      webClientId: GOOGLE_LOGIN_CLIENT_ID,
+      webClientId,
     });
   }
   googleConfigured = true;
@@ -74,7 +94,7 @@ const createNonce = (length = 32) => {
 export const getGoogleIdToken = async (): Promise<SocialTokenResult> => {
   try {
     ensureGoogleSigninConfigured();
-    if (!GOOGLE_LOGIN_CLIENT_ID) {
+    if (!getGoogleWebClientId()) {
       return { idToken: undefined };
     }
 
@@ -171,14 +191,18 @@ export const exchangeSocialToken = async (params: {
   return res;
 };
 
-const runBestEffortProviderSignOut = async (signOutStep: () => Promise<unknown> | unknown) => {
+const runBestEffortProviderSignOut = async <T>(
+  signOutStep: () => Promise<T> | T
+): Promise<T | undefined> => {
   try {
-    await signOutStep();
+    return await signOutStep();
   } catch (error) {
     if (__DEV__) {
       console.log('[Auth Logout] Provider sign-out failed', error);
     }
   }
+
+  return undefined;
 };
 
 export const signOutSocialProviders = async () => {
@@ -190,7 +214,9 @@ export const signOutSocialProviders = async () => {
     }
   }
 
-  await runBestEffortProviderSignOut(() => GoogleSignin.revokeAccess());
-  await runBestEffortProviderSignOut(() => GoogleSignin.signOut());
-  await runBestEffortProviderSignOut(() => LoginManager.logOut());
+  const hasGoogleSession = await runBestEffortProviderSignOut(() => GoogleSignin.isSignedIn());
+  if (hasGoogleSession) {
+    await runBestEffortProviderSignOut(() => GoogleSignin.revokeAccess());
+    await runBestEffortProviderSignOut(() => GoogleSignin.signOut());
+  }
 };

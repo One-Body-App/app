@@ -922,6 +922,7 @@ function SocialItem({
                   color: colors.text,
                   marginBottom: spacing.x8,
                   flexGrow: 1,
+                  fontSize: 15,
                 }}
               />
             </Pressable>

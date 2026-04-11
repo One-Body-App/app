@@ -1712,6 +1712,10 @@ function Home({ navigation, route }: Props) {
     shouldRunHomeFeedIntro,
   ]);
 
+  const tabInactiveColor = dark ? 'rgba(230,234,236,0.65)' : BRAND.gray800;
+  const tabActiveColor = dark ? '#126b87' : BRAND.primaryDark;
+  const tabUnderlineColor = dark ? '#126b87' : BRAND.primaryDark;
+
   const renderTabs = useCallback(
     (containerStyle?: StyleProp<ViewStyle>) => (
       <View style={[styles.tabContainer, containerStyle]}>
@@ -1738,16 +1742,26 @@ function Home({ navigation, route }: Props) {
                 }}
               >
                 <View
-                  style={[styles.tabLabelUnderline, isActive && styles.tabLabelUnderlineSelected]}
+                  style={[
+                    styles.tabLabelUnderline,
+                    isActive && styles.tabLabelUnderlineSelected,
+                    isActive && { borderBottomColor: tabUnderlineColor },
+                  ]}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                    <StyledText
+                      style={[
+                        styles.tabText,
+                        { color: isActive ? tabActiveColor : tabInactiveColor },
+                        isActive && styles.tabTextSelected,
+                      ]}
+                    >
                       {feedLabel}
                     </StyledText>
                     {isActive && (
                       <ArrowDown2
                         size={14}
-                        color={BRAND.primaryDark}
+                        color={tabUnderlineColor}
                         style={{ marginLeft: 4 }}
                         variant="Bold"
                       />
@@ -1765,9 +1779,19 @@ function Home({ navigation, route }: Props) {
               onPress={() => handleTabChange(value)}
             >
               <View
-                style={[styles.tabLabelUnderline, isActive && styles.tabLabelUnderlineSelected]}
+                style={[
+                  styles.tabLabelUnderline,
+                  isActive && styles.tabLabelUnderlineSelected,
+                  isActive && { borderBottomColor: tabUnderlineColor },
+                ]}
               >
-                <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                <StyledText
+                  style={[
+                    styles.tabText,
+                    { color: isActive ? tabActiveColor : tabInactiveColor },
+                    isActive && styles.tabTextSelected,
+                  ]}
+                >
                   {label}
                 </StyledText>
               </View>
@@ -1776,7 +1800,14 @@ function Home({ navigation, route }: Props) {
         })}
       </View>
     ),
-    [feedOptions.type, handleTabChange, toggleFeedSubType]
+    [
+      feedOptions.type,
+      handleTabChange,
+      tabActiveColor,
+      tabInactiveColor,
+      tabUnderlineColor,
+      toggleFeedSubType,
+    ]
   );
 
   const renderHeader = useCallback(
@@ -1818,11 +1849,11 @@ function Home({ navigation, route }: Props) {
                     width: 32,
                     height: 32,
                     borderRadius: 16,
-                    backgroundColor: BRAND.gray200,
+                    backgroundColor: dark ? '#f6f6f7' : BRAND.gray200,
                   }}
                 />
               ) : (
-                <ProfileFill width={32} height={32} color="#126b87" />
+                <ProfileFill width={32} height={32} color={dark ? '#f6f6f7' : '#126b87'} />
               )}
             </TouchableOpacity>
           </View>
@@ -1938,11 +1969,11 @@ function Home({ navigation, route }: Props) {
                     width: 32,
                     height: 32,
                     borderRadius: 16,
-                    backgroundColor: BRAND.gray200,
+                    backgroundColor: dark ? '#f6f6f7' : BRAND.gray200,
                   }}
                 />
               ) : (
-                <ProfileFill width={32} height={32} color="#126b87" />
+                <ProfileFill width={32} height={32} color={dark ? '#f6f6f7' : '#126b87'} />
               )}
             </TouchableOpacity>
           </View>

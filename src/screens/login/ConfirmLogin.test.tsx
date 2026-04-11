@@ -6,6 +6,11 @@ import ConfirmLogin from './ConfirmLogin';
 const mockDispatch = jest.fn();
 const mockLogoutAction = jest.fn(() => ({ type: 'LOGOUT' }));
 const mockNavigationReset = jest.fn();
+const mockApiCall = jest.fn();
+const mockAuthState = {
+  userToken: '',
+  getProfileData: null as any,
+};
 
 function mockButton({ text, onPress }: any) {
   return React.createElement(TouchableOpacity, { onPress }, React.createElement(Text, null, text));
@@ -15,10 +20,7 @@ jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
   useSelector: (selector: (state: unknown) => unknown) =>
     selector({
-      auth: {
-        userToken: '',
-        getProfileData: null,
-      },
+      auth: mockAuthState,
     }),
 }));
 
@@ -38,6 +40,7 @@ jest.mock('@react-native-community/geolocation', () => ({
 jest.mock('@/src/redux/actions/AuthActions', () => ({
   getProfile: {
     Request: jest.fn((params) => ({ type: 'GET_PROFILE_REQUEST', ...params })),
+    Success: jest.fn((payload) => ({ type: 'GET_PROFILE_SUCCESS', payload })),
   },
   logout: (...args: unknown[]) => mockLogoutAction(...args),
   sendVerificationEmail: {
@@ -46,7 +49,7 @@ jest.mock('@/src/redux/actions/AuthActions', () => ({
 }));
 
 jest.mock('@/src/services/api', () => ({
-  ApiCall: jest.fn(),
+  ApiCall: (...args: unknown[]) => mockApiCall(...args),
 }));
 
 jest.mock('@/src/services/notification/pushNotificationService', () => ({
@@ -67,6 +70,8 @@ jest.mock('@/components/Button', () => ({
 describe('ConfirmLogin logout action', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthState.userToken = '';
+    mockAuthState.getProfileData = null;
   });
 
   it('dispatches the shared logout action without resetting navigation inline', () => {
@@ -94,5 +99,51 @@ describe('ConfirmLogin logout action', () => {
     expect(mockLogoutAction).toHaveBeenCalled();
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'LOGOUT' });
     expect(mockNavigationReset).not.toHaveBeenCalled();
+  });
+
+  it('optimistically marks email verified after a successful deep link verification', async () => {
+    mockAuthState.userToken = 'access-token';
+    mockAuthState.getProfileData = {
+      _id: 'user-1',
+      email: 'person@example.com',
+      emailVerified: false,
+      isProfileCompleted: false,
+    };
+    mockApiCall.mockResolvedValue({ status: 200, response: true });
+
+    await act(async () => {
+      TestRenderer.create(
+        <ConfirmLogin
+          route={
+            {
+              key: 'ConfirmLogin',
+              name: 'ConfirmLogin',
+              params: { token: 'verify-token', prefillEmail: 'person@example.com' },
+            } as any
+          }
+          navigation={{ reset: mockNavigationReset } as any}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(mockApiCall).toHaveBeenCalledWith({
+      route: 'auth/verify-email',
+      verb: 'post',
+      params: { token: 'verify-token' },
+    });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'GET_PROFILE_SUCCESS',
+        payload: expect.objectContaining({
+          emailVerified: true,
+          email: 'person@example.com',
+        }),
+      })
+    );
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'GET_PROFILE_REQUEST',
+      token: 'access-token',
+    });
   });
 });

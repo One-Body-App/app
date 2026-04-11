@@ -82,7 +82,6 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         ...state,
         // otpToken:action.data.token,
         userProfile: action.data,
-        ...resetLogoutState,
       };
 
     case ACTIONS.FETCH_OTP:
@@ -109,14 +108,12 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userProfile: action.data,
-        ...resetLogoutState,
       };
 
     case ACTIONS.UPDATE_USER:
       return {
         ...state,
         userData: action.data,
-        ...resetLogoutState,
       };
     case ACTIONS.FIRST_LUNCH:
       return {
@@ -259,7 +256,6 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         getProfileError: null,
         isLoading: false,
         getProfileData: action.payload,
-        ...resetLogoutState,
       };
     case GetProfile.FAILED:
       return {

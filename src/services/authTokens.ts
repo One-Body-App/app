@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
 };
 const AUTH_TOKEN_SERVICE = 'com.onebody.auth.tokens';
 const AUTH_TOKEN_USERNAME = 'onebody';
+const AUTH_TOKEN_SERVICE_PREFIXES = ['com.onebody.auth', AUTH_TOKEN_SERVICE];
 
 export type AuthTokens = {
   accessToken: string;
@@ -99,6 +100,62 @@ async function writeSecureTokens(tokens: StoredAuthTokens): Promise<boolean> {
   }
 }
 
+async function getAuthTokenServices(): Promise<string[]> {
+  try {
+    const services = await Keychain.getAllGenericPasswordServices();
+    const matchingServices = services.filter((service) =>
+      AUTH_TOKEN_SERVICE_PREFIXES.some(
+        (prefix) => service === prefix || service.startsWith(`${prefix}.`)
+      )
+    );
+
+    return Array.from(new Set([AUTH_TOKEN_SERVICE, ...matchingServices]));
+  } catch {
+    return [AUTH_TOKEN_SERVICE];
+  }
+}
+
+async function invalidateSecureTokens(): Promise<void> {
+  try {
+    await Keychain.setGenericPassword(AUTH_TOKEN_USERNAME, '{}', {
+      service: AUTH_TOKEN_SERVICE,
+      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+  } catch {
+    // ignore secure storage overwrite failures
+  }
+}
+
+async function clearSecureTokens(): Promise<void> {
+  const services = await getAuthTokenServices();
+
+  await Promise.all(
+    services.map(async (service) => {
+      try {
+        await Keychain.resetGenericPassword({ service });
+      } catch {
+        // ignore service-specific cleanup failures
+      }
+    })
+  );
+
+  try {
+    await Keychain.resetGenericPassword();
+  } catch {
+    // ignore default-service cleanup failures
+  }
+
+  if (await readSecureTokens()) {
+    await invalidateSecureTokens();
+
+    try {
+      await Keychain.resetGenericPassword({ service: AUTH_TOKEN_SERVICE });
+    } catch {
+      // ignore final cleanup failures after invalidation
+    }
+  }
+}
+
 export async function loadAuthTokens(): Promise<StoredAuthTokens | null> {
   const secure = await readSecureTokens();
   if (secure) {
@@ -138,11 +195,8 @@ export async function saveAuthTokens(tokens: AuthTokens): Promise<StoredAuthToke
 }
 
 export async function clearAuthTokens(): Promise<void> {
-  try {
-    await Keychain.resetGenericPassword({ service: AUTH_TOKEN_SERVICE });
-  } catch {
-    // ignore secure storage cleanup failures
-  }
+  inFlightRefresh = null;
+  await clearSecureTokens();
   await clearLegacyTokens();
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,13 @@ import {
   useColorScheme,
   Platform,
   Dimensions,
+  Animated,
+  Easing,
+  type LayoutChangeEvent,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { StackScreenProps } from '@react-navigation/stack';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import {
@@ -22,6 +27,22 @@ import {
 type Props = StackScreenProps<SettingsStackParamsList, 'CreatorSuccess'>;
 
 const { width } = Dimensions.get('window');
+const CONFETTI_COUNT = 90;
+const CONFETTI_EXPLOSION_SPEED = 350;
+const CONFETTI_FALL_SPEED = 2600;
+const CONFETTI_POST_BLAST_BUFFER_MS = 100;
+const CONFETTI_REVEAL_DELAY_MS = CONFETTI_EXPLOSION_SPEED + CONFETTI_POST_BLAST_BUFFER_MS;
+const PULSE_STEP_DURATION_MS = 18000;
+const CONFETTI_COLORS = [
+  '#032F3C',
+  '#126B87',
+  '#41899F',
+  '#71A6B7',
+  '#12D2D9',
+  '#41DBE1',
+  '#89E9EC',
+  '#E6EAEC',
+];
 
 // --- Dynamic Brand Palette ---
 const getThemeColors = (isDark: boolean) => ({
@@ -39,6 +60,117 @@ const getThemeColors = (isDark: boolean) => ({
 function CreatorSubmitSuccess({ navigation }: Props) {
   const isDark = useColorScheme() === 'dark';
   const colors = getThemeColors(isDark);
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showDelayedSuccessMark, setShowDelayedSuccessMark] = useState(false);
+  const [iconCenter, setIconCenter] = useState<{ x: number; y: number } | null>(null);
+  const [isCelebrationActive, setIsCelebrationActive] = useState(false);
+  const [focusCycle, setFocusCycle] = useState(0);
+
+  const clearRevealTimeout = useCallback(() => {
+    if (revealTimeoutRef.current) {
+      clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+  }, []);
+
+  const stopPulseLoop = useCallback(() => {
+    pulseLoopRef.current?.stop();
+    pulseLoopRef.current = null;
+    pulseAnim.stopAnimation();
+    pulseAnim.setValue(0);
+  }, [pulseAnim]);
+
+  const startPulseLoop = useCallback(() => {
+    stopPulseLoop();
+    pulseLoopRef.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: PULSE_STEP_DURATION_MS,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: PULSE_STEP_DURATION_MS,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseLoopRef.current.start();
+  }, [pulseAnim, stopPulseLoop]);
+
+  const resetCelebration = useCallback(() => {
+    clearRevealTimeout();
+    stopPulseLoop();
+    setShowDelayedSuccessMark(false);
+    setIsCelebrationActive(false);
+  }, [clearRevealTimeout, stopPulseLoop]);
+
+  useFocusEffect(
+    useCallback(() => {
+      resetCelebration();
+      setIsCelebrationActive(true);
+      setFocusCycle((value) => value + 1);
+
+      return () => {
+        resetCelebration();
+      };
+    }, [resetCelebration])
+  );
+
+  const handleConfettiStart = useCallback(() => {
+    clearRevealTimeout();
+    revealTimeoutRef.current = setTimeout(() => {
+      setShowDelayedSuccessMark(true);
+      startPulseLoop();
+    }, CONFETTI_REVEAL_DELAY_MS);
+  }, [clearRevealTimeout, startPulseLoop]);
+
+  const handleIconStageLayout = useCallback((event: LayoutChangeEvent) => {
+    const { x, y, width: layoutWidth, height: layoutHeight } = event.nativeEvent.layout;
+    const nextCenter = {
+      x: x + layoutWidth / 2,
+      y: y + layoutHeight / 2,
+    };
+
+    setIconCenter((current) => {
+      if (current && current.x === nextCenter.x && current.y === nextCenter.y) {
+        return current;
+      }
+
+      return nextCenter;
+    });
+  }, []);
+
+  // Interpolations for a radiating ripple effect
+  const checkmarkScale = pulseAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.05, 1],
+  });
+
+  const circleSmallScale = pulseAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.1, 1],
+  });
+
+  const circleMediumScale = pulseAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.15, 1],
+  });
+
+  const circleLargeScale = pulseAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.2, 1],
+  });
+
+  const circleOpacity = pulseAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 0.6, 1],
+  });
 
   const onReturnHome = () => {
     navigation.reset({
@@ -61,42 +193,110 @@ function CreatorSubmitSuccess({ navigation }: Props) {
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <MaterialCommunityIcons name="chevron-left" size={32} color={colors.primary} />
+            <MaterialCommunityIcons name="chevron-left" size={32} color={colors.textMain} />
           </TouchableOpacity>
         </View>
         {Platform.OS === 'ios' ? (
           <View style={styles.headerCenterWrap} pointerEvents="none">
-            <Text style={styles.headerTitle}>Creator Application</Text>
+            <Text style={[styles.headerTitle, { color: colors.textMain }]}>
+              Creator Application
+            </Text>
           </View>
         ) : (
           <View style={styles.headerTitleAndroidWrap}>
-            <Text style={styles.headerTitle}>Creator Application</Text>
+            <Text style={[styles.headerTitle, { color: colors.textMain }]}>
+              Creator Application
+            </Text>
           </View>
         )}
-        <View style={styles.headerSideSlot}>
-          <Text style={[styles.headerStepText, { color: colors.textMuted }]}>STEP 4 OF 4</Text>
-        </View>
+        <View style={styles.headerSideSlot} />
       </View>
 
       <View style={styles.mainContent}>
-        {/* Background concentric circles */}
-        <View style={styles.circlesWrapper} pointerEvents="none">
-          <View style={[styles.circleLarge, { borderColor: colors.circleBorder }]}>
-            <View style={[styles.circleMedium, { borderColor: colors.circleBorder }]}>
-              <View style={[styles.circleSmall, { borderColor: colors.circleBorder }]} />
-            </View>
+        {isCelebrationActive && iconCenter && focusCycle > 0 ? (
+          <View
+            style={styles.confettiLayer}
+            pointerEvents="none"
+            testID="creator-success-confetti-host"
+          >
+            <ConfettiCannon
+              key={focusCycle}
+              autoStart
+              colors={CONFETTI_COLORS}
+              count={CONFETTI_COUNT}
+              explosionSpeed={CONFETTI_EXPLOSION_SPEED}
+              fadeOut
+              fallSpeed={CONFETTI_FALL_SPEED}
+              onAnimationStart={handleConfettiStart}
+              origin={iconCenter}
+            />
           </View>
-        </View>
+        ) : null}
+
+        {showDelayedSuccessMark ? (
+          <View
+            style={styles.circlesWrapper}
+            pointerEvents="none"
+            testID="creator-success-pulse-rings"
+          >
+            <Animated.View
+              style={[
+                styles.circleLarge,
+                {
+                  borderColor: colors.circleBorder,
+                  transform: [{ scale: circleLargeScale }],
+                  opacity: circleOpacity,
+                },
+              ]}
+            >
+              <Animated.View
+                style={[
+                  styles.circleMedium,
+                  {
+                    borderColor: colors.circleBorder,
+                    transform: [{ scale: circleMediumScale }],
+                  },
+                ]}
+              >
+                <Animated.View
+                  style={[
+                    styles.circleSmall,
+                    {
+                      borderColor: colors.circleBorder,
+                      transform: [{ scale: circleSmallScale }],
+                    },
+                  ]}
+                />
+              </Animated.View>
+            </Animated.View>
+          </View>
+        ) : null}
 
         {/* Abstract background watermark */}
         <View style={styles.watermarkWrapper} pointerEvents="none">
           <MaterialCommunityIcons name="account-group" size={400} color={colors.accent} />
         </View>
 
-        {/* Success visual */}
         <View style={styles.successVisualContainer}>
-          <View style={[styles.iconGlow, { backgroundColor: colors.accent }]}>
-            <MaterialCommunityIcons name="check-bold" size={60} color={colors.background} />
+          <View
+            onLayout={handleIconStageLayout}
+            style={styles.iconStage}
+            testID="creator-success-icon-stage"
+          >
+            {showDelayedSuccessMark ? (
+              <Animated.View
+                style={[
+                  styles.iconGlow,
+                  {
+                    backgroundColor: colors.accent,
+                    transform: [{ scale: checkmarkScale }],
+                  },
+                ]}
+                testID="creator-success-delayed-checkmark"
+              >
+                <MaterialCommunityIcons name="check-bold" size={60} color={colors.background} />
+              </Animated.View>
+            ) : null}
           </View>
 
           <View style={styles.textContainer}>
@@ -110,15 +310,16 @@ function CreatorSubmitSuccess({ navigation }: Props) {
               ]}
             >
               <Text style={[styles.missionPillText, { color: colors.accent }]}>
-                MISSION ACCOMPLISHED
+                PROFILE REVIEW IN PROGRESS
               </Text>
             </View>
             <Text style={[styles.mainHeading, { color: colors.textMain }]}>
               Application Received!
             </Text>
             <Text style={[styles.subHeading, { color: colors.textMuted }]}>
-              Thank you for stepping up to serve the One Body community. Our team will review your
-              Creator application and be in touch soon.
+              Thank you for your heart to serve the One Body community. Our team is reviewing your
+              application to ensure alignment with our shared mission. Expect an update within 24-48
+              hours.
             </Text>
           </View>
         </View>
@@ -143,7 +344,7 @@ function CreatorSubmitSuccess({ navigation }: Props) {
               May God bless your ministry!
             </Text>
             <Text style={[styles.infoSub, { color: colors.textMuted }]}>
-              Expect a response in your inbox within 2-3 business days.
+              We look forward to partnering with you to build the Kingdom!
             </Text>
           </View>
         </View>
@@ -157,16 +358,13 @@ function CreatorSubmitSuccess({ navigation }: Props) {
         ]}
       >
         <TouchableOpacity
-          style={[styles.returnButton, { backgroundColor: colors.accent }]}
+          style={[styles.returnButton, { backgroundColor: colors.primary }]}
           activeOpacity={0.8}
           onPress={onReturnHome}
         >
-          <Text style={[styles.returnButtonText, { color: '#032F3C' }]}>RETURN TO FEED</Text>
-          <MaterialCommunityIcons name="chevron-right" size={20} color="#032F3C" />
+          <Text style={[styles.returnButtonText, { color: '#FFFFFF' }]}>Go Home</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={[styles.footerStatusText, { color: colors.textMuted }]}>
-          REVIEW STATUS IN PROFILE
-        </Text>
       </View>
     </SafeAreaView>
   );
@@ -207,16 +405,12 @@ const styles = StyleSheet.create({
     paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
-    color: '#12D2D9',
-    fontSize: 18,
+    fontSize: 24,
+    lineHeight: 32,
+    fontFamily: 'Rubik-Bold',
     fontWeight: '600',
+    letterSpacing: 0.3,
     textAlign: Platform.OS === 'android' ? 'left' : 'center',
-  },
-  headerStepText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textAlign: 'right',
   },
   mainContent: {
     flex: 1,
@@ -225,11 +419,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 100,
   },
+  confettiLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 4,
+  },
   circlesWrapper: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
     top: '10%',
+    zIndex: 1,
   },
   circleLarge: {
     width: width * 1.5,
@@ -264,13 +463,19 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     zIndex: 2,
   },
+  iconStage: {
+    width: 120,
+    height: 120,
+    marginBottom: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   iconGlow: {
     width: 120,
     height: 120,
     borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
     shadowColor: '#12D2D9',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
@@ -346,18 +551,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 56,
     borderRadius: 28,
-    marginBottom: 16,
   },
   returnButtonText: {
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.5,
     marginRight: 8,
-  },
-  footerStatusText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.5,
   },
 });
 

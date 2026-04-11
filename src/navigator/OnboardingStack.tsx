@@ -46,8 +46,15 @@ function OnboardingStack() {
         name="OnboardingIntro"
         component={OnboardingIntro}
         options={{
-          ...headerOptions,
+          ...(Platform.OS === 'ios' ? headerOptions : {}),
           headerShown: false,
+          ...(Platform.OS === 'android'
+            ? {
+                statusBarStyle: dark ? 'light' : 'dark',
+                statusBarColor: dark ? '#0D0D0D' : '#E6EAEC',
+                statusBarTranslucent: false,
+              }
+            : {}),
         }}
       />
       <Stack.Screen

@@ -32,6 +32,7 @@ import { disablePushNotifications } from '@/src/services/notification/pushNotifi
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import { signOutSocialProviders } from '@/services/socialAuth';
 import { RootState } from '../reducers/rootReducer';
+import { shouldAcceptProfileResult } from '@/src/utils/authFlow';
 
 const resolveProfileUpdateErrorMessage = (response: unknown) => {
   if (typeof response === 'string' && response.trim()) {
@@ -49,7 +50,25 @@ const resolveProfileUpdateErrorMessage = (response: unknown) => {
   return 'An error occurred during profile update';
 };
 
-function* updateProfileRequest(params: {
+const buildUpdatedProfilePayload = (
+  response: any,
+  token?: string,
+  accountType?: AccountType | 'organization'
+) => {
+  const updatedProfile = response?.userFind ?? response?.user ?? response;
+  if (!updatedProfile || typeof updatedProfile !== 'object') {
+    return null;
+  }
+
+  return {
+    token,
+    ...updatedProfile,
+    accountType: updatedProfile.accountType ?? accountType,
+    isProfileCompleted: resolveProfileCompleted(updatedProfile),
+  };
+};
+
+export function* updateProfileRequest(params: {
   data: {
     token: string;
     accountType: AccountType;
@@ -70,11 +89,26 @@ function* updateProfileRequest(params: {
     });
 
     if (res?.status == 200) {
+      const updatedProfile = buildUpdatedProfilePayload(
+        res?.response,
+        params.data.token,
+        params.data.accountType
+      );
+
+      if (updatedProfile) {
+        yield put(setProfile(updatedProfile));
+        yield put(getProfile.Success(updatedProfile));
+        yield put(setLoader(false));
+        if (params.data.go) {
+          params.data.go();
+        }
+        return;
+      }
+
       yield put(
         getProfile.Request({ token: params.data.token, accountType: params.data.accountType })
       );
 
-      // yield put(setLoader(false));
       if (params.data.go) {
         params.data.go();
       }
@@ -135,8 +169,8 @@ export function* loginSocialSaga() {
   yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
 }
 
-function* updateOrgProfileRequest(params: {
-  data: { data: Record<string, any> | undefined; token: string; go: () => void };
+export function* updateOrgProfileRequest(params: {
+  data: { data: Record<string, any> | undefined; token: string; go?: () => void };
   type: string;
 }) {
   try {
@@ -149,6 +183,22 @@ function* updateOrgProfileRequest(params: {
     });
 
     if (res?.status == 200) {
+      const updatedProfile = buildUpdatedProfilePayload(
+        res?.response,
+        params.data.token,
+        'organization'
+      );
+
+      if (updatedProfile) {
+        yield put(setProfile(updatedProfile));
+        yield put(getProfile.Success(updatedProfile));
+        yield put(setLoader(false));
+        if (params?.data?.go) {
+          params?.data?.go();
+        }
+        return;
+      }
+
       yield put(getProfile.Request({ token: params.data.token, accountType: 'organization' }));
       yield put(setLoader(false));
       if (params?.data?.go) {
@@ -471,7 +521,7 @@ const resolveProfileCompleted = (profile: any) => {
   return hasDob && hasLocation && hasInterests;
 };
 
-function* getProfileSaga(params: { pullSavedData: any; token: string; type: string }) {
+export function* getProfileSaga(params: { pullSavedData: any; token: string; type: string }) {
   try {
     if (__DEV__) {
       console.log('[getProfileSaga] Starting profile fetch', {
@@ -493,6 +543,26 @@ function* getProfileSaga(params: { pullSavedData: any; token: string; type: stri
       });
     }
 
+    const authState: RootState['auth'] = yield select((state: RootState) => state.auth);
+    const shouldUseProfileResult = shouldAcceptProfileResult({
+      currentToken: authState.userToken,
+      requestToken: params.token,
+      logoutPending: authState.logoutPending,
+      logoutCompletedAt: authState.logoutCompletedAt,
+    });
+
+    if (!shouldUseProfileResult) {
+      if (__DEV__) {
+        console.log('[getProfileSaga] Dropping stale profile response', {
+          requestTokenMatchesCurrent: authState.userToken === params.token,
+          logoutPending: authState.logoutPending,
+          logoutCompletedAt: authState.logoutCompletedAt,
+        });
+      }
+      yield put(setLoader(false));
+      return;
+    }
+
     if (res?.status === 200) {
       const responseData = res?.response ?? {};
       yield put(
@@ -507,6 +577,19 @@ function* getProfileSaga(params: { pullSavedData: any; token: string; type: stri
     }
     yield put(setLoader(false));
   } catch (e) {
+    const authState: RootState['auth'] = yield select((state: RootState) => state.auth);
+    const shouldUseProfileError = shouldAcceptProfileResult({
+      currentToken: authState.userToken,
+      requestToken: params.token,
+      logoutPending: authState.logoutPending,
+      logoutCompletedAt: authState.logoutCompletedAt,
+    });
+
+    if (!shouldUseProfileError) {
+      yield put(setLoader(false));
+      return;
+    }
+
     if (__DEV__) {
       console.log('[getProfileSaga] Profile fetch error:', e);
     }

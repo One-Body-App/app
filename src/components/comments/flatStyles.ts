@@ -19,7 +19,7 @@ const flatStyles = StyleSheet.create({
     gap: 2,
   },
   filterText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
   filterTextActive: {
@@ -54,32 +54,32 @@ const flatStyles = StyleSheet.create({
     marginTop: 2,
   },
   authorName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     flexShrink: 1,
   },
   authorHandle: {
-    fontSize: 13,
+    fontSize: 14,
     flexShrink: 1,
   },
   dot: {
     marginHorizontal: 6,
-    fontSize: 12,
+    fontSize: 13,
     opacity: 0.8,
   },
   time: {
-    fontSize: 13,
+    fontSize: 14,
     flexShrink: 1,
   },
   replyContext: {
     marginTop: 3,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
   },
   contentText: {
     marginTop: 4,
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
   },
   imageWrap: {
     marginTop: 10,
@@ -113,7 +113,7 @@ const flatStyles = StyleSheet.create({
   },
   reactionCount: {
     marginLeft: 6,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
   },
   commentThreadButton: {
@@ -122,7 +122,7 @@ const flatStyles = StyleSheet.create({
   },
   commentThreadCount: {
     marginLeft: 6,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
   },
   reactionPicker: {

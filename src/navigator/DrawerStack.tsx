@@ -24,17 +24,24 @@ import Saved from '../screens/main/saved';
 import ZoeChat from '../screens/main/zoeChat';
 import mainPageOptions from './global';
 import Home2Icon from '@/assets/icons/home2.svg';
+import { getDrawerNavMode } from '@/src/utils/authFlow';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
+
+function DrawerPlaceholderScreen() {
+  const { colors } = useTheme();
+
+  return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+}
 
 function DrawerNav() {
   const authState = useSelector((state: RootState) => state.auth);
   const dimensions = useWindowDimensions();
 
   const { dark, colors } = useTheme();
-  const isProfileCompleted = authState.getProfileData?.isProfileCompleted === true;
+  const drawerNavMode = getDrawerNavMode(authState);
 
-  if (isProfileCompleted) {
+  if (drawerNavMode === 'main') {
     let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';
 
     if (dimensions.width >= 768) {
@@ -179,7 +186,73 @@ function DrawerNav() {
     );
   }
 
-  return <OnboardingStack />;
+  if (drawerNavMode === 'onboarding') {
+    return <OnboardingStack />;
+  }
+
+  let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';
+
+  if (dimensions.width >= 768) {
+    drawerType = 'permanent';
+  } else if (Platform.OS === 'ios') {
+    drawerType = 'slide';
+  }
+
+  return (
+    <DrawerStack.Navigator
+      backBehavior="history"
+      screenOptions={{
+        drawerType,
+        swipeEnabled: false,
+        headerShown: false,
+      }}
+      drawerContent={() => <DrawerPlaceholderScreen />}
+    >
+      <DrawerStack.Screen
+        name="Main"
+        component={DrawerPlaceholderScreen}
+        options={{
+          title: 'Home',
+          drawerItemStyle: { display: 'none', height: 0 },
+        }}
+      />
+      <DrawerStack.Screen
+        name="ZoeAI"
+        component={DrawerPlaceholderScreen}
+        options={{
+          drawerItemStyle: { display: 'none', height: 0 },
+        }}
+      />
+      <DrawerStack.Screen
+        name="Saved"
+        component={DrawerPlaceholderScreen}
+        options={{
+          drawerItemStyle: { display: 'none', height: 0 },
+        }}
+      />
+      <DrawerStack.Screen
+        name="Connections"
+        component={DrawerPlaceholderScreen}
+        options={{
+          drawerItemStyle: { display: 'none', height: 0 },
+        }}
+      />
+      <DrawerStack.Screen
+        name="PrayerWall"
+        component={DrawerPlaceholderScreen}
+        options={{
+          drawerItemStyle: { display: 'none', height: 0 },
+        }}
+      />
+      <DrawerStack.Screen
+        name="Settings"
+        component={DrawerPlaceholderScreen}
+        options={{
+          drawerItemStyle: { display: 'none', height: 0 },
+        }}
+      />
+    </DrawerStack.Navigator>
+  );
 }
 
 export default DrawerNav;
