@@ -304,6 +304,15 @@ function Connected({ navigation }: Props) {
   const { colors, dark } = useTheme();
   const isFocused = useIsFocused();
 
+  const themedStyles = {
+    headerBorderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+    listItemBorderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+    userName: dark ? colors.text : OBPalette.grays.black,
+    userRole: dark ? OBPalette.grays[400] : OBPalette.grays[500],
+    removeButtonBg: dark ? OBPalette.grays[800] : OBPalette.grays[100],
+    removeButtonText: dark ? OBPalette.grays[300] : OBPalette.grays[600],
+  };
+
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') {
@@ -342,7 +351,12 @@ function Connected({ navigation }: Props) {
       ) : null}
       <View style={[styles.flex1, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
+        <View
+          style={[
+            styles.headerContainer,
+            { backgroundColor: colors.card, borderBottomColor: themedStyles.headerBorderColor },
+          ]}
+        >
           <GlassTabBar
             tabs={tabLabels}
             activeIndex={activeTabIndex}
@@ -387,7 +401,7 @@ function Connected({ navigation }: Props) {
                       },
                     });
                   }}
-                  style={styles.listItem}
+                  style={[styles.listItem, { borderBottomColor: themedStyles.listItemBorderColor }]}
                 >
                   <View style={styles.listItemContent}>
                     <View style={styles.imageWrapper}>
@@ -404,11 +418,17 @@ function Connected({ navigation }: Props) {
                     </View>
 
                     <View style={styles.userInfoWrapper}>
-                      <StyledText style={styles.userName} numberOfLines={1}>
+                      <StyledText
+                        style={[styles.userName, { color: themedStyles.userName }]}
+                        numberOfLines={1}
+                      >
                         {item?.name}
                       </StyledText>
                       {roleName ? (
-                        <StyledText style={styles.userRole} numberOfLines={1}>
+                        <StyledText
+                          style={[styles.userRole, { color: themedStyles.userRole }]}
+                          numberOfLines={1}
+                        >
                           {roleName}
                         </StyledText>
                       ) : null}
@@ -417,10 +437,20 @@ function Connected({ navigation }: Props) {
                     {filter === 'connected' ? (
                       <View style={styles.actionWrapper}>
                         <TouchableOpacity
-                          style={styles.removeButtonPill}
+                          style={[
+                            styles.removeButtonPill,
+                            { backgroundColor: themedStyles.removeButtonBg },
+                          ]}
                           onPress={() => handleUnSubscribe(item?._id, item?.name)}
                         >
-                          <StyledText style={styles.removeButtonText}>Remove</StyledText>
+                          <StyledText
+                            style={[
+                              styles.removeButtonText,
+                              { color: themedStyles.removeButtonText },
+                            ]}
+                          >
+                            Remove
+                          </StyledText>
                         </TouchableOpacity>
                       </View>
                     ) : null}

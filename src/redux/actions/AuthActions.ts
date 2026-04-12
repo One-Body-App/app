@@ -7,6 +7,7 @@ import {
   GetProfile,
   SignUp,
   SendVerificationEmail,
+  VerifyEmailToken,
 } from '../action-types';
 
 // --------------- ACTIONS ---------------
@@ -159,6 +160,24 @@ export const sendVerificationEmail = {
   Failed: (error: any) => ({
     type: SendVerificationEmail.FAILED,
     payload: error,
+  }),
+};
+
+export const verifyEmailToken = {
+  Request: (params: { verificationToken: string; prefillEmail?: string }) => ({
+    type: VerifyEmailToken.REQUEST,
+    ...params,
+  }),
+  Success: (data: any) => ({
+    type: VerifyEmailToken.SUCCESS,
+    payload: data,
+  }),
+  Failed: (error: any) => ({
+    type: VerifyEmailToken.FAILED,
+    payload: error,
+  }),
+  Reset: () => ({
+    type: VerifyEmailToken.RESET,
   }),
 };
 

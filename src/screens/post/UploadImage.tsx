@@ -27,6 +27,7 @@ import {
   matchFont,
   useCanvasRef,
   useImage,
+  type SkImage,
 } from '@shopify/react-native-skia';
 import RNFS from 'react-native-fs';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -164,10 +165,7 @@ const readImageDimensions = (image: { width: () => number; height: () => number 
   }
 };
 
-const makeOrientedImage = (
-  image: { width: () => number; height: () => number },
-  orientation?: number
-) => {
+const makeOrientedImage = (image: SkImage, orientation?: number) => {
   const normalizedOrientation = normalizeExifOrientation(orientation);
   if (!normalizedOrientation || normalizedOrientation === 1) {
     return image;

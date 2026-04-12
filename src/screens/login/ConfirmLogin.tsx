@@ -1,14 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, ScrollView, View, PermissionsAndroid } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
-import Geolocation from '@react-native-community/geolocation';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
   getProfile,
-  logout,
   sendVerificationEmail as sendVerificationEmailAction,
 } from '@/src/redux/actions/AuthActions';
 import { MainStackParamList } from '@/src/navigator/types';
@@ -18,23 +16,17 @@ import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { ApiCall } from '@/src/services/api';
-import { ensurePushPermission } from '@/src/services/notification/pushNotificationService';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
 function ConfirmLogin({ route }: Props) {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const profile = useSelector((state: RootState) => state.auth.getProfileData);
+  const isVerifying = useSelector((state: RootState) => state.auth.verifyEmailTokenPending);
+  const verificationError = useSelector((state: RootState) => state.auth.verifyEmailTokenError);
   const { dark, colors } = useTheme();
   const [isResending, setIsResending] = useState(false);
-  const [resendTargetEmail, setResendTargetEmail] = useState(route?.params?.prefillEmail ?? '');
-  const [verifyStatus, setVerifyStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>(
-    'idle'
-  );
-  const [verifyError, setVerifyError] = useState<string>('');
-  const verifyHandledRef = React.useRef(false);
-  const permissionsRequestedRef = React.useRef(false);
+  const [resendTargetEmail] = useState(route?.params?.prefillEmail ?? '');
 
   const palette = useMemo(
     () => ({
@@ -48,73 +40,6 @@ function ConfirmLogin({ route }: Props) {
     }),
     [dark]
   );
-
-  useEffect(() => {
-    const deepLinkToken = route?.params?.token;
-    if (!deepLinkToken) {
-      return;
-    }
-    if (verifyHandledRef.current) {
-      return;
-    }
-    // If the profile already shows emailVerified, the token was already consumed.
-    // Skip the API call — the auth guard will navigate to MainRoot once profile loads.
-    if (profile?.emailVerified) {
-      verifyHandledRef.current = true;
-      return;
-    }
-    verifyHandledRef.current = true;
-
-    const run = async () => {
-      try {
-        setVerifyStatus('verifying');
-        setVerifyError('');
-        const res = await ApiCall({
-          route: 'auth/verify-email',
-          verb: 'post',
-          params: { token: deepLinkToken },
-        });
-
-        if (res?.status === 200) {
-          setVerifyStatus('success');
-          dispatch(
-            getProfile.Success({
-              ...(profile ?? {}),
-              email: profile?.email ?? resendTargetEmail ?? undefined,
-              emailVerified: true,
-              isProfileCompleted: profile?.isProfileCompleted ?? false,
-            })
-          );
-          if (token) {
-            dispatch(getProfile.Request({ token }));
-          }
-        } else {
-          setVerifyStatus('failed');
-          setVerifyError(res?.response?.message ?? 'Verification failed. Please resend the email.');
-        }
-      } catch (e: any) {
-        setVerifyStatus('failed');
-        setVerifyError(e?.message ?? 'Verification failed. Please resend the email.');
-      }
-    };
-
-    run();
-  }, [dispatch, profile, profile?.emailVerified, resendTargetEmail, route?.params?.token, token]);
-
-  useEffect(() => {
-    if (profile?.email && profile.email !== resendTargetEmail) {
-      setResendTargetEmail(profile.email);
-    }
-  }, [profile?.email, resendTargetEmail]);
-
-  useEffect(() => {
-    if (route?.params?.token && verifyStatus !== 'success' && verifyStatus !== 'failed') {
-      return;
-    }
-    if (token) {
-      dispatch(getProfile.Request({ token }));
-    }
-  }, [dispatch, route?.params?.token, token, verifyStatus]);
 
   const resendVerificationEmail = useCallback(async () => {
     if (!token && !resendTargetEmail) {
@@ -149,39 +74,6 @@ function ConfirmLogin({ route }: Props) {
       dispatch(getProfile.Request({ token }));
     }
   }, [dispatch, token]);
-
-  useEffect(() => {
-    if (!profile?.emailVerified) {
-      return;
-    }
-    if (permissionsRequestedRef.current) {
-      return;
-    }
-    permissionsRequestedRef.current = true;
-
-    const requestPermissions = async () => {
-      try {
-        if (Platform.OS === 'android') {
-          await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, {
-            title: 'Allow location',
-            message: 'We use your city to help secure your account and content.',
-            buttonPositive: 'Allow',
-          });
-        } else {
-          await Geolocation.requestAuthorization();
-        }
-        await ensurePushPermission();
-      } catch (e) {
-        // ignore errors
-      }
-    };
-
-    requestPermissions();
-  }, [profile?.emailVerified]);
-
-  const signOut = useCallback(async () => {
-    dispatch(logout());
-  }, [dispatch]);
 
   return (
     <UserStepsLayout
@@ -229,38 +121,6 @@ function ConfirmLogin({ route }: Props) {
             padding: 16,
           }}
         >
-          {verifyStatus === 'success' ? (
-            <View
-              style={{
-                backgroundColor: dark ? 'rgba(18, 172, 123, 0.15)' : '#EDFFF9',
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 16,
-                borderWidth: 1,
-                borderColor: 'rgba(18, 172, 123, 0.25)',
-              }}
-            >
-              <StyledText
-                style={{
-                  fontFamily: 'Rubik',
-                  fontSize: 14,
-                  lineHeight: 22,
-                  color: '#12AC7B',
-                }}
-              >
-                Email verified. You can return to the app.
-              </StyledText>
-            </View>
-          ) : null}
-
-          {verifyStatus === 'failed' ? (
-            <View style={{ marginBottom: 16 }}>
-              <StyledText style={{ color: '#DC2C10', fontSize: 12, fontFamily: 'Lato' }}>
-                {verifyError}
-              </StyledText>
-            </View>
-          ) : null}
-
           {route?.params?.showConfirmationEmailMessage ? (
             <View
               style={{
@@ -285,30 +145,52 @@ function ConfirmLogin({ route }: Props) {
             </View>
           ) : null}
 
-          {verifyStatus === 'success' ? (
-            <>
-              <Button
-                text="Continue"
-                btnStyle={{
-                  backgroundColor: palette.primary,
-                  height: 56,
-                  width: '100%',
-                  borderRadius: 999,
-                  justifyContent: 'center',
-                  alignItems: 'center',
+          {isVerifying ? (
+            <View
+              style={{
+                backgroundColor: dark ? 'rgba(18, 107, 135, 0.12)' : '#EDF7FB',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(18, 107, 135, 0.25)',
+              }}
+            >
+              <StyledText
+                style={{
+                  fontFamily: 'Rubik',
+                  fontSize: 14,
+                  lineHeight: 22,
+                  color: palette.primary,
                 }}
-                btnTextStyle={{
-                  fontFamily: 'Lato',
-                  fontWeight: '600',
-                  fontSize: 18,
-                  color: '#FFF',
-                }}
-                onPress={refreshProfile}
-                disabled={!token}
-              />
+              >
+                Verifying your email...
+              </StyledText>
+            </View>
+          ) : null}
 
-              <View style={{ height: 12 }} />
-            </>
+          {verificationError ? (
+            <View
+              style={{
+                backgroundColor: dark ? 'rgba(255, 107, 107, 0.12)' : '#FFF2F2',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 107, 107, 0.25)',
+              }}
+            >
+              <StyledText
+                style={{
+                  fontFamily: 'Rubik',
+                  fontSize: 14,
+                  lineHeight: 22,
+                  color: Colors.errorFeedback[200],
+                }}
+              >
+                {verificationError}
+              </StyledText>
+            </View>
           ) : null}
 
           <Button
@@ -323,7 +205,7 @@ function ConfirmLogin({ route }: Props) {
             }}
             btnTextStyle={{ fontFamily: 'Lato', fontWeight: '600', fontSize: 18, color: '#FFF' }}
             onPress={resendVerificationEmail}
-            disabled={isResending}
+            disabled={isResending || isVerifying}
           />
 
           <View style={{ height: 12 }} />
@@ -347,15 +229,7 @@ function ConfirmLogin({ route }: Props) {
               color: palette.primary,
             }}
             onPress={refreshProfile}
-          />
-
-          <View style={{ height: 8 }} />
-
-          <Button
-            text="Back to sign in"
-            btnStyle={{ backgroundColor: 'transparent' }}
-            btnTextStyle={{ fontFamily: 'Lato', fontSize: 16, color: palette.primary }}
-            onPress={signOut}
+            disabled={isVerifying}
           />
         </View>
         <View style={{ height: spacing.x24 }} />

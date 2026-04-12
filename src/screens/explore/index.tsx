@@ -482,7 +482,11 @@ function Explore({ navigation }: Props) {
     [chipOffset]
   );
 
-  const userAvatar = userProfile?.profileImage ?? '';
+  const userAvatar =
+    (userProfile as any)?.avatar ??
+    (userProfile as any)?.profile_image ??
+    userProfile?.profileImage ??
+    '';
 
   const serveGoSearchPool = useMemo(() => {
     const go = (CONNECT_PORTAL_LIST_DATA['Go!'] ?? []).map((item) => ({
@@ -572,7 +576,11 @@ function Explore({ navigation }: Props) {
         _id: fallbackUserId,
         name: raw.userData?.name ?? 'Unknown user',
         username: raw.userData?.username ?? 'unknown',
-        profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+        profileImage:
+          raw.userData?.profileImage ||
+          raw.userData?.avatar ||
+          raw.userData?.profile_image ||
+          NO_PROFILE_IMAGE,
         accountType: raw.userData?.accountType ?? AccountType.individual,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
@@ -603,7 +611,11 @@ function Explore({ navigation }: Props) {
         name: raw.userData?.name ?? 'One Body',
         username: raw.userData?.username ?? 'onebody',
         accountType: raw.userData?.accountType ?? AccountType.organization,
-        profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+        profileImage:
+          raw.userData?.profileImage ||
+          raw.userData?.avatar ||
+          raw.userData?.profile_image ||
+          NO_PROFILE_IMAGE,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
     } as ArticleType;
@@ -627,7 +639,11 @@ function Explore({ navigation }: Props) {
         name: raw.userData?.name ?? 'Unknown user',
         username: raw.userData?.username ?? 'unknown',
         accountType: raw.userData?.accountType ?? AccountType.individual,
-        profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+        profileImage:
+          raw.userData?.profileImage ||
+          raw.userData?.avatar ||
+          raw.userData?.profile_image ||
+          NO_PROFILE_IMAGE,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
       answered: Boolean(raw.answered),
@@ -665,7 +681,11 @@ function Explore({ navigation }: Props) {
         name: raw.userData?.name ?? 'Unknown user',
         username: raw.userData?.username ?? 'unknown',
         accountType: raw.userData?.accountType ?? AccountType.individual,
-        profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+        profileImage:
+          raw.userData?.profileImage ||
+          raw.userData?.avatar ||
+          raw.userData?.profile_image ||
+          NO_PROFILE_IMAGE,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
       created: toDate(raw.created),
@@ -914,7 +934,11 @@ function Explore({ navigation }: Props) {
                   _id: String(raw.userData?._id ?? ''),
                   name: raw.userData?.name ?? 'Unknown',
                   username: raw.userData?.username ?? 'unknown',
-                  profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+                  profileImage:
+                    raw.userData?.profileImage ||
+                    raw.userData?.avatar ||
+                    raw.userData?.profile_image ||
+                    NO_PROFILE_IMAGE,
                   accountType: raw.userData?.accountType ?? AccountType.individual,
                 },
                 created: toDate(raw.created),
@@ -965,7 +989,12 @@ function Explore({ navigation }: Props) {
       setNewCreatorsItems(
         users.map((u: any) => ({
           id: u._id ?? u.id ?? String(Math.random()),
-          avatarUri: u.profileImage ?? u.profile?.profileImage ?? NO_PROFILE_IMAGE,
+          avatarUri:
+            u.profileImage ||
+            u.avatar ||
+            u.profile_image ||
+            u.profile?.profileImage ||
+            NO_PROFILE_IMAGE,
           name: u.name ?? u.username ?? 'Unknown',
           isFollowing: false,
           badge: u.badgesData?.[0]?.title,
@@ -1009,7 +1038,11 @@ function Explore({ navigation }: Props) {
                 name: raw.userData?.name ?? 'Unknown',
                 username: raw.userData?.username ?? 'unknown',
                 accountType: raw.userData?.accountType ?? AccountType.individual,
-                profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+                profileImage:
+                  raw.userData?.profileImage ||
+                  raw.userData?.avatar ||
+                  raw.userData?.profile_image ||
+                  NO_PROFILE_IMAGE,
               },
               answered: Boolean(raw.answered),
               images: resolveImageList(raw),
@@ -1029,6 +1062,68 @@ function Explore({ navigation }: Props) {
     }
     setIsPrayerLoading(false);
   }, [token]);
+
+  const parseCityState = (address: string): string => {
+    const STATE_ABBREV: Record<string, string> = {
+      Alabama: 'AL',
+      Alaska: 'AK',
+      Arizona: 'AZ',
+      Arkansas: 'AR',
+      California: 'CA',
+      Colorado: 'CO',
+      Connecticut: 'CT',
+      Delaware: 'DE',
+      Florida: 'FL',
+      Georgia: 'GA',
+      Hawaii: 'HI',
+      Idaho: 'ID',
+      Illinois: 'IL',
+      Indiana: 'IN',
+      Iowa: 'IA',
+      Kansas: 'KS',
+      Kentucky: 'KY',
+      Louisiana: 'LA',
+      Maine: 'ME',
+      Maryland: 'MD',
+      Massachusetts: 'MA',
+      Michigan: 'MI',
+      Minnesota: 'MN',
+      Mississippi: 'MS',
+      Missouri: 'MO',
+      Montana: 'MT',
+      Nebraska: 'NE',
+      Nevada: 'NV',
+      'New Hampshire': 'NH',
+      'New Jersey': 'NJ',
+      'New Mexico': 'NM',
+      'New York': 'NY',
+      'North Carolina': 'NC',
+      'North Dakota': 'ND',
+      Ohio: 'OH',
+      Oklahoma: 'OK',
+      Oregon: 'OR',
+      Pennsylvania: 'PA',
+      'Rhode Island': 'RI',
+      'South Carolina': 'SC',
+      'South Dakota': 'SD',
+      Tennessee: 'TN',
+      Texas: 'TX',
+      Utah: 'UT',
+      Vermont: 'VT',
+      Virginia: 'VA',
+      Washington: 'WA',
+      'West Virginia': 'WV',
+      Wisconsin: 'WI',
+      Wyoming: 'WY',
+      'District of Columbia': 'DC',
+    };
+    const parts = address.split(',').map((p) => p.trim());
+    if (parts.length < 3) return address;
+    const city = parts[1];
+    const stateRaw = parts[2].replace(/\d+/g, '').trim();
+    const stateAbbrev = STATE_ABBREV[stateRaw] ?? stateRaw;
+    return `${city}, ${stateAbbrev}`;
+  };
 
   const fetchServeOpportunities = useCallback(
     async (location: { latitude: number; longitude: number } | null) => {
@@ -1064,7 +1159,10 @@ function Explore({ navigation }: Props) {
             title: job.title,
             organization: job.organizationName,
             opportunityType: job.opportunityType,
-            distance: miles !== null ? `${miles.toFixed(1)} mi` : job.address || 'Nearby',
+            distance:
+              miles !== null
+                ? `${miles.toFixed(1)} mi · ${parseCityState(job.address || '')}`
+                : parseCityState(job.address || '') || 'Nearby',
             distanceMiles: miles,
           }))
         );
@@ -1218,7 +1316,7 @@ function Explore({ navigation }: Props) {
       navigation.navigate('Main', {
         screen: 'ConnectTab',
         params: {
-          screen: 'ConnectMap',
+          screen: 'ConnectPortal',
           params: {
             initialTab: tab,
           },
@@ -1537,7 +1635,7 @@ function Explore({ navigation }: Props) {
               }}
             >
               <StyledText style={styles.featuredFollowText}>
-                {featuredVoice.isFollowing ? 'Following' : 'Follow'}
+                {featuredVoice.isFollowing ? 'Connected' : 'Connect'}
               </StyledText>
             </TouchableOpacity>
           </View>
@@ -1594,7 +1692,7 @@ function Explore({ navigation }: Props) {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalContent}
-            snapToInterval={148}
+            snapToInterval={140}
             decelerationRate="fast"
           >
             {newCreatorsItems.map((creator) => (
@@ -1644,7 +1742,7 @@ function Explore({ navigation }: Props) {
                       creator.isFollowing && { color: Colors.primarySapphire.brand },
                     ]}
                   >
-                    {creator.isFollowing ? 'Following' : 'Follow'}
+                    {creator.isFollowing ? 'Connected' : 'Connect'}
                   </StyledText>
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -2279,7 +2377,7 @@ const createStyles = (dark: boolean) =>
       borderWidth: 1,
       padding: 12,
       alignItems: 'center',
-      marginRight: spacing.x16,
+      marginRight: spacing.x8,
     },
     creatorAvatarFrame: {
       width: 64,
@@ -2292,8 +2390,8 @@ const createStyles = (dark: boolean) =>
       marginBottom: spacing.x10,
     },
     creatorAvatar: {
-      width: '100%',
-      height: '100%',
+      width: 60,
+      height: 60,
     },
     creatorName: {
       marginBottom: spacing.x10,

@@ -20,8 +20,8 @@ import LottieView from 'lottie-react-native';
 import { noop } from 'lodash';
 import QRCode from 'react-native-qrcode-svg';
 import { MainStackParamList } from '@/src/navigator/types';
-import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
-import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { setLoginData } from '@/src/redux/actions/AuthActions';
 import {
   beginPasskeyLogin,
   beginPasskeyRegistration,
@@ -43,8 +43,21 @@ import {
   getAppleIdToken,
   getGoogleIdToken,
 } from '@/services/socialAuth';
-import { clearPendingAccountType } from '@/src/services/accountTypeStorage';
-import { AccountType } from '@/utils/types';
+import {
+  clearPendingSocialContinuation,
+  savePendingSocialContinuation,
+} from '@/src/services/pendingSocialContinuation';
+import resolveInitialMfaMethod from '@/src/utils/mfa';
+import {
+  isPasskeyAssociationError,
+  isPasskeyCancellationError,
+  PASSKEY_ASSOCIATION_FALLBACK_MESSAGE,
+} from '@/src/utils/passkeyErrors';
+import {
+  getSocialAuthActionLabel,
+  getSocialAuthErrorMessage,
+  isSocialSignupRequiredResponse,
+} from '@/src/utils/socialAuthFlow';
 
 import Button from '../Button';
 import CustomClipboard, { CustomClipboardHandle } from '../CustomClipboard';
@@ -79,7 +92,6 @@ type LoginComponentProps = {
   currentUserEmail?: string;
   clearOnMountKey?: string;
   initialMfaChallenge?: MfaChallengeResponse;
-  socialSignupAccountType?: AccountType;
   onMfaLaunchScreenChange?: (isVisible: boolean) => void;
 };
 
@@ -120,38 +132,6 @@ const sanitizeAnalyticsReason = (value: unknown) => {
     .replace(/^_+|_+$/g, '');
 
   return normalized.slice(0, 72) || 'unknown';
-};
-
-const getPasskeyErrorSignature = (error: unknown) => {
-  if (!error) return '';
-  if (typeof error === 'string') return error.toLowerCase();
-
-  const raw = error as any;
-  const parts = [
-    raw?.name,
-    raw?.code,
-    raw?.message,
-    raw?.domain,
-    typeof raw?.cause === 'string' ? raw.cause : raw?.cause?.message,
-    String(error),
-  ]
-    .filter(Boolean)
-    .map((value) => String(value).toLowerCase());
-
-  return parts.join(' ');
-};
-
-const isPasskeyCancellationError = (error: unknown) => {
-  const signature = getPasskeyErrorSignature(error);
-  if (!signature) return false;
-  return (
-    signature.includes('notallowederror') ||
-    signature.includes('usercancel') ||
-    signature.includes('user_cancel') ||
-    signature.includes('cancelled') ||
-    signature.includes('canceled') ||
-    signature.includes('aborted')
-  );
 };
 
 const toBase64FromBase64Url = (value?: string) => {
@@ -248,7 +228,6 @@ function LoginComponent({
   currentUserEmail,
   clearOnMountKey,
   initialMfaChallenge,
-  socialSignupAccountType,
   onMfaLaunchScreenChange,
 }: LoginComponentProps) {
   const dispatch = useDispatch();
@@ -274,6 +253,7 @@ function LoginComponent({
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [pendingAccessToken, setPendingAccessToken] = useState<string>('');
   const [hasAutoPromptedPasskey, setHasAutoPromptedPasskey] = useState(false);
+  const [isPasskeyAssociationUnavailable, setIsPasskeyAssociationUnavailable] = useState(false);
   const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
   const [hasPasskeyHeroLoaded, setHasPasskeyHeroLoaded] = useState(false);
   const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
@@ -302,6 +282,7 @@ function LoginComponent({
     setPendingAccessToken('');
     setSelectedMfaMethod('passkey');
     setTotpOtpauth('');
+    setIsPasskeyAssociationUnavailable(false);
     setHidePass(true);
     setSocialLoading(false);
     setHasAutoPromptedPasskey(false);
@@ -320,9 +301,7 @@ function LoginComponent({
   useEffect(() => {
     if (!initialMfaChallenge) return;
 
-    const preferredMethod: MfaMethod = initialMfaChallenge.availableMethods?.includes('passkey')
-      ? 'passkey'
-      : initialMfaChallenge.preferredMethod;
+    const preferredMethod = resolveInitialMfaMethod(initialMfaChallenge);
 
     setMfaChallenge(initialMfaChallenge);
     setSelectedMfaMethod(preferredMethod);
@@ -336,6 +315,7 @@ function LoginComponent({
     setTotpOtpauth('');
     setBackupCodes([]);
     setPendingAccessToken('');
+    setIsPasskeyAssociationUnavailable(false);
     setHasAutoPromptedPasskey(false);
     setShowOtherMfaOptions(false);
     setHasPasskeyHeroLoaded(false);
@@ -364,38 +344,24 @@ function LoginComponent({
 
   const completeLogin = useCallback(
     (accessToken: string) => {
-      if (socialSignupAccountType) {
-        dispatch(
-          getProfile.Success({
-            token: accessToken,
-            email: currentUserEmail,
-            emailVerified: true,
-            accountType: socialSignupAccountType,
-            isProfileCompleted: false,
-          })
-        );
-        dispatch(setAccountType(socialSignupAccountType));
-        clearPendingAccountType().catch(() => undefined);
-      }
-
+      clearPendingSocialContinuation();
       dispatch(setLoginData({ token: accessToken }));
       navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
     },
-    [currentUserEmail, dispatch, navigation, socialSignupAccountType]
+    [dispatch, navigation]
   );
 
   const handleAuthResult = useCallback(
     async (response: any) => {
       if (response?.mfaRequired) {
         const challenge = response as MfaChallengeResponse;
-        const preferredMethod: MfaMethod = challenge.availableMethods?.includes('passkey')
-          ? 'passkey'
-          : challenge.preferredMethod;
+        const preferredMethod = resolveInitialMfaMethod(challenge);
         setMfaChallenge(challenge);
         setSelectedMfaMethod(preferredMethod);
         setForm((prev) => ({ ...prev, code: '' }));
         setSuccessText('');
         setTotpOtpauth('');
+        setIsPasskeyAssociationUnavailable(false);
         setShowOtherMfaOptions(false);
         trackMfaEvent('mfa_method_selected', {
           method: preferredMethod,
@@ -427,6 +393,19 @@ function LoginComponent({
       completeLogin(token);
     },
     [completeLogin, trackMfaEvent]
+  );
+
+  const requestEmailMfaCode = useCallback(
+    async (challenge: MfaChallengeResponse, successMessage?: string) => {
+      const res = await sendEmailMfaCode({ mfaToken: challenge.mfaToken });
+      if (res.status !== 200) {
+        throw new Error((res.response as any)?.message ?? 'Unable to send email code.');
+      }
+
+      setSuccessText(successMessage ?? `A verification code was sent to ${challenge.emailMasked}.`);
+      return res;
+    },
+    []
   );
 
   const ensureLocationPermission = useCallback(async () => {
@@ -568,6 +547,58 @@ function LoginComponent({
           setError('');
           return;
         }
+        if (
+          Platform.OS === 'ios' &&
+          !mfaChallenge.enrollmentRequired &&
+          mfaChallenge.availableMethods.includes('email') &&
+          isPasskeyAssociationError(mfaError)
+        ) {
+          setSelectedMfaMethod('email');
+          setIsPasskeyAssociationUnavailable(true);
+          setShowOtherMfaOptions(true);
+          setForm((prev) => ({ ...prev, code: '' }));
+          setError('');
+          trackMfaEvent('mfa_method_failure', {
+            method: 'passkey',
+            flow,
+            reason: 'ios_webcredentials_association',
+          });
+          trackMfaEvent('mfa_fallback_selected', {
+            from_method: 'passkey',
+            to_method: 'email',
+            enrollment_required: false,
+            reason: mfaChallenge.reason,
+          });
+          trackMfaEvent('mfa_method_selected', {
+            method: 'email',
+            source: 'auto_fallback',
+            enrollment_required: false,
+            reason: mfaChallenge.reason,
+            fallback: true,
+            preferred_method: mfaChallenge.preferredMethod,
+          });
+          trackMfaEvent('mfa_method_begin', {
+            method: 'email',
+            flow,
+            reason: mfaChallenge.reason,
+          });
+          try {
+            await requestEmailMfaCode(mfaChallenge, PASSKEY_ASSOCIATION_FALLBACK_MESSAGE);
+            trackMfaEvent('mfa_method_success', {
+              method: 'email',
+              flow,
+              stage: 'send_code',
+            });
+            return;
+          } catch (emailError: any) {
+            trackMfaEvent('mfa_method_failure', {
+              method: 'email',
+              flow,
+              reason: sanitizeAnalyticsReason(emailError?.message),
+            });
+            throw emailError;
+          }
+        }
         trackMfaEvent('mfa_method_failure', {
           method: 'passkey',
           flow,
@@ -587,23 +618,31 @@ function LoginComponent({
       }
       setIsSubmitting(false);
     }
-  }, [handleAuthResult, mfaChallenge, trackMfaEvent]);
+  }, [handleAuthResult, mfaChallenge, requestEmailMfaCode, trackMfaEvent]);
 
   useEffect(() => {
     setHasAutoPromptedPasskey(false);
+    setIsPasskeyAssociationUnavailable(false);
   }, [mfaChallenge?.mfaToken]);
 
   useEffect(() => {
     if (!mfaChallenge) return;
     if (mfaChallenge.enrollmentRequired) return;
     if (selectedMfaMethod !== 'passkey') return;
+    if (isPasskeyAssociationUnavailable) return;
     if (hasAutoPromptedPasskey) return;
 
     setHasAutoPromptedPasskey(true);
     runPasskey().catch((e: any) => {
       setError(e?.message ?? 'Passkey verification failed.');
     });
-  }, [hasAutoPromptedPasskey, mfaChallenge, runPasskey, selectedMfaMethod]);
+  }, [
+    hasAutoPromptedPasskey,
+    isPasskeyAssociationUnavailable,
+    mfaChallenge,
+    runPasskey,
+    selectedMfaMethod,
+  ]);
 
   const submitMfa = useCallback(async () => {
     if (!mfaChallenge) return;
@@ -721,6 +760,11 @@ function LoginComponent({
     async (method: MfaMethod) => {
       if (!mfaChallenge) return;
       const fallback = method !== mfaChallenge.preferredMethod;
+      if (method === 'passkey' && isPasskeyAssociationUnavailable) {
+        setError('');
+        setSuccessText(PASSKEY_ASSOCIATION_FALLBACK_MESSAGE);
+        return;
+      }
       setSelectedMfaMethod(method);
       setError('');
       setSuccessText('');
@@ -753,24 +797,24 @@ function LoginComponent({
           flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
           reason: mfaChallenge.reason,
         });
-        const res = await sendEmailMfaCode({ mfaToken: mfaChallenge.mfaToken });
-        if (res.status !== 200) {
+        try {
+          await requestEmailMfaCode(mfaChallenge);
+        } catch (emailError: any) {
           trackMfaEvent('mfa_method_failure', {
             method: 'email',
             flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
-            reason: sanitizeAnalyticsReason((res.response as any)?.message),
+            reason: sanitizeAnalyticsReason(emailError?.message),
           });
-          throw new Error((res.response as any)?.message ?? 'Unable to send email code.');
+          throw emailError;
         }
         trackMfaEvent('mfa_method_success', {
           method: 'email',
           flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
           stage: 'send_code',
         });
-        setSuccessText(`A verification code was sent to ${mfaChallenge.emailMasked}.`);
       }
     },
-    [mfaChallenge, trackMfaEvent]
+    [isPasskeyAssociationUnavailable, mfaChallenge, requestEmailMfaCode, trackMfaEvent]
   );
 
   const handleEmailAsMfaEnrollment = async () => {
@@ -952,29 +996,66 @@ function LoginComponent({
 
         const res = await exchangeSocialToken({
           provider,
+          intent: 'login',
           idToken: tokenResult.idToken,
           nonce: tokenResult.nonce,
           details: tokenResult.details,
+          createIfMissing: false,
         });
 
+        if (res.status === 200 && isSocialSignupRequiredResponse(res.response)) {
+          savePendingSocialContinuation({
+            intent: 'login',
+            provider,
+            idToken: tokenResult.idToken,
+            nonce: tokenResult.nonce,
+            details: res.response.details ?? tokenResult.details,
+          });
+          navigation.navigate('AccountType', {
+            continuePendingSocialSignup: true,
+          } as any);
+          return;
+        }
+
         if (res.status === 200) {
-          await handleAuthResult(res.response as any);
+          clearPendingSocialContinuation();
+          const accessToken = res.response?.tokens?.accessToken;
+          if (!accessToken) {
+            throw new Error('Invalid authentication response');
+          }
+
+          dispatch(
+            setLoginData({
+              token: accessToken,
+              authMethod: res.response?.authMethod ?? 'social',
+              bypassMandatoryMfaOnboarding: res.response?.bypassMandatoryMfaOnboarding !== false,
+            })
+          );
+          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
         } else {
-          const apiMessage = (res.response as any)?.message;
-          setError(typeof apiMessage === 'string' ? apiMessage : 'Unable to sign in.');
+          setError(
+            getSocialAuthErrorMessage(
+              res.response,
+              `Unable to ${getSocialAuthActionLabel('login')} with ${providerLabel}. Please try again.`
+            )
+          );
         }
       } catch (e: any) {
-        setError(e?.message ?? 'Sign in failed.');
+        setError(
+          e?.message ??
+            `Unable to ${getSocialAuthActionLabel('login')} with ${providerLabel}. Please try again.`
+        );
       } finally {
         dispatch(setLoader(false));
         setSocialLoading(false);
       }
     },
-    [dispatch, ensureLocationPermission, handleAuthResult, mfaChallenge, socialLoading]
+    [dispatch, ensureLocationPermission, mfaChallenge, navigation, socialLoading]
   );
 
   const methodButton = (method: MfaMethod, label: string) => {
     const isSelected = selectedMfaMethod === method;
+    const isDisabled = isSubmitting || (method === 'passkey' && isPasskeyAssociationUnavailable);
     let labelColor = '#222';
     if (dark) {
       labelColor = '#ddd';
@@ -986,7 +1067,7 @@ function LoginComponent({
     return (
       <TouchableOpacity
         key={method}
-        disabled={isSubmitting}
+        disabled={isDisabled}
         onPress={() => selectMethod(method)}
         style={{
           paddingHorizontal: 12,
@@ -995,7 +1076,7 @@ function LoginComponent({
           borderWidth: 1,
           borderColor: isSelected ? '#41899f' : '#8b929a',
           backgroundColor: isSelected ? '#41899f' : 'transparent',
-          opacity: isSubmitting ? 0.6 : 1,
+          opacity: isDisabled ? 0.6 : 1,
         }}
       >
         <StyledText style={{ color: labelColor }}>{label}</StyledText>
@@ -1004,6 +1085,13 @@ function LoginComponent({
   };
 
   const showCodeInput = mfaChallenge && selectedMfaMethod !== 'passkey';
+  const mfaHeaderText = (() => {
+    if (!mfaChallenge) {
+      return 'Welcome back';
+    }
+
+    return 'Secure Sign-In';
+  })();
   const subHeaderText = (() => {
     if (!mfaChallenge) {
       return 'Sign in to your account';
@@ -1054,6 +1142,7 @@ function LoginComponent({
     setBackupCodes([]);
     setPendingAccessToken('');
     setHasAutoPromptedPasskey(false);
+    setIsPasskeyAssociationUnavailable(false);
     setError('');
     setSuccessText('');
     setIsSubmitting(false);
@@ -1605,9 +1694,7 @@ function LoginComponent({
         }
       >
         <View style={styles.headerFrame}>
-          <StyledText style={styles.welcomeText}>
-            {mfaChallenge ? 'Secure Sign-In' : 'Welcome back'}
-          </StyledText>
+          <StyledText style={styles.welcomeText}>{mfaHeaderText}</StyledText>
           <StyledText style={styles.subHeaderText}>{subHeaderText}</StyledText>
         </View>
 
@@ -1785,6 +1872,7 @@ function LoginComponent({
                   style={styles.socialBtn}
                   disabled={socialLoading}
                   onPress={() => handleSocialLogin('google')}
+                  accessibilityLabel="Continue with Google"
                 >
                   <Image source={googleIcon} style={styles.socialIcon} />
                 </TouchableOpacity>
@@ -1794,6 +1882,7 @@ function LoginComponent({
                     style={styles.socialBtn}
                     disabled={socialLoading}
                     onPress={() => handleSocialLogin('apple')}
+                    accessibilityLabel="Continue with Apple"
                   >
                     <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFFF' : '#212121'} />
                   </TouchableOpacity>

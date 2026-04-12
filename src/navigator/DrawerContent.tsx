@@ -24,8 +24,8 @@ import { getCreatorMenuLabel, getCreatorMenuState } from '../utils/creatorApplic
 import { isZoeAiEligibleUser } from '../utils/zoeAccess';
 import Home2Icon from '@/assets/icons/home2.svg';
 import ZoeIcon from '@/assets/svg/zoeicon.svg';
-import BusinessUserCurriculumIcon from '@/assets/svg/Business-User-Curriculum--Streamline-Core.svg';
-import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
+import BusinessUserCurriculumIcon from '@/assets/svg/Business-User-Curriculum--Streamline-Core-Remix.svg';
+import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core-Remix.svg';
 
 export default function DrawerContent({
   descriptors,

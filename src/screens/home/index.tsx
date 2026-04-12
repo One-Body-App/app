@@ -46,7 +46,6 @@ import {
   ArrowDown2,
   Notification,
 } from 'iconsax-react-native';
-import { serialize } from 'object-to-formdata';
 import { useTabBarAnimation } from '@/navigator/TabBarAnimationContext';
 import {
   getTabRootSpringboardPreset,
@@ -99,6 +98,12 @@ import {
   reorderFeedEntriesForRefresh,
   shouldSkipRefreshTrigger,
 } from './feedRefreshUtils';
+import {
+  buildQuickPostContent,
+  getQuickPostErrorMessage,
+  moderateQuickPostText,
+  QUICK_POST_PENDING_REVIEW_MESSAGE,
+} from './quickPost';
 import type { RefreshTrigger } from './feedRefreshUtils';
 import { resolveVideoMetadata } from '@/src/components/video/universalVideoLayout';
 
@@ -1607,24 +1612,25 @@ function Home({ navigation, route }: Props) {
   }, [navigation, preserveFeedPositionOnNextFocus]);
 
   const handleSubmitQuickPost = useCallback(async () => {
-    const content = quickPostText.trim();
+    const content = buildQuickPostContent(quickPostText);
     if (!content || isQuickPosting) {
       return;
     }
     setIsQuickPosting(true);
     try {
+      const textModeration = await moderateQuickPostText(content, (message) => Toast.show(message));
+      if (textModeration.blocked) {
+        return;
+      }
+
       const result = await ApiCall({
         route: 'social/post',
         token,
-        params: serialize(
-          { content },
-          {
-            noAttributesWithArrayNotation: true,
-            noFilesWithArrayNotation: true,
-          }
-        ),
+        params: {
+          content,
+          moderationReview: textModeration.moderationReview,
+        },
         verb: 'post',
-        isFormUrlEncode: true,
       });
       if (result?.status === 200) {
         setQuickPostText('');
@@ -1636,7 +1642,21 @@ function Home({ navigation, route }: Props) {
           allowReorder: false,
           hardReset: false,
         });
+        const responseMessage =
+          typeof (result.response as { message?: unknown })?.message === 'string'
+            ? String((result.response as { message?: string }).message)
+            : '';
+        const pendingReview = Boolean(
+          (result.response as { pendingReview?: unknown })?.pendingReview
+        );
+        if (pendingReview || responseMessage) {
+          Toast.show(responseMessage || QUICK_POST_PENDING_REVIEW_MESSAGE);
+        }
+        return;
       }
+      Toast.show(getQuickPostErrorMessage(result?.response, result?.status));
+    } catch (error: any) {
+      Toast.show(getQuickPostErrorMessage(error?.response?.data ?? error?.response, error?.status));
     } finally {
       setIsQuickPosting(false);
     }

@@ -33,7 +33,7 @@ function HomeStack() {
           headerShadowVisible: false,
 
           drawerActiveBackgroundColor: Colors.neutral[600],
-          drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
+          drawerActiveTintColor: dark ? '#ffffff' : '#126b87',
         };
       }}
     >

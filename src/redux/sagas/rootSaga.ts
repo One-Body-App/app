@@ -1,17 +1,5 @@
-import { fork, all } from 'redux-saga/effects';
-import {
-  GetUserProfileSaga,
-  loginSocialSaga,
-  LogoutSaga,
-  SignUpSaga,
-  UpdateOrgProfileSaga,
-  UpdateProfileSaga,
-  GetProfileSaga,
-  RemoveSocialAccountSaga,
-  GetBadgesSaga,
-  SetUserBadgesSaga,
-  SendVerificationEmailSaga,
-} from './AuthSaga';
+import { all } from 'redux-saga/effects';
+import * as AuthSagas from './AuthSaga';
 import {
   GetAllPrayerLiveSaga,
   GetAllPrayerSaga,
@@ -20,15 +8,27 @@ import {
 } from './PrayerSaga';
 import { GetAllUserSaga, GetChatSaga, UserGetSaga, GetInterestsSaga } from './UserSaga';
 
+const invokeSaga = (saga: unknown, name: string) => {
+  if (typeof saga === 'function') {
+    return saga();
+  }
+
+  if (__DEV__) {
+    console.warn(`[rootSaga] Skipping missing saga export: ${name}`);
+  }
+
+  return undefined;
+};
+
 export function* rootSaga() {
-  yield all([
-    loginSocialSaga(),
-    LogoutSaga(),
-    SignUpSaga(),
-    UpdateProfileSaga(),
-    GetUserProfileSaga(),
-    RemoveSocialAccountSaga(),
-    UpdateOrgProfileSaga(),
+  const effects = [
+    invokeSaga(AuthSagas.loginSocialSaga, 'loginSocialSaga'),
+    invokeSaga(AuthSagas.LogoutSaga, 'LogoutSaga'),
+    invokeSaga(AuthSagas.SignUpSaga, 'SignUpSaga'),
+    invokeSaga(AuthSagas.UpdateProfileSaga, 'UpdateProfileSaga'),
+    invokeSaga(AuthSagas.GetUserProfileSaga, 'GetUserProfileSaga'),
+    invokeSaga(AuthSagas.RemoveSocialAccountSaga, 'RemoveSocialAccountSaga'),
+    invokeSaga(AuthSagas.UpdateOrgProfileSaga, 'UpdateOrgProfileSaga'),
     UserGetSaga(),
     GetAllUserSaga(),
     GetMyPrayerSaga(),
@@ -36,10 +36,13 @@ export function* rootSaga() {
     GetTestomniesPrayerSaga(),
     GetAllPrayerLiveSaga(),
     GetChatSaga(),
-    GetProfileSaga(),
-    SendVerificationEmailSaga(),
-    GetBadgesSaga(),
-    SetUserBadgesSaga(),
+    invokeSaga(AuthSagas.GetProfileSaga, 'GetProfileSaga'),
+    invokeSaga(AuthSagas.SendVerificationEmailSaga, 'SendVerificationEmailSaga'),
+    invokeSaga(AuthSagas.VerifyEmailTokenSaga, 'VerifyEmailTokenSaga'),
+    invokeSaga(AuthSagas.GetBadgesSaga, 'GetBadgesSaga'),
+    invokeSaga(AuthSagas.SetUserBadgesSaga, 'SetUserBadgesSaga'),
     GetInterestsSaga(),
-  ]);
+  ].filter(Boolean);
+
+  yield all(effects);
 }

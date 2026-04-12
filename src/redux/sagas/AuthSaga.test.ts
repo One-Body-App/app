@@ -1,10 +1,12 @@
 import { runSaga } from 'redux-saga';
 import { ACTIONS } from '../action-types';
+import { getProfile, verifyEmailToken } from '../actions/AuthActions';
 import {
   getProfileSaga,
   logoutSaga,
   updateOrgProfileRequest,
   updateProfileRequest,
+  verifyEmailTokenSaga,
 } from './AuthSaga';
 
 const mockApiCall = jest.fn();
@@ -13,6 +15,7 @@ const mockGetValidAccessToken = jest.fn();
 const mockDisablePushNotifications = jest.fn();
 const mockDisconnectChatSocket = jest.fn();
 const mockSignOutSocialProviders = jest.fn();
+const mockClearPendingSocialContinuation = jest.fn();
 
 jest.mock('@/src/services/api', () => ({
   ApiCall: (...args: unknown[]) => mockApiCall(...args),
@@ -36,6 +39,11 @@ jest.mock('@/services/socialAuth', () => ({
   signOutSocialProviders: (...args: unknown[]) => mockSignOutSocialProviders(...args),
 }));
 
+jest.mock('@/src/services/pendingSocialContinuation', () => ({
+  clearPendingSocialContinuation: (...args: unknown[]) =>
+    mockClearPendingSocialContinuation(...args),
+}));
+
 describe('logoutSaga', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -46,6 +54,7 @@ describe('logoutSaga', () => {
     mockDisablePushNotifications.mockResolvedValue(undefined);
     mockDisconnectChatSocket.mockReturnValue(undefined);
     mockSignOutSocialProviders.mockResolvedValue(undefined);
+    mockClearPendingSocialContinuation.mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -90,6 +99,7 @@ describe('logoutSaga', () => {
     expect(mockDisconnectChatSocket).toHaveBeenCalled();
     expect(mockSignOutSocialProviders).toHaveBeenCalled();
     expect(mockClearAuthTokens).toHaveBeenCalled();
+    expect(mockClearPendingSocialContinuation).toHaveBeenCalled();
     expect(dispatched).toEqual([
       {
         type: ACTIONS.LOGOUT_COMPLETE,
@@ -109,6 +119,7 @@ describe('logoutSaga', () => {
     expect(mockDisablePushNotifications).toHaveBeenCalledWith('managed-token');
     expect(mockDisconnectChatSocket).toHaveBeenCalled();
     expect(mockClearAuthTokens).toHaveBeenCalled();
+    expect(mockClearPendingSocialContinuation).toHaveBeenCalled();
     expect(dispatched[0]).toEqual({
       type: ACTIONS.LOGOUT_COMPLETE,
       data: {
@@ -313,5 +324,118 @@ describe('profile update onboarding completion', () => {
       }),
       { type: ACTIONS.SET_LOADER, data: false },
     ]);
+  });
+});
+
+describe('verifyEmailTokenSaga', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const runVerifyEmailToken = async (
+    action: { type: string; verificationToken?: string; prefillEmail?: string },
+    state = {
+      auth: {
+        userToken: 'access-token',
+        getProfileData: {
+          email: 'person@example.com',
+          accountType: 'organization',
+          isProfileCompleted: false,
+        },
+        userProfile: null,
+      },
+      general: {
+        accountType: null,
+      },
+    }
+  ) => {
+    const dispatched: any[] = [];
+
+    await runSaga(
+      {
+        dispatch: (nextAction) => dispatched.push(nextAction),
+        getState: () => state,
+      },
+      verifyEmailTokenSaga,
+      action
+    ).toPromise();
+
+    return dispatched;
+  };
+
+  it('calls verify-email, seeds the profile, and refreshes the canonical profile', async () => {
+    mockApiCall.mockResolvedValue({ status: 200, response: true });
+
+    const dispatched = await runVerifyEmailToken({
+      type: 'verify_email_token_request',
+      verificationToken: 'verify-token',
+      prefillEmail: 'person@example.com',
+    });
+
+    expect(mockApiCall).toHaveBeenCalledWith({
+      route: 'auth/verify-email',
+      verb: 'post',
+      params: { token: 'verify-token' },
+    });
+    expect(dispatched).toEqual([
+      verifyEmailToken.Success(true),
+      getProfile.Success(
+        expect.objectContaining({
+          token: 'access-token',
+          email: 'person@example.com',
+          emailVerified: true,
+          accountType: 'organization',
+          isProfileCompleted: false,
+        })
+      ),
+      getProfile.Request({ token: 'access-token' }),
+    ]);
+  });
+
+  it('stores the API message when verification fails', async () => {
+    mockApiCall.mockResolvedValue({
+      status: 400,
+      response: { message: 'Token expired' },
+    });
+
+    const dispatched = await runVerifyEmailToken({
+      type: 'verify_email_token_request',
+      verificationToken: 'verify-token',
+    });
+
+    expect(dispatched).toEqual([verifyEmailToken.Failed('Token expired')]);
+  });
+
+  it('stores the generic fallback when the request throws', async () => {
+    mockApiCall.mockRejectedValue(new Error('network down'));
+
+    const dispatched = await runVerifyEmailToken({
+      type: 'verify_email_token_request',
+      verificationToken: 'verify-token',
+    });
+
+    expect(dispatched).toEqual([verifyEmailToken.Failed('network down')]);
+  });
+
+  it('does not call the API when there is no logged-in auth token', async () => {
+    const dispatched = await runVerifyEmailToken(
+      {
+        type: 'verify_email_token_request',
+        verificationToken: 'verify-token',
+      },
+      {
+        auth: {
+          userToken: '',
+          getProfileData: null,
+          userProfile: null,
+        },
+        general: {
+          accountType: null,
+        },
+      }
+    );
+
+    expect(mockApiCall).not.toHaveBeenCalled();
+    expect(dispatched).toEqual([]);
   });
 });

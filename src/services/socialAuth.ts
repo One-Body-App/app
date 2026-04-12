@@ -6,6 +6,7 @@ import { GOOGLE_LOGIN_CLIENT_ID } from './constants';
 import type { MfaChallengeResponse } from './login';
 
 export type SocialProvider = 'google' | 'apple';
+export type SocialAuthIntent = 'login' | 'signup';
 
 export type SocialProfileDetails = {
   email?: string;
@@ -25,6 +26,11 @@ export type SocialLoginResponse = {
   tokens?: AuthTokens;
   user?: any;
   isNewUser?: boolean;
+  authMethod?: 'social';
+  bypassMandatoryMfaOnboarding?: boolean;
+  signupRequired?: true;
+  provider?: SocialProvider;
+  details?: SocialProfileDetails;
   message?: string;
   mfaRequired?: boolean;
   enrollmentRequired?: boolean;
@@ -166,21 +172,25 @@ export const getAppleIdToken = async (): Promise<SocialTokenResult> => {
 
 export const exchangeSocialToken = async (params: {
   provider: SocialProvider;
+  intent: SocialAuthIntent;
   idToken: string;
   nonce?: string;
   accountType?: string | null;
   details?: SocialProfileDetails;
+  createIfMissing?: boolean;
 }) => {
   const res = await ApiCall<SocialLoginResponse>({
     route: 'auth/social-login',
     verb: 'post',
     params: {
       provider: params.provider,
+      intent: params.intent,
       idToken: params.idToken,
       token: params.idToken,
       nonce: params.nonce,
       accountType: params.accountType ?? undefined,
       details: params.details,
+      createIfMissing: params.createIfMissing,
     },
   });
 

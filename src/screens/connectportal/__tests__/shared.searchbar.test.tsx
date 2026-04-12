@@ -59,7 +59,7 @@ jest.mock('@/assets/svg/Business-User-Curriculum--Streamline-Core.svg', () => {
     return ReactLocal.createElement(MockView, props);
   };
 });
-jest.mock('@/assets/svg/Calendar-Edit--Streamline-Core.svg', () => {
+jest.mock('@/assets/svg/Calendar-Edit--Streamline-Core-Remix.svg', () => {
   const ReactLocal = require('react');
   const { View: MockView } = require('react-native');
   return function CalendarEditIcon(props: any) {

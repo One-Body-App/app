@@ -35,9 +35,15 @@ import notifee, { EventType } from '@notifee/react-native';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
-import { setLoginData, getProfile, logout, clearAuthState } from '../redux/actions/AuthActions'; // Adjust path
+import {
+  setLoginData,
+  getProfile,
+  logout,
+  clearAuthState,
+  verifyEmailToken,
+} from '../redux/actions/AuthActions'; // Adjust path
 import { clearAuthTokens, getValidAccessToken, loadAuthTokens } from '../services/authTokens';
 import { beginAuthenticatedMfaOnboarding } from '../services/login';
 
@@ -87,6 +93,7 @@ import {
   isPublicAuthRoute,
   shouldBeginMandatoryMfaOnboarding,
 } from '@/src/utils/authFlow';
+import getConfirmLoginVerificationDecision from '@/src/utils/confirmLoginVerification';
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
@@ -115,6 +122,10 @@ function AppContent() {
     logoutCompletedAt,
     logoutDestination,
     logoutPending,
+    bypassMandatoryMfaOnboarding,
+    verifyEmailTokenError,
+    verifyEmailTokenPending,
+    verifyEmailTokenSuccess,
   } = authState;
   const dispatch = useDispatch();
 
@@ -128,6 +139,7 @@ function AppContent() {
   const routeNameRef = useRef<string | undefined>(undefined);
   const lastNavigationRef = useRef<{ route: string; timestamp: number } | null>(null);
   const ignoreAuthLinksRef = useRef(false);
+  const handledConfirmLoginVerificationTokenRef = useRef<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const appStateRef = useRef(AppState.currentState);
@@ -147,9 +159,9 @@ function AppContent() {
   }, [dispatch]);
   const confirmBackStyle = useMemo<ViewStyle>(
     () => ({
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       alignItems: 'center',
       justifyContent: 'center',
       alignSelf: 'center',
@@ -170,16 +182,59 @@ function AppContent() {
         hitSlop={8}
         style={confirmBackStyle}
       >
-        <MaterialCommunityIcons
-          name="chevron-left"
-          size={30}
-          color={Colors.primary.brand}
-          style={{ marginLeft: 2 }}
+        <Ionicons
+          name="chevron-back"
+          size={28}
+          color={scheme === 'dark' ? '#FFFFF7' : Colors.primary.brand}
         />
       </Pressable>
     ),
-    [confirmBackStyle, handleConfirmBackPress]
+    [confirmBackStyle, handleConfirmBackPress, scheme]
   );
+  const syncConfirmLoginVerificationRoute = useCallback(() => {
+    if (!navigationRef.isReady()) {
+      return;
+    }
+
+    const currentRoute = navigationRef.getCurrentRoute();
+    const currentRouteName = currentRoute?.name;
+    const currentRouteParams = (currentRoute?.params ?? {}) as {
+      token?: string;
+      prefillEmail?: string;
+    };
+    const profileData = getProfileData;
+    const isEmailVerified = !!profileData?.emailVerified;
+    const hasVerifiedEmail = isEmailVerified || profileData?.isProfileCompleted === true;
+    const decision = getConfirmLoginVerificationDecision({
+      currentRouteName,
+      currentRouteParams,
+      handledToken: handledConfirmLoginVerificationTokenRef.current,
+      hasAuthToken: token !== '',
+      hasVerifiedEmail,
+      hasTransientVerificationState:
+        verifyEmailTokenPending ||
+        verifyEmailTokenError != null ||
+        verifyEmailTokenSuccess !== undefined,
+    });
+
+    handledConfirmLoginVerificationTokenRef.current = decision.nextHandledToken;
+
+    if (decision.shouldReset) {
+      dispatch(verifyEmailToken.Reset());
+    }
+
+    if (decision.request) {
+      dispatch(verifyEmailToken.Request(decision.request));
+    }
+  }, [
+    dispatch,
+    getProfileData,
+    navigationRef,
+    token,
+    verifyEmailTokenError,
+    verifyEmailTokenPending,
+    verifyEmailTokenSuccess,
+  ]);
   const beginMandatoryMfaGate = useCallback(
     async (profileData: any) => {
       if (!token) {
@@ -443,6 +498,7 @@ function AppContent() {
     mfaOnboardingRequestedUserRef.current = null;
     mfaOnboardingInFlightRef.current = false;
     ignoreAuthLinksRef.current = false;
+    handledConfirmLoginVerificationTokenRef.current = null;
 
     const destination = logoutDestination === 'Login' ? 'Login' : 'Intro';
     lastNavigationRef.current = { route: destination, timestamp: Date.now() };
@@ -666,6 +722,7 @@ function AppContent() {
       navigationReady,
       userToken: token,
       isProfileLoading: isLoading,
+      bypassMandatoryMfaOnboarding,
       currentRouteName,
       currentRouteParams,
       getProfileData,
@@ -682,6 +739,7 @@ function AppContent() {
     navigationReady,
     token,
     isLoading,
+    bypassMandatoryMfaOnboarding,
     getProfileData,
     navigationRef,
     beginMandatoryMfaGate,
@@ -1346,9 +1404,11 @@ function AppContent() {
       onReady={() => {
         routeNameRef.current = navigationRef.getCurrentRoute()?.name;
         setNavigationReady(true);
+        syncConfirmLoginVerificationRoute();
       }}
       onStateChange={() => {
         routeNameRef.current = navigationRef.getCurrentRoute()?.name;
+        syncConfirmLoginVerificationRoute();
       }}
     >
       <ReactionProvider>

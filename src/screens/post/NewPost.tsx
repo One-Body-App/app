@@ -70,6 +70,7 @@ import {
   moderateClientText,
 } from '@/src/services/moderation/clientModeration';
 import type { ModerationReviewCheckPayload } from '@/src/services/moderation/types';
+import { buildCreateSocialPostRequest } from './createSocialPostRequest';
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 type AttachmentMode = 'link' | 'document' | null;
@@ -541,31 +542,26 @@ function NewPost({ navigation, route }: Props) {
           Boolean
         ) as ModerationReviewCheckPayload[]
       );
+      const createRequest = buildCreateSocialPostRequest({
+        content: mergedContent,
+        mentionedUserIds: mentionComposer.mentionedUserIds,
+        uploadedImages: uploadImagesObject,
+        gif: mediaGif,
+        moderationReview,
+        location: location
+          ? {
+              coordinates: location.geometry.coordinates,
+              name: location.place_name,
+            }
+          : undefined,
+      });
 
       const result = await ApiCall({
         route: 'social/post',
         token,
-        params: serialize(
-          {
-            content: mergedContent,
-            mentionedUserIds: mentionComposer.mentionedUserIds,
-            images: uploadImagesObject?.length ? uploadImagesObject : imagesObject,
-            gif: mediaGif,
-            moderationReview,
-            location: location
-              ? {
-                  coordinates: location?.geometry.coordinates,
-                  name: location?.place_name,
-                }
-              : undefined,
-          },
-          {
-            noAttributesWithArrayNotation: true,
-            noFilesWithArrayNotation: true,
-          }
-        ),
+        params: createRequest.params,
         verb: 'post',
-        isFormUrlEncode: true,
+        isFormUrlEncode: createRequest.isFormUrlEncode,
       });
 
       setIsLoading(false);
@@ -1109,7 +1105,7 @@ function NewPost({ navigation, route }: Props) {
                   flexGrow: 1,
                   color: colors.text,
                   paddingVertical: spacing.x5,
-                  ...fontSize.x6,
+                  fontSize: 15,
                 }}
                 inputWrapperStyle={{
                   backgroundColor: 'transparent',

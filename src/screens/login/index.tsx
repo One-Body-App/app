@@ -24,7 +24,6 @@ function Login({ route }: Props) {
         clearOnMountKey={clearOnMountKey}
         currentUserEmail={route?.params?.prefillEmail}
         initialMfaChallenge={route?.params?.initialMfaChallenge}
-        socialSignupAccountType={route?.params?.socialSignupAccountType}
         onMfaLaunchScreenChange={setIsMfaLaunchScreenVisible}
       />
     </UserStepsLayout>

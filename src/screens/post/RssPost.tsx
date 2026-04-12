@@ -14,7 +14,7 @@ import { Colors } from '@/src/styles';
 
 import { spacing } from '@/src/styles/spacing';
 import { borderWidth } from '@/src/styles/outlines';
-import { ArticleType, CommentPost, PostType, SocialPost } from '@/utils/types';
+import { CommentPost, PostType, SocialPost } from '@/utils/types';
 
 import ArticleItem from '@/src/components/listItems/ArticleItem';
 import globalStyle from '@/components/listItems/style';
@@ -70,8 +70,6 @@ function RssPost({ navigation, route }: Props) {
 
     resetToHomeFeed();
   };
-
-  const showModal = (_item: ArticleType) => {};
 
   const getRssPost = useCallback(async () => {
     setIsLoading(true);
@@ -208,7 +206,6 @@ function RssPost({ navigation, route }: Props) {
                   backgroundColor: 'transparent',
                 }}
                 blogPostImageStyle={globalStyle.newspostimage}
-                showModal={showModal}
               />
             )
           }

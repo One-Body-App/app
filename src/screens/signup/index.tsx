@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -13,8 +13,8 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
+import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
@@ -50,9 +50,19 @@ import {
   getGoogleIdToken,
 } from '@/services/socialAuth';
 import { clearPendingAccountType, savePendingAccountType } from '@/src/services/accountTypeStorage';
+import {
+  clearPendingSocialContinuation,
+  loadPendingSocialContinuation,
+} from '@/src/services/pendingSocialContinuation';
 import type { MfaChallengeResponse } from '@/services/login';
 import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import {
+  getSocialAuthActionLabel,
+  getSocialAuthErrorMessage,
+  isSocialSignupRequiredResponse,
+} from '@/src/utils/socialAuthFlow';
 
 const brandWhite = '#f6f6f7';
 const googleIcon = require('@/assets/icons/google.png');
@@ -185,9 +195,10 @@ type Props = StackScreenProps<MainStackParamList, 'SignUp'>;
 
 function SignupForm({ navigation, route }: Props) {
   const recaptcha = useRef<RecaptchaRef | null>(null);
-  const { accountType } = route.params;
+  const { accountType, continuePendingSocialSignup = false } = route.params;
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const attemptedPendingSocialSignupRef = useRef(false);
 
   const inputRefs = {
     username: useRef<TextInput>(null),
@@ -259,16 +270,16 @@ function SignupForm({ navigation, route }: Props) {
   );
 
   // Set accountType in Redux when screen loads so social login can access it
-  useEffect(() => {
+  useMountEffect(() => {
     if (accountType) {
       dispatch(setAccountType(accountType));
       savePendingAccountType(accountType).catch(() => undefined);
     }
-  }, [accountType, dispatch]);
+  });
 
-  useEffect(() => {
+  useMountEffect(() => {
     ensureGoogleSigninConfigured();
-  }, []);
+  });
 
   const orbitAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
@@ -362,12 +373,13 @@ function SignupForm({ navigation, route }: Props) {
         if (userValidation.status === 200) {
           recaptcha.current?.open();
         } else {
-          const responseMessage =
-            typeof (userValidation.response as { message?: unknown })?.message === 'string'
-              ? (userValidation.response as { message: string }).message.trim()
-              : Array.isArray((userValidation.response as { message?: unknown })?.message)
-                ? ((userValidation.response as { message: string[] }).message ?? []).join(', ')
-                : '';
+          const rawMessage = (userValidation.response as { message?: unknown })?.message;
+          let responseMessage = '';
+          if (typeof rawMessage === 'string') {
+            responseMessage = rawMessage.trim();
+          } else if (Array.isArray(rawMessage)) {
+            responseMessage = (rawMessage as string[]).join(', ');
+          }
           setIsloading(false);
           setFormError(
             responseMessage ||
@@ -385,11 +397,11 @@ function SignupForm({ navigation, route }: Props) {
       setIsloading(false);
       setState({
         ...state,
-        emailError,
-        passwordError,
-        cPasswordError,
-        usernameError,
-        nameError,
+        emailError: emailError ?? '',
+        passwordError: passwordError ?? '',
+        cPasswordError: cPasswordError ?? '',
+        usernameError: usernameError ?? '',
+        nameError: nameError ?? '',
       });
       setFormError('Please complete all required fields.');
       Keyboard.dismiss();
@@ -472,77 +484,94 @@ function SignupForm({ navigation, route }: Props) {
     );
   };
 
-  const handleSocialSignup = useCallback(
-    async (provider: 'google' | 'apple') => {
-      if (socialLoading) return;
-      const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+  const completeSocialSignup = useCallback(
+    async (params: {
+      provider: 'google' | 'apple';
+      idToken: string;
+      nonce?: string;
+      details?: {
+        email?: string;
+        displayName?: string;
+        firstName?: string;
+        lastName?: string;
+      };
+    }) => {
+      if (socialLoading) {
+        return;
+      }
+
+      const providerLabel = params.provider === 'google' ? 'Google' : 'Apple';
       setFormError('');
       setFormSuccess('');
       dispatch(setLoader(true));
       setSocialLoading(true);
+
       try {
         if (accountType) {
           dispatch(setAccountType(accountType));
           await savePendingAccountType(accountType);
         }
 
-        const tokenResult =
-          provider === 'google' ? await getGoogleIdToken() : await getAppleIdToken();
-
-        if (tokenResult.cancelled) {
-          return;
-        }
-
-        if (!tokenResult.idToken) {
-          setFormError(`Unable to sign in with ${providerLabel}. Please try again.`);
-          return;
-        }
-
         const res = await exchangeSocialToken({
-          provider,
-          idToken: tokenResult.idToken,
-          nonce: tokenResult.nonce,
+          provider: params.provider,
+          intent: 'signup',
+          idToken: params.idToken,
+          nonce: params.nonce,
           accountType,
-          details: tokenResult.details,
+          details: params.details,
+          createIfMissing: true,
         });
 
+        if (res.status === 200 && isSocialSignupRequiredResponse(res.response)) {
+          clearPendingSocialContinuation();
+          setFormError('Please choose an account type to continue your social sign-in.');
+          return;
+        }
+
         if (res.status === 200 && res.response?.mfaRequired) {
-          if (!res.response.isNewUser) {
-            await clearPendingAccountType();
-          }
-          navigation.replace('Login', {
-            initialMfaChallenge: res.response as MfaChallengeResponse,
-            prefillEmail: tokenResult.details?.email ?? state.email,
-            socialSignupAccountType: res.response.isNewUser ? accountType : undefined,
-          });
+          clearPendingSocialContinuation();
+          setFormError(
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+          );
           return;
         }
 
         if (res.status === 200 && res.response?.tokens?.accessToken) {
+          clearPendingSocialContinuation();
           if (res.response.isNewUser && accountType) {
             dispatch(
               getProfile.Success({
                 token: res.response.tokens.accessToken,
-                email: tokenResult.details?.email ?? state.email,
+                email: params.details?.email ?? state.email,
                 emailVerified: true,
                 accountType,
                 isProfileCompleted: false,
               })
             );
-            await clearPendingAccountType();
           }
-          if (!res.response.isNewUser) {
-            await clearPendingAccountType();
-          }
-          dispatch(setLoginData({ token: res.response.tokens.accessToken }));
+          await clearPendingAccountType();
+          dispatch(
+            setLoginData({
+              token: res.response.tokens.accessToken,
+              authMethod: res.response?.authMethod ?? 'social',
+              bypassMandatoryMfaOnboarding: res.response?.bypassMandatoryMfaOnboarding !== false,
+            })
+          );
           navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
           return;
         }
 
-        const apiMessage = (res.response as any)?.message;
-        setFormError(typeof apiMessage === 'string' ? apiMessage : 'Unable to sign in.');
+        setFormError(
+          getSocialAuthErrorMessage(
+            res.response,
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+          )
+        );
       } catch (e: any) {
-        setFormError(e?.message ?? 'Sign in failed.');
+        setFormError(
+          e?.message ??
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+        );
       } finally {
         dispatch(setLoader(false));
         setSocialLoading(false);
@@ -551,93 +580,135 @@ function SignupForm({ navigation, route }: Props) {
     [accountType, dispatch, navigation, socialLoading, state.email]
   );
 
-  useEffect(
-    () => () => {
-      dispatch(signUp.Reset());
-    },
-    [dispatch]
-  );
-
-  useEffect(() => {
-    if (!authState.signUpSuccess) {
-      return;
-    }
-
-    const handleSignUpSuccess = async () => {
-      const signUpPayload = authState.signUpData as any;
-      if (signUpPayload?.mfaRequired) {
-        setFormError('');
-        setFormSuccess('');
-        setIsloading(false);
-        navigation.replace('Login', {
-          initialMfaChallenge: signUpPayload as MfaChallengeResponse,
-          prefillEmail: state.email,
-        });
+  const handleSocialSignup = useCallback(
+    async (provider: 'google' | 'apple') => {
+      if (socialLoading) {
         return;
       }
 
-      if (!hasSentVerificationEmailRef.current) {
-        hasSentVerificationEmailRef.current = true;
-        dispatch(
-          sendVerificationEmailAction.Request({
-            token: true,
-            data: {},
-            allowFalseSuccess: true,
-          })
+      const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+      setFormError('');
+      setFormSuccess('');
+
+      try {
+        const tokenResult =
+          provider === 'google' ? await getGoogleIdToken() : await getAppleIdToken();
+
+        if (tokenResult.cancelled) {
+          return;
+        }
+
+        if (!tokenResult.idToken) {
+          setFormError(
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+          );
+          return;
+        }
+
+        await completeSocialSignup({
+          provider,
+          idToken: tokenResult.idToken,
+          nonce: tokenResult.nonce,
+          details: tokenResult.details,
+        });
+      } catch (e: any) {
+        setFormError(
+          e?.message ??
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
         );
       }
+    },
+    [completeSocialSignup, socialLoading]
+  );
 
-      setFormError('');
-      setFormSuccess('Welcome to the family! Check your inbox to verify your account.');
-      setIsloading(false);
+  useMountEffect(() => () => {
+    dispatch(signUp.Reset());
+  });
 
-      navigation.replace('ConfirmLogin', {
-        showConfirmationEmailMessage: true,
-        prefillEmail: state.email,
-      } as any);
-    };
-
-    handleSignUpSuccess();
-  }, [authState.signUpData, authState.signUpSuccess, dispatch, navigation, state.email]);
-
-  useEffect(() => {
-    if (authState.signUpSuccess === false && authState.error) {
-      const displayError = Array.isArray(authState.error)
-        ? authState.error.join(', ')
-        : (authState.error ?? 'Something went wrong. Please try again.');
-      setFormSuccess('');
-      const lower = displayError.toLowerCase();
-      const isEmailTaken =
-        lower.includes('email already') ||
-        lower.includes('email is already') ||
-        (lower.includes('email') && lower.includes('exists'));
-      setFormError(
-        isEmailTaken
-          ? 'Unable to create account. Please try a different email or reset your password.'
-          : displayError
-      );
-      const isUsernameTaken =
-        lower.includes('username already') ||
-        lower.includes('username is already') ||
-        (lower.includes('username') && lower.includes('exists'));
-      if (isUsernameTaken) {
-        setState((prev) => ({
-          ...prev,
-          usernameError: 'Username is unavailable. Choose a unique name for your profile.',
-        }));
-        setUsernameSuggestions(generateUsernameSuggestions(state.username, state.name));
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!authState.signUpSuccess) {
+        return;
       }
-      setIsloading(false);
-    }
-  }, [
-    authState.signUpSuccess,
-    authState.error,
-    generateUsernameSuggestions,
-    state.name,
-    state.username,
-  ]);
 
-  useEffect(() => {
+      const handleSignUpSuccess = async () => {
+        const signUpPayload = authState.signUpData as any;
+        if (signUpPayload?.mfaRequired) {
+          setFormError('');
+          setFormSuccess('');
+          setIsloading(false);
+          navigation.replace('Login', {
+            initialMfaChallenge: signUpPayload as MfaChallengeResponse,
+            prefillEmail: state.email,
+          });
+          return;
+        }
+
+        if (!hasSentVerificationEmailRef.current) {
+          hasSentVerificationEmailRef.current = true;
+          dispatch(
+            sendVerificationEmailAction.Request({
+              token: true,
+              data: {},
+              allowFalseSuccess: true,
+            })
+          );
+        }
+
+        setFormError('');
+        setFormSuccess('Welcome to the family! Check your inbox to verify your account.');
+        setIsloading(false);
+
+        navigation.replace('ConfirmLogin', {
+          showConfirmationEmailMessage: true,
+          prefillEmail: state.email,
+        } as any);
+      };
+
+      handleSignUpSuccess();
+    }, [authState.signUpData, authState.signUpSuccess, dispatch, navigation, state.email])
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (authState.signUpSuccess === false && authState.error) {
+        const displayError = Array.isArray(authState.error)
+          ? authState.error.join(', ')
+          : (authState.error ?? 'Something went wrong. Please try again.');
+        setFormSuccess('');
+        const lower = displayError.toLowerCase();
+        const isEmailTaken =
+          lower.includes('email already') ||
+          lower.includes('email is already') ||
+          (lower.includes('email') && lower.includes('exists'));
+        setFormError(
+          isEmailTaken
+            ? 'Unable to create account. Please try a different email or reset your password.'
+            : displayError
+        );
+        const isUsernameTaken =
+          lower.includes('username already') ||
+          lower.includes('username is already') ||
+          (lower.includes('username') && lower.includes('exists'));
+        if (isUsernameTaken) {
+          setState((prev) => ({
+            ...prev,
+            usernameError: 'Username is unavailable. Choose a unique name for your profile.',
+          }));
+          setUsernameSuggestions(generateUsernameSuggestions(state.username, state.name));
+        }
+        setIsloading(false);
+      }
+    }, [
+      authState.signUpSuccess,
+      authState.error,
+      generateUsernameSuggestions,
+      state.name,
+      state.username,
+    ])
+  );
+
+  useMountEffect(() => {
     if (hasStartedAnimation.current) {
       return undefined;
     }
@@ -670,10 +741,11 @@ function SignupForm({ navigation, route }: Props) {
     return () => {
       task.cancel();
     };
-  }, [fieldsAnim, orbitAnim, textAnim]);
+  });
 
   useFocusEffect(
     React.useCallback(() => {
+      attemptedPendingSocialSignupRef.current = false;
       setState(initialFormState);
       setHidePass(true);
       setShowPasswordHint(false);
@@ -681,6 +753,28 @@ function SignupForm({ navigation, route }: Props) {
       setIsloading(false);
     }, [])
   );
+
+  useMountEffect(() => {
+    if (!continuePendingSocialSignup || !accountType || attemptedPendingSocialSignupRef.current) {
+      return;
+    }
+
+    attemptedPendingSocialSignupRef.current = true;
+    const pendingSocialContinuation = loadPendingSocialContinuation();
+
+    if (!pendingSocialContinuation) {
+      clearPendingSocialContinuation();
+      setFormError('Your social sign-in session expired. Please try again.');
+      return;
+    }
+
+    completeSocialSignup({
+      provider: pendingSocialContinuation.provider,
+      idToken: pendingSocialContinuation.idToken,
+      nonce: pendingSocialContinuation.nonce,
+      details: pendingSocialContinuation.details,
+    });
+  });
 
   const orbitStyle = {
     transform: [
@@ -774,7 +868,16 @@ function SignupForm({ navigation, route }: Props) {
           fieldsPopStyle,
         ]}
       >
-        <TouchableOpacity style={styles.signInRow} onPress={() => navigation.replace('Login')}>
+        <TouchableOpacity
+          style={styles.signInRow}
+          onPress={async () => {
+            if (continuePendingSocialSignup) {
+              clearPendingSocialContinuation();
+            }
+            await clearPendingAccountType();
+            navigation.replace('Login');
+          }}
+        >
           <StyledText style={{ color: palette.textSecondary }}>Already a member? </StyledText>
           <StyledText style={{ color: palette.primary }}>Sign in here</StyledText>
         </TouchableOpacity>
@@ -799,16 +902,20 @@ function SignupForm({ navigation, route }: Props) {
             </TouchableOpacity>
 
             {Platform.OS === 'ios' ? (
-              <TouchableOpacity
-                style={[
-                  styles.socialBtn,
-                  { borderColor: palette.inputBorder, backgroundColor: palette.card },
-                ]}
-                disabled={socialLoading}
-                onPress={() => handleSocialSignup('apple')}
-              >
-                <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFF7' : '#212121'} />
-              </TouchableOpacity>
+              <View style={styles.appleSignupButtonContainer}>
+                <AppleButton
+                  buttonStyle={dark ? AppleButton.Style.WHITE : AppleButton.Style.BLACK}
+                  buttonType={
+                    appleAuth.isSignUpButtonSupported
+                      ? AppleButton.Type.SIGN_UP
+                      : AppleButton.Type.CONTINUE
+                  }
+                  cornerRadius={12}
+                  style={styles.appleSignupButton}
+                  testID="signup-apple-button"
+                  onPress={() => handleSocialSignup('apple')}
+                />
+              </View>
             ) : null}
           </View>
         </Animated.View>
@@ -1208,6 +1315,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  appleSignupButtonContainer: {
+    width: 220,
+    height: 56,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  appleSignupButton: {
+    width: '100%',
+    height: '100%',
   },
   socialIcon: {
     width: 28,

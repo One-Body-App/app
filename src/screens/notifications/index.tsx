@@ -49,7 +49,7 @@ import {
   getPrimaryNotificationCategory,
   type NotificationCategoryKey,
 } from './notificationCategories';
-import { cleanupNotificationsDismissal, closeNotifications } from './dismissNotifications';
+import { useNotificationsDismissal } from './useNotificationsDismissal';
 
 type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
 
@@ -448,21 +448,7 @@ function NotificationScreen({ navigation }: Props) {
     }, [loadNotifications])
   );
 
-  const runDismissalCleanup = useCallback(() => {
-    cleanupNotificationsDismissal({ navigation, tabBarAnimation });
-  }, [navigation, tabBarAnimation]);
-
-  const handleCloseNotifications = useCallback(() => {
-    closeNotifications({ navigation, tabBarAnimation });
-  }, [navigation, tabBarAnimation]);
-
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        runDismissalCleanup();
-      };
-    }, [runDismissalCleanup])
-  );
+  const handleCloseNotifications = useNotificationsDismissal({ navigation, tabBarAnimation });
 
   const markAsRead = useCallback(
     async (item: InboxNotification) => {

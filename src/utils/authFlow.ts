@@ -21,6 +21,7 @@ type MandatoryMfaGateState = LogoutGuardState & {
   navigationReady?: boolean;
   userToken?: string | null;
   isProfileLoading?: boolean;
+  bypassMandatoryMfaOnboarding?: boolean;
   currentRouteName?: string | null;
   currentRouteParams?: MfaEnrollmentRouteParams | null;
   getProfileData?: {
@@ -85,6 +86,10 @@ export function shouldBeginMandatoryMfaOnboarding(state: MandatoryMfaGateState):
   }
 
   if (isExplicitLogoutActive(state)) {
+    return false;
+  }
+
+  if (state.bypassMandatoryMfaOnboarding === true) {
     return false;
   }
 

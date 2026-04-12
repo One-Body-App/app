@@ -1,6 +1,8 @@
 const mockGoogleConfigure = jest.fn();
 const mockGoogleHasPlayServices = jest.fn();
 const mockGoogleSignIn = jest.fn();
+const mockApiCall = jest.fn();
+const mockSaveAuthTokens = jest.fn();
 
 const loadSocialAuthModule = (googleClientId?: string) => {
   jest.resetModules();
@@ -38,11 +40,11 @@ const loadSocialAuthModule = (googleClientId?: string) => {
   }));
 
   jest.doMock('./api', () => ({
-    ApiCall: jest.fn(),
+    ApiCall: (...args: unknown[]) => mockApiCall(...args),
   }));
 
   jest.doMock('./authTokens', () => ({
-    saveAuthTokens: jest.fn(),
+    saveAuthTokens: (...args: unknown[]) => mockSaveAuthTokens(...args),
   }));
 
   jest.doMock('./constants', () => ({
@@ -55,6 +57,8 @@ const loadSocialAuthModule = (googleClientId?: string) => {
 
 describe('socialAuth Google configuration', () => {
   beforeEach(() => {
+    mockApiCall.mockReset();
+    mockSaveAuthTokens.mockReset();
     mockGoogleHasPlayServices.mockResolvedValue(true);
     mockGoogleSignIn.mockResolvedValue({
       idToken: 'google-id-token',
@@ -104,5 +108,37 @@ describe('socialAuth Google configuration', () => {
         }),
       })
     );
+  });
+
+  it('passes intent and createIfMissing through the social token exchange request', async () => {
+    const socialAuth = loadSocialAuthModule('web-client-id');
+    mockApiCall.mockResolvedValue({
+      status: 200,
+      response: {
+        signupRequired: true,
+      },
+    });
+
+    await socialAuth.exchangeSocialToken({
+      provider: 'google',
+      intent: 'login',
+      idToken: 'google-id-token',
+      details: {
+        email: 'person@example.com',
+      },
+      createIfMissing: false,
+    });
+
+    expect(mockApiCall).toHaveBeenCalledWith({
+      route: 'auth/social-login',
+      verb: 'post',
+      params: expect.objectContaining({
+        provider: 'google',
+        intent: 'login',
+        idToken: 'google-id-token',
+        token: 'google-id-token',
+        createIfMissing: false,
+      }),
+    });
   });
 });

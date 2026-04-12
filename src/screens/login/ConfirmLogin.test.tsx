@@ -3,13 +3,17 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { Text, TouchableOpacity } from 'react-native';
 import ConfirmLogin from './ConfirmLogin';
 
+const mockReact = React;
 const mockDispatch = jest.fn();
-const mockLogoutAction = jest.fn(() => ({ type: 'LOGOUT' }));
-const mockNavigationReset = jest.fn();
-const mockApiCall = jest.fn();
+const mockApiCall: jest.Mock<Promise<any>, [unknown?]> = jest.fn();
+const mockNativeText = Text;
 const mockAuthState = {
   userToken: '',
-  getProfileData: null as any,
+  verifyEmailTokenPending: false,
+  verifyEmailTokenError: null as string | null,
+};
+const mockGeneralState = {
+  accountType: null as string | null,
 };
 
 function mockButton({ text, onPress }: any) {
@@ -21,6 +25,7 @@ jest.mock('react-redux', () => ({
   useSelector: (selector: (state: unknown) => unknown) =>
     selector({
       auth: mockAuthState,
+      general: mockGeneralState,
     }),
 }));
 
@@ -42,14 +47,13 @@ jest.mock('@/src/redux/actions/AuthActions', () => ({
     Request: jest.fn((params) => ({ type: 'GET_PROFILE_REQUEST', ...params })),
     Success: jest.fn((payload) => ({ type: 'GET_PROFILE_SUCCESS', payload })),
   },
-  logout: (...args: unknown[]) => mockLogoutAction(...args),
   sendVerificationEmail: {
     Request: jest.fn((params) => ({ type: 'SEND_VERIFICATION_EMAIL_REQUEST', ...params })),
   },
 }));
 
 jest.mock('@/src/services/api', () => ({
-  ApiCall: (...args: unknown[]) => mockApiCall(...args),
+  ApiCall: (params?: unknown) => mockApiCall(params),
 }));
 
 jest.mock('@/src/services/notification/pushNotificationService', () => ({
@@ -61,89 +65,167 @@ jest.mock('../layout/UserStepsLayout', () => ({
   default: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
-jest.mock('@/components/styled/Text', () => 'StyledText');
+jest.mock('@/components/styled/Text', () => ({
+  __esModule: true,
+  default: ({ children, ...props }: any) =>
+    mockReact.createElement(mockNativeText, props, children),
+}));
 jest.mock('@/components/Button', () => ({
   __esModule: true,
   default: mockButton,
 }));
 
-describe('ConfirmLogin logout action', () => {
+const renderScreen = (params: Record<string, any> = {}) =>
+  TestRenderer.create(
+    <ConfirmLogin
+      route={{ key: 'ConfirmLogin', name: 'ConfirmLogin', params } as any}
+      navigation={{} as any}
+    />
+  );
+
+const readAllText = (renderer: TestRenderer.ReactTestRenderer) =>
+  renderer.root
+    .findAllByType(Text)
+    .map((node) => node.props.children)
+    .flat()
+    .filter((value) => typeof value === 'string')
+    .join(' ');
+
+describe('ConfirmLogin', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAuthState.userToken = '';
-    mockAuthState.getProfileData = null;
+    mockAuthState.verifyEmailTokenPending = false;
+    mockAuthState.verifyEmailTokenError = null;
+    mockGeneralState.accountType = null;
   });
 
-  it('dispatches the shared logout action without resetting navigation inline', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('dispatches the authenticated resend verification action when a token is present', () => {
+    jest.useFakeTimers();
+    mockAuthState.userToken = 'access-token';
+
     let renderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
-      renderer = TestRenderer.create(
-        <ConfirmLogin
-          route={{ key: 'ConfirmLogin', name: 'ConfirmLogin', params: {} } as any}
-          navigation={{ reset: mockNavigationReset } as any}
-        />
-      );
+      renderer = renderScreen();
     });
 
-    const signOutButton = renderer!.root
+    const resendButton = renderer!.root
       .findAllByType(mockButton)
-      .find((node) => node.props.text === 'Back to sign in');
+      .find((node) => node.props.text === 'Resend verification email');
 
-    expect(signOutButton).toBeTruthy();
+    expect(resendButton).toBeTruthy();
 
     act(() => {
-      signOutButton!.props.onPress();
+      resendButton!.props.onPress();
     });
 
-    expect(mockLogoutAction).toHaveBeenCalled();
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'LOGOUT' });
-    expect(mockNavigationReset).not.toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SEND_VERIFICATION_EMAIL_REQUEST',
+      token: true,
+      data: {},
+      allowFalseSuccess: true,
+    });
+    expect(mockApiCall).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.runOnlyPendingTimers();
+      renderer!.unmount();
+    });
   });
 
-  it('optimistically marks email verified after a successful deep link verification', async () => {
-    mockAuthState.userToken = 'access-token';
-    mockAuthState.getProfileData = {
-      _id: 'user-1',
-      email: 'person@example.com',
-      emailVerified: false,
-      isProfileCompleted: false,
-    };
+  it('uses the public resend verification endpoint when no token is present', async () => {
+    jest.useFakeTimers();
     mockApiCall.mockResolvedValue({ status: 200, response: true });
 
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({ prefillEmail: 'Person@Example.com ' });
+    });
+
+    const resendButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Resend verification email');
+
     await act(async () => {
-      TestRenderer.create(
-        <ConfirmLogin
-          route={
-            {
-              key: 'ConfirmLogin',
-              name: 'ConfirmLogin',
-              params: { token: 'verify-token', prefillEmail: 'person@example.com' },
-            } as any
-          }
-          navigation={{ reset: mockNavigationReset } as any}
-        />
-      );
-      await Promise.resolve();
+      await resendButton!.props.onPress();
     });
 
     expect(mockApiCall).toHaveBeenCalledWith({
-      route: 'auth/verify-email',
+      route: 'auth/sendVerificationEmail/public',
       verb: 'post',
-      params: { token: 'verify-token' },
+      params: { email: 'person@example.com' },
     });
-    expect(mockDispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'GET_PROFILE_SUCCESS',
-        payload: expect.objectContaining({
-          emailVerified: true,
-          email: 'person@example.com',
-        }),
-      })
-    );
+
+    act(() => {
+      jest.runOnlyPendingTimers();
+      renderer!.unmount();
+    });
+  });
+
+  it('refreshes the profile when the user confirms they already verified', () => {
+    mockAuthState.userToken = 'access-token';
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen();
+    });
+
+    const alreadyVerifiedButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'I already verified');
+
+    expect(alreadyVerifiedButton).toBeTruthy();
+
+    act(() => {
+      alreadyVerifiedButton!.props.onPress();
+    });
+
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'GET_PROFILE_REQUEST',
       token: 'access-token',
+    });
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('renders the redux-driven verifying banner', () => {
+    mockAuthState.verifyEmailTokenPending = true;
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({ prefillEmail: 'person@example.com' });
+    });
+
+    expect(readAllText(renderer!)).toContain('Verifying your email...');
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('renders the redux-driven verification error', () => {
+    mockAuthState.verifyEmailTokenError = 'Token expired';
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({ prefillEmail: 'person@example.com' });
+    });
+
+    expect(readAllText(renderer!)).toContain('Token expired');
+
+    act(() => {
+      renderer!.unmount();
     });
   });
 });

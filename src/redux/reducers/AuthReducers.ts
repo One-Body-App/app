@@ -7,6 +7,7 @@ import {
   GetProfile,
   SignUp,
   SendVerificationEmail,
+  VerifyEmailToken,
 } from '../action-types';
 
 interface UserData {
@@ -21,6 +22,9 @@ type AuthReducer = {
   signUpSuccess?: boolean;
   signUpData: ArrayLike<any> | null | undefined;
   sendVerificationEmailSuccess?: boolean;
+  verifyEmailTokenSuccess?: boolean;
+  verifyEmailTokenPending: boolean;
+  verifyEmailTokenError: string | null;
   sendVerificationEmailData: ArrayLike<any> | null | undefined;
   getBadgesSuccess?: boolean;
   setUserBadgesSuccess?: boolean;
@@ -40,6 +44,8 @@ type AuthReducer = {
   logoutPending: boolean;
   logoutCompletedAt?: number;
   logoutDestination?: 'Intro' | 'Login';
+  sessionAuthMethod?: 'social' | null;
+  bypassMandatoryMfaOnboarding: boolean;
 };
 
 const initialState: AuthReducer = {
@@ -53,6 +59,9 @@ const initialState: AuthReducer = {
   error: null,
   signUpData: null,
   sendVerificationEmailData: null,
+  verifyEmailTokenPending: false,
+  verifyEmailTokenError: null,
+  verifyEmailTokenSuccess: undefined,
   getBadgesData: null,
   getProfileData: null,
   getProfileError: null,
@@ -60,6 +69,8 @@ const initialState: AuthReducer = {
   logoutPending: false,
   logoutCompletedAt: undefined,
   logoutDestination: undefined,
+  sessionAuthMethod: null,
+  bypassMandatoryMfaOnboarding: false,
 };
 
 const resetLogoutState = {
@@ -74,6 +85,15 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userToken: action.data?.token,
+        sessionAuthMethod:
+          action.data && Object.prototype.hasOwnProperty.call(action.data, 'authMethod')
+            ? (action.data?.authMethod ?? null)
+            : state.sessionAuthMethod,
+        bypassMandatoryMfaOnboarding:
+          action.data &&
+          Object.prototype.hasOwnProperty.call(action.data, 'bypassMandatoryMfaOnboarding')
+            ? action.data?.bypassMandatoryMfaOnboarding === true
+            : state.bypassMandatoryMfaOnboarding,
         ...resetLogoutState,
       };
 
@@ -197,6 +217,35 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         ...state,
         sendVerificationEmailSuccess: false,
         error: action.payload,
+      };
+
+    case VerifyEmailToken.REQUEST:
+      return {
+        ...state,
+        verifyEmailTokenPending: true,
+        verifyEmailTokenError: null,
+        verifyEmailTokenSuccess: undefined,
+      };
+    case VerifyEmailToken.SUCCESS:
+      return {
+        ...state,
+        verifyEmailTokenPending: false,
+        verifyEmailTokenError: null,
+        verifyEmailTokenSuccess: true,
+      };
+    case VerifyEmailToken.FAILED:
+      return {
+        ...state,
+        verifyEmailTokenPending: false,
+        verifyEmailTokenError: action.payload,
+        verifyEmailTokenSuccess: false,
+      };
+    case VerifyEmailToken.RESET:
+      return {
+        ...state,
+        verifyEmailTokenPending: false,
+        verifyEmailTokenError: null,
+        verifyEmailTokenSuccess: undefined,
       };
 
     // Badges

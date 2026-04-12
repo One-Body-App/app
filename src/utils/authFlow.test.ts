@@ -176,6 +176,23 @@ describe('authFlow', () => {
     ).toBe(false);
   });
 
+  it('does not begin mandatory MFA onboarding for social-authenticated sessions', () => {
+    expect(
+      shouldBeginMandatoryMfaOnboarding({
+        navigationReady: true,
+        userToken: 'token',
+        isProfileLoading: false,
+        bypassMandatoryMfaOnboarding: true,
+        currentRouteName: 'Home',
+        getProfileData: {
+          emailVerified: true,
+          isProfileCompleted: true,
+          mfaConfig: { isMfaActive: false },
+        },
+      })
+    ).toBe(false);
+  });
+
   it('does not begin mandatory MFA onboarding when already on the MFA enrollment screen', () => {
     expect(
       shouldBeginMandatoryMfaOnboarding({

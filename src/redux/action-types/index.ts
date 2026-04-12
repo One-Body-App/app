@@ -84,6 +84,13 @@ export const SendVerificationEmail = {
   FAILED: 'send_verification_email_failed',
 };
 
+export const VerifyEmailToken = {
+  REQUEST: 'verify_email_token_request',
+  SUCCESS: 'verify_email_token_success',
+  FAILED: 'verify_email_token_failed',
+  RESET: 'verify_email_token_reset',
+};
+
 // Badge Types
 export const GetBadges = {
   REQUEST: 'get_badges_request',

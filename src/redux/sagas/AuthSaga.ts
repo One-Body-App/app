@@ -13,6 +13,7 @@ import {
   GetProfile,
   SignUp,
   SendVerificationEmail,
+  VerifyEmailToken,
 } from '../action-types';
 
 // --------------- ACTIONS ---------------
@@ -25,12 +26,14 @@ import {
   setUserBadges,
   signUp,
   sendVerificationEmail,
+  verifyEmailToken,
 } from '../actions/AuthActions';
 import { AccountType, ResponseGenerator } from '@/utils/types';
 import { clearAuthTokens, getValidAccessToken, saveAuthTokens } from '@/services/authTokens';
 import { disablePushNotifications } from '@/src/services/notification/pushNotificationService';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import { signOutSocialProviders } from '@/services/socialAuth';
+import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
 import { RootState } from '../reducers/rootReducer';
 import { shouldAcceptProfileResult } from '@/src/utils/authFlow';
 
@@ -67,6 +70,34 @@ const buildUpdatedProfilePayload = (
     isProfileCompleted: resolveProfileCompleted(updatedProfile),
   };
 };
+
+const buildVerifiedProfilePayload = (params: {
+  authToken: string;
+  getProfileData?: Record<string, any> | null;
+  userProfile?: Record<string, any> | null;
+  fallbackAccountType?: string | null;
+  prefillEmail?: string;
+}) => {
+  const currentProfile = (params.getProfileData ?? params.userProfile ?? {}) as Record<string, any>;
+
+  return {
+    ...currentProfile,
+    token: params.authToken,
+    email: currentProfile.email ?? params.prefillEmail?.trim().toLowerCase(),
+    emailVerified: true,
+    isProfileCompleted: currentProfile.isProfileCompleted === true,
+    accountType: currentProfile.accountType ?? params.fallbackAccountType ?? 'individual',
+  };
+};
+
+const getVerifyEmailTokenFailureMessage = (response: any) =>
+  typeof response?.message === 'string'
+    ? response.message
+    : 'This verification link is invalid or expired. Request a new email and try again.';
+
+const getVerifyEmailTokenExceptionMessage = (error: any) =>
+  error?.message ??
+  'We could not verify this email link right now. Please request a new verification email.';
 
 export function* updateProfileRequest(params: {
   data: {
@@ -373,6 +404,64 @@ export function* SendVerificationEmailSaga() {
   yield takeLatest(SendVerificationEmail.REQUEST, sendVerificationEmailSaga);
 }
 
+export function* verifyEmailTokenSaga(params: {
+  verificationToken?: string;
+  prefillEmail?: string;
+  type: string;
+}) {
+  const verificationToken = params.verificationToken?.trim() ?? '';
+  if (!verificationToken) {
+    return;
+  }
+
+  const authToken: string = yield select((state: RootState) => state.auth.userToken);
+  if (!authToken) {
+    return;
+  }
+
+  try {
+    const [getProfileData, userProfile, fallbackAccountType]: [
+      RootState['auth']['getProfileData'],
+      RootState['auth']['userProfile'],
+      RootState['general']['accountType'],
+    ] = yield select((state: RootState) => [
+      state.auth.getProfileData,
+      state.auth.userProfile,
+      state.general.accountType,
+    ]);
+
+    const res: ResponseGenerator = yield ApiCall({
+      route: 'auth/verify-email',
+      verb: 'post',
+      params: { token: verificationToken },
+    });
+
+    if (res?.status === 200) {
+      yield put(verifyEmailToken.Success(res?.response));
+      yield put(
+        getProfile.Success(
+          buildVerifiedProfilePayload({
+            authToken,
+            getProfileData: getProfileData as Record<string, any> | null | undefined,
+            userProfile: userProfile as Record<string, any> | null | undefined,
+            fallbackAccountType,
+            prefillEmail: params.prefillEmail,
+          })
+        )
+      );
+      yield put(getProfile.Request({ token: authToken }));
+      return;
+    }
+
+    yield put(verifyEmailToken.Failed(getVerifyEmailTokenFailureMessage(res?.response)));
+  } catch (e) {
+    yield put(verifyEmailToken.Failed(getVerifyEmailTokenExceptionMessage(e)));
+  }
+}
+export function* VerifyEmailTokenSaga() {
+  yield takeLatest(VerifyEmailToken.REQUEST, verifyEmailTokenSaga);
+}
+
 export function* logoutSaga(params: {
   data?: {
     destination?: 'Intro' | 'Login';
@@ -432,6 +521,12 @@ export function* logoutSaga(params: {
   } finally {
     try {
       yield call(clearAuthTokens);
+    } catch (_error) {
+      // continue with auth state reset
+    }
+
+    try {
+      yield call(clearPendingSocialContinuation);
     } catch (_error) {
       // continue with auth state reset
     }

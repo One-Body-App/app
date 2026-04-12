@@ -60,7 +60,7 @@ function DrawerNav() {
             headerTintColor: dark ? colors.text : Colors.primary.brand,
 
             drawerActiveBackgroundColor: Colors.neutral[600],
-            drawerActiveTintColor: dark ? Colors.primarySapphire[500] : '#126b87',
+            drawerActiveTintColor: dark ? '#ffffff' : '#126b87',
             drawerInactiveTintColor: dark ? colors.text : '#032f3c',
 
             headerLeft: (props: { tintColor?: string }) => {

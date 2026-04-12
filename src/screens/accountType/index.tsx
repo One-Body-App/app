@@ -26,14 +26,16 @@ import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 import { savePendingAccountType } from '@/src/services/accountTypeStorage';
+import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
 import { HapticService } from '@/src/services/haptic';
 
 type Props = StackScreenProps<MainStackParamList, 'AccountType'>;
 
 const CONTENT_MAX_WIDTH = 720;
 
-function AccountType({ navigation }: Props) {
+function AccountType({ navigation, route }: Props) {
   const [accountType, setAccountType] = useState<AccountTypeType | null>(null);
+  const continuePendingSocialSignup = route.params?.continuePendingSocialSignup === true;
   const { colors, dark } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const isTablet = windowWidth >= 768;
@@ -483,7 +485,10 @@ function AccountType({ navigation }: Props) {
               }
               HapticService.trigger('impactMedium');
               await savePendingAccountType(accountType);
-              navigation.navigate('SignUp', { accountType });
+              navigation.navigate('SignUp', {
+                accountType,
+                continuePendingSocialSignup,
+              });
             }}
           >
             {isIos ? (
@@ -505,7 +510,10 @@ function AccountType({ navigation }: Props) {
           </TouchableOpacity>
           <TouchableOpacity
             style={{ flexDirection: 'row', alignSelf: 'center' }}
-            onPress={() => {
+            onPress={async () => {
+              if (continuePendingSocialSignup) {
+                clearPendingSocialContinuation();
+              }
               navigation.replace('Login');
             }}
           >

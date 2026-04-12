@@ -87,7 +87,7 @@ jest.mock('../services/authTokens', () => ({
 jest.mock('@/assets/icons/home2.svg', () => 'Home2Icon');
 jest.mock('@/assets/svg/zoeicon.svg', () => 'ZoeIcon');
 jest.mock('@/assets/svg/Business-User-Curriculum--Streamline-Core.svg', () => 'ServeIcon');
-jest.mock('@/assets/svg/Calendar-Edit--Streamline-Core.svg', () => 'GoIcon');
+jest.mock('@/assets/svg/Calendar-Edit--Streamline-Core-Remix.svg', () => 'GoIcon');
 
 const baseUser = {
   _id: 'user-1',

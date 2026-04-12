@@ -485,7 +485,11 @@ export type MainStackParamList = {
   };
   NewPassword: undefined;
   Intro: undefined;
-  AccountType: undefined;
+  AccountType:
+    | {
+        continuePendingSocialSignup?: boolean;
+      }
+    | undefined;
   PasswordChange: {
     setError: (errorText: string) => void;
   };
@@ -502,13 +506,13 @@ export type MainStackParamList = {
     resetPassword?: boolean;
     initialMfaChallenge?: LoginMfaChallenge;
     prefillEmail?: string;
-    socialSignupAccountType?: AccountType;
   };
   SignUp: {
     oauth_token?: string;
     oauth_verifier?: string;
     showConfirmationEmailMessage?: boolean;
     accountType?: AccountType;
+    continuePendingSocialSignup?: boolean;
   };
 
   ForgotPassword: { email?: string } | undefined;
