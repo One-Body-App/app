@@ -161,7 +161,11 @@ export const buildQueuedNotificationFromRemoteMessage = (
 export const buildQueuedNotificationFromDisplayedNotification = (
   displayed?: DisplayedNotification | null
 ): QueuedPushNotification | null => {
-  const notification = displayed?.notification;
+  if (!displayed) {
+    return null;
+  }
+
+  const { notification } = displayed;
   if (!notification?.remote) {
     return null;
   }

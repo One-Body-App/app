@@ -88,7 +88,7 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
             fallbackResults: fallbackResponse.results,
           };
         }
-      } catch (error) {
+      } catch (_fallbackError) {
         dispatch(setLoader(false));
         Toast.show('Unable to complete moderation right now. Please try again.', Toast.LONG);
         return;

@@ -247,10 +247,11 @@ export const buildSliderImages = (
   }));
 
   if (gif?.url) {
+    const originalGifImage = gif.data?.images?.original;
     images.push({
       url: gif.url,
-      width: toSafeNumber(gif.data.images.original.width),
-      height: toSafeNumber(gif.data.images.original.height),
+      width: toSafeNumber(originalGifImage?.width, DEFAULT_IMAGE_WIDTH),
+      height: toSafeNumber(originalGifImage?.height, DEFAULT_IMAGE_HEIGHT),
       id: gif.id,
       gifAspectRatio: toSafeNumber(gif.aspectRatio),
       type: 'gif',

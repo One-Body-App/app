@@ -83,6 +83,25 @@ describe('socialMediaHelpers', () => {
     ]);
   });
 
+  it('keeps rendering gif slider items when original gif dimensions are missing', () => {
+    const sliderImages = buildSliderImages([], {
+      id: 'gif-1',
+      url: 'https://cdn.example.com/gif-1.gif',
+      data: {},
+    } as any);
+
+    expect(sliderImages).toEqual([
+      {
+        url: 'https://cdn.example.com/gif-1.gif',
+        width: 4,
+        height: 5,
+        id: 'gif-1',
+        gifAspectRatio: 1,
+        type: 'gif',
+      },
+    ]);
+  });
+
   it('caches image dimensions for repeated feed resolution', () => {
     expect(getCachedImageDimensions('https://cdn.example.com/cached.jpg')).toBeUndefined();
 

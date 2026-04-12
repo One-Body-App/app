@@ -1,6 +1,6 @@
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { isObject } from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { StyleProp, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 
@@ -77,7 +77,7 @@ function ArticleItem({
   const navigation = useNavigation<ScreenNavigationProp>();
   const [itemData, setItemData] = useState(item);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setItemData(item);
   }, [item]);
   let myReaction: SocialPostReaction | undefined;

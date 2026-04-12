@@ -2,8 +2,8 @@ import React, {
   ReactNode,
   forwardRef,
   useCallback,
-  useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
@@ -99,8 +99,6 @@ interface BaseItemProps {
 
   isApprovedInfluencer?: boolean;
 
-  onShowDismissCard?: (e?: boolean) => void;
-  index?: number;
   parentRefreshContent?: Function;
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
@@ -420,24 +418,25 @@ function BaseItem({
   const reactionBarRef = useRef<ReactionBarRef>(null);
   const isReactionUpdatingRef = useRef(false);
   const mainReactionScale = useRef(new Animated.Value(1)).current;
+  const derivedRepostPayload =
+    postData.id &&
+    (postData.type === PostType.social ||
+      postData.type === PostType.prayer ||
+      postData.type === PostType.rss)
+      ? {
+          sourceType: postData.type,
+          sourceId: postData.id,
+          sourcePreview: {
+            title: postData.title,
+            link: postData.postlink,
+            category: postData.prayerCategory,
+            isPrivate: postData.isPrivate,
+          },
+          originFeedType: undefined,
+        }
+      : undefined;
   const effectiveRepostPayload =
-    repostPayload && repostPayload.sourceId
-      ? repostPayload
-      : postData.id &&
-          (postData.type === PostType.social ||
-            postData.type === PostType.prayer ||
-            postData.type === PostType.rss)
-        ? {
-            sourceType: postData.type,
-            sourceId: postData.id,
-            sourcePreview: {
-              title: postData.title,
-              link: postData.postlink,
-              category: postData.prayerCategory,
-              isPrivate: postData.isPrivate,
-            },
-          }
-        : undefined;
+    repostPayload && repostPayload.sourceId ? repostPayload : derivedRepostPayload;
 
   const canRepost = Boolean(
     effectiveRepostPayload?.sourceId &&
@@ -640,15 +639,15 @@ function BaseItem({
     await reactPost(selectedType);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setDisplayReactions(postData.reactions ?? []);
   }, [postData.id, postData.reactions]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setMyReaction(postData.myReaction);
   }, [postData.id, postData.myReaction]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const fallbackReactionId = getFallbackReactionIdFromType(
       normalizeReactionType(myReaction?.type)
     );
@@ -666,7 +665,7 @@ function BaseItem({
     });
   }, [myReaction?.type]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setDisplayRepostCount(toSafeCount(postData.repostCount));
   }, [postData.id, postData.repostCount, postData.type]);
 
@@ -938,7 +937,7 @@ function BaseItem({
             style={{
               position: 'absolute',
               right: spacing.x16,
-              bottom: spacing.x56,
+              bottom: spacing.x60,
               zIndex: 8,
               alignItems: 'center',
               gap: spacing.x13,

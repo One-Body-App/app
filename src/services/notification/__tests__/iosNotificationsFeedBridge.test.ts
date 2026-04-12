@@ -1,5 +1,11 @@
 /* eslint-disable global-require */
 
+import type iosNotificationsFeedBridge from '../iosNotificationsFeedBridge';
+
+type BridgeModule = {
+  default: typeof iosNotificationsFeedBridge;
+};
+
 const mockAddListener = jest.fn();
 const mockRemove = jest.fn();
 const mockGetPendingNotifications = jest.fn();
@@ -18,11 +24,13 @@ jest.mock('react-native', () => ({
       removeListeners: jest.fn(),
     },
   },
-  NativeEventEmitter: (...args: any[]) => mockNativeEventEmitter(...args),
+  NativeEventEmitter: jest.fn(function NativeEventEmitter() {
+    return mockNativeEventEmitter();
+  }),
 }));
 
-const loadBridgeModule = () =>
-  require('../iosNotificationsFeedBridge') as typeof import('../iosNotificationsFeedBridge');
+const loadBridgeModule = (): BridgeModule =>
+  require('../iosNotificationsFeedBridge') as BridgeModule;
 
 describe('iosNotificationsFeedBridge', () => {
   beforeEach(() => {
@@ -54,9 +62,9 @@ describe('iosNotificationsFeedBridge', () => {
     });
     mockGetPendingNotifications.mockResolvedValue([payload]);
 
-    const { subscribeToIosForegroundNotificationFeed } = loadBridgeModule();
+    const subscribeToIosForegroundNotificationFeed = loadBridgeModule().default;
     const unsubscribe = subscribeToIosForegroundNotificationFeed(async (nextPayload) => {
-      received.push(nextPayload as Record<string, unknown>);
+      received.push(nextPayload as unknown as Record<string, unknown>);
     });
 
     await Promise.resolve();

@@ -34,13 +34,14 @@ function isValidStoredTokens(value: Partial<StoredAuthTokens> | null): value is 
     return false;
   }
 
+  const { accessTokenExpiresAt, refreshTokenExpiresAt } = value;
   return Boolean(
     value.accessToken &&
       value.refreshToken &&
-      Number.isFinite(value.accessTokenExpiresAt) &&
-      Number.isFinite(value.refreshTokenExpiresAt) &&
-      value.accessTokenExpiresAt > 0 &&
-      value.refreshTokenExpiresAt > 0
+      typeof accessTokenExpiresAt === 'number' &&
+      typeof refreshTokenExpiresAt === 'number' &&
+      accessTokenExpiresAt > 0 &&
+      refreshTokenExpiresAt > 0
   );
 }
 

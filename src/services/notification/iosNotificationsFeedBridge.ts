@@ -26,7 +26,7 @@ const normalizeRemoteMessage = (
   return typeof value.messageId === 'string' && value.messageId.trim() ? value : null;
 };
 
-export const subscribeToIosForegroundNotificationFeed = (
+const subscribeToIosForegroundNotificationFeed = (
   listener: (payload: FirebaseMessagingTypes.RemoteMessage) => void | Promise<void>
 ) => {
   if (
@@ -65,3 +65,5 @@ export const subscribeToIosForegroundNotificationFeed = (
     subscription.remove();
   };
 };
+
+export default subscribeToIosForegroundNotificationFeed;

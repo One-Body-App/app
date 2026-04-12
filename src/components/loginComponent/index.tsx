@@ -445,7 +445,8 @@ function LoginComponent({
   const runPasskey = useCallback(async () => {
     if (!mfaChallenge) return;
     if (passkeyInFlightRef.current) {
-      return passkeyInFlightRef.current;
+      await passkeyInFlightRef.current;
+      return;
     }
 
     const { register, authenticate, isSupported } = resolvePasskeyApi();

@@ -77,12 +77,12 @@ import {
   subscribeToForegroundPushMessages,
   subscribeToPushTokenRefresh,
 } from '@/src/services/notification/pushNotificationService';
+import { syncIosDisplayedRemoteNotifications } from '@/src/services/notification/pushNotificationStorage';
+import subscribeToIosForegroundNotificationFeed from '@/src/services/notification/iosNotificationsFeedBridge';
 import {
-  queueRemoteNotificationPayload,
-  syncIosDisplayedRemoteNotifications,
-} from '@/src/services/notification/pushNotificationStorage';
-import { subscribeToIosForegroundNotificationFeed } from '@/src/services/notification/iosNotificationsFeedBridge';
-import { emitNotificationRefresh } from '@/src/services/notification/notificationRefreshSignal';
+  handleIosForegroundRemoteMessage,
+  handleQueuedForegroundNotification,
+} from '@/src/services/notification/foregroundNotificationFeedback';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -968,14 +968,14 @@ function AppContent() {
               isForeground: true,
               payload,
             });
+            handleQueuedForegroundNotification(toast, payload);
           })
         : subscribeToIosForegroundNotificationFeed(async (payload) => {
             if (!isMounted) {
               return;
             }
 
-            await queueRemoteNotificationPayload(payload);
-            emitNotificationRefresh();
+            await handleIosForegroundRemoteMessage(toast, payload);
           });
 
     return () => {

@@ -1,5 +1,6 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
+import { Platform } from 'react-native';
 import { ApiCall } from './api';
 import { AuthTokens, saveAuthTokens } from './authTokens';
 import { GOOGLE_LOGIN_CLIENT_ID } from './constants';
@@ -56,6 +57,39 @@ const persistTokensSafely = async (tokens?: AuthTokens) => {
 };
 
 let googleConfigured = false;
+
+const isAndroidGoogleDeveloperError = (error: any) => {
+  if (Platform.OS !== 'android') {
+    return false;
+  }
+
+  const errorDetails = [error?.code, error?.message, error?.description, error?.nativeErrorMessage]
+    .filter((value): value is string | number => value !== undefined && value !== null)
+    .join(' ')
+    .toLowerCase();
+
+  return (
+    error?.code === 10 ||
+    error?.status === 10 ||
+    errorDetails.includes('developer_error') ||
+    errorDetails.includes('developer error') ||
+    errorDetails.includes('code 10')
+  );
+};
+
+const logAndroidGoogleDeveloperError = (error: any) => {
+  if (!__DEV__ || !isAndroidGoogleDeveloperError(error)) {
+    return;
+  }
+
+  console.warn(
+    '[Google Sign-In] Android DEVELOPER_ERROR detected. Verify GOOGLE_LOGIN_CLIENT_ID is the WEB OAuth client ID and that the Android signing SHA fingerprint is registered in Firebase/Google Cloud.',
+    {
+      code: error?.code,
+      message: error?.message,
+    }
+  );
+};
 
 const getGoogleWebClientId = () => {
   const rawValue = GOOGLE_LOGIN_CLIENT_ID?.trim() ?? '';
@@ -125,6 +159,8 @@ export const getGoogleIdToken = async (): Promise<SocialTokenResult> => {
     if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
       return { cancelled: true };
     }
+
+    logAndroidGoogleDeveloperError(error);
     throw error;
   }
 };

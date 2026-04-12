@@ -63,7 +63,7 @@ function UserItem({ item }: { item: User }) {
         token,
         verb: 'patch',
       });
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(getProfile.Request({ token }));
         // Toast.show('unfollowed successfully.', Toast.LONG);
         // dispatch(getuserAll({ token: token }));
@@ -86,7 +86,7 @@ function UserItem({ item }: { item: User }) {
         verb: 'patch',
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         // dispatch(getuserAll({ token: token }));
         // dispatch(getuserGet({ token: token }));
         dispatch(getProfile.Request({ token }));
@@ -198,7 +198,11 @@ function UserItem({ item }: { item: User }) {
             }}
             // btnTextStyle={{ color: Colors.neutral[700] }}
             disabledBtnTextStyle={{ color: Colors.neutral[300] }}
-            text={user?.following.some((user) => user == item?.id) ? 'Connected' : 'Connect'}
+            text={
+              user?.following.some((followedId) => followedId === item?.id)
+                ? 'Connected'
+                : 'Connect'
+            }
             onPress={() => {
               if (item?.id) {
                 if (user?.following.includes(item?.id)) {

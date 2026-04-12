@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -15,7 +15,6 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
 import Toast, { useToast } from 'react-native-toast-notifications';
 
@@ -52,16 +51,10 @@ type ScreenNavigationProp = CompositeNavigationProp<
   >
 >;
 type PrayerItemProps = {
-  currentPopupItemId?: string;
-  visible?: boolean;
   item: PrayerPost;
   style?: StyleProp<ViewStyle>;
-  selectedEmoji?: EmojiItemProp;
   onCommentsPress?: () => void;
 
-  onShowDismissCard?: (e?: boolean) => void;
-  isScrollEnable?: boolean;
-  index?: number;
   parentRefreshContent?: Function;
   fromSavedPosts?: boolean;
   removePost?: (type: string, postId: string) => void;
@@ -74,8 +67,6 @@ function PrayerItem({
   editPost,
   item,
   style,
-  index,
-  onShowDismissCard,
   parentRefreshContent,
   fromSavedPosts,
   onCommentsPress,
@@ -169,13 +160,13 @@ function PrayerItem({
         }
       : undefined);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsContentExpanded(false);
     setShowSeeMore(false);
     setCollapsedPreview('');
   }, [item.content, item.postId, item.id, limitContentLines]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     entryProgress.setValue(0);
 
     const easing = isExhortation
@@ -364,8 +355,6 @@ function PrayerItem({
               }
         }
         isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
-        onShowDismissCard={onShowDismissCard}
-        index={index}
         onCommentsPress={handleCommentsPress}
         onPress={() => {
           if (!item.private && item?.userData._id && item.userData._id !== user?._id) {

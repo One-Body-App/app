@@ -185,9 +185,7 @@ function PrayerWallSavedPrayersComponent({
                 editPost={editPost}
                 removePost={removePost}
                 item={item}
-                index={index}
                 onCommentsPress={openPost}
-                onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
                 limitContentLines
               />
             </TouchableOpacity>

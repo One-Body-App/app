@@ -3,8 +3,12 @@ const mockGoogleHasPlayServices = jest.fn();
 const mockGoogleSignIn = jest.fn();
 const mockApiCall = jest.fn();
 const mockSaveAuthTokens = jest.fn();
+const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-const loadSocialAuthModule = (googleClientId?: string) => {
+const loadSocialAuthModule = (
+  googleClientId?: string,
+  platformOS: 'android' | 'ios' = 'android'
+) => {
   jest.resetModules();
   jest.clearAllMocks();
 
@@ -39,6 +43,12 @@ const loadSocialAuthModule = (googleClientId?: string) => {
     },
   }));
 
+  jest.doMock('react-native', () => ({
+    Platform: {
+      OS: platformOS,
+    },
+  }));
+
   jest.doMock('./api', () => ({
     ApiCall: (...args: unknown[]) => mockApiCall(...args),
   }));
@@ -57,6 +67,7 @@ const loadSocialAuthModule = (googleClientId?: string) => {
 
 describe('socialAuth Google configuration', () => {
   beforeEach(() => {
+    (global as any).__DEV__ = true;
     mockApiCall.mockReset();
     mockSaveAuthTokens.mockReset();
     mockGoogleHasPlayServices.mockResolvedValue(true);
@@ -86,6 +97,23 @@ describe('socialAuth Google configuration', () => {
 
     expect(() => socialAuth.ensureGoogleSigninConfigured()).toThrow(
       'Google Sign-In is misconfigured. GOOGLE_LOGIN_CLIENT_ID must be a single web client ID.'
+    );
+  });
+
+  it('logs an Android-specific diagnostic when Google sign-in throws DEVELOPER_ERROR', async () => {
+    const socialAuth = loadSocialAuthModule('web-client-id', 'android');
+    const developerError = new Error('DEVELOPER_ERROR');
+    (developerError as Error & { code?: string }).code = 'DEVELOPER_ERROR';
+    mockGoogleSignIn.mockRejectedValue(developerError);
+
+    await expect(socialAuth.getGoogleIdToken()).rejects.toThrow('DEVELOPER_ERROR');
+
+    expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('Android DEVELOPER_ERROR detected'),
+      expect.objectContaining({
+        code: 'DEVELOPER_ERROR',
+        message: 'DEVELOPER_ERROR',
+      })
     );
   });
 

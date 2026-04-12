@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { Image, Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
@@ -258,7 +258,7 @@ const normalizeSourceIdForNavigation = (
 const useResolvedImageInfo = (urls: string[], enabled: boolean) => {
   const [imageInfo, setImageInfo] = useState(() => buildImageInfoSeeds(urls));
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let isMounted = true;
 
     const nextImageInfo = buildImageInfoSeeds(urls);
@@ -354,8 +354,6 @@ function SocialItem({
   socialPostviewStyle,
   visible,
   contentWidth,
-  index,
-  onShowDismissCard,
   parentRefreshContent,
   removePost,
   editPost,
@@ -397,12 +395,12 @@ function SocialItem({
   let profileUrl = '';
   profileUrl = itemData?.permalink || '';
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsPlaying(isRowVisible);
     if (!isRowVisible && !isMuted) setIsMuted(true);
   }, [isMuted, isRowVisible]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setInlineCommentCount(itemData.commentNumber ?? itemData.comments?.length ?? 0);
   }, [
     itemData.commentNumber,
@@ -419,7 +417,7 @@ function SocialItem({
   );
   const imageInfo = useResolvedImageInfo(topLevelImageUrls, isRowVisible);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setVideoAspectByUrl({});
   }, [media, itemData.id, itemData.postId, itemData._id]);
 
@@ -471,7 +469,7 @@ function SocialItem({
     return contentUrl;
   }, [contentUrl]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let isActive = true;
     const controller = new AbortController();
 
@@ -587,7 +585,7 @@ function SocialItem({
 
   const sourceSnapshotSeed = useMemo(() => buildRepostSourceSnapshot(repostMeta), [repostMeta]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let isActive = true;
 
     if (!repostMeta) {
@@ -885,8 +883,6 @@ function SocialItem({
         source={itemData.source}
         userData={itemData.userData}
         isApprovedInfluencer={itemData.userData?.isApprovedInfluencer ?? false}
-        onShowDismissCard={onShowDismissCard}
-        index={index}
         onCommentsPress={handleCommentsPress}
         onTelemetryEvent={onTelemetryEvent}
         onPress={() => {
