@@ -1,5 +1,6 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
+import { Buffer } from 'buffer';
 import { Platform } from 'react-native';
 import { ApiCall } from './api';
 import { AuthTokens, saveAuthTokens } from './authTokens';
@@ -58,6 +59,14 @@ const persistTokensSafely = async (tokens?: AuthTokens) => {
 
 let googleConfigured = false;
 
+type GoogleIdTokenDiagnostics = {
+  aud?: string | string[];
+  azp?: string;
+  iss?: string;
+  exp?: number;
+  hasSub: boolean;
+};
+
 const isAndroidGoogleDeveloperError = (error: any) => {
   if (Platform.OS !== 'android') {
     return false;
@@ -89,6 +98,66 @@ const logAndroidGoogleDeveloperError = (error: any) => {
       message: error?.message,
     }
   );
+};
+
+const decodeJwtPayload = (token: string): Record<string, unknown> | null => {
+  try {
+    const [, payload] = token.split('.');
+    if (!payload) {
+      return null;
+    }
+
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const paddingLength = (4 - (normalizedPayload.length % 4)) % 4;
+    const paddedPayload = normalizedPayload.padEnd(normalizedPayload.length + paddingLength, '=');
+    const decodedPayload = Buffer.from(paddedPayload, 'base64').toString('utf8');
+    const parsedPayload = JSON.parse(decodedPayload);
+
+    return parsedPayload && typeof parsedPayload === 'object' ? parsedPayload : null;
+  } catch {
+    return null;
+  }
+};
+
+const getNumericClaim = (payload: Record<string, unknown>, key: 'exp') => {
+  const value = Number(payload[key]);
+  return Number.isFinite(value) ? value : undefined;
+};
+
+const getGoogleIdTokenDiagnostics = (idToken: string): GoogleIdTokenDiagnostics | null => {
+  const payload = decodeJwtPayload(idToken);
+  if (!payload) {
+    return null;
+  }
+
+  const audClaim = payload.aud;
+  const audIsStringArray =
+    Array.isArray(audClaim) && audClaim.every((value) => typeof value === 'string');
+  const aud = typeof audClaim === 'string' || audIsStringArray ? audClaim : undefined;
+
+  return {
+    aud,
+    azp: typeof payload.azp === 'string' ? payload.azp : undefined,
+    iss: typeof payload.iss === 'string' ? payload.iss : undefined,
+    exp: getNumericClaim(payload, 'exp'),
+    hasSub: typeof payload.sub === 'string' && payload.sub.length > 0,
+  };
+};
+
+const logAndroidGoogleTokenDiagnostics = (idToken: string) => {
+  if (!__DEV__ || Platform.OS !== 'android') {
+    return;
+  }
+
+  const diagnostics = getGoogleIdTokenDiagnostics(idToken);
+  if (!diagnostics) {
+    console.warn('[Google Sign-In] Android ID token diagnostics unavailable', {
+      decodeFailed: true,
+    });
+    return;
+  }
+
+  console.warn('[Google Sign-In] Android ID token claims', diagnostics);
 };
 
 const getGoogleWebClientId = () => {
@@ -145,6 +214,8 @@ export const getGoogleIdToken = async (): Promise<SocialTokenResult> => {
     if (!idToken) {
       return { idToken: undefined };
     }
+
+    logAndroidGoogleTokenDiagnostics(idToken);
 
     return {
       idToken,

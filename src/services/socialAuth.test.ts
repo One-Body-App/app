@@ -1,9 +1,26 @@
+import { Buffer } from 'buffer';
+
 const mockGoogleConfigure = jest.fn();
 const mockGoogleHasPlayServices = jest.fn();
 const mockGoogleSignIn = jest.fn();
 const mockApiCall = jest.fn();
 const mockSaveAuthTokens = jest.fn();
 const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+const createJwt = (payload: Record<string, unknown>) => {
+  const encodedHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' }))
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+  const encodedPayload = Buffer.from(JSON.stringify(payload))
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+
+  return `${encodedHeader}.${encodedPayload}.signature`;
+};
 
 const loadSocialAuthModule = (
   googleClientId?: string,
@@ -119,6 +136,22 @@ describe('socialAuth Google configuration', () => {
 
   it('uses the configured Google web client id when requesting an id token', async () => {
     const socialAuth = loadSocialAuthModule('web-client-id');
+    const googleIdToken = createJwt({
+      aud: 'web-client-id',
+      azp: 'android-client-id',
+      iss: 'https://accounts.google.com',
+      exp: 1_900_000_000,
+      sub: 'google-user-id',
+    });
+    mockGoogleSignIn.mockResolvedValue({
+      idToken: googleIdToken,
+      user: {
+        email: 'person@example.com',
+        name: 'Person Example',
+        givenName: 'Person',
+        familyName: 'Example',
+      },
+    });
 
     const result = await socialAuth.getGoogleIdToken();
 
@@ -130,12 +163,23 @@ describe('socialAuth Google configuration', () => {
     });
     expect(result).toEqual(
       expect.objectContaining({
-        idToken: 'google-id-token',
+        idToken: googleIdToken,
         details: expect.objectContaining({
           email: 'person@example.com',
         }),
       })
     );
+    expect(mockConsoleWarn).toHaveBeenCalledWith(
+      '[Google Sign-In] Android ID token claims',
+      expect.objectContaining({
+        aud: 'web-client-id',
+        azp: 'android-client-id',
+        iss: 'https://accounts.google.com',
+        exp: 1_900_000_000,
+        hasSub: true,
+      })
+    );
+    expect(JSON.stringify(mockConsoleWarn.mock.calls)).not.toContain(googleIdToken);
   });
 
   it('passes intent and createIfMissing through the social token exchange request', async () => {
