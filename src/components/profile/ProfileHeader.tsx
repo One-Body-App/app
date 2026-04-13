@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Image,
+  Pressable,
   SafeAreaView,
   ScrollView,
   Share,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { Add, Calendar, Link21, Location, ShieldTick, HomeHashtag } from 'iconsax-react-native';
 import { format, parseISO } from 'date-fns';
@@ -29,6 +31,8 @@ import Selected from '@/assets/svg/Selected.svg';
 import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import { ProfileProps } from './profileTypes';
 import { getProfileDisplayName, getProfileRoleLabel, getProfileTypeLabel } from './profileUtils';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const COVER_HEIGHT = 150;
 const AVATAR_SIZE = 84;
@@ -68,6 +72,7 @@ function ProfileHeader({
   handleSubscribe,
   handleUnSubscribe,
   variant = 'public',
+  avatarAnimation,
 }: ProfileProps) {
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
@@ -99,6 +104,11 @@ function ProfileHeader({
   const [requestModal, setRequestModal] = useState(false);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>(persistedBadgeIds);
   const showSelfProfileMediaControls = isOwnProfile && isSelfVariant;
+  // Hide the original avatar while the overlay is open so they don't overlap.
+  // Derive from isOpen (0/1 numeric) — cheaper than string comparison on UI thread.
+  const rAvatarPlaceholderStyle = useAnimatedStyle(() => ({
+    opacity: avatarAnimation ? 1 - avatarAnimation.isOpen.value : 1,
+  }));
 
   const badgeMap = useMemo(() => {
     const allBadges = Array.isArray(authState?.getBadgesData) ? authState.getBadgesData : [];
@@ -365,19 +375,30 @@ function ProfileHeader({
           </View>
         ) : (
           <View style={styles.heroRow}>
-            <View style={styles.avatarWrap}>
+            <Animated.View
+              ref={avatarAnimation?.targetRef}
+              onLayout={avatarAnimation?.onTargetLayout}
+              style={styles.avatarWrap}
+            >
               {profileData.profileImage ? (
-                <FastImage
-                  source={{ uri: profileData.profileImage }}
-                  style={styles.avatar}
-                  resizeMode={FastImage.resizeMode.cover}
-                />
+                // Single AnimatedPressable replaces the Animated.View + Pressable pair —
+                // one fewer compositing layer on Android
+                <AnimatedPressable
+                  onPress={avatarAnimation?.open}
+                  style={[styles.avatar, rAvatarPlaceholderStyle]}
+                >
+                  <FastImage
+                    source={{ uri: profileData.profileImage }}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode={FastImage.resizeMode.cover}
+                  />
+                </AnimatedPressable>
               ) : (
                 <View style={[styles.avatar, styles.avatarFallback]}>
                   <ProfileFill width={50} height={50} color={Colors.primarySapphire.brand} />
                 </View>
               )}
-            </View>
+            </Animated.View>
 
             <View style={styles.actionRow}>
               {isOwnProfile ? (

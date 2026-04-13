@@ -1,7 +1,10 @@
 import {
   extractHandlesFromText,
   findActiveMention,
+  findMentionRangeBeforeCursor,
+  removeMentionRangesFromText,
   replaceMentionAtRange,
+  syncMentions,
   syncMentionedUserIds,
 } from '../mentionUtils';
 
@@ -36,11 +39,47 @@ describe('mentionUtils', () => {
   });
 
   it('syncs mentioned ids to only handles still present in the text', () => {
-    const mentionsByHandle = new Map<string, string>([
-      ['john', 'user-1'],
-      ['jane', 'user-2'],
+    const mentionsByHandle = new Map<
+      string,
+      { userId: string; username: string; displayName: string }
+    >([
+      ['john', { userId: 'user-1', username: 'john', displayName: 'John' }],
+      ['jane', { userId: 'user-2', username: 'jane', displayName: 'Jane' }],
     ]);
 
     expect(syncMentionedUserIds('Hello @john.', mentionsByHandle)).toEqual(['user-1']);
+  });
+
+  it('returns structured mentions in text order without duplicates', () => {
+    const mentionsByHandle = new Map<
+      string,
+      { userId: string; username: string; displayName: string }
+    >([
+      ['john', { userId: 'user-1', username: 'john', displayName: 'John' }],
+      ['jane', { userId: 'user-2', username: 'jane', displayName: 'Jane' }],
+    ]);
+
+    expect(syncMentions('Hi @john and @jane and @john again', mentionsByHandle)).toEqual([
+      { userId: 'user-1', username: 'john', displayName: 'John' },
+      { userId: 'user-2', username: 'jane', displayName: 'Jane' },
+    ]);
+  });
+
+  it('removes a committed mention as a whole token', () => {
+    const mentionsByHandle = new Map<
+      string,
+      { userId: string; username: string; displayName: string }
+    >([['john', { userId: 'user-1', username: 'john', displayName: 'John' }]]);
+    const range = findMentionRangeBeforeCursor(
+      'Hello @john there',
+      { start: 12, end: 12 },
+      mentionsByHandle
+    );
+
+    expect(range).not.toBeNull();
+    expect(removeMentionRangesFromText('Hello @john there', [range!])).toEqual({
+      text: 'Hello there',
+      selection: { start: 6, end: 6 },
+    });
   });
 });

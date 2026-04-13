@@ -74,18 +74,18 @@ export const getPendingVideoUploadToastEvent = (
     return null;
   }
 
+  const failureMessages: Record<string, string> = {
+    'nsfw-blocked': 'This video violates content standards and cannot be posted to Watch.',
+    'moderation-failed': 'Your Watch video could not be reviewed locally. Please try again.',
+    'missing-source':
+      'Your Watch video could not be completed because the original file is no longer available.',
+    'invalid-edit':
+      'Your Watch video could not be processed because the trim or crop settings were invalid.',
+    network: 'Your Watch video upload did not finish. Please try again.',
+  };
   const fallbackMessage =
-    item.failureCode === 'nsfw-blocked'
-      ? 'This video violates content standards and cannot be posted to Watch.'
-      : item.failureCode === 'moderation-failed'
-        ? 'Your Watch video could not be reviewed locally. Please try again.'
-        : item.failureCode === 'missing-source'
-          ? 'Your Watch video could not be completed because the original file is no longer available.'
-          : item.failureCode === 'invalid-edit'
-            ? 'Your Watch video could not be processed because the trim or crop settings were invalid.'
-            : item.failureCode === 'network'
-              ? 'Your Watch video upload did not finish. Please try again.'
-              : 'Your Watch video could not be processed after editing. Please try again.';
+    (item.failureCode ? failureMessages[item.failureCode] : undefined) ??
+    'Your Watch video could not be processed after editing. Please try again.';
 
   return {
     dedupeKey: `${item.id}:failed`,

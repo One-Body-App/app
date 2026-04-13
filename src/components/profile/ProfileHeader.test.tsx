@@ -109,8 +109,8 @@ jest.mock('@/components/CustomModal', () => mockCustomModalComponent);
 
 jest.mock('@/assets/svg/Selected.svg', () => 'Selected');
 
-const mockedUseDispatch = useDispatch as jest.Mock;
-const mockedUseSelector = useSelector as jest.Mock;
+const mockedUseDispatch = useDispatch as unknown as jest.Mock;
+const mockedUseSelector = useSelector as unknown as jest.Mock;
 
 const buildUser = (overrides: Partial<User> = {}): User =>
   ({

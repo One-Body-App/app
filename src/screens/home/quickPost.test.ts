@@ -7,15 +7,15 @@ import {
   QUICK_POST_TEXT_BLOCK_MESSAGE,
 } from './quickPost';
 
-const mockBuildPendingModerationReviewPayload = jest.fn((checks) => ({ checks }));
-const mockCallBackendFallbackModeration = jest.fn();
-const mockModerateClientText = jest.fn();
+const mockBuildPendingModerationReviewPayload: jest.Mock = jest.fn((checks) => ({ checks }));
+const mockCallBackendFallbackModeration: jest.Mock = jest.fn();
+const mockModerateClientText: jest.Mock = jest.fn();
 
 jest.mock('@/src/services/moderation/clientModeration', () => ({
-  buildPendingModerationReviewPayload: (...args: unknown[]) =>
+  buildPendingModerationReviewPayload: (...args: any[]) =>
     mockBuildPendingModerationReviewPayload(...args),
-  callBackendFallbackModeration: (...args: unknown[]) => mockCallBackendFallbackModeration(...args),
-  moderateClientText: (...args: unknown[]) => mockModerateClientText(...args),
+  callBackendFallbackModeration: (...args: any[]) => mockCallBackendFallbackModeration(...args),
+  moderateClientText: (...args: any[]) => mockModerateClientText(...args),
 }));
 
 describe('quickPost helpers', () => {

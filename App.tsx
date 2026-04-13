@@ -26,7 +26,6 @@ import { persistor, store } from './src/redux/store'; // Make sure this path is 
 import AppContent from './src/navigator/AppContent'; // Import the new component
 import { getFirebaseApp } from './src/services/firebaseApp';
 import VideoUploadRuntimeHost from './src/components/post/VideoUploadRuntimeHost';
-import VideoModerationBridge from './src/components/post/VideoModerationBridge';
 import useMountEffect from './src/hooks/useMountEffect';
 
 Sentry.init({
@@ -66,10 +65,9 @@ function App() {
             <SafeAreaProvider>
               <ToastProvider offsetTop={60}>
                 <PersistGate loading={null} persistor={persistor}>
+                  <VideoUploadRuntimeHost />
                   {/* Render the new AppContent component here */}
                   <AppContent />
-                  <VideoUploadRuntimeHost />
-                  <VideoModerationBridge />
                 </PersistGate>
               </ToastProvider>
             </SafeAreaProvider>

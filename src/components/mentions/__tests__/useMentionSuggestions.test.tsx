@@ -12,16 +12,19 @@ function HookHarness({
   query,
   searchUsers,
   onState,
+  excludedUserIds = [],
 }: {
   query: string;
   searchUsers: any;
   onState: (state: any) => void;
+  excludedUserIds?: string[];
 }) {
   const state = useMentionSuggestions({
     query,
-    debounceMs: 250,
+    debounceMs: 300,
     searchUsers,
     enabled: true,
+    excludedUserIds,
   });
 
   useEffect(() => {
@@ -51,7 +54,7 @@ describe('useMentionSuggestions', () => {
     expect(searchUsers).not.toHaveBeenCalled();
 
     await act(async () => {
-      jest.advanceTimersByTime(249);
+      jest.advanceTimersByTime(299);
     });
     expect(searchUsers).not.toHaveBeenCalled();
 
@@ -64,6 +67,7 @@ describe('useMentionSuggestions', () => {
     expect(searchUsers).toHaveBeenCalledWith(
       expect.objectContaining({
         query: 'jo',
+        context: 'tagging',
       })
     );
   });
@@ -95,7 +99,7 @@ describe('useMentionSuggestions', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(250);
+      jest.advanceTimersByTime(300);
     });
 
     await act(async () => {
@@ -103,7 +107,7 @@ describe('useMentionSuggestions', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(250);
+      jest.advanceTimersByTime(300);
     });
 
     await act(async () => {
@@ -126,8 +130,15 @@ describe('useMentionSuggestions', () => {
     const onState = jest.fn();
 
     await act(async () => {
-      renderer.create(<HookHarness query="jo" searchUsers={searchUsers} onState={onState} />);
-      jest.advanceTimersByTime(250);
+      renderer.create(
+        <HookHarness
+          query="jo"
+          searchUsers={searchUsers}
+          onState={onState}
+          excludedUserIds={['user-3']}
+        />
+      );
+      jest.advanceTimersByTime(300);
     });
     await flushPromises();
 

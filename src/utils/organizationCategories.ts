@@ -24,7 +24,7 @@ export type OrganizationCategoryGroup = {
 const CATEGORY_LOOKUP = new Set<OrganizationCategoryKey>(ORGANIZATION_CATEGORY_ORDER);
 
 const CATEGORY_PATTERNS: Array<{
-  category: Exclude<OrganizationCategoryKey, 'Other'>;
+  category: 'Church' | 'Business' | 'Ministry' | 'Education';
   patterns: RegExp[];
 }> = [
   {
@@ -115,7 +115,7 @@ export const getOrganizationCategoryForLabel = (label: string): OrganizationCate
 };
 
 export const getOrganizationCategoryForType = (
-  organizationType?: Pick<OrganizationType, 'organizationType' | 'name' | 'category'> | null
+  organizationType?: OrganizationType | null
 ): OrganizationCategoryKey => {
   const explicitCategory = String(
     organizationType?.category || ''

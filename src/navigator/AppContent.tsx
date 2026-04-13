@@ -86,7 +86,6 @@ import {
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import VideoUploadRuntimeHost from '@/src/components/post/VideoUploadRuntimeHost';
 import {
   isExplicitLogoutActive,
   isMfaEnrollmentScreenActive,
@@ -1413,7 +1412,6 @@ function AppContent() {
     >
       <ReactionProvider>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <VideoUploadRuntimeHost />
           <MainStack.Navigator
             initialRouteName="Intro"
             screenOptions={{

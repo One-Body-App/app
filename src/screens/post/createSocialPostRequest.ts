@@ -2,6 +2,7 @@ import { serialize } from 'object-to-formdata';
 import type { GiphyMedia } from '@giphy/react-native-sdk';
 
 import type { ModerationReviewPayload } from '@/src/services/moderation/types';
+import type { TaggedMention } from '@/utils/types';
 
 type UploadedImage = {
   uri: string;
@@ -17,6 +18,7 @@ type CreateSocialPostLocation = {
 export type CreateSocialPostRequestArgs = {
   content: string;
   mentionedUserIds: string[];
+  mentions?: TaggedMention[];
   uploadedImages?: UploadedImage[];
   gif?: GiphyMedia | null;
   moderationReview?: ModerationReviewPayload;
@@ -26,6 +28,7 @@ export type CreateSocialPostRequestArgs = {
 export const buildCreateSocialPostRequest = ({
   content,
   mentionedUserIds,
+  mentions,
   uploadedImages,
   gif,
   moderationReview,
@@ -34,6 +37,7 @@ export const buildCreateSocialPostRequest = ({
   const basePayload = {
     content,
     mentionedUserIds,
+    mentions,
     gif: gif ?? undefined,
     moderationReview,
     location,

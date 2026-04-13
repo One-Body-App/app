@@ -35,6 +35,7 @@ import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
+import ParsedText from '@/components/mentions/ParsedText';
 import CommentField from './Field';
 import CommentFilterTabs from './CommentFilterTabs';
 import FlatCommentRow from './FlatCommentRow';
@@ -63,6 +64,11 @@ import {
   SocialPostReactionType,
 } from '@/utils/types';
 import { formatLocalDate } from '@/src/utils/time';
+import {
+  queueTaggedNotificationDemo,
+  resolveNewTaggedUserIds,
+} from '@/src/services/notification/taggedNotificationDispatch';
+import type { TaggedMention } from '@/utils/types';
 
 interface CommentThreadProps {
   postId: string;
@@ -159,6 +165,7 @@ function CommentThread({
 
   const [editingCommentId, setEditingCommentId] = useState('');
   const [editingSeedText, setEditingSeedText] = useState('');
+  const [editingSeedMentions, setEditingSeedMentions] = useState<TaggedMention[]>([]);
   const [replyingTo, setReplyingTo] = useState<ReplyTarget | null>(null);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
   const [mediaImages, setMediaImages] = useState<string[]>([]);
@@ -252,6 +259,10 @@ function CommentThread({
         objectId: rawComment.objectId ?? fallback?.objectId ?? postId,
         objectType: rawComment.objectType ?? fallback?.objectType ?? type,
         content: rawComment.content ?? fallback?.content ?? '',
+        mentionedUserIds: Array.isArray(rawComment.mentionedUserIds)
+          ? rawComment.mentionedUserIds
+          : (fallback?.mentionedUserIds ?? []),
+        mentions: Array.isArray(rawComment.mentions) ? rawComment.mentions : fallback?.mentions,
         userData: rawComment.userData ?? fallback?.userData,
         images: Array.isArray(rawComment.images) ? rawComment.images : fallback?.images,
         videos: Array.isArray(rawComment.videos) ? rawComment.videos : fallback?.videos,
@@ -375,16 +386,16 @@ function CommentThread({
               {resolvedThreadRootComment.userData?.name ?? 'Unknown'}
             </StyledText>
             {rootMeta}
-            <StyledText
+            <ParsedText
               style={{
                 marginTop: spacing.x8,
                 color: primaryTextColor,
                 fontSize: 16,
                 lineHeight: 22,
               }}
-            >
-              {resolvedThreadRootComment.content ?? ''}
-            </StyledText>
+              mentions={resolvedThreadRootComment.mentions}
+              text={resolvedThreadRootComment.content ?? ''}
+            />
             {resolvedThreadRootComment.edited ? (
               <StyledText
                 style={{ marginTop: spacing.x5, color: secondaryTextColor, fontSize: 12 }}
@@ -788,6 +799,7 @@ function CommentThread({
   const clearEditingState = useCallback(() => {
     setEditingCommentId('');
     setEditingSeedText('');
+    setEditingSeedMentions([]);
     setGif(null);
     setMediaImages([]);
   }, []);
@@ -838,7 +850,7 @@ function CommentThread({
   }, [allowMedia, toast]);
 
   const createLocalComment = useCallback(
-    (payload: any, content: string): CommentPost => {
+    (payload: any, content: string, mentions: TaggedMention[] = []): CommentPost => {
       const now = new Date();
       const createdDate = toDateFromSource(payload?.created, payload?.createdAt, now);
       const updatedDate = toDateFromSource(payload?.updated, payload?.updatedAt, createdDate);
@@ -855,6 +867,7 @@ function CommentThread({
         objectType: type,
         content: payload?.content ?? content,
         mentionedUserIds: payload?.mentionedUserIds ?? [],
+        mentions: Array.isArray(payload?.mentions) ? payload.mentions : mentions,
         userData: payload?.userData ?? {
           _id: user?._id,
           name: user?.name ?? user?.username ?? 'You',
@@ -879,7 +892,15 @@ function CommentThread({
   );
 
   const publishComment = useCallback(
-    async ({ text, mentionedUserIds }: { text: string; mentionedUserIds: string[] }) => {
+    async ({
+      text,
+      mentionedUserIds,
+      mentions,
+    }: {
+      text: string;
+      mentionedUserIds: string[];
+      mentions: TaggedMention[];
+    }) => {
       if (!postId) {
         return false;
       }
@@ -888,6 +909,9 @@ function CommentThread({
       if (!value && !mediaGif && mediaImages.length < 1) {
         return false;
       }
+      const previousMentionedUserIds = editingCommentId
+        ? (findCommentById(commentsRef.current, editingCommentId)?.mentionedUserIds ?? [])
+        : [];
 
       if (editingCommentId) {
         const localImageUris = allowMedia ? mediaImages.filter(isLocalImageUri) : [];
@@ -907,6 +931,7 @@ function CommentThread({
                   {
                     content: value,
                     mentionedUserIds,
+                    mentions,
                     gif: allowMedia ? mediaGif : undefined,
                     images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
                     uploadImages,
@@ -919,6 +944,7 @@ function CommentThread({
               : {
                   content: value,
                   mentionedUserIds,
+                  mentions,
                   gif: allowMedia ? mediaGif : undefined,
                   images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
                 },
@@ -931,12 +957,26 @@ function CommentThread({
                 ...comment,
                 content: value,
                 mentionedUserIds: result?.response?.mentionedUserIds ?? mentionedUserIds,
+                mentions: Array.isArray(result?.response?.mentions)
+                  ? result.response.mentions
+                  : mentions,
                 images: allowMedia ? mediaImages : undefined,
                 gif: allowMedia ? (mediaGif ?? undefined) : undefined,
                 edited: true,
                 updated: new Date(),
               }))
             );
+            queueTaggedNotificationDemo({
+              notificationType: 'tagged',
+              actorId: String(user?._id ?? user?.id ?? user?.userId ?? '').trim(),
+              postId,
+              postType: 'comment',
+              taggedUserIds: resolveNewTaggedUserIds(
+                previousMentionedUserIds,
+                result?.response?.mentionedUserIds ?? mentionedUserIds
+              ),
+              commentId: editingCommentId,
+            }).catch(() => undefined);
             clearEditingState();
             resetReplyTarget();
             if (onPostRefresh) {
@@ -975,6 +1015,7 @@ function CommentThread({
                 {
                   content: value,
                   mentionedUserIds,
+                  mentions,
                   gif: allowMedia ? mediaGif : undefined,
                   images: localUploadImages,
                   parentCommentId: replyingTo?.id,
@@ -988,6 +1029,7 @@ function CommentThread({
             : {
                 content: value,
                 mentionedUserIds,
+                mentions,
                 gif: allowMedia ? mediaGif : undefined,
                 parentCommentId: replyingTo?.id,
                 replyToCommentId: replyingTo?.id,
@@ -996,7 +1038,7 @@ function CommentThread({
         });
 
         if (result.status === 200) {
-          const optimisticComment = createLocalComment(result.response, value);
+          const optimisticComment = createLocalComment(result.response, value, mentions);
 
           if (replyingTo?.id) {
             const appendResult = appendReplyToTree(
@@ -1022,6 +1064,17 @@ function CommentThread({
           if (onCommentPublished) {
             onCommentPublished();
           }
+          queueTaggedNotificationDemo({
+            notificationType: 'tagged',
+            actorId: String(user?._id ?? user?.id ?? user?.userId ?? '').trim(),
+            postId,
+            postType: 'comment',
+            taggedUserIds: result?.response?.mentionedUserIds ?? mentionedUserIds,
+            commentId:
+              String(
+                result?.response?.commentId ?? result?.response?._id ?? result?.response?.id ?? ''
+              ).trim() || undefined,
+          }).catch(() => undefined);
           if (scrollToEndOnPublish) {
             requestAnimationFrame(() => {
               listRef.current?.scrollToOffset({ animated: true, offset: 0 });
@@ -1061,6 +1114,7 @@ function CommentThread({
       toast,
       token,
       type,
+      user,
     ]
   );
 
@@ -1149,6 +1203,7 @@ function CommentThread({
       const openEdit = () => {
         setEditingCommentId(commentId);
         setEditingSeedText(comment.content ?? '');
+        setEditingSeedMentions(comment.mentions ?? []);
         setReplyingTo(null);
         setGif(comment.gif ?? null);
         setMediaImages(comment.images ?? []);
@@ -1707,6 +1762,7 @@ function CommentThread({
             }
             focusRequestKey={replyFocusRequestKey}
             text={editingSeedText}
+            mentions={editingSeedMentions}
             isEditingComment={Boolean(editingCommentId)}
             setEditingComment={(isEditing) => {
               if (!isEditing) {

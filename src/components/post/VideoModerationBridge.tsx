@@ -137,6 +137,7 @@ export default function VideoModerationBridge() {
     <View pointerEvents="none" style={styles.container}>
       <WebView
         ref={webViewRef}
+        pointerEvents="none"
         originWhitelist={['about:blank']}
         source={{ html }}
         onMessage={handleMessage}
@@ -158,8 +159,11 @@ export default function VideoModerationBridge() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    width: 1,
-    height: 1,
+    top: -1000,
+    left: -1000,
+    width: 0,
+    height: 0,
+    overflow: 'hidden',
     opacity: 0,
   },
   webView: {

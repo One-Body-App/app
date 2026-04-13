@@ -65,6 +65,8 @@ import StyledText from '@/components/styled/Text';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import SocialItem from '@/components/listItems/SocialItem';
 import PrayerItem from '@/components/listItems/PrayerItem';
+import FeedAvatar from '@/components/avatar/FeedAvatar';
+import { resolveFeedAvatarUri, resolveProfileAvatarUri } from '@/components/avatar/feedAvatarUtils';
 import { ArticleType, PostType, PrayerPost, SocialPost, User } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
@@ -139,6 +141,7 @@ type FeedPost = (ArticleType | SocialPost) & {
   source?: string | { name: string };
   user?: {
     name?: string;
+    profileImage?: string;
     avatar?: string;
     profile_image?: string;
   };
@@ -779,11 +782,14 @@ function SuggestionsRail({
                 activeOpacity={0.9}
                 style={styles.discoveryProfileTouch}
               >
-                <Image
-                  source={{
-                    uri: user.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
-                  }}
+                <FeedAvatar
+                  uri={resolveProfileAvatarUri(user)}
+                  size={56}
                   style={styles.discoveryAvatar}
+                  fallbackBackgroundColor={dark ? BRAND.cardDark : BRAND.white}
+                  fallbackBorderColor={BRAND.primaryDark}
+                  fallbackIconColor={BRAND.primaryDark}
+                  fallbackIconSize={24}
                 />
                 <StyledText
                   numberOfLines={1}
@@ -849,12 +855,7 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
     item.userData?.name ||
     'One Body User';
 
-  const authorAvatar =
-    item.authorAvatar ||
-    item.user?.avatar ||
-    item.user?.profile_image ||
-    item.userData?.profileImage ||
-    'https://via.placeholder.com/40';
+  const authorAvatar = resolveFeedAvatarUri(item);
 
   const contentText =
     item.content ||
@@ -877,7 +878,15 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
       {/* Header */}
       <View style={styles.cardHeader}>
         <TouchableOpacity style={styles.userInfo} onPress={onPressProfile}>
-          <Image source={{ uri: authorAvatar }} style={styles.avatarSmall} />
+          <FeedAvatar
+            uri={authorAvatar}
+            size={40}
+            style={styles.avatarSmall}
+            fallbackBackgroundColor={dark ? BRAND.cardDark : BRAND.white}
+            fallbackBorderColor={BRAND.primaryDark}
+            fallbackIconColor={BRAND.primaryDark}
+            fallbackIconSize={18}
+          />
           <View>
             <StyledText style={[styles.userName, { color: dark ? BRAND.white : BRAND.black }]}>
               {authorName}
@@ -1618,7 +1627,9 @@ function Home({ navigation, route }: Props) {
     }
     setIsQuickPosting(true);
     try {
-      const textModeration = await moderateQuickPostText(content, (message) => Toast.show(message));
+      const textModeration = await moderateQuickPostText(content, (message) =>
+        Toast.show(message, Toast.SHORT)
+      );
       if (textModeration.blocked) {
         return;
       }
@@ -1650,13 +1661,16 @@ function Home({ navigation, route }: Props) {
           (result.response as { pendingReview?: unknown })?.pendingReview
         );
         if (pendingReview || responseMessage) {
-          Toast.show(responseMessage || QUICK_POST_PENDING_REVIEW_MESSAGE);
+          Toast.show(responseMessage || QUICK_POST_PENDING_REVIEW_MESSAGE, Toast.SHORT);
         }
         return;
       }
-      Toast.show(getQuickPostErrorMessage(result?.response, result?.status));
+      Toast.show(getQuickPostErrorMessage(result?.response, result?.status), Toast.SHORT);
     } catch (error: any) {
-      Toast.show(getQuickPostErrorMessage(error?.response?.data ?? error?.response, error?.status));
+      Toast.show(
+        getQuickPostErrorMessage(error?.response?.data ?? error?.response, error?.status),
+        Toast.SHORT
+      );
     } finally {
       setIsQuickPosting(false);
     }

@@ -19,6 +19,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import ImagePicker from 'react-native-image-crop-picker';
 import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
+import type { TaggedMention } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -87,8 +88,10 @@ interface Props {
   publishComment: (payload: {
     text: string;
     mentionedUserIds: string[];
+    mentions: TaggedMention[];
   }) => Promise<boolean> | boolean;
   text?: string;
+  mentions?: TaggedMention[];
   placeholderText?: string;
   isEditingComment?: boolean;
   setEditingComment?: (status: boolean) => void;
@@ -109,6 +112,7 @@ function CommentField({
   setGif,
   publishComment,
   text,
+  mentions,
   placeholderText,
   isEditingComment,
   setEditingComment,
@@ -134,6 +138,7 @@ function CommentField({
   const InputComponent = isFromBottomField ? BottomSheetTextInput : TextInput;
   const mentionComposer = useMentionComposer({
     initialText: text ?? '',
+    initialMentions: mentions ?? [],
     sanitizeText: (value) => sanitizeComposerText(value, 2000),
   });
   const {
@@ -144,6 +149,7 @@ function CommentField({
     query: mentionComposer.activeMention?.query ?? '',
     token,
     limit: 8,
+    excludedUserIds: mentionComposer.mentionedUserIds,
     enabled: Boolean(mentionComposer.activeMention?.query),
   });
   const content = mentionComposer.text;
@@ -195,8 +201,8 @@ function CommentField({
       return;
     }
 
-    mentionComposer.reset(text);
-  }, [mentionComposer.reset, text]);
+    mentionComposer.hydrate(text, mentions ?? []);
+  }, [mentionComposer.hydrate, mentions, text]);
 
   // const onKeyboardWillShow = (e: KeyboardEvent) => {
   //   setKeyboardHeight(e.endCoordinates.height);
@@ -238,6 +244,7 @@ function CommentField({
         const publishResult = await publishComment({
           text: value ?? '',
           mentionedUserIds: mentionComposer.mentionedUserIds,
+          mentions: mentionComposer.mentions,
         });
         if (publishResult) {
           mentionComposer.reset();
@@ -486,8 +493,10 @@ function CommentField({
               }}
               isError={isMentionError}
               isLoading={isMentionLoading}
+              mentions={mentionComposer.mentions}
               multiline
               onChangeText={mentionComposer.setText}
+              onHandleBackspace={mentionComposer.deleteMentionBeforeCursor}
               onSelectSuggestion={mentionComposer.selectMention}
               onSelectionChange={mentionComposer.setSelection}
               onSubmitEditing={() => {

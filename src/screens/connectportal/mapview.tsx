@@ -416,20 +416,6 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
   }, [activeTab, navigation]);
 
-  const onOpenLanding = useCallback(() => {
-    if (activeTab === 'Places') {
-      navigation.navigate('ConnectPlacesHome');
-      return;
-    }
-
-    if (activeTab === 'Go!') {
-      navigation.navigate('ConnectGoEventDash');
-      return;
-    }
-
-    navigation.navigate('ConnectServeHome');
-  }, [activeTab, navigation]);
-
   const onChangeTab = (tab: typeof activeTab) => {
     clearSelection();
     setActiveTab(tab);
@@ -504,7 +490,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           }}
           secondaryAction={{
             label: 'Details',
-            onPress: onOpenLanding,
+            onPress: () => navigation.navigate('UserProfile', { id: selectedPlace.id }),
             variant: 'secondary',
           }}
           onDismiss={clearSelection}
@@ -556,15 +542,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
 
     return null;
-  }, [
-    clearSelection,
-    navigation,
-    onOpenLanding,
-    places,
-    selectedEvent,
-    selectedPlace,
-    selectedServeItem,
-  ]);
+  }, [clearSelection, navigation, places, selectedEvent, selectedPlace, selectedServeItem]);
 
   const renderBottomChips = () => {
     if (activeTab === 'Places') {

@@ -325,6 +325,33 @@ function Settings({ navigation }: Props) {
             </View>
 
             <TouchableOpacity
+              onPress={() => navigation.navigate('NotificationSettings')}
+              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
+            >
+              <View
+                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
+              >
+                <View
+                  style={{
+                    borderRadius: borderRadius.max,
+                    backgroundColor: Colors.neutral[800],
+                    padding: 6,
+                  }}
+                >
+                  <Setting color={Colors.primary.brand} size={18} />
+                </View>
+              </View>
+              <View>
+                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                  Notification Settings
+                </StyledText>
+                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                  Manage tagged alerts and notification channels
+                </StyledText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               onPress={
                 () => {}
                 // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
@@ -560,6 +587,52 @@ function Settings({ navigation }: Props) {
                     );
                   }}
                 />
+              </View>
+            </TouchableOpacity>
+          </View>
+          <View
+            style={[
+              styles.settingsCard,
+              {
+                backgroundColor: colors.card,
+              },
+            ]}
+          >
+            <View>
+              <StyledText
+                style={[
+                  Typography.header.h3,
+                  { textTransform: 'uppercase', marginBottom: spacing.x16 },
+                ]}
+              >
+                Privacy
+              </StyledText>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate('PrivacySettings')}
+              style={{ flexDirection: 'row' }}
+            >
+              <View
+                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
+              >
+                <View
+                  style={{
+                    borderRadius: borderRadius.max,
+                    backgroundColor: Colors.neutral[800],
+                    padding: 6,
+                  }}
+                >
+                  <Feather name="lock" color={Colors.primary.brand} size={18} />
+                </View>
+              </View>
+              <View>
+                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                  Privacy Settings
+                </StyledText>
+                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                  Control who can tag and interact with you
+                </StyledText>
               </View>
             </TouchableOpacity>
           </View>

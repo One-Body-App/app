@@ -2,11 +2,13 @@ import React, { useMemo } from 'react';
 import { StyleProp, Text, TextProps, TextStyle } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import StyledText from '@/components/styled/Text';
+import type { TaggedMention } from '@/utils/types';
 import { navigateToMentionProfile, MENTION_BRAND_COLOR } from './navigation';
 import { MENTION_RENDER_REGEX, normalizeHandle } from './mentionUtils';
 
 type ParsedTextProps = TextProps & {
   text: string;
+  mentions?: TaggedMention[];
   textStyle?: StyleProp<TextStyle>;
   mentionTextStyle?: StyleProp<TextStyle>;
   onMentionPress?: (handle: string) => void;
@@ -14,6 +16,7 @@ type ParsedTextProps = TextProps & {
 
 function ParsedText({
   text,
+  mentions,
   textStyle,
   mentionTextStyle,
   onMentionPress,
@@ -25,6 +28,13 @@ function ParsedText({
 
   const children = useMemo(() => {
     const value = String(text || '');
+    const committedHandles = Array.isArray(mentions)
+      ? new Set(
+          mentions
+            .map((mention) => normalizeHandle(mention.username))
+            .filter((handle) => handle.length > 0)
+        )
+      : null;
     const nodes: React.ReactNode[] = [];
     let cursor = 0;
     let matchIndex = 0;
@@ -41,6 +51,18 @@ function ParsedText({
 
       const normalizedHandle = normalizeHandle(handle);
       const mentionLabel = `@${normalizedHandle}`;
+      const shouldRenderAsMention =
+        committedHandles === null ||
+        committedHandles.size < 1 ||
+        committedHandles.has(normalizedHandle);
+
+      if (!shouldRenderAsMention) {
+        nodes.push(mentionLabel);
+        cursor = index + fullMatch.length;
+        matchIndex += 1;
+        return fullMatch;
+      }
+
       nodes.push(
         <Text
           key={`${mentionLabel}_${index}_${matchIndex}`}
@@ -74,9 +96,10 @@ function ParsedText({
     }
 
     return nodes;
-  }, [mentionTextStyle, navigation, onMentionPress, text]);
+  }, [mentionTextStyle, mentions, navigation, onMentionPress, text]);
 
   return (
+    // eslint-disable-next-line react/jsx-props-no-spreading
     <StyledText {...textProps} style={[{ color: colors.text }, style, textStyle]}>
       {children}
     </StyledText>

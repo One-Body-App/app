@@ -6,6 +6,8 @@ export type MentionUser = {
   username: string;
   name: string;
   profileImage?: string;
+  allowTagging?: boolean;
+  isProfilePublic?: boolean;
 };
 
 const toBearerToken = async (token?: string | null) => {
@@ -17,13 +19,28 @@ const toBearerToken = async (token?: string | null) => {
   return (await getValidAccessToken()) ?? '';
 };
 
+const resolveUsername = (value: any): string => {
+  if (typeof value?.username === 'string') return value.username.trim().toLowerCase();
+  if (typeof value?.handler === 'string') return value.handler.trim().toLowerCase();
+  return '';
+};
+
+const resolveAllowTagging = (value: any): boolean => {
+  if (typeof value?.allowTagging === 'boolean') return value.allowTagging;
+  if (typeof value?.taggingDisabled === 'boolean') return !value.taggingDisabled;
+  return true;
+};
+
+const resolveIsProfilePublic = (value: any): boolean => {
+  if (typeof value?.isProfilePublic === 'boolean') return value.isProfilePublic;
+  if (typeof value?.profileVisibility === 'string')
+    return value.profileVisibility.toLowerCase() === 'public';
+  if (typeof value?.profile?.isPublic === 'boolean') return value.profile.isPublic;
+  return true;
+};
+
 const toMentionUser = (value: any): MentionUser | null => {
-  const username =
-    typeof value?.username === 'string'
-      ? value.username.trim().toLowerCase()
-      : typeof value?.handler === 'string'
-        ? value.handler.trim().toLowerCase()
-        : '';
+  const username = resolveUsername(value);
   const id = String(value?.id ?? value?._id ?? '').trim();
   if (!id || !username) {
     return null;
@@ -42,6 +59,8 @@ const toMentionUser = (value: any): MentionUser | null => {
       (typeof value?.avatar === 'string' && value.avatar) ||
       NO_PROFILE_IMAGE ||
       undefined,
+    allowTagging: resolveAllowTagging(value),
+    isProfilePublic: resolveIsProfilePublic(value),
   };
 };
 
@@ -66,11 +85,13 @@ export const fetchUserSuggestions = async ({
   token,
   limit = 8,
   signal,
+  context = 'tagging',
 }: {
   query: string;
   token?: string | null;
   limit?: number;
   signal?: AbortSignal;
+  context?: 'tagging' | 'mentions';
 }) => {
   const normalizedQuery = String(query || '').trim();
   if (!normalizedQuery) {
@@ -91,6 +112,7 @@ export const fetchUserSuggestions = async ({
       type: 'users',
       limit,
       skip: 0,
+      context,
     }),
   });
 
@@ -105,7 +127,10 @@ export const fetchUserSuggestions = async ({
 
   return payload
     .map(toMentionUser)
-    .filter((value): value is MentionUser => Boolean(value))
+    .filter(
+      (value): value is MentionUser =>
+        value !== null && value.allowTagging !== false && value.isProfilePublic !== false
+    )
     .slice(0, limit);
 };
 

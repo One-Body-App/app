@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -14,6 +14,7 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
 import type { ImageEditorUIConfig } from '@vitaliez/react-native-image-editor-sdk';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import StyledText from '@/components/styled/Text';
 import BrandPaletteBackground from '@/components/BrandPaletteBackground';
 import { ApiCall } from '@/services/api';
@@ -961,7 +962,7 @@ function FilerobotImageEditorModal({
     loadImage?: (source: { uri: string }) => Promise<void> | void;
   } | null>(null);
   const lastLoadedNativeUriRef = useRef('');
-  const [isNativeEditorAvailable, setIsNativeEditorAvailable] = useState(
+  const [isNativeEditorAvailable] = useState(
     isIOS && Boolean(nativeEditorSdk?.ImageEditorUI && nativeEditorSdk?.ImageEditorModule)
   );
   const [preparedSource, setPreparedSource] = useState('');
@@ -1014,22 +1015,6 @@ function FilerobotImageEditorModal({
     nativeSourceUri.length > 0;
   const canUseWebEditor = Platform.OS === 'android';
 
-  useEffect(() => {
-    if (!isIOS) {
-      return;
-    }
-    if (!nativeImageEditorModule || !NativeImageEditorUI) {
-      setIsNativeEditorAvailable(false);
-      return;
-    }
-    try {
-      nativeImageEditorModule.canUndo();
-      setIsNativeEditorAvailable(true);
-    } catch (error) {
-      setIsNativeEditorAvailable(false);
-    }
-  }, [NativeImageEditorUI, isIOS, nativeImageEditorModule]);
-
   const loadNativeImageIfNeeded = useCallback(async () => {
     if (!canUseNativeEditor || !nativeSourceUri) {
       return;
@@ -1052,14 +1037,19 @@ function FilerobotImageEditorModal({
     }
   }, [canUseNativeEditor, nativeSourceUri]);
 
-  useEffect(() => {
+  const prevLoadNativeImageRef = useRef(loadNativeImageIfNeeded);
+  if (prevLoadNativeImageRef.current !== loadNativeImageIfNeeded) {
+    prevLoadNativeImageRef.current = loadNativeImageIfNeeded;
     if (!visible) {
       lastLoadedNativeUriRef.current = '';
-      return;
+    } else {
+      loadNativeImageIfNeeded();
     }
+  }
 
-    loadNativeImageIfNeeded();
-  }, [loadNativeImageIfNeeded, visible]);
+  useMountEffect(() => () => {
+    lastLoadedNativeUriRef.current = '';
+  });
 
   const prepareSource = useCallback(async () => {
     if (!visible || !asset?.uri) {
@@ -1143,9 +1133,11 @@ function FilerobotImageEditorModal({
     }
   }, [asset, canUseNativeEditor, canUseWebEditor, isIOS, visible]);
 
-  useEffect(() => {
+  const prevPrepareSourceRef = useRef(prepareSource);
+  if (prevPrepareSourceRef.current !== prepareSource) {
+    prevPrepareSourceRef.current = prepareSource;
     prepareSource();
-  }, [prepareSource]);
+  }
 
   const htmlSource = useMemo(() => {
     if (!canUseWebEditor || !preparedSource) {

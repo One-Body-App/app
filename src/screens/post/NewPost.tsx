@@ -69,6 +69,7 @@ import {
   moderateClientImages,
   moderateClientText,
 } from '@/src/services/moderation/clientModeration';
+import { queueTaggedNotificationDemo } from '@/src/services/notification/taggedNotificationDispatch';
 import type { ModerationReviewCheckPayload } from '@/src/services/moderation/types';
 import { buildCreateSocialPostRequest } from './createSocialPostRequest';
 
@@ -139,10 +140,32 @@ function NewPost({ navigation, route }: Props) {
     query: mentionComposer.activeMention?.query ?? '',
     token,
     limit: 8,
+    excludedUserIds: mentionComposer.mentionedUserIds,
     enabled: Boolean(mentionComposer.activeMention?.query),
   });
   const content = mentionComposer.text;
   const setContent = mentionComposer.setText;
+  const currentActorId = String(
+    userProfile?._id ?? userProfile?.id ?? userProfile?.userId ?? ''
+  ).trim();
+
+  const dispatchTaggedNotification = useCallback(
+    (payload: { postId: string; postType: 'social' | 'comment'; commentId?: string }) => {
+      if (!currentActorId || mentionComposer.mentionedUserIds.length < 1 || !payload.postId) {
+        return;
+      }
+
+      queueTaggedNotificationDemo({
+        notificationType: 'tagged',
+        actorId: currentActorId,
+        postId: payload.postId,
+        postType: payload.postType,
+        taggedUserIds: mentionComposer.mentionedUserIds,
+        commentId: payload.commentId,
+      }).catch(() => undefined);
+    },
+    [currentActorId, mentionComposer.mentionedUserIds]
+  );
 
   const runTextModeration = useCallback(
     async (value: string) => {
@@ -486,6 +509,7 @@ function NewPost({ navigation, route }: Props) {
           {
             content: mergedContent,
             mentionedUserIds: mentionComposer.mentionedUserIds,
+            mentions: mentionComposer.mentions,
             images: uploadImagesObject?.length ? uploadImagesObject : imagesObject,
             gif: mediaGif,
             location: location
@@ -507,6 +531,16 @@ function NewPost({ navigation, route }: Props) {
       setIsLoading(false);
 
       if (result.status === 200) {
+        dispatchTaggedNotification({
+          postId: String(
+            route.params?.postId ??
+              result.response?.postId ??
+              result.response?._id ??
+              result.response?.id ??
+              ''
+          ).trim(),
+          postType: 'social',
+        });
         mentionComposer.reset();
         navigateAfterSocialPostSuccess('edit');
       }
@@ -545,6 +579,7 @@ function NewPost({ navigation, route }: Props) {
       const createRequest = buildCreateSocialPostRequest({
         content: mergedContent,
         mentionedUserIds: mentionComposer.mentionedUserIds,
+        mentions: mentionComposer.mentions,
         uploadedImages: uploadImagesObject,
         gif: mediaGif,
         moderationReview,
@@ -581,6 +616,12 @@ function NewPost({ navigation, route }: Props) {
             placement: 'bottom',
           });
         }
+        dispatchTaggedNotification({
+          postId: String(
+            result.response?.postId ?? result.response?._id ?? result.response?.id ?? ''
+          ).trim(),
+          postType: 'social',
+        });
         mentionComposer.reset();
         navigateAfterSocialPostSuccess('create');
       } else if (result.status === 413) {
@@ -656,6 +697,7 @@ function NewPost({ navigation, route }: Props) {
           sourceId: repostDraft.sourceId,
           quoteContent,
           mentionedUserIds: mentionComposer.mentionedUserIds,
+          mentions: mentionComposer.mentions,
           moderationReview: buildPendingModerationReviewPayload(
             [textModeration.pendingReviewCheck].filter(Boolean) as ModerationReviewCheckPayload[]
           ),
@@ -664,6 +706,12 @@ function NewPost({ navigation, route }: Props) {
       });
 
       if (result.status === 200) {
+        dispatchTaggedNotification({
+          postId: String(
+            result.response?.postId ?? result.response?._id ?? result.response?.id ?? ''
+          ).trim(),
+          postType: 'social',
+        });
         mentionComposer.reset();
         const responseMessage =
           typeof (result.response as { message?: unknown })?.message === 'string'
@@ -1116,9 +1164,11 @@ function NewPost({ navigation, route }: Props) {
                 isLoading={isMentionLoading}
                 maxLength={MAX_CONTENT_LENGHT}
                 maxLengthErrorMessage="This message exceeds the character limit."
+                mentions={mentionComposer.mentions}
                 multiline
                 numberOfLines={4}
                 onChangeText={setContent}
+                onHandleBackspace={mentionComposer.deleteMentionBeforeCursor}
                 onSelectSuggestion={mentionComposer.selectMention}
                 onSelectionChange={mentionComposer.setSelection}
                 placeholder={isQuoteMode ? 'Add your thoughts...' : "What's on your heart?"}

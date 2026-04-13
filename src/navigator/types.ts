@@ -146,6 +146,7 @@ export type SettingsStackParamsList = {
   RemoveAccount: undefined;
   SettingsMain: undefined;
   NotificationSettings: undefined;
+  PrivacySettings: undefined;
   InfluencerSettings?: {
     code?: string;
     state?: string;
@@ -381,6 +382,7 @@ export type OnboardingStackParamList = {
     longitude?: number;
     latitude?: number;
     address?: string;
+    noPhysicalLocation?: boolean;
 
     profileType: AccountType;
 
@@ -397,6 +399,7 @@ export type OnboardingStackParamList = {
     longitude?: number;
     latitude?: number;
     address?: string;
+    noPhysicalLocation?: boolean;
     profileType: AccountType;
 
     selectedOrganizationCategory?: string;
@@ -415,15 +418,6 @@ export type OnboardingStackParamList = {
     selectedOrganizationCategory: string;
     selectedOrganizationType: string;
     selectedOrganizationSubType: string;
-  };
-  OnboardingOrganizationContact: {
-    selectedOrganizationCategory: string;
-    selectedOrganizationType: string;
-    selectedOrganizationSubType: string;
-    organizationName: string;
-    longitude: number;
-    latitude: number;
-    address: string;
   };
 };
 

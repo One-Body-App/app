@@ -35,6 +35,12 @@ export type Badge = {
   badge: string;
 };
 
+export type TaggedMention = {
+  userId: string;
+  username: string;
+  displayName: string;
+};
+
 type Coordinates = {
   lon: number;
   lat: number;
@@ -94,6 +100,7 @@ export type SavedPost = {
 export type User = {
   badges: string[];
   allowDirectMessages?: boolean;
+  allowTagging?: boolean;
   createdAt: string;
   deactivated: { isDeactivated: boolean };
   email: string;
@@ -125,6 +132,8 @@ export type User = {
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
   subscribedToNewsletter: boolean;
+  tagNotificationsEnabled?: boolean;
+  isProfilePublic?: boolean;
   mfaConfig?: {
     isMfaActive?: boolean;
     defaultMethod?: 'passkey' | 'totp' | 'email' | 'backup';
@@ -266,6 +275,7 @@ export interface SocialPost {
   postId?: string;
   content: string;
   mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   date: string;
   source: 'instagram';
   handler: string;
@@ -359,6 +369,7 @@ export interface WatchPost {
   durationMs?: number;
   content: string;
   mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   date: string;
   handler: string;
   link: string;
@@ -403,6 +414,7 @@ export interface PrayerPost {
   postId?: string;
   content: string;
   mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   date: string;
   private: boolean;
   category: PrayerWallCategory;
@@ -446,6 +458,8 @@ export interface PostUserData {
   _id?: string;
   accountType?: AccountType;
   profileImage?: string;
+  profile_image?: string;
+  avatar?: string;
   profileIcon?: ReactElement;
   isLocationPublic?: boolean;
   profile?: {
@@ -463,6 +477,7 @@ export interface CommentPost {
   objectType: string;
   content: string;
   mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   userData: {
     _id?: string;
     name: string;
@@ -496,6 +511,7 @@ export interface SerializableCommentSnapshot {
   objectType?: string;
   content?: string;
   mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   userData?: {
     _id?: string;
     name?: string;

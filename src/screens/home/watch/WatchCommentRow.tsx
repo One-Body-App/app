@@ -57,7 +57,11 @@ function WatchCommentRow({
           </Text>
         </View>
 
-        <ParsedText text={comment.content} textStyle={styles.commentContent} />
+        <ParsedText
+          text={comment.content}
+          mentions={comment.mentions}
+          textStyle={styles.commentContent}
+        />
 
         {previewReply ? (
           <TouchableOpacity

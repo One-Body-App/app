@@ -1,4 +1,5 @@
 import { User } from '@/utils/types';
+import { ProfileAvatarAnimationResult } from './useProfileAvatarAnimation';
 
 export type ProfileVariant = 'self' | 'public';
 
@@ -10,4 +11,5 @@ export interface ProfileProps {
   handleUnSubscribe?: Function;
   refreshToken?: number;
   variant?: ProfileVariant;
+  avatarAnimation?: ProfileAvatarAnimationResult;
 }

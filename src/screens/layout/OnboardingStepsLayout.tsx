@@ -120,7 +120,6 @@ function OnboardingStepsLayout({
               <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]} />
               <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]} />
               <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]} />
-              <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]} />
             </View>
           )}
         </View>

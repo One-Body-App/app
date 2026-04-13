@@ -28,6 +28,7 @@ import { ArrowDown2, Calendar, GalleryEdit } from 'iconsax-react-native';
 import { serialize } from 'object-to-formdata';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import Button from '@/components/Button';
 
 import { styles } from './styles';
@@ -183,18 +184,17 @@ function EditProfile({ navigation, route }: Props) {
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
   const [churchType, setChurchType] = useState<string>(user?.profile?.churchType ?? '');
   const [citySelector, setCitySelector] = useState<boolean>(false);
-  const [location, setLocation] = useState<LocationDTO | null>(
-    user?.profile.location &&
-      user?.profile.location.coordinates?.lon &&
-      user?.profile.location.coordinates?.lat &&
-      user?.profile.location.address
-      ? {
-          address: user?.profile.location.address,
-          longitude: user?.profile.location.coordinates?.lon,
-          latitude: user?.profile.location.coordinates?.lat,
-        }
-      : null
-  );
+  const [location, setLocation] = useState<LocationDTO | null>(() => {
+    const loc = user?.profile.location;
+    if (loc?.address && loc.coordinates != null) {
+      return {
+        address: loc.address,
+        longitude: loc.coordinates.lon,
+        latitude: loc.coordinates.lat,
+      };
+    }
+    return null;
+  });
   const [newLocation, setNewLocation] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
@@ -219,10 +219,10 @@ function EditProfile({ navigation, route }: Props) {
   const { colors } = useTheme();
 
   useEffect(() => {
-    if (newLocation && latitude && longitude) {
+    if (newLocation) {
       setLocation({
-        longitude,
-        latitude,
+        longitude: longitude ?? 0,
+        latitude: latitude ?? 0,
         address: newLocation.place_name,
       });
     }
@@ -659,12 +659,30 @@ function EditProfile({ navigation, route }: Props) {
   const urlRegex = /^[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/i;
   return (
     <>
-      {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'blue' }}> */}
-      {/* //   <KeyboardAvoidingView
-    //     style={{ flex: 1 }}
-    //     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    //     // keyboardVerticalOffset={120}
-    //   > */}
+      {Platform.OS === 'android' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: 57,
+            paddingHorizontal: spacing.x16,
+            backgroundColor: colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <MaterialCommunityIcons name="chevron-left" size={30} color={Colors.primary.brand} />
+          </TouchableOpacity>
+          <StyledText style={[Typography.header.h3, { marginLeft: spacing.x8 }]}>
+            Edit Profile
+          </StyledText>
+        </View>
+      )}
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View>
           <View style={{ width: '100%', height: 200 }}>
@@ -874,6 +892,7 @@ function EditProfile({ navigation, route }: Props) {
                     setWhatIDo(item);
                   }}
                   wrapperStyle={{ marginTop: spacing.x16 }}
+                  showAllWithoutSearch
                 />
               ) : (
                 <>

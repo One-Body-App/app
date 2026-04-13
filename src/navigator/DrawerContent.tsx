@@ -99,8 +99,7 @@ export default function DrawerContent({
             >
               <StyledText
                 numberOfLines={1}
-                // style={[Typography.body.x2M, { color: dark ? colors.text : Colors.neutral.brand }]}
-                style={[Typography.body.x2M, { color: dark ? colors.text : Colors.neutral.brand }]}
+                style={[Typography.body.x2M, { color: dark ? '#f6f6f7' : '#032f3c' }]}
               >
                 {user?.name}
               </StyledText>
@@ -115,10 +114,7 @@ export default function DrawerContent({
               <View>
                 <View style={{ flexDirection: 'row', marginTop: spacing.x8 }}>
                   <StyledText
-                    style={[
-                      Typography.body.x1M,
-                      { color: dark ? colors.text : Colors.neutral.brand },
-                    ]}
+                    style={[Typography.body.x1M, { color: dark ? '#f6f6f7' : '#032f3c' }]}
                   >
                     {user?.followerCount ?? 0}{' '}
                   </StyledText>
@@ -129,10 +125,7 @@ export default function DrawerContent({
 
                 <View style={{ flexDirection: 'row' }}>
                   <StyledText
-                    style={[
-                      Typography.body.x1M,
-                      { color: dark ? colors.text : Colors.neutral.brand },
-                    ]}
+                    style={[Typography.body.x1M, { color: dark ? '#f6f6f7' : '#032f3c' }]}
                   >
                     {user?.following?.length ?? 0}{' '}
                   </StyledText>
@@ -311,7 +304,7 @@ export default function DrawerContent({
               padding: spacing.x16,
               borderRadius: borderRadius.base,
             }}
-            leftIcon={<Setting2 size={24} color={Colors.neutral[200]} />}
+            leftIcon={<Setting2 size={24} color={dark ? '#f6f6f7' : '#032f3c'} />}
             onPress={() => {
               navigation.navigate('Settings');
             }}
@@ -323,7 +316,9 @@ export default function DrawerContent({
               padding: spacing.x16,
               borderRadius: borderRadius.base,
             }}
-            leftIcon={<Icon name="customer-service" size={25} color={Colors.neutral[200]} />}
+            leftIcon={
+              <Icon name="customer-service" size={25} color={dark ? '#f6f6f7' : '#032f3c'} />
+            }
             onPress={() => {
               OpenURLButton('https://onebody.tawk.help/');
             }}

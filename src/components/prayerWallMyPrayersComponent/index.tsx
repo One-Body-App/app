@@ -18,6 +18,14 @@ type PrayerWallMyPrayersProps = {
   onScrollOffsetChange?: (offsetY: number) => void;
 };
 
+function EmptyMyPrayers() {
+  return (
+    <StyledText style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}>
+      Nothing here
+    </StyledText>
+  );
+}
+
 function PrayerWallMyPrayersComponent({
   onOpenPost,
   onEditPost,
@@ -161,11 +169,7 @@ function PrayerWallMyPrayersComponent({
             }}
           />
         }
-        ListEmptyComponent={() => (
-          <StyledText style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}>
-            Nothing here
-          </StyledText>
-        )}
+        ListEmptyComponent={EmptyMyPrayers}
         onEndReachedThreshold={0.8}
         scrollEnabled={isScrollEnable}
         onScroll={(event) => {

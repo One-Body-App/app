@@ -1,3 +1,5 @@
+import type { TaggedMention } from '@/utils/types';
+
 export type VideoRatioId = '1:1' | '4:3' | '16:9' | '9:16';
 
 export type ClientModerationDecision = 'safe' | 'unsure' | 'blocked' | 'unclassified';
@@ -38,6 +40,9 @@ export type SelectedVideoSource = {
 export type VideoEditRecipe = {
   sourceUri: string;
   caption: string;
+  actorId?: string;
+  mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   trimStartMs: number;
   trimEndMs: number;
   trimDurationMs?: number;
@@ -84,6 +89,7 @@ export type PendingVideoUpload = {
   watchId?: string;
   playBackId?: string;
   watchProcessingStatus?: 'PROCESSING' | 'READY' | 'FAILED_SYNC' | 'FAILED_REVIEW';
+  nextRetryAt?: string;
   remotePollAttempt?: number;
   remotePollStartedAt?: string;
   nextRemotePollAt?: string;

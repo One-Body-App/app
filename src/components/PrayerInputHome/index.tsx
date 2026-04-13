@@ -31,7 +31,7 @@ function PrayerInputHome({ color }: { color: string }) {
         seterror('prayer text must be within 1 to 150.');
       }
     } else {
-      if (prayer == null && prayer == '') {
+      if (prayer == null && prayer === '') {
         seterror('prayer required!');
       }
       if (payerType == null) {
@@ -43,7 +43,7 @@ function PrayerInputHome({ color }: { color: string }) {
 
   const createPrayer = async () => {
     dispatch(setLoader(true));
-    if (payerType == 'answer') {
+    if (payerType === 'answer') {
       dispatch(setLoader(true));
       try {
         const res: any = await ApiCall({
@@ -88,7 +88,7 @@ function PrayerInputHome({ color }: { color: string }) {
           verb: 'post',
         });
 
-        if (res?.status == '200') {
+        if (res?.status === '200') {
           dispatch(setLoader(false));
           setPrayerTypeShow(false);
           setPrayerType(null);
@@ -159,7 +159,9 @@ function PrayerInputHome({ color }: { color: string }) {
           // onPressIn={() => setPrayerTypeShow(true)}
           onFocus={() => setPrayerTypeShow(true)}
           onChangeText={(e) => {
-            prayer.length < 150 ? setPrayer(e) : null;
+            if (prayer.length < 150) {
+              setPrayer(e);
+            }
             seterror(null);
           }}
           multiline

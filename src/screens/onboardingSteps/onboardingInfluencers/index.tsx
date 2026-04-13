@@ -305,7 +305,7 @@ function OnboardingInfluencers({ route }: Props) {
         }
       }}
       onboardingType={route.params.profileType}
-      activeStep={route.params.profileType === AccountType.individual ? 4 : 5}
+      activeStep={4}
       disabled={isLoading}
       loading={isLoading}
     >

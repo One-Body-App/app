@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 
 import StyledText from '@/src/components/styled/Text';
+import ParsedText from '@/components/mentions/ParsedText';
 import OptionsModal from '@/src/components/listItems/OptionsModal';
 import PostReactionsModal from '@/components/reactions/PostReactionsModal';
 import CustomModal from '@/src/components/CustomModal';
@@ -793,9 +794,12 @@ function WatchOverlay({
               ) : null}
             </TouchableOpacity>
 
-            <StyledText numberOfLines={4} style={styles.captionText}>
-              {item.content.trim()}
-            </StyledText>
+            <ParsedText
+              text={item.content.trim()}
+              mentions={item.mentions}
+              textStyle={styles.captionText}
+              numberOfLines={4}
+            />
 
             {audioLabel ? (
               <View style={styles.audioRow}>

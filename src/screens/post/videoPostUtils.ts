@@ -10,6 +10,7 @@ import type {
   VideoRatioId,
   VideoTransformState,
 } from '@/src/services/videoProcessing/types';
+import type { TaggedMention } from '@/utils/types';
 
 const FALLBACK_ASPECT_RATIO = 16 / 9;
 
@@ -254,6 +255,9 @@ export const formatAspectRatioLabel = (width?: number, height?: number, ratio?: 
 export const buildPendingVideoUploadRecipe = ({
   sourceUri,
   caption,
+  actorId,
+  mentionedUserIds,
+  mentions,
   trimStartMs,
   trimEndMs,
   trimDurationMs,
@@ -261,6 +265,9 @@ export const buildPendingVideoUploadRecipe = ({
 }: {
   sourceUri: string;
   caption: string;
+  actorId?: string;
+  mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   trimStartMs: number;
   trimEndMs: number;
   trimDurationMs: number;
@@ -287,6 +294,20 @@ export const buildPendingVideoUploadRecipe = ({
   return {
     sourceUri: normalizedSourceUri,
     caption: String(caption ?? ''),
+    actorId: actorId ? String(actorId).trim() : undefined,
+    mentionedUserIds: Array.from(
+      new Set((mentionedUserIds ?? []).map((value) => String(value || '').trim()).filter(Boolean))
+    ),
+    mentions: Array.isArray(mentions)
+      ? mentions.filter(
+          (mention) =>
+            mention &&
+            typeof mention.userId === 'string' &&
+            mention.userId.trim().length > 0 &&
+            typeof mention.username === 'string' &&
+            mention.username.trim().length > 0
+        )
+      : [],
     trimStartMs,
     trimEndMs,
     trimDurationMs,

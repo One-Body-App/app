@@ -6,6 +6,7 @@ import {
   Image,
   ListRenderItemInfo,
   Platform,
+  TextInput as RNTextInput,
   Text,
   TouchableOpacity,
   View,
@@ -24,6 +25,7 @@ import {
   applyOptimisticReaction,
   FlatCommentItem,
   countCommentsInTree,
+  findCommentById,
   flattenCommentsForList,
   getCommentId,
   normalizeCommentTreeFallback,
@@ -33,11 +35,16 @@ import {
   toDateFromSource,
   updateCommentInTree,
 } from '@/components/comments/commentListUtils';
+import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
 import { CommentPost, PostType, SocialPostReactionType } from '@/utils/types';
 import { sanitizeComposerText } from '@/components/composer/composerText';
 import { COLORS, styles as watchStyles } from './commentstyles';
 import { MainStackParamList } from '@/src/navigator/types';
 import WatchCommentRow from './WatchCommentRow';
+import {
+  queueTaggedNotificationDemo,
+  resolveNewTaggedUserIds,
+} from '@/src/services/notification/taggedNotificationDispatch';
 
 type WatchCommentsProps = {
   postId: string;
@@ -70,7 +77,6 @@ function WatchComments({
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [page, setPage] = useState(1);
 
-  const [composerText, setComposerText] = useState('');
   const [editingCommentId, setEditingCommentId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -81,6 +87,23 @@ function WatchComments({
   const commentCountRef = useRef(commentCount);
   const activeRequestRef = useRef(0);
   const isMountedRef = useRef(true);
+  const inputRef = useRef<RNTextInput | null>(null);
+  const mentionComposer = useMentionComposer({
+    initialText: '',
+    sanitizeText: (value) => sanitizeComposerText(value, 2000),
+  });
+  const {
+    suggestions,
+    isLoading: isMentionLoading,
+    isError: isMentionError,
+  } = useMentionSuggestions({
+    query: mentionComposer.activeMention?.query ?? '',
+    token,
+    limit: 8,
+    excludedUserIds: mentionComposer.mentionedUserIds,
+    enabled: Boolean(mentionComposer.activeMention?.query),
+  });
+  const composerText = mentionComposer.text;
 
   const currentUserImage =
     user?.profileImage && user.profileImage !== '' ? user.profileImage : NO_PROFILE_IMAGE;
@@ -189,10 +212,10 @@ function WatchComments({
 
     setPage(1);
     setIsEndOfList(false);
-    setComposerText('');
+    mentionComposer.reset();
     setEditingCommentId('');
     fetchComments(1, true);
-  }, [fetchComments, postId, sheetOpenKey]);
+  }, [fetchComments, mentionComposer.reset, postId, sheetOpenKey]);
 
   useEffect(() => {
     if (page > 1) {
@@ -208,7 +231,11 @@ function WatchComments({
   }, [fetchComments]);
 
   const createLocalComment = useCallback(
-    (payload: any, content: string): CommentPost => {
+    (
+      payload: any,
+      content: string,
+      mentionsFallback: CommentPost['mentions'] = []
+    ): CommentPost => {
       const now = new Date();
       const createdDate = toDateFromSource(payload?.created, payload?.createdAt, now);
       const updatedDate = toDateFromSource(payload?.updated, payload?.updatedAt, createdDate);
@@ -224,6 +251,8 @@ function WatchComments({
         objectId: postId,
         objectType: PostType.watch,
         content: payload?.content ?? content,
+        mentionedUserIds: Array.isArray(payload?.mentionedUserIds) ? payload.mentionedUserIds : [],
+        mentions: Array.isArray(payload?.mentions) ? payload.mentions : mentionsFallback,
         userData: payload?.userData ?? {
           _id: user?._id,
           name: user?.name ?? user?.username ?? 'You',
@@ -249,8 +278,8 @@ function WatchComments({
 
   const stopEditing = useCallback(() => {
     setEditingCommentId('');
-    setComposerText('');
-  }, []);
+    mentionComposer.reset();
+  }, [mentionComposer.reset]);
 
   const submitComment = useCallback(async () => {
     const value = composerText.trim();
@@ -259,6 +288,8 @@ function WatchComments({
     }
 
     if (editingCommentId) {
+      const previousMentionedUserIds =
+        findCommentById(commentsRef.current, editingCommentId)?.mentionedUserIds ?? [];
       setIsSubmitting(true);
       try {
         const result = await ApiCall({
@@ -267,6 +298,8 @@ function WatchComments({
           verb: 'patch',
           params: {
             content: value,
+            mentionedUserIds: mentionComposer.mentionedUserIds,
+            mentions: mentionComposer.mentions,
           },
         });
 
@@ -275,12 +308,28 @@ function WatchComments({
             updateCommentInTree(previous, editingCommentId, (comment) => ({
               ...comment,
               content: value,
+              mentionedUserIds:
+                result?.response?.mentionedUserIds ?? mentionComposer.mentionedUserIds,
+              mentions: Array.isArray(result?.response?.mentions)
+                ? result.response.mentions
+                : mentionComposer.mentions,
               edited: true,
               updated: new Date(),
             }))
           );
-          setComposerText('');
+          mentionComposer.reset();
           setEditingCommentId('');
+          queueTaggedNotificationDemo({
+            notificationType: 'tagged',
+            actorId: String(user?._id ?? user?.id ?? user?.userId ?? '').trim(),
+            postId,
+            postType: 'comment',
+            taggedUserIds: resolveNewTaggedUserIds(
+              previousMentionedUserIds,
+              result?.response?.mentionedUserIds ?? mentionComposer.mentionedUserIds
+            ),
+            commentId: editingCommentId,
+          }).catch(() => undefined);
           onTelemetryEvent?.('edit_comment', {
             postType: PostType.watch,
           });
@@ -312,16 +361,29 @@ function WatchComments({
         verb: 'post',
         params: {
           content: value,
+          mentionedUserIds: mentionComposer.mentionedUserIds,
+          mentions: mentionComposer.mentions,
         },
       });
 
       if (result?.status === 200) {
-        const nextComment = createLocalComment(result.response, value);
+        const nextComment = createLocalComment(result.response, value, mentionComposer.mentions);
         setComments((previous) => [nextComment, ...previous]);
 
         bumpCount(1);
-        setComposerText('');
+        mentionComposer.reset();
         setEditingCommentId('');
+        queueTaggedNotificationDemo({
+          notificationType: 'tagged',
+          actorId: String(user?._id ?? user?.id ?? user?.userId ?? '').trim(),
+          postId,
+          postType: 'comment',
+          taggedUserIds: result?.response?.mentionedUserIds ?? mentionComposer.mentionedUserIds,
+          commentId:
+            String(
+              result?.response?.commentId ?? result?.response?._id ?? result?.response?.id ?? ''
+            ).trim() || undefined,
+        }).catch(() => undefined);
         onTelemetryEvent?.('post_comment', {
           postType: PostType.watch,
         });
@@ -348,10 +410,14 @@ function WatchComments({
     createLocalComment,
     editingCommentId,
     isSubmitting,
+    mentionComposer.mentionedUserIds,
+    mentionComposer.mentions,
+    mentionComposer.reset,
     onTelemetryEvent,
     postId,
     toast,
     token,
+    user,
   ]);
 
   const handleDeleteComment = useCallback(
@@ -367,7 +433,7 @@ function WatchComments({
 
       if (editingCommentId === commentId) {
         setEditingCommentId('');
-        setComposerText('');
+        mentionComposer.reset();
       }
 
       try {
@@ -401,7 +467,7 @@ function WatchComments({
         });
       }
     },
-    [bumpCount, editingCommentId, onTelemetryEvent, postId, toast, token]
+    [bumpCount, editingCommentId, mentionComposer.reset, onTelemetryEvent, postId, toast, token]
   );
 
   const showDeleteConfirmation = useCallback(
@@ -429,7 +495,7 @@ function WatchComments({
 
       const openEdit = () => {
         setEditingCommentId(commentId);
-        setComposerText(comment.content ?? '');
+        mentionComposer.hydrate(comment.content ?? '', comment.mentions ?? []);
       };
       const openDelete = () => {
         showDeleteConfirmation(commentId);
@@ -469,7 +535,7 @@ function WatchComments({
         },
       ]);
     },
-    [showDeleteConfirmation]
+    [mentionComposer.hydrate, showDeleteConfirmation]
   );
 
   const reactToComment = useCallback(
@@ -670,20 +736,37 @@ function WatchComments({
             <Image source={{ uri: currentUserImage }} style={watchStyles.inputAvatar} />
           </View>
 
-          <BottomSheetTextInput
-            value={composerText}
-            onChangeText={(value) => {
-              setComposerText(sanitizeComposerText(value, 2000));
-            }}
-            style={watchStyles.input}
-            placeholder={composerPlaceholder}
-            placeholderTextColor={COLORS.slate500}
-            multiline={false}
-            onSubmitEditing={() => {
-              submitComment().catch(() => undefined);
-            }}
-            returnKeyType="send"
-          />
+          <View style={{ flex: 1 }}>
+            <MentionInput
+              inputComponent={BottomSheetTextInput}
+              inputRef={inputRef}
+              activeMention={mentionComposer.activeMention}
+              value={composerText}
+              mentions={mentionComposer.mentions}
+              selection={mentionComposer.selection}
+              onSelectionChange={mentionComposer.setSelection}
+              onChangeText={mentionComposer.setText}
+              onSelectSuggestion={mentionComposer.selectMention}
+              onHandleBackspace={mentionComposer.deleteMentionBeforeCursor}
+              suggestions={suggestions}
+              isLoading={isMentionLoading}
+              isError={isMentionError}
+              inputStyle={watchStyles.input}
+              inputWrapperStyle={{ flex: 1 }}
+              placeholder={composerPlaceholder}
+              placeholderTextColor={COLORS.slate500}
+              multiline={false}
+              maxLength={2000}
+              onSubmitEditing={() => {
+                submitComment().catch(() => undefined);
+              }}
+              returnKeyType="send"
+              suggestionsContainerStyle={{
+                backgroundColor: COLORS.slate900,
+                borderColor: COLORS.slate700,
+              }}
+            />
+          </View>
 
           <TouchableOpacity
             disabled={!canPost}
@@ -701,7 +784,9 @@ function WatchComments({
             <TouchableOpacity
               key={emoji}
               onPress={() => {
-                setComposerText((previous) => sanitizeComposerText(`${previous}${emoji}`, 2000));
+                mentionComposer.setText((previous) =>
+                  sanitizeComposerText(`${previous}${emoji}`, 2000)
+                );
               }}
             >
               <Text style={watchStyles.emoji}>{emoji}</Text>

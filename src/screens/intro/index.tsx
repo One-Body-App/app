@@ -15,7 +15,7 @@ import { useTheme } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Color from 'color';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import { getCachedIntroAvatars } from '@/src/services/introAvatars';
+import getCachedIntroAvatars from '@/src/services/introAvatars';
 import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';

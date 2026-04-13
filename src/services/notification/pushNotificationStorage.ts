@@ -246,6 +246,24 @@ export const getQueuedNotifications = async (): Promise<QueuedPushNotification[]
   );
 };
 
+export const queueLocalNotificationItem = async (
+  item: QueuedPushNotification
+): Promise<QueuedPushNotification | null> => {
+  if (!item?.id) {
+    return null;
+  }
+
+  await upsertQueuedNotifications([
+    {
+      ...item,
+      source: 'push',
+      read: item.read ?? false,
+      createdAt: item.createdAt || nowUtcIso(),
+    },
+  ]);
+  return item;
+};
+
 export const queueRemoteNotificationPayload = async (
   message?: FirebaseMessagingTypes.RemoteMessage | null
 ): Promise<QueuedPushNotification | null> => {

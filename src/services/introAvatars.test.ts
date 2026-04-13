@@ -1,5 +1,5 @@
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
-import { getCachedIntroAvatars } from './introAvatars';
+import getCachedIntroAvatars from './introAvatars';
 
 jest.mock('./constants', () => ({
   BASE_URL: 'https://stagingapi.onebodyapp.com/api',

@@ -1,16 +1,20 @@
+// eslint-disable-next-line no-restricted-imports
 import { useEffect, useRef, useState } from 'react';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { fetchUserSuggestions, MentionUser } from '@/services/mentions';
 import { normalizeHandle } from './mentionUtils';
 
 type MentionSearchFn = typeof fetchUserSuggestions;
 
+// eslint-disable-next-line import/prefer-default-export
 export const useMentionSuggestions = ({
   query,
   token,
   limit = 8,
-  debounceMs = 250,
+  debounceMs = 300,
   enabled = true,
   searchUsers = fetchUserSuggestions,
+  excludedUserIds = [],
 }: {
   query: string;
   token?: string | null;
@@ -18,12 +22,15 @@ export const useMentionSuggestions = ({
   debounceMs?: number;
   enabled?: boolean;
   searchUsers?: MentionSearchFn;
+  excludedUserIds?: string[];
 }) => {
   const [suggestions, setSuggestions] = useState<MentionUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const requestIdRef = useRef(0);
   const activeAbortRef = useRef<AbortController | null>(null);
+
+  const excludedUserIdsKey = excludedUserIds.join(',');
 
   useEffect(() => {
     const normalizedQuery = normalizeHandle(query);
@@ -52,13 +59,20 @@ export const useMentionSuggestions = ({
         token,
         limit,
         signal: controller.signal,
+        context: 'tagging',
       })
         .then((response) => {
           if (requestIdRef.current !== effectRequestId) {
             return;
           }
 
-          setSuggestions(response.slice(0, limit));
+          const excludedIds = new Set(
+            excludedUserIdsKey
+              .split(',')
+              .map((value) => value.trim())
+              .filter(Boolean)
+          );
+          setSuggestions(response.filter((item) => !excludedIds.has(item.id)).slice(0, limit));
           setIsLoading(false);
           setIsError(false);
         })
@@ -83,14 +97,12 @@ export const useMentionSuggestions = ({
       activeAbortRef.current?.abort();
       activeAbortRef.current = null;
     };
-  }, [debounceMs, enabled, limit, query, searchUsers, token]);
+  }, [debounceMs, enabled, excludedUserIdsKey, limit, query, searchUsers, token]);
 
-  useEffect(() => {
-    return () => {
-      activeAbortRef.current?.abort();
-      activeAbortRef.current = null;
-    };
-  }, []);
+  useMountEffect(() => () => {
+    activeAbortRef.current?.abort();
+    activeAbortRef.current = null;
+  });
 
   return {
     suggestions,

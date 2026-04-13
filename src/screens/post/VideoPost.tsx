@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import RNFS from 'react-native-fs';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,8 +32,10 @@ import {
 import VideoTrim, { showEditor } from 'react-native-video-trim';
 import CameraComponent from '@/src/components/VideoPost/Camera';
 import CustomVideo from '@/src/components/CustomVideo';
+import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { MainStackParamList } from '@/src/navigator/types';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
   createDefaultVideoTransform,
   MAX_VIDEO_EDITOR_SCALE,
@@ -64,6 +67,7 @@ import {
   resolveInitialVideoRatioId,
   UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE,
 } from './videoPostUtils';
+import { sanitizeComposerText } from '@/components/composer/composerText';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -198,6 +202,8 @@ export default function VideoPost({ navigation, route }: Props) {
   const toast = useToast();
   const { dark } = useTheme();
   const insets = useSafeAreaInsets();
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
 
   const palette = dark ? DARK_PALETTE : LIGHT_PALETTE;
   const styles = useMemo(() => createStyles(), []);
@@ -207,13 +213,13 @@ export default function VideoPost({ navigation, route }: Props) {
   const hasAutoOpenedCameraRef = useRef(false);
   const hasShownTrimWarningRef = useRef(false);
   const videoPreviewRef = useRef<any>(null);
+  const captionInputRef = useRef<TextInput | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [isPreparingVideo, setIsPreparingVideo] = useState(false);
   const [isLiveCameraVisible, setIsLiveCameraVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
-  const [caption, setCaption] = useState('');
   const [originalVideoUri, setOriginalVideoUri] = useState('');
   const [editableVideoUri, setEditableVideoUri] = useState('');
   const [videoDuration, setVideoDuration] = useState(0);
@@ -234,6 +240,22 @@ export default function VideoPost({ navigation, route }: Props) {
   const [pendingAutoTrimUri, setPendingAutoTrimUri] = useState<string | null>(null);
   const [requiresInitialTrim, setRequiresInitialTrim] = useState(false);
   const [isTrimEditorVisible, setIsTrimEditorVisible] = useState(false);
+  const mentionComposer = useMentionComposer({
+    initialText: '',
+    sanitizeText: (value) => sanitizeComposerText(value, 500),
+  });
+  const {
+    suggestions,
+    isLoading: isMentionLoading,
+    isError: isMentionError,
+  } = useMentionSuggestions({
+    query: mentionComposer.activeMention?.query ?? '',
+    token,
+    limit: 8,
+    excludedUserIds: mentionComposer.mentionedUserIds,
+    enabled: Boolean(mentionComposer.activeMention?.query),
+  });
+  const caption = mentionComposer.text;
 
   const hasVideo = Boolean(editableVideoUri);
   const isCropStep = editorMode === 'crop';
@@ -816,6 +838,9 @@ export default function VideoPost({ navigation, route }: Props) {
       const recipe = buildPendingVideoUploadRecipe({
         sourceUri: uploadSourceUri,
         caption,
+        actorId: String(currentUser?._id ?? currentUser?.id ?? currentUser?.userId ?? '').trim(),
+        mentionedUserIds: mentionComposer.mentionedUserIds,
+        mentions: mentionComposer.mentions,
         trimStartMs: resolvedTrimStartMs,
         trimEndMs: resolvedTrimEndMs,
         trimDurationMs: selectedDurationMs,
@@ -837,7 +862,10 @@ export default function VideoPost({ navigation, route }: Props) {
   }, [
     caption,
     confirmedCropSelection,
+    currentUser,
     editableVideoUri,
+    mentionComposer.mentionedUserIds,
+    mentionComposer.mentions,
     originalVideoUri,
     navigation,
     resolvedTrimEndMs,
@@ -1354,15 +1382,29 @@ export default function VideoPost({ navigation, route }: Props) {
                 ]}
               >
                 <Text style={[styles.captionLabel, { color: palette.textMuted }]}>Caption</Text>
-                <TextInput
-                  style={[styles.captionInput, { color: palette.textPrimary }]}
+                <MentionInput
+                  inputRef={captionInputRef}
+                  activeMention={mentionComposer.activeMention}
                   value={caption}
-                  onChangeText={setCaption}
+                  mentions={mentionComposer.mentions}
+                  selection={mentionComposer.selection}
+                  onSelectionChange={mentionComposer.setSelection}
+                  onChangeText={mentionComposer.setText}
+                  onSelectSuggestion={mentionComposer.selectMention}
+                  onHandleBackspace={mentionComposer.deleteMentionBeforeCursor}
+                  suggestions={suggestions}
+                  isLoading={isMentionLoading}
+                  isError={isMentionError}
+                  inputStyle={[styles.captionInput, { color: palette.textPrimary }]}
                   placeholder="Write a caption..."
                   placeholderTextColor={palette.textMuted}
                   multiline
                   maxLength={500}
                   textAlignVertical="top"
+                  suggestionsContainerStyle={{
+                    backgroundColor: palette.cardBackground,
+                    borderColor: palette.border,
+                  }}
                 />
               </View>
 

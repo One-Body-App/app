@@ -20,9 +20,13 @@ import {
   stripFileScheme,
 } from './nativeVideoProcessing';
 import { ApiCall } from '@/src/services/api';
+import { queueTaggedNotificationDemo } from '@/src/services/notification/taggedNotificationDispatch';
 
 const VIDEO_UPLOAD_QUEUE_STORAGE_KEY = 'video-processing.pending-watch-posts.v1';
 const MAX_RETRY_COUNT = 3;
+const RETRY_BACKOFF_BASE_MS = process.env.JEST_WORKER_ID ? 20 : 5_000;
+const RETRY_BACKOFF_MULTIPLIER = 2;
+const RETRY_BACKOFF_MAX_MS = process.env.JEST_WORKER_ID ? 100 : 60_000;
 const REMOTE_POLL_BASE_INTERVAL_MS = process.env.JEST_WORKER_ID ? 0 : 3000;
 const REMOTE_POLL_MULTIPLIER = 1.8;
 const REMOTE_POLL_MAX_INTERVAL_MS = process.env.JEST_WORKER_ID ? 0 : 30000;
@@ -150,19 +154,34 @@ const normalizeFailureMessage = (error: unknown) => {
 };
 
 const normalizePendingItemForResume = (item: PendingVideoUpload): PendingVideoUpload => {
+  const normalizedRecipe: VideoEditRecipe = {
+    ...item.recipe,
+    mentionedUserIds: Array.isArray(item.recipe?.mentionedUserIds)
+      ? item.recipe.mentionedUserIds
+      : [],
+    mentions: Array.isArray(item.recipe?.mentions) ? item.recipe.mentions : [],
+  };
+
   if (item.status === 'complete' || item.status === 'failed') {
-    return item;
+    return {
+      ...item,
+      recipe: normalizedRecipe,
+    };
   }
 
   if (
     item.status === 'processing_remote' ||
     (item.status === 'uploading' && item.uploadTransport === 'mux_sdk')
   ) {
-    return item;
+    return {
+      ...item,
+      recipe: normalizedRecipe,
+    };
   }
 
   return {
     ...item,
+    recipe: normalizedRecipe,
     status: 'queued',
   };
 };
@@ -326,6 +345,9 @@ const resolveRemoteProcessingAgeMs = (
 const clampRemotePollDelay = (value: number) =>
   Math.min(Math.max(value, REMOTE_POLL_BASE_INTERVAL_MS), REMOTE_POLL_MAX_INTERVAL_MS);
 
+const clampRetryBackoffDelay = (value: number) =>
+  Math.min(Math.max(value, RETRY_BACKOFF_BASE_MS), RETRY_BACKOFF_MAX_MS);
+
 const UINT32_MOD = 4294967296;
 
 const hashJitterSeed = (value: string) => {
@@ -348,6 +370,18 @@ const computeNextRemotePollDelayMs = (item: PendingVideoUpload) => {
   const jitterSeed = hashJitterSeed(`${item.id}:${attempt}`);
   const jitterRatio = ((jitterSeed % 1000) / 1000) * 2 - 1;
   return Math.round(baseDelay * (1 + jitterRatio * REMOTE_POLL_JITTER_RATIO));
+};
+
+const computeRetryBackoffDelayMs = (retryCount: number) => {
+  const attempt = Math.max(0, retryCount - 1);
+  return clampRetryBackoffDelay(
+    Math.round(RETRY_BACKOFF_BASE_MS * RETRY_BACKOFF_MULTIPLIER ** attempt)
+  );
+};
+
+const resolveNextRetryAt = (retryCount: number, nowIsoString: string) => {
+  const baseTime = parseTimestampMs(nowIsoString) ?? Date.now();
+  return new Date(baseTime + computeRetryBackoffDelayMs(retryCount)).toISOString();
 };
 
 const resolveNextRemotePollAt = (item: PendingVideoUpload, nowIsoString: string) => {
@@ -631,6 +665,8 @@ const defaultDependencies: QueueDependencies = {
       params: {
         uploadId: item.uploadId,
         content: item.recipe.caption.trim(),
+        mentionedUserIds: item.recipe.mentionedUserIds ?? [],
+        mentions: item.recipe.mentions ?? [],
         aspectRatio,
         videoWidth: item.processedWidth,
         videoHeight: item.processedHeight,
@@ -638,12 +674,24 @@ const defaultDependencies: QueueDependencies = {
     });
 
     if (response.status !== 200 && response.status !== 201) {
+      const isTransientStatus =
+        response.status === 408 || response.status === 429 || response.status >= 500;
       throw new QueueError(
         'network',
         response.response?.message || 'Unable to create watch post.',
-        true
+        isTransientStatus
       );
     }
+
+    queueTaggedNotificationDemo({
+      notificationType: 'tagged',
+      actorId: String(item.recipe.actorId ?? '').trim(),
+      postId: String(
+        response.response?._id ?? response.response?.postId ?? item.watchId ?? ''
+      ).trim(),
+      postType: 'watch',
+      taggedUserIds: item.recipe.mentionedUserIds ?? [],
+    }).catch(() => undefined);
 
     return response.response;
   },
@@ -695,8 +743,21 @@ export const createVideoUploadQueue = (
     });
   };
 
+  const getCurrentTimestampMs = () => parseTimestampMs(dependencies.now()) ?? Date.now();
+
   const getNextProcessableItem = () =>
-    items.find((item) => item.status === 'queued') ??
+    items.find((item) => {
+      if (item.status !== 'queued') {
+        return false;
+      }
+
+      const nextRetryAtMs = parseTimestampMs(item.nextRetryAt);
+      if (!nextRetryAtMs) {
+        return true;
+      }
+
+      return nextRetryAtMs <= getCurrentTimestampMs();
+    }) ??
     items.find((item) => isNativeMuxUploadItem(item)) ??
     items.find((item) => {
       if (item.status !== 'processing_remote') {
@@ -708,16 +769,34 @@ export const createVideoUploadQueue = (
         return true;
       }
 
-      return nextPollAtMs <= Date.now();
+      return nextPollAtMs <= getCurrentTimestampMs();
     });
 
   const getNextRemotePollDelay = () => {
-    const now = Date.now();
+    const now = getCurrentTimestampMs();
     const delays = items
       .filter((item) => item.status === 'processing_remote')
       .map((item) => {
         const nextPollAtMs = parseTimestampMs(item.nextRemotePollAt);
         return typeof nextPollAtMs === 'number' ? Math.max(0, nextPollAtMs - now) : 0;
+      });
+
+    if (!delays.length) {
+      return null;
+    }
+
+    return Math.min(...delays);
+  };
+
+  const getNextQueuedRetryDelay = () => {
+    const now = getCurrentTimestampMs();
+    const delays = items
+      .filter(
+        (item) => item.status === 'queued' && typeof parseTimestampMs(item.nextRetryAt) === 'number'
+      )
+      .map((item) => {
+        const nextRetryAtMs = parseTimestampMs(item.nextRetryAt)!;
+        return Math.max(0, nextRetryAtMs - now);
       });
 
     if (!delays.length) {
@@ -855,6 +934,7 @@ export const createVideoUploadQueue = (
         nativeUploadState: undefined,
         forcedUploadTransport: 'raw_put_fallback',
         nativeCrashRecoveryCount: (currentItem.nativeCrashRecoveryCount ?? 0) + 1,
+        nextRetryAt: undefined,
         lastError: undefined,
         failureCode: undefined,
       },
@@ -880,7 +960,7 @@ export const createVideoUploadQueue = (
     const nativeUploadsById = new Map(nativeUploads.map((record) => [record.uploadId, record]));
     let didRecoverItem = false;
 
-    const nextItems = value.map((item) => {
+    const nextItems: PendingVideoUpload[] = value.map((item) => {
       if (
         !item.uploadId ||
         item.uploadTransport !== 'mux_sdk' ||
@@ -910,10 +990,11 @@ export const createVideoUploadQueue = (
         nativeUploadState: undefined,
         forcedUploadTransport: 'raw_put_fallback',
         nativeCrashRecoveryCount: (item.nativeCrashRecoveryCount ?? 0) + 1,
+        nextRetryAt: undefined,
         updatedAt: dependencies.now(),
         lastError: undefined,
         failureCode: undefined,
-      };
+      } satisfies PendingVideoUpload;
     });
 
     return {
@@ -981,12 +1062,15 @@ export const createVideoUploadQueue = (
     if (failure.retryable && nextRetryCount <= MAX_RETRY_COUNT) {
       const retryStatus: PendingVideoUpload['status'] =
         item.status === 'processing_remote' ? 'processing_remote' : 'queued';
+      const nowIsoString = dependencies.now();
 
       await updateItem(
         item.id,
         {
           retryCount: nextRetryCount,
           status: retryStatus,
+          nextRetryAt:
+            retryStatus === 'queued' ? resolveNextRetryAt(nextRetryCount, nowIsoString) : undefined,
           lastError: failure.message,
           failureCode: failure.code,
         },
@@ -1000,6 +1084,7 @@ export const createVideoUploadQueue = (
       {
         retryCount: nextRetryCount,
         status: 'failed',
+        nextRetryAt: undefined,
         lastError: failure.message,
         failureCode: failure.code,
       },
@@ -1013,7 +1098,14 @@ export const createVideoUploadQueue = (
       return;
     }
 
-    await updateItem(item.id, { status: 'moderating' }, 'moderating');
+    await updateItem(
+      item.id,
+      {
+        status: 'moderating',
+        nextRetryAt: undefined,
+      },
+      'moderating'
+    );
     let moderation;
     try {
       moderation = await dependencies.moderateVideo(item.recipe);
@@ -1058,7 +1150,14 @@ export const createVideoUploadQueue = (
       return;
     }
 
-    await updateItem(item.id, { status: 'compressing' }, 'compressing');
+    await updateItem(
+      item.id,
+      {
+        status: 'compressing',
+        nextRetryAt: undefined,
+      },
+      'compressing'
+    );
     logStage(item, 'exporting', {
       sourceUri: item.recipe.sourceUri,
     });
@@ -1122,7 +1221,14 @@ export const createVideoUploadQueue = (
       throw new QueueError('processing', 'Processed video missing before upload.');
     }
 
-    await updateItem(item.id, { status: 'uploading' }, 'uploading');
+    await updateItem(
+      item.id,
+      {
+        status: 'uploading',
+        nextRetryAt: undefined,
+      },
+      'uploading'
+    );
     logStage(item, 'uploading', {
       forcedUploadTransport: item.forcedUploadTransport,
       processedVideoUri: item.processedVideoUri,
@@ -1138,6 +1244,7 @@ export const createVideoUploadQueue = (
               uploadId: preparedUpload.uploadId,
               uploadTransport: preparedUpload.uploadTransport,
               nativeUploadState: preparedUpload.nativeUploadState,
+              nextRetryAt: undefined,
             },
             'native-upload-started'
           );
@@ -1161,6 +1268,7 @@ export const createVideoUploadQueue = (
         uploadTransport: uploaded.uploadTransport,
         nativeUploadState: uploaded.nativeUploadState,
         forcedUploadTransport: undefined,
+        nextRetryAt: undefined,
       },
       'uploaded'
     );
@@ -1171,7 +1279,14 @@ export const createVideoUploadQueue = (
       throw new QueueError('processing', 'Upload id missing before posting.');
     }
 
-    await updateItem(item.id, { status: 'posting' }, 'posting');
+    await updateItem(
+      item.id,
+      {
+        status: 'posting',
+        nextRetryAt: undefined,
+      },
+      'posting'
+    );
     logStage(item, 'posting');
     const nowIsoString = dependencies.now();
     const createdWatch = await dependencies.createWatchPost({
@@ -1218,6 +1333,7 @@ export const createVideoUploadQueue = (
           remotePollAttempt: 0,
           remotePollStartedAt: nowIsoString,
           nextRemotePollAt: nowIsoString,
+          nextRetryAt: undefined,
           lastError: undefined,
           failureCode: undefined,
         },
@@ -1236,6 +1352,7 @@ export const createVideoUploadQueue = (
         remotePollAttempt: undefined,
         remotePollStartedAt: undefined,
         nextRemotePollAt: undefined,
+        nextRetryAt: undefined,
         lastError: undefined,
         failureCode: undefined,
       },
@@ -1273,6 +1390,7 @@ export const createVideoUploadQueue = (
         item.id,
         {
           nativeUploadState: 'success',
+          nextRetryAt: undefined,
         },
         'native-upload-success'
       );
@@ -1291,8 +1409,9 @@ export const createVideoUploadQueue = (
       item.id,
       {
         nativeUploadState: isNativeMuxUploadRecordActive(currentNativeUpload)
-          ? currentNativeUpload.state
+          ? currentNativeUpload?.state
           : (item.nativeUploadState ?? 'uploading'),
+        nextRetryAt: undefined,
       },
       'native-upload-waiting'
     );
@@ -1315,6 +1434,7 @@ export const createVideoUploadQueue = (
       item.id,
       {
         nativeUploadState: 'success',
+        nextRetryAt: undefined,
       },
       'native-upload-success'
     );
@@ -1332,7 +1452,7 @@ export const createVideoUploadQueue = (
       nowIsoString
     );
     const nextRemotePollAtMs = parseTimestampMs(currentItem.nextRemotePollAt);
-    if (typeof nextRemotePollAtMs === 'number' && nextRemotePollAtMs > Date.now()) {
+    if (typeof nextRemotePollAtMs === 'number' && nextRemotePollAtMs > getCurrentTimestampMs()) {
       return;
     }
 
@@ -1403,6 +1523,7 @@ export const createVideoUploadQueue = (
           remotePollAttempt: undefined,
           remotePollStartedAt: undefined,
           nextRemotePollAt: undefined,
+          nextRetryAt: undefined,
           lastError: undefined,
           failureCode: undefined,
         },
@@ -1429,6 +1550,7 @@ export const createVideoUploadQueue = (
           },
           nowIsoString
         ),
+        nextRetryAt: undefined,
         lastError: undefined,
         failureCode: undefined,
       },
@@ -1535,12 +1657,16 @@ export const createVideoUploadQueue = (
         await processSingleItem(nextItem);
       } else {
         const nextRemoteDelay = getNextRemotePollDelay();
-        if (nextRemoteDelay === null) {
+        const nextQueuedRetryDelay = getNextQueuedRetryDelay();
+        const nextDelayCandidates = [nextRemoteDelay, nextQueuedRetryDelay].filter(
+          (value): value is number => value !== null
+        );
+        if (!nextDelayCandidates.length) {
           return;
         }
 
         // eslint-disable-next-line no-await-in-loop
-        await waitForWakeOrTimeout(nextRemoteDelay);
+        await waitForWakeOrTimeout(Math.min(...nextDelayCandidates));
       }
     }
   };

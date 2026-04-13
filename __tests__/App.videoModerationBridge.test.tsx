@@ -50,6 +50,13 @@ jest.mock('../src/components/post/VideoUploadRuntimeHost', () => {
     return <NativeView testID="mock-video-upload-runtime-host" />;
   };
 });
+jest.mock('../src/components/post/VideoModerationBridge', () => {
+  const { View: NativeView } = require('react-native');
+
+  return function MockVideoModerationBridge() {
+    return <NativeView testID="mock-video-moderation-bridge" />;
+  };
+});
 jest.mock('../src/services/firebaseApp', () => ({
   getFirebaseApp: jest.fn(() => ({})),
 }));
@@ -74,5 +81,25 @@ describe('App', () => {
     });
 
     expect(uploadRuntimeHosts).toHaveLength(1);
+    expect(
+      tree!.root.findAll((node) => {
+        return (
+          node.props.testID === 'mock-video-moderation-bridge' && typeof node.type === 'string'
+        );
+      })
+    ).toHaveLength(0);
+
+    const rootNodesInOrder = tree!.root.findAll((node) => {
+      return (
+        typeof node.type === 'string' &&
+        (node.props.testID === 'mock-video-upload-runtime-host' ||
+          node.props.testID === 'mock-app-content')
+      );
+    });
+
+    expect(rootNodesInOrder.map((node) => node.props.testID)).toEqual([
+      'mock-video-upload-runtime-host',
+      'mock-app-content',
+    ]);
   });
 });

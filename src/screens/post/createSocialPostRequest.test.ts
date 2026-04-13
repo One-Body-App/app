@@ -15,6 +15,7 @@ describe('buildCreateSocialPostRequest', () => {
     const request = buildCreateSocialPostRequest({
       content: 'Hello world',
       mentionedUserIds: [],
+      mentions: [],
       moderationReview: undefined,
     });
 
@@ -22,6 +23,7 @@ describe('buildCreateSocialPostRequest', () => {
       params: {
         content: 'Hello world',
         mentionedUserIds: [],
+        mentions: [],
         gif: undefined,
         moderationReview: undefined,
         location: undefined,
@@ -37,6 +39,7 @@ describe('buildCreateSocialPostRequest', () => {
     const request = buildCreateSocialPostRequest({
       content: 'Hello world',
       mentionedUserIds: ['507f1f77bcf86cd799439011'],
+      mentions: [{ userId: '507f1f77bcf86cd799439011', username: 'john', displayName: 'John Doe' }],
       uploadedImages,
       moderationReview: {
         checks: [],
@@ -51,6 +54,9 @@ describe('buildCreateSocialPostRequest', () => {
       {
         content: 'Hello world',
         mentionedUserIds: ['507f1f77bcf86cd799439011'],
+        mentions: [
+          { userId: '507f1f77bcf86cd799439011', username: 'john', displayName: 'John Doe' },
+        ],
         gif: undefined,
         moderationReview: {
           checks: [],

@@ -216,6 +216,7 @@ function FlatCommentRow({
 
           <ParsedText
             text={comment.content}
+            mentions={comment.mentions}
             textStyle={[flatStyles.contentText, { color: primaryTextColor }]}
           />
 

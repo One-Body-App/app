@@ -61,7 +61,7 @@ function DrawerNav() {
 
             drawerActiveBackgroundColor: Colors.neutral[600],
             drawerActiveTintColor: dark ? '#ffffff' : '#126b87',
-            drawerInactiveTintColor: dark ? colors.text : '#032f3c',
+            drawerInactiveTintColor: dark ? '#f6f6f7' : '#032f3c',
 
             headerLeft: (props: { tintColor?: string }) => {
               const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -657,37 +657,49 @@ function SkiaImageEditorModal({
     hasChangesRef.current = false;
   }, [usageContext]);
 
-  useEffect(() => {
+  const prevAssetUriRef = useRef(asset?.uri);
+  const prevAssetFileSizeRef = useRef(asset?.fileSize);
+  const prevVisibleRef = useRef(visible);
+  const prevResetStateRef = useRef(resetStateForNewAsset);
+  if (
+    prevAssetUriRef.current !== asset?.uri ||
+    prevAssetFileSizeRef.current !== asset?.fileSize ||
+    prevVisibleRef.current !== visible ||
+    prevResetStateRef.current !== resetStateForNewAsset
+  ) {
+    prevAssetUriRef.current = asset?.uri;
+    prevAssetFileSizeRef.current = asset?.fileSize;
+    prevVisibleRef.current = visible;
+    prevResetStateRef.current = resetStateForNewAsset;
     if (!visible || !asset?.uri) {
       setSourceUri('');
       setErrorMessage('');
-      return;
-    }
-    if (typeof asset.fileSize === 'number' && asset.fileSize > MAX_EDITOR_BYTES) {
+    } else if (typeof asset.fileSize === 'number' && asset.fileSize > MAX_EDITOR_BYTES) {
       const maxMb = Math.round(MAX_EDITOR_BYTES / (1024 * 1024));
       setErrorMessage(`Image is larger than ${maxMb}MB. Please choose a smaller image.`);
       setSourceUri('');
-      return;
+    } else {
+      setIsPreparing(true);
+      setErrorMessage('');
+      try {
+        setSourceUri(normalizeUri(asset.uri));
+        resetStateForNewAsset();
+      } finally {
+        setIsPreparing(false);
+      }
     }
-    setIsPreparing(true);
-    setErrorMessage('');
-    try {
-      setSourceUri(normalizeUri(asset.uri));
-      resetStateForNewAsset();
-    } finally {
-      setIsPreparing(false);
-    }
-  }, [asset?.fileSize, asset?.uri, resetStateForNewAsset, visible]);
+  }
 
-  useEffect(() => {
-    if (!shouldUseLowMemoryMode) {
-      return;
+  const prevShouldUseLowMemoryModeRef = useRef(shouldUseLowMemoryMode);
+  if (prevShouldUseLowMemoryModeRef.current !== shouldUseLowMemoryMode) {
+    prevShouldUseLowMemoryModeRef.current = shouldUseLowMemoryMode;
+    if (shouldUseLowMemoryMode) {
+      toast.show('Low-memory mode enabled for this image.', {
+        type: 'normal',
+        placement: 'bottom',
+      });
     }
-    toast.show('Low-memory mode enabled for this image.', {
-      type: 'normal',
-      placement: 'bottom',
-    });
-  }, [shouldUseLowMemoryMode, toast]);
+  }
 
   const selectedRatio = useMemo(
     () => ratioOptions.find((option) => option.id === ratio)?.ratio ?? null,

@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import EditProfile from '../screens/main/editProfile';
 
@@ -30,7 +31,7 @@ function ProfileStack() {
         component={EditProfile}
         options={() => {
           return {
-            // headerShown: false,
+            headerShown: Platform.OS !== 'android',
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },
             title: 'Edit Profile',

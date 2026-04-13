@@ -10,7 +10,6 @@ import OnboardingDateOfBirth from '../screens/onboardingSteps/onboardingDateOfBi
 import OnboardingInfluencers from '../screens/onboardingSteps/onboardingInfluencers';
 import OnboardingInterests from '../screens/onboardingSteps/onboardingInterests';
 import OnboardingLocation from '../screens/onboardingSteps/onboardingLocation';
-import OnboardingOrganizationContact from '../screens/onboardingSteps/onboardingOrganizationContact';
 import OnboardingOrganizationInfo from '../screens/onboardingSteps/onboardingOrganizationInfo';
 import OnboardingOrganizationType from '../screens/onboardingSteps/onboardingOrganizationType';
 import OnboardingOrganizationSubtype from '../screens/onboardingSteps/onboardingOrganizationSubtype';
@@ -84,14 +83,6 @@ function OnboardingStack() {
       <Stack.Screen
         name="OnboardingLocation"
         component={OnboardingLocation}
-        options={{
-          ...(Platform.OS === 'ios' ? headerOptions : {}),
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="OnboardingOrganizationContact"
-        component={OnboardingOrganizationContact}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
           headerShown: false,

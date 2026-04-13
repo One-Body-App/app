@@ -17,7 +17,6 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { Location } from 'iconsax-react-native';
@@ -29,7 +28,7 @@ import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import Toast from 'react-native-simple-toast';
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import styles from './style';
-import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
+import { OpenURLButton } from '@/services/constants';
 import Instagram from '@/assets/svg/Instagram.svg';
 import SendIcon from '@/assets/icons/send.svg';
 import RepeatIcon from '@/assets/icons/repeat.svg';
@@ -39,6 +38,11 @@ import StyledText from '../styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
+import FeedAvatar from '@/components/avatar/FeedAvatar';
+import {
+  isFeedAvatarPlaceholderUri,
+  resolveProfileAvatarUri,
+} from '@/components/avatar/feedAvatarUtils';
 
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
@@ -361,6 +365,9 @@ function BaseItem({
   const primaryTextColor = dark ? Colors.neutral.brand : brandColors.black;
   const secondaryTextColor = dark ? Colors.neutral[400] : brandColors.primaryDark;
   const isSocialPost = postData.type === PostType.social;
+  const profileImageUri = resolveProfileAvatarUri(userData);
+  const hasResolvedAvatarImage =
+    Boolean(profileImageUri) && !isFeedAvatarPlaceholderUri(profileImageUri);
   const locationPillBackground = dark ? Colors.neutral[800] : Colors.neutral[900];
   const locationPillBorder = dark ? 'rgba(255,255,255,0.08)' : Colors.neutral[600];
   const [myReaction, setMyReaction] = useState<SocialPostReaction | undefined>(postData.myReaction);
@@ -949,7 +956,7 @@ function BaseItem({
               }}
               activeOpacity={0.85}
             >
-              {userData.profileIcon && !userData.profileImage ? (
+              {userData.profileIcon && !hasResolvedAvatarImage ? (
                 <View
                   style={{
                     width: 52,
@@ -965,10 +972,9 @@ function BaseItem({
                   {userData.profileIcon}
                 </View>
               ) : (
-                <FastImage
-                  source={{
-                    uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
-                  }}
+                <FeedAvatar
+                  uri={profileImageUri}
+                  size={52}
                   style={{
                     width: 52,
                     height: 52,
@@ -978,6 +984,9 @@ function BaseItem({
                     backgroundColor: 'rgba(3, 47, 60, 0.35)',
                   }}
                   resizeMode="cover"
+                  fallbackBackgroundColor="#f6f6f7"
+                  fallbackBorderColor="#f6f6f7"
+                  fallbackIconColor="#126b87"
                 />
               )}
             </TouchableOpacity>
@@ -1386,16 +1395,15 @@ function BaseItem({
                 paddingRight: spacing.x10,
               }}
             >
-              {userData.profileIcon && !userData.profileImage ? (
+              {userData.profileIcon && !hasResolvedAvatarImage ? (
                 <View
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: borderRadius.max,
-                    borderColor:
-                      userData.profileImage !== NO_PROFILE_IMAGE
-                        ? brandColors.black
-                        : brandColors.primaryBase,
+                    borderColor: hasResolvedAvatarImage
+                      ? brandColors.black
+                      : brandColors.primaryBase,
                     borderWidth: borderWidth.thin,
                     padding: spacing.x5,
                     marginRight: spacing.x10,
@@ -1407,22 +1415,23 @@ function BaseItem({
                   {userData.profileIcon}
                 </View>
               ) : (
-                <FastImage
-                  source={{
-                    uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
-                  }}
+                <FeedAvatar
+                  uri={profileImageUri}
+                  size={40}
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: borderRadius.max,
-                    borderColor:
-                      userData.profileImage !== NO_PROFILE_IMAGE
-                        ? brandColors.black
-                        : brandColors.primaryBase,
+                    borderColor: hasResolvedAvatarImage
+                      ? brandColors.black
+                      : brandColors.primaryBase,
                     borderWidth: borderWidth.thin,
                     marginRight: spacing.x10,
                   }}
                   resizeMode="contain"
+                  fallbackBackgroundColor="#f6f6f7"
+                  fallbackBorderColor={brandColors.primaryBase}
+                  fallbackIconColor={brandColors.primaryDark}
                 />
               )}
               <View style={{ flex: 1 }}>

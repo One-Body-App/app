@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, Switch, ActivityIndicator, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -21,7 +21,7 @@ import { borderRadius } from '@/src/styles/outlines';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;
 
-function NotificationSettings({ navigation }: Props) {
+function NotificationSettings(_props: Props) {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
@@ -32,6 +32,7 @@ function NotificationSettings({ navigation }: Props) {
     pushNotificationsEnabled: false,
     emailNotificationsEnabled: false,
     subscribedToNewsletter: false,
+    tagNotificationsEnabled: false,
   });
   const { colors } = useTheme();
 
@@ -56,6 +57,7 @@ function NotificationSettings({ navigation }: Props) {
           pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
           emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
           subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
+          tagNotificationsEnabled: res.response?.tagNotificationsEnabled ?? false,
         });
 
         setIsLoaded(true);
@@ -72,57 +74,55 @@ function NotificationSettings({ navigation }: Props) {
     getUserProfile();
   }, []);
 
-  useEffect(() => {
-    if (isLoaded && !isLoading) {
-      updateNotifications();
-    }
-  }, [notificationSwitch]);
-
-  const updateNotifications = async () => {
-    toast.hide('loading');
-    const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
-      id: 'loadingB',
-      placement: 'top',
-      style: {
-        backgroundColor: colors.background,
-      },
-    });
-    setIsLoading(true);
-    try {
-      const notifications = {
-        pushNotificationsEnabled: notificationSwitch.pushNotificationsEnabled,
-        subscribedToNewsletter: notificationSwitch.subscribedToNewsletter,
-        emailNotificationsEnabled: notificationSwitch.emailNotificationsEnabled,
-      };
-
-      const res = await ApiCall({
-        params: notifications,
-        route: `user/set-notifications`,
-        token,
-        verb: 'patch',
+  const updateNotifications = useCallback(
+    async (nextNotificationSwitch: typeof notificationSwitch) => {
+      toast.hide('loading');
+      const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
+        id: 'loadingB',
+        placement: 'top',
+        style: {
+          backgroundColor: colors.background,
+        },
       });
+      setIsLoading(true);
+      try {
+        const notifications = {
+          pushNotificationsEnabled: nextNotificationSwitch.pushNotificationsEnabled,
+          subscribedToNewsletter: nextNotificationSwitch.subscribedToNewsletter,
+          emailNotificationsEnabled: nextNotificationSwitch.emailNotificationsEnabled,
+          tagNotificationsEnabled: nextNotificationSwitch.tagNotificationsEnabled,
+        };
 
-      if (res?.status == 200) {
-        dispatch(setUserDataNotifications({ notifications }));
-
-        if (notificationSwitch.pushNotificationsEnabled) {
-          await enablePushNotifications(token, true);
-        } else {
-          await disablePushNotifications(token);
-        }
-
-        toast.show('Notifications Settings Updated Successfully', {
-          type: 'success',
-          placement: 'top',
+        const res = await ApiCall({
+          params: notifications,
+          route: `user/set-notifications`,
+          token,
+          verb: 'patch',
         });
+
+        if (res?.status === 200) {
+          dispatch(setUserDataNotifications({ notifications }));
+
+          if (nextNotificationSwitch.pushNotificationsEnabled) {
+            await enablePushNotifications(token, true);
+          } else {
+            await disablePushNotifications(token);
+          }
+
+          toast.show('Notifications Settings Updated Successfully', {
+            type: 'success',
+            placement: 'top',
+          });
+        }
+        toast.hide(toastId);
+        setIsLoading(false);
+      } catch (e) {
+        toast.hide(toastId);
+        setIsLoading(false);
       }
-      toast.hide(toastId);
-      setIsLoading(false);
-    } catch (e) {
-      toast.hide(toastId);
-      setIsLoading(false);
-    }
-  };
+    },
+    [colors.background, colors.text, dispatch, toast, token]
+  );
 
   const rows: {
     key: keyof typeof notificationSwitch;
@@ -130,6 +130,12 @@ function NotificationSettings({ navigation }: Props) {
     description: string;
     Icon: React.ComponentType<{ color: string; size: number }>;
   }[] = [
+    {
+      key: 'tagNotificationsEnabled',
+      label: 'Tagged',
+      description: 'Notify me when I am tagged in a post',
+      Icon: NotificationStatus,
+    },
     {
       key: 'pushNotificationsEnabled',
       label: 'Push Notifications',
@@ -204,12 +210,16 @@ function NotificationSettings({ navigation }: Props) {
                 <Switch
                   disabled={isLoading}
                   value={notificationSwitch[key]}
-                  onValueChange={() =>
-                    setNotificationSwitch({
+                  onValueChange={(nextValue) => {
+                    const nextNotificationSwitch = {
                       ...notificationSwitch,
-                      [key]: !notificationSwitch[key],
-                    })
-                  }
+                      [key]: nextValue,
+                    };
+                    setNotificationSwitch(nextNotificationSwitch);
+                    if (isLoaded && !isLoading) {
+                      updateNotifications(nextNotificationSwitch);
+                    }
+                  }}
                   trackColor={{ false: Colors.neutral[600], true: Colors.primary.brand }}
                   thumbColor="#fff"
                 />

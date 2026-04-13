@@ -95,7 +95,7 @@ function padToCount(urls: (string | null)[]): (string | null)[] {
  * Returns exactly 4 entries: CDN URL strings or null (caller falls back to static asset).
  * Always attempts a network refresh on cold start and falls back to cache when needed.
  */
-export async function getCachedIntroAvatars(): Promise<(string | null)[]> {
+export default async function getCachedIntroAvatars(): Promise<(string | null)[]> {
   const cached = await readCache();
   const fresh = await fetchFromNetwork();
   if (fresh && fresh.length > 0) {

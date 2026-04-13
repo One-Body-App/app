@@ -914,6 +914,7 @@ function SocialItem({
             <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
               <ParsedText
                 text={primaryTextToRender}
+                mentions={itemData.mentions}
                 textStyle={{
                   color: colors.text,
                   marginBottom: spacing.x8,
@@ -1042,6 +1043,10 @@ function SocialItem({
                       {sourceContent ? (
                         <ParsedText
                           text={sourceContent}
+                          mentions={
+                            (sourceSnapshot as { mentions?: SocialPost['mentions'] } | null)
+                              ?.mentions
+                          }
                           textStyle={{
                             color: colors.text,
                             marginBottom:

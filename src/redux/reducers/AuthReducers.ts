@@ -128,6 +128,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userProfile: action.data,
+        getProfileData: action.data,
       };
 
     case ACTIONS.UPDATE_USER:
@@ -163,9 +164,12 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case ACTIONS.SET_USER_NOTIFICATIONS:
       return {
         ...state,
-
         userProfile: {
           ...state.userProfile,
+          ...action.data.notifications,
+        },
+        getProfileData: {
+          ...state.getProfileData,
           ...action.data.notifications,
         },
       };

@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
+import { useProfileAvatarAnimation } from './useProfileAvatarAnimation';
+import ProfileAvatarOverlay from './ProfileAvatarOverlay';
 
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
@@ -16,6 +18,7 @@ import {
   getRecentCompletedWatchUploadsSnapshot,
   subscribeRecentCompletedWatchUploads,
 } from '@/src/services/recentCompletedWatchUploads';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 const TAB_LABELS: Record<ProfileTabKey, string> = {
   post: 'Post',
@@ -120,12 +123,13 @@ function Profile({
   variant = 'public',
 }: ProfileProps) {
   const { colors } = useTheme();
+  const avatarAnimation = useProfileAvatarAnimation();
   const [recentCompletedWatchUploadsCount, setRecentCompletedWatchUploadsCount] = useState(
     getRecentCompletedWatchUploadsSnapshot().filter(
       (upload) => upload.ownerUserId === currentUser._id
     ).length
   );
-  const visibleTabs = useMemo(() => {
+  const visibleTabs = useMemo((): ProfileTabKey[] => {
     const baseTabs = getVisibleProfileTabs(profileData);
     if (variant === 'self' && recentCompletedWatchUploadsCount > 0 && !baseTabs.includes('watch')) {
       return [...baseTabs, 'watch'];
@@ -136,7 +140,7 @@ function Profile({
   const [requestedTab, setRequestedTab] = useState<ProfileTabKey>(initialTab);
   const activeTab = visibleTabs.includes(requestedTab) ? requestedTab : initialTab;
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (variant !== 'self') {
       return undefined;
     }
@@ -146,7 +150,9 @@ function Profile({
         uploads.filter((upload) => upload.ownerUserId === currentUser._id).length
       );
     });
-  }, [currentUser._id, variant]);
+  });
+  const showAvatarAnimation = variant !== 'self' && Boolean(profileData.profileImage);
+
   const headerContent = (
     <>
       <ProfileHeader
@@ -157,6 +163,7 @@ function Profile({
         handleSubscribe={handleSubscribe}
         handleUnSubscribe={handleUnSubscribe}
         variant={variant}
+        avatarAnimation={showAvatarAnimation ? avatarAnimation : undefined}
       />
       <ProfileTabBar
         activeTab={activeTab}
@@ -168,6 +175,10 @@ function Profile({
   );
   const listKey = `${profileData._id}-${activeTab}-${refreshToken}`;
 
+  const overlay = showAvatarAnimation ? (
+    <ProfileAvatarOverlay imageUri={profileData.profileImage} animation={avatarAnimation} />
+  ) : null;
+
   if (activeTab === 'social' && visibleTabs.includes('social')) {
     return (
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
@@ -178,6 +189,7 @@ function Profile({
           socialType="instagram"
           emptyText="No social posts yet"
         />
+        {overlay}
       </View>
     );
   }
@@ -191,6 +203,7 @@ function Profile({
           userId={profileData._id}
           emptyText="No blog posts yet"
         />
+        {overlay}
       </View>
     );
   }
@@ -204,6 +217,7 @@ function Profile({
           userId={profileData._id}
           emptyText="No watch posts yet"
         />
+        {overlay}
       </View>
     );
   }
@@ -217,6 +231,7 @@ function Profile({
         socialType="onebody"
         emptyText="No social posts to display"
       />
+      {overlay}
     </View>
   );
 }
