@@ -448,6 +448,12 @@ export type MainStackParamList = {
       originFeedType?: FeedTypes;
     };
   };
+  BlogComposer?:
+    | {
+        blogId?: string;
+      }
+    | undefined;
+  CreatorBlogDashboard: undefined;
   UploadImage?: {
     requestId: string;
     imageUri: string;

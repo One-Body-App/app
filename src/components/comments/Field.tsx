@@ -11,6 +11,7 @@ import {
 import { CloseCircle, TickCircle } from 'iconsax-react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import FastImage from 'react-native-fast-image';
+import Color from 'color';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { useEffect, useRef, useState } from 'react';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
@@ -37,7 +38,10 @@ import {
   CLIENT_IMAGE_MAX_WIDTH,
   CLIENT_IMAGE_PICKER_QUALITY,
 } from '@/src/screens/post/uploadImageConfig';
-import { extractExifOrientation } from '@/src/screens/post/uploadImageOrientation';
+import {
+  extractExifOrientation,
+  resolveEditorExifOrientation,
+} from '@/src/screens/post/uploadImageOrientation';
 import StyledText from '../styled/Text';
 
 const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => {
@@ -174,6 +178,13 @@ function CommentField({
     inputBackground = '#111d21';
     dividerColor = '#22343a';
   }
+  const inputTextColor = (() => {
+    try {
+      return Color(inputBackground).isLight() ? '#0e181b' : '#ffffff';
+    } catch {
+      return dark ? '#ffffff' : '#0e181b';
+    }
+  })();
   const textSecondary = '#4f8596';
   const primary = '#116a88';
   const profileImageUri =
@@ -284,7 +295,11 @@ function CommentField({
       fileSize: typeof selectedItem.size === 'number' ? selectedItem.size : undefined,
       type: 'image/jpeg',
       usageContext: 'comment',
-      orientation: extractExifOrientation(selectedItem),
+      orientation: resolveEditorExifOrientation({
+        orientation: extractExifOrientation(selectedItem),
+        source: 'react-native-image-crop-picker',
+        platform: Platform.OS,
+      }),
     });
 
     const result = await resultPromise;
@@ -478,12 +493,16 @@ function CommentField({
                   ) : null}
                 </View>
               }
+              inputWrapperStyle={{
+                backgroundColor: inputBackground,
+                borderRadius: borderRadius.max,
+              }}
               inputStyle={{
                 width: '100%',
                 minHeight: 50,
                 maxHeight: 120,
-                color: dark ? '#ffffff' : '#0e181b',
-                backgroundColor: inputBackground,
+                color: inputTextColor,
+                backgroundColor: 'transparent',
                 borderRadius: borderRadius.max,
                 paddingVertical: spacing.x16,
                 paddingHorizontal: spacing.x16,
@@ -509,6 +528,7 @@ function CommentField({
               selection={mentionComposer.selection}
               selectionColor={primary}
               suggestions={suggestions}
+              suggestionsPlacement={isEditingComment ? 'below' : 'above'}
               suggestionsContainerStyle={{
                 backgroundColor: composerBackground,
                 borderColor: dividerColor,

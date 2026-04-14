@@ -78,6 +78,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
     serve,
   } = useConnectPortalData();
   const [refreshing, setRefreshing] = useState(false);
+  const [chromeHeight, setChromeHeight] = useState(0);
   const { keyboardHeight, keyboardVisible } = useConnectKeyboardMetrics();
   useFocusEffect(
     React.useCallback(() => {
@@ -222,26 +223,32 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
 
   return (
     <View style={[styles.container, { backgroundColor: palette.screenBackground }]}>
-      <ConnectPortalChrome
-        activeTab="Go!"
-        onTabChange={handleTabChange}
-        userAvatarUri={currentUser?.profileImage || NO_PROFILE_IMAGE}
-        onAddPress={async () => {
-          const draft = await createConnectPortalDraft();
-          navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
-        }}
-        addAccessibilityLabel="Create event"
-        headerActionIconName="map"
-        headerActionAccessibilityLabel="Switch to map view"
-        onHeaderActionPress={() => handleViewModeChange('map')}
-      />
+      <View style={styles.chromeAbsolute}>
+        <ConnectPortalChrome
+          activeTab="Go!"
+          onTabChange={handleTabChange}
+          userAvatarUri={currentUser?.profileImage || NO_PROFILE_IMAGE}
+          onAddPress={async () => {
+            const draft = await createConnectPortalDraft();
+            navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+          }}
+          addAccessibilityLabel="Create event"
+          headerActionIconName="map"
+          headerActionAccessibilityLabel="Switch to map view"
+          onHeaderActionPress={() => handleViewModeChange('map')}
+          onLayout={setChromeHeight}
+        />
+      </View>
 
       <FlatList<ConnectPortalEventRecord>
         style={styles.content}
         data={recommendedEvents}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.contentBody, { paddingBottom: bottomSearchClearance }]}
+        contentContainerStyle={[
+          styles.contentBody,
+          { paddingTop: chromeHeight, paddingBottom: bottomSearchClearance },
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         onEndReachedThreshold={0.5}
         ListHeaderComponent={
@@ -597,6 +604,13 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  chromeAbsolute: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   content: {
     flex: 1,

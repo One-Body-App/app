@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   ActivityIndicator,
@@ -380,12 +380,18 @@ function Explore({ navigation }: Props) {
   const secondaryTextColor = dark ? '#c4ccd6' : Colors.neutral[300];
   const tertiaryTextColor = dark ? '#9aa4b2' : Colors.neutral[300];
   const screenBackgroundColor = dark ? '#0a0b0d' : '#f8fafc';
-  const headerBackgroundColor = dark ? '#0c0d10' : '#ffffff';
+  let headerBackgroundColor: string;
+  if (Platform.OS === 'ios') {
+    headerBackgroundColor = dark ? 'rgba(12,13,16,0.72)' : 'rgba(255,255,255,0.72)';
+  } else {
+    headerBackgroundColor = dark ? '#0c0d10' : '#ffffff';
+  }
   const headerDividerColor = dark ? 'rgba(255,255,255,0.06)' : colors.border;
   const searchSurfaceColor = dark ? '#1c2024' : '#f1f5f9';
   const surfaceCardColor = dark ? '#15191d' : colors.card;
   const surfaceBorderColor = dark ? 'rgba(255,255,255,0.1)' : colors.border;
   const shouldUseBlurHeader = Platform.OS === 'ios';
+  const [exploreHeaderHeight, setExploreHeaderHeight] = useState(0);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData as User | null);
@@ -482,11 +488,7 @@ function Explore({ navigation }: Props) {
     [chipOffset]
   );
 
-  const userAvatar =
-    (userProfile as any)?.avatar ??
-    (userProfile as any)?.profile_image ??
-    userProfile?.profileImage ??
-    '';
+  const userAvatar = userProfile?.profileImage ?? '';
 
   const serveGoSearchPool = useMemo(() => {
     const go = (CONNECT_PORTAL_LIST_DATA['Go!'] ?? []).map((item) => ({
@@ -576,11 +578,7 @@ function Explore({ navigation }: Props) {
         _id: fallbackUserId,
         name: raw.userData?.name ?? 'Unknown user',
         username: raw.userData?.username ?? 'unknown',
-        profileImage:
-          raw.userData?.profileImage ||
-          raw.userData?.avatar ||
-          raw.userData?.profile_image ||
-          NO_PROFILE_IMAGE,
+        profileImage: raw.userData?.profileImage || NO_PROFILE_IMAGE,
         accountType: raw.userData?.accountType ?? AccountType.individual,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
@@ -611,11 +609,7 @@ function Explore({ navigation }: Props) {
         name: raw.userData?.name ?? 'One Body',
         username: raw.userData?.username ?? 'onebody',
         accountType: raw.userData?.accountType ?? AccountType.organization,
-        profileImage:
-          raw.userData?.profileImage ||
-          raw.userData?.avatar ||
-          raw.userData?.profile_image ||
-          NO_PROFILE_IMAGE,
+        profileImage: raw.userData?.profileImage || NO_PROFILE_IMAGE,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
     } as ArticleType;
@@ -639,11 +633,7 @@ function Explore({ navigation }: Props) {
         name: raw.userData?.name ?? 'Unknown user',
         username: raw.userData?.username ?? 'unknown',
         accountType: raw.userData?.accountType ?? AccountType.individual,
-        profileImage:
-          raw.userData?.profileImage ||
-          raw.userData?.avatar ||
-          raw.userData?.profile_image ||
-          NO_PROFILE_IMAGE,
+        profileImage: raw.userData?.profileImage || NO_PROFILE_IMAGE,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
       answered: Boolean(raw.answered),
@@ -681,11 +671,7 @@ function Explore({ navigation }: Props) {
         name: raw.userData?.name ?? 'Unknown user',
         username: raw.userData?.username ?? 'unknown',
         accountType: raw.userData?.accountType ?? AccountType.individual,
-        profileImage:
-          raw.userData?.profileImage ||
-          raw.userData?.avatar ||
-          raw.userData?.profile_image ||
-          NO_PROFILE_IMAGE,
+        profileImage: raw.userData?.profileImage || NO_PROFILE_IMAGE,
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
       created: toDate(raw.created),
@@ -808,8 +794,70 @@ function Explore({ navigation }: Props) {
     [buildPostResult, buildUserResult, getLocalServeGoPage, token]
   );
 
+  const animateToSearchMode = useCallback(
+    (entering: boolean) => {
+      if (entering) {
+        Animated.parallel([
+          Animated.timing(browseOpacity, {
+            toValue: 0,
+            duration: BROWSE_TRANSITION_OUT_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(browseTranslateY, {
+            toValue: -8,
+            duration: BROWSE_TRANSITION_OUT_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(searchOpacity, {
+            toValue: 1,
+            duration: SEARCH_TRANSITION_IN_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(searchTranslateY, {
+            toValue: 0,
+            duration: SEARCH_TRANSITION_IN_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else {
+        Animated.parallel([
+          Animated.timing(browseOpacity, {
+            toValue: 1,
+            duration: SEARCH_TRANSITION_IN_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(browseTranslateY, {
+            toValue: 0,
+            duration: SEARCH_TRANSITION_IN_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(searchOpacity, {
+            toValue: 0,
+            duration: BROWSE_TRANSITION_OUT_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(searchTranslateY, {
+            toValue: 12,
+            duration: BROWSE_TRANSITION_OUT_MS,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    },
+    [browseOpacity, browseTranslateY, searchOpacity, searchTranslateY]
+  );
+
   const handleSearchTextChange = useCallback(
     (nextText: string) => {
+      const wasSearchMode = searchText.trim().length > 0;
       setSearchText(nextText);
 
       if (searchDebounceRef.current) {
@@ -818,6 +866,12 @@ function Explore({ navigation }: Props) {
       }
 
       const nextTrimmedText = nextText.trim();
+      const nextIsSearchMode = nextTrimmedText.length > 0;
+
+      if (wasSearchMode !== nextIsSearchMode) {
+        animateToSearchMode(nextIsSearchMode);
+      }
+
       if (!nextTrimmedText) {
         resetSearchState();
         return;
@@ -827,7 +881,7 @@ function Explore({ navigation }: Props) {
         runSearch(nextTrimmedText, 1, true);
       }, SEARCH_DEBOUNCE_MS);
     },
-    [resetSearchState, runSearch]
+    [animateToSearchMode, resetSearchState, runSearch, searchText]
   );
 
   const handleTrendingTopicPress = useCallback(
@@ -836,65 +890,6 @@ function Explore({ navigation }: Props) {
     },
     [handleSearchTextChange]
   );
-
-  useEffect(() => {
-    if (isSearchMode) {
-      Animated.parallel([
-        Animated.timing(browseOpacity, {
-          toValue: 0,
-          duration: BROWSE_TRANSITION_OUT_MS,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(browseTranslateY, {
-          toValue: -8,
-          duration: BROWSE_TRANSITION_OUT_MS,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(searchOpacity, {
-          toValue: 1,
-          duration: SEARCH_TRANSITION_IN_MS,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(searchTranslateY, {
-          toValue: 0,
-          duration: SEARCH_TRANSITION_IN_MS,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start();
-      return;
-    }
-
-    Animated.parallel([
-      Animated.timing(browseOpacity, {
-        toValue: 1,
-        duration: SEARCH_TRANSITION_IN_MS,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(browseTranslateY, {
-        toValue: 0,
-        duration: SEARCH_TRANSITION_IN_MS,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(searchOpacity, {
-        toValue: 0,
-        duration: BROWSE_TRANSITION_OUT_MS,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(searchTranslateY, {
-        toValue: 12,
-        duration: BROWSE_TRANSITION_OUT_MS,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [browseOpacity, browseTranslateY, isSearchMode, searchOpacity, searchTranslateY]);
 
   const fetchTrending = useCallback(async () => {
     setIsTrendingLoading(true);
@@ -1592,11 +1587,11 @@ function Explore({ navigation }: Props) {
 
   const browseContent = (
     <ScrollView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: screenBackgroundColor }}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={[
         styles.browseContentContainer,
-        { paddingBottom: getHeight(7) + insets.bottom + 40 },
+        { paddingTop: exploreHeaderHeight, paddingBottom: getHeight(7) + insets.bottom + 40 },
       ]}
       refreshControl={
         <RefreshControl
@@ -2012,25 +2007,41 @@ function Explore({ navigation }: Props) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
+    <View
+      style={[
+        styles.container,
+        Platform.OS === 'android' ? { backgroundColor: screenBackgroundColor } : null,
+      ]}
+    >
       <Animated.View
+        onLayout={(e) => setExploreHeaderHeight(e.nativeEvent.layout.height)}
         style={[
           styles.headerWrap,
           {
             paddingTop: insets.top + spacing.x8,
             borderBottomColor: isSearchMode ? 'transparent' : headerDividerColor,
-            backgroundColor: headerBackgroundColor,
           },
           getSpringboardStyle(0),
         ]}
       >
-        {shouldUseBlurHeader && (
-          <BlurView
+        {shouldUseBlurHeader ? (
+          <>
+            <BlurView
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={25}
+              reducedTransparencyFallbackColor={colors.background}
+            />
+            <View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFill, { backgroundColor: headerBackgroundColor }]}
+            />
+          </>
+        ) : (
+          <View
             pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-            blurType={dark ? 'dark' : 'light'}
-            blurAmount={18}
-            reducedTransparencyFallbackColor={colors.background}
+            style={[StyleSheet.absoluteFill, { backgroundColor: dark ? '#0c0d10' : '#ffffff' }]}
           />
         )}
 
@@ -2220,6 +2231,10 @@ const createStyles = (dark: boolean) =>
       flex: 1,
     },
     headerWrap: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       borderBottomWidth: 1,
       zIndex: 8,
     },

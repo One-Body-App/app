@@ -17,6 +17,7 @@ type WatchCommentRowProps = {
   item: FlatCommentItem;
   currentUserId?: string;
   isReacting: boolean;
+  onMentionPress?: (handle: string) => void;
   onToggleReaction: (commentId: string, hasReaction: boolean) => void;
   onReply: (comment: CommentPost) => void;
   onLongPress?: (comment: CommentPost) => void;
@@ -26,6 +27,7 @@ function WatchCommentRow({
   item,
   currentUserId,
   isReacting,
+  onMentionPress,
   onToggleReaction,
   onReply,
   onLongPress,
@@ -60,6 +62,7 @@ function WatchCommentRow({
         <ParsedText
           text={comment.content}
           mentions={comment.mentions}
+          onMentionPress={onMentionPress}
           textStyle={styles.commentContent}
         />
 

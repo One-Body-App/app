@@ -153,6 +153,7 @@ function CreatorReview({ navigation, route }: Props) {
           reviewSocialLinks: data.reviewSocialLinks,
           contentTypes: data.contentTypes,
           topics: data.topics,
+          topicNames: data.topicNames,
         },
       });
 
@@ -306,18 +307,9 @@ function CreatorReview({ navigation, route }: Props) {
           />
           <Text style={styles.agreementText}>
             I agree to uphold One Body&#39;s{' '}
-            <Text style={styles.agreementLink}>Protestant Christian values</Text> and community
-            guidelines.
+            <Text style={styles.agreementLink}>Christian values</Text> and community guidelines.
           </Text>
         </TouchableOpacity>
-
-        {/* Badge */}
-        <View style={styles.badgeContainer}>
-          <View style={styles.badgeInner}>
-            <MaterialCommunityIcons name="shield-check" size={28} color={palette.accent} />
-            <Text style={styles.badgeText}>Verified Protestant Community</Text>
-          </View>
-        </View>
       </ScrollView>
 
       <View style={styles.bottomNav}>
@@ -513,6 +505,7 @@ const createStyles = (palette: ScreenPalette, bottomInset: number) =>
       flexDirection: 'row',
       alignItems: 'flex-start',
       marginTop: 24,
+      marginBottom: 28,
       padding: 20,
       borderRadius: 20,
       borderWidth: 1,
@@ -533,29 +526,6 @@ const createStyles = (palette: ScreenPalette, bottomInset: number) =>
     agreementLink: {
       color: palette.accent,
       fontFamily: 'OpenSans-SemiBold',
-    },
-    badgeContainer: {
-      alignItems: 'center',
-      marginTop: 28,
-      marginBottom: 8,
-    },
-    badgeInner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 18,
-      paddingVertical: 10,
-      borderRadius: 999,
-      backgroundColor: palette.pillBg,
-      borderWidth: 1,
-      borderColor: palette.subtleBorder,
-    },
-    badgeText: {
-      color: palette.accent,
-      fontSize: 13,
-      lineHeight: 18,
-      fontFamily: 'OpenSans-SemiBold',
-      letterSpacing: 0.3,
     },
     bottomNav: {
       position: 'absolute',

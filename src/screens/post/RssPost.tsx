@@ -11,6 +11,8 @@ import Header from '@/components/Header';
 import GoBackIcon from '@/components/GoBackIcon';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
+import { creatorBlogService } from '@/src/services/creatorBlogs';
+import type { CreatorBlogRecord } from '@/src/services/creatorBlogs';
 
 import { spacing } from '@/src/styles/spacing';
 import { borderWidth } from '@/src/styles/outlines';
@@ -24,10 +26,12 @@ import {
   getCommentId,
   toSerializableCommentSnapshot,
 } from '@/components/comments/commentListUtils';
+import CreatorBlogReader from '@/src/screens/blogs/CreatorBlogReader';
 
 type Props = StackScreenProps<MainStackParamList, 'SingleRss'>;
 function RssPost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();
+  const [localBlog, setLocalBlog] = useState<CreatorBlogRecord | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
 
@@ -73,8 +77,17 @@ function RssPost({ navigation, route }: Props) {
 
   const getRssPost = useCallback(async () => {
     setIsLoading(true);
+    setIsNotFound(false);
 
     try {
+      const localRecord = await creatorBlogService.getBlogById(route.params?.postId || '');
+      if (localRecord) {
+        setLocalBlog(localRecord);
+        setPost(undefined);
+        setIsLoading(false);
+        return;
+      }
+
       const result = await ApiCall({
         route: `rss/${route.params?.postId}`,
         token,
@@ -91,6 +104,7 @@ function RssPost({ navigation, route }: Props) {
 
       if (result.status === 200) {
         if (result.response) {
+          setLocalBlog(null);
           setPost(result.response);
         } else {
           setIsNotFound(true);
@@ -137,6 +151,80 @@ function RssPost({ navigation, route }: Props) {
     [navigation, route.params?.postId, route.params?.postType]
   );
 
+  let contentNode = (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      {isLoading ? (
+        <ActivityIndicator
+          animating={isLoading}
+          size="small"
+          color={Colors.neutral[200]}
+          style={{ marginRight: spacing.x10 }}
+        />
+      ) : (
+        <StyledText>{isNotFound ? 'Not Found' : 'Loading article...'}</StyledText>
+      )}
+    </View>
+  );
+
+  if (localBlog) {
+    contentNode = <CreatorBlogReader blog={localBlog} />;
+  } else if (post) {
+    const headerNode =
+      route.params?.postType === 'watch' ? (
+        <VideoItem
+          currentIndex={0}
+          item={post}
+          viewHeight={200}
+          width={50}
+          fromSavedPosts={false}
+          onShowDismissCard={undefined}
+        />
+      ) : (
+        <ArticleItem
+          item={post}
+          imageSizeType="contain"
+          blogPostStyle={{
+            marginHorizontal: 0,
+            marginBottom: 0,
+            borderRadius: 0,
+            borderWidth: 0,
+            borderTopWidth: 0,
+            borderRightWidth: 0,
+            borderLeftWidth: 0,
+            borderBottomColor: Colors.neutral[800],
+            borderBottomWidth: borderWidth.thin,
+            shadowColor: 'transparent',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0,
+            shadowRadius: 0,
+            elevation: 0,
+            backgroundColor: 'transparent',
+          }}
+          blogPostImageStyle={globalStyle.newspostimage}
+        />
+      );
+
+    contentNode = (
+      <CommentThread
+        type={commentType}
+        postId={route.params?.postId ?? ''}
+        threadRootCommentId={route.params?.threadRootCommentId}
+        threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
+        onOpenCommentThread={openCommentThread}
+        enablePagination
+        onPostRefresh={getRssPost}
+        scrollToEndOnPublish
+        headerContainerStyle={{
+          paddingHorizontal: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          borderBottomWidth: 0,
+        }}
+        header={headerNode}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       {Platform.OS === 'android' ? (
@@ -146,7 +234,7 @@ function RssPost({ navigation, route }: Props) {
             backgroundColor={colors.background}
           />
           <Header
-            title="Comment"
+            title={localBlog ? 'Article' : 'Comment'}
             hideBorder
             leftView={
               <GoBackIcon
@@ -158,72 +246,7 @@ function RssPost({ navigation, route }: Props) {
           />
         </>
       ) : null}
-      {post ? (
-        <CommentThread
-          type={commentType}
-          postId={route.params?.postId ?? ''}
-          threadRootCommentId={route.params?.threadRootCommentId}
-          threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
-          onOpenCommentThread={openCommentThread}
-          enablePagination
-          onPostRefresh={getRssPost}
-          scrollToEndOnPublish
-          headerContainerStyle={{
-            paddingHorizontal: 0,
-            paddingTop: 0,
-            paddingBottom: 0,
-            borderBottomWidth: 0,
-          }}
-          header={
-            route.params?.postType === 'watch' ? (
-              <VideoItem
-                currentIndex={0}
-                item={post}
-                viewHeight={200}
-                width={50}
-                fromSavedPosts={false}
-                onShowDismissCard={undefined}
-              />
-            ) : (
-              <ArticleItem
-                item={post}
-                imageSizeType="contain"
-                blogPostStyle={{
-                  marginHorizontal: 0,
-                  marginBottom: 0,
-                  borderRadius: 0,
-                  borderWidth: 0,
-                  borderTopWidth: 0,
-                  borderRightWidth: 0,
-                  borderLeftWidth: 0,
-                  borderBottomColor: Colors.neutral[800],
-                  borderBottomWidth: borderWidth.thin,
-                  shadowColor: 'transparent',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0,
-                  shadowRadius: 0,
-                  elevation: 0,
-                  backgroundColor: 'transparent',
-                }}
-                blogPostImageStyle={globalStyle.newspostimage}
-              />
-            )
-          }
-        />
-      ) : (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          {isLoading ? (
-            <ActivityIndicator
-              animating={isLoading}
-              size="small"
-              color={Colors.neutral[200]}
-              style={{ marginRight: spacing.x10 }}
-            />
-          ) : (
-            <StyledText>Not Found</StyledText>
-          )}
-        </View>
-      )}
+      {contentNode}
     </SafeAreaView>
   );
 }

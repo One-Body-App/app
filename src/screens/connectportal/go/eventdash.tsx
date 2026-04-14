@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Platform,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -8,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -21,6 +22,7 @@ import {
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import GoBackIcon from '@/src/components/GoBackIcon';
+import { useConnectPalette } from '../shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventDash'>;
 
@@ -28,9 +30,246 @@ const HEADER_FONT_FAMILY = 'Rubik-Bold';
 const BODY_FONT_FAMILY = 'OpenSans-Regular';
 const BODY_FONT_FAMILY_SEMIBOLD = 'OpenSans-SemiBold';
 
+function createStyles(dark: boolean, palette: ReturnType<typeof useConnectPalette>) {
+  const accent = '#126b87';
+  const accentLight = '#12D2D9';
+
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: palette.screenBackground,
+    },
+    container: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    headerIOS: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    backButtonAbsolute: {
+      position: 'absolute',
+      left: 16,
+      zIndex: 1,
+    },
+    headerTitleCentered: {
+      textAlign: 'center',
+    },
+    headerLeft: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingRight: 12,
+    },
+    headerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    backButton: {
+      marginRight: 10,
+      paddingVertical: 4,
+      paddingRight: 4,
+    },
+    headerTitle: {
+      fontSize: 28,
+      color: palette.textPrimary,
+      fontFamily: HEADER_FONT_FAMILY,
+      flexShrink: 1,
+    },
+    headerTitleAccent: {
+      color: accentLight,
+      fontStyle: 'italic',
+    },
+    headerAction: {
+      minHeight: 40,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: palette.inputBg,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    headerActionText: {
+      color: palette.textPrimary,
+      fontSize: 14,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    scrollContent: {
+      paddingHorizontal: 16,
+      paddingBottom: 32,
+      gap: 18,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    statCard: {
+      flex: 1,
+      borderRadius: 18,
+      backgroundColor: palette.inputBg,
+      borderWidth: 1,
+      borderColor: palette.border,
+      padding: 16,
+      gap: 8,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: palette.textSecondary,
+      fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
+    },
+    statValue: {
+      fontSize: 24,
+      color: palette.textPrimary,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    quickActions: {
+      gap: 12,
+    },
+    actionCard: {
+      borderRadius: 18,
+      backgroundColor: palette.inputBg,
+      borderWidth: 1,
+      borderColor: palette.border,
+      padding: 18,
+      gap: 4,
+    },
+    actionCardPrimary: {
+      backgroundColor: accent,
+      borderColor: accent,
+    },
+    actionPrimaryTitle: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    actionPrimaryBody: {
+      color: 'rgba(255,255,255,0.86)',
+      fontSize: 14,
+      lineHeight: 20,
+      fontFamily: BODY_FONT_FAMILY,
+    },
+    actionSecondaryTitle: {
+      color: palette.textPrimary,
+      fontSize: 18,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    actionSecondaryBody: {
+      color: palette.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+      fontFamily: BODY_FONT_FAMILY,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionTitle: {
+      color: palette.textPrimary,
+      fontSize: 22,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    sectionLink: {
+      color: accent,
+      fontSize: 14,
+      fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
+    },
+    eventCard: {
+      borderRadius: 20,
+      backgroundColor: palette.inputBg,
+      borderWidth: 1,
+      borderColor: palette.border,
+      padding: 18,
+      gap: 8,
+    },
+    eventCategory: {
+      color: dark ? accentLight : accent,
+      fontSize: 12,
+      fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
+    },
+    eventTitle: {
+      color: palette.textPrimary,
+      fontSize: 22,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    eventMeta: {
+      color: palette.textSecondary,
+      fontSize: 14,
+      fontFamily: BODY_FONT_FAMILY,
+    },
+    progressBlock: {
+      gap: 8,
+      marginTop: 8,
+    },
+    progressHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    progressText: {
+      color: palette.textSecondary,
+      fontSize: 13,
+      fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: dark ? 'rgba(255,255,255,0.1)' : '#E4EDF0',
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: dark ? accentLight : accent,
+      borderRadius: 4,
+    },
+    eventActions: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 10,
+    },
+    eventActionPrimary: {
+      flex: 1,
+      minHeight: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 14,
+      backgroundColor: accent,
+    },
+    eventActionPrimaryText: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    eventActionSecondary: {
+      flex: 1,
+      minHeight: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.inputBg,
+    },
+    eventActionSecondaryText: {
+      color: palette.textPrimary,
+      fontSize: 15,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+  });
+}
+
 function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const { snapshot, refresh } = useConnectPortalData();
+  const { dark } = useTheme();
+  const palette = useConnectPalette();
 
   const summary = useMemo(
     () => ({
@@ -64,6 +303,8 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
     }, [refresh])
   );
 
+  const styles = useMemo(() => createStyles(dark, palette), [dark, palette]);
+
   const featuredEvent = summary?.featuredEvent ?? null;
   const activeEvents = summary?.activeEvents ?? [];
   const draftEvents = summary?.draftEvents ?? [];
@@ -71,34 +312,37 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.headerTitleRow}>
-              <View testID="event-dash-back-control">
-                <GoBackIcon
-                  color="#126b87"
-                  goBack={() => {
-                    if (navigation.canGoBack()) {
-                      navigation.goBack();
-                      return;
-                    }
-                    navigation.navigate('ConnectGoLanding');
-                  }}
-                  style={styles.backButton}
-                />
-              </View>
+        <View style={Platform.OS === 'ios' ? styles.headerIOS : styles.header}>
+          <View
+            testID="event-dash-back-control"
+            style={Platform.OS === 'ios' ? styles.backButtonAbsolute : undefined}
+          >
+            <GoBackIcon
+              color={palette.textPrimary}
+              size={32}
+              goBack={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                  return;
+                }
+                navigation.navigate('ConnectGoLanding');
+              }}
+              style={styles.backButton}
+            />
+          </View>
+          {Platform.OS === 'ios' ? (
+            <Text style={[styles.headerTitle, styles.headerTitleCentered]}>
+              <Text style={styles.headerTitleAccent}>Go!</Text>
+              {' Dashboard'}
+            </Text>
+          ) : (
+            <View style={styles.headerLeft}>
               <Text style={styles.headerTitle}>
                 <Text style={styles.headerTitleAccent}>Go!</Text>
-                {' Events Dash'}
+                {' Dashboard'}
               </Text>
             </View>
-          </View>
-          <TouchableOpacity
-            style={styles.headerAction}
-            onPress={() => navigation.navigate('ConnectGoMyEvents')}
-          >
-            <Text style={styles.headerActionText}>My Events</Text>
-          </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView
@@ -146,6 +390,16 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
             >
               <Text style={styles.actionPrimaryTitle}>New Event</Text>
               <Text style={styles.actionPrimaryBody}>Start the seven-step event flow.</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('ConnectGoMyEvents')}
+            >
+              <Text style={styles.actionSecondaryTitle}>My Events</Text>
+              <Text style={styles.actionSecondaryBody}>
+                Drafts, active events, and event history.
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -226,220 +480,5 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F6F7F8',
-  },
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  headerLeft: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingRight: 12,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    marginRight: 10,
-    paddingVertical: 4,
-    paddingRight: 4,
-  },
-  headerTitle: {
-    fontSize: 28,
-    color: '#032f3c',
-    fontFamily: HEADER_FONT_FAMILY,
-    flexShrink: 1,
-  },
-  headerTitleAccent: {
-    color: '#12D2D9',
-  },
-  headerAction: {
-    minHeight: 40,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D7E1E5',
-  },
-  headerActionText: {
-    color: '#032f3c',
-    fontSize: 14,
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    gap: 18,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D7E1E5',
-    padding: 16,
-    gap: 8,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#4F6D77',
-    fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
-  },
-  statValue: {
-    fontSize: 24,
-    color: '#032f3c',
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-  quickActions: {
-    gap: 12,
-  },
-  actionCard: {
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D7E1E5',
-    padding: 18,
-    gap: 4,
-  },
-  actionCardPrimary: {
-    backgroundColor: '#126b87',
-    borderColor: '#126b87',
-  },
-  actionPrimaryTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-  actionPrimaryBody: {
-    color: 'rgba(255,255,255,0.86)',
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: BODY_FONT_FAMILY,
-  },
-  actionSecondaryTitle: {
-    color: '#032f3c',
-    fontSize: 18,
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-  actionSecondaryBody: {
-    color: '#4F6D77',
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: BODY_FONT_FAMILY,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    color: '#032f3c',
-    fontSize: 22,
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-  sectionLink: {
-    color: '#126b87',
-    fontSize: 14,
-    fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
-  },
-  eventCard: {
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D7E1E5',
-    padding: 18,
-    gap: 8,
-  },
-  eventCategory: {
-    color: '#126b87',
-    fontSize: 12,
-    fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
-  },
-  eventTitle: {
-    color: '#032f3c',
-    fontSize: 22,
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-  eventMeta: {
-    color: '#4F6D77',
-    fontSize: 14,
-    fontFamily: BODY_FONT_FAMILY,
-  },
-  progressBlock: {
-    gap: 8,
-    marginTop: 8,
-  },
-  progressHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  progressText: {
-    color: '#4F6D77',
-    fontSize: 13,
-    fontFamily: BODY_FONT_FAMILY_SEMIBOLD,
-  },
-  progressTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#E4EDF0',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#126b87',
-    borderRadius: 4,
-  },
-  eventActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
-  },
-  eventActionPrimary: {
-    flex: 1,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#126b87',
-  },
-  eventActionPrimaryText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-  eventActionSecondary: {
-    flex: 1,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
-  },
-  eventActionSecondaryText: {
-    color: '#032f3c',
-    fontSize: 15,
-    fontFamily: HEADER_FONT_FAMILY,
-  },
-});
 
 export default EventDashboardScreen;

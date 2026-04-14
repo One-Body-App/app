@@ -21,29 +21,37 @@ import { borderRadius } from '@/src/styles/outlines';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;
 
+type NotificationSwitchState = {
+  pushNotificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  subscribedToNewsletter: boolean;
+  tagNotificationsEnabled: boolean;
+};
+
 function NotificationSettings(_props: Props) {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
+  const { colors } = useTheme();
 
   const [isLoaded, setIsLoaded] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [notificationSwitch, setNotificationSwitch] = React.useState({
+  const [notificationSwitch, setNotificationSwitch] = React.useState<NotificationSwitchState>({
     pushNotificationsEnabled: false,
     emailNotificationsEnabled: false,
     subscribedToNewsletter: false,
-    tagNotificationsEnabled: false,
+    tagNotificationsEnabled: true,
   });
-  const { colors } = useTheme();
 
-  const getUserProfile = async () => {
+  const getUserProfile = useCallback(async () => {
     const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
-      id: 'loadig',
+      id: 'loading-profile',
       placement: 'top',
       style: {
         backgroundColor: colors.background,
       },
     });
+
     try {
       const res = await ApiCall({
         route: 'user/my-profile',
@@ -51,40 +59,44 @@ function NotificationSettings(_props: Props) {
         verb: 'get',
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(setProfile({ token, ...res.response }));
         setNotificationSwitch({
           pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
           emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
           subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
-          tagNotificationsEnabled: res.response?.tagNotificationsEnabled ?? false,
+          tagNotificationsEnabled: res.response?.tagNotificationsEnabled ?? true,
         });
-
-        setIsLoaded(true);
-        toast.hide(toastId);
-      } else {
-        toast.hide(toastId);
       }
-    } catch (e) {
+    } finally {
+      setIsLoaded(true);
       toast.hide(toastId);
     }
-  };
+  }, [colors.background, colors.text, dispatch, toast, token]);
 
   useEffect(() => {
     getUserProfile();
-  }, []);
+  }, [getUserProfile]);
+
+  const showSavingToast = useCallback(() => {
+    toast.hide('loading');
+    return toast.show(<ActivityIndicator color={colors.text} />, {
+      id: 'loadingB',
+      placement: 'top',
+      style: {
+        backgroundColor: colors.background,
+      },
+    });
+  }, [colors.background, colors.text, toast]);
 
   const updateNotifications = useCallback(
-    async (nextNotificationSwitch: typeof notificationSwitch) => {
-      toast.hide('loading');
-      const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
-        id: 'loadingB',
-        placement: 'top',
-        style: {
-          backgroundColor: colors.background,
-        },
-      });
+    async (
+      nextNotificationSwitch: NotificationSwitchState,
+      previousNotificationSwitch: NotificationSwitchState
+    ) => {
+      const toastId = showSavingToast();
       setIsLoading(true);
+
       try {
         const notifications = {
           pushNotificationsEnabled: nextNotificationSwitch.pushNotificationsEnabled,
@@ -95,37 +107,45 @@ function NotificationSettings(_props: Props) {
 
         const res = await ApiCall({
           params: notifications,
-          route: `user/set-notifications`,
+          route: 'user/set-notifications',
           token,
           verb: 'patch',
         });
 
-        if (res?.status === 200) {
-          dispatch(setUserDataNotifications({ notifications }));
+        if (res?.status !== 200) {
+          setNotificationSwitch(previousNotificationSwitch);
+          return;
+        }
 
+        dispatch(setUserDataNotifications({ notifications }));
+
+        if (
+          nextNotificationSwitch.pushNotificationsEnabled !==
+          previousNotificationSwitch.pushNotificationsEnabled
+        ) {
           if (nextNotificationSwitch.pushNotificationsEnabled) {
             await enablePushNotifications(token, true);
           } else {
             await disablePushNotifications(token);
           }
-
-          toast.show('Notifications Settings Updated Successfully', {
-            type: 'success',
-            placement: 'top',
-          });
         }
-        toast.hide(toastId);
-        setIsLoading(false);
-      } catch (e) {
+
+        toast.show('Notifications Settings Updated Successfully', {
+          type: 'success',
+          placement: 'top',
+        });
+      } catch (_error) {
+        setNotificationSwitch(previousNotificationSwitch);
+      } finally {
         toast.hide(toastId);
         setIsLoading(false);
       }
     },
-    [colors.background, colors.text, dispatch, toast, token]
+    [dispatch, showSavingToast, toast, token]
   );
 
   const rows: {
-    key: keyof typeof notificationSwitch;
+    key: keyof NotificationSwitchState;
     label: string;
     description: string;
     Icon: React.ComponentType<{ color: string; size: number }>;
@@ -211,14 +231,18 @@ function NotificationSettings(_props: Props) {
                   disabled={isLoading}
                   value={notificationSwitch[key]}
                   onValueChange={(nextValue) => {
+                    const previousNotificationSwitch = notificationSwitch;
                     const nextNotificationSwitch = {
                       ...notificationSwitch,
                       [key]: nextValue,
                     };
+
                     setNotificationSwitch(nextNotificationSwitch);
-                    if (isLoaded && !isLoading) {
-                      updateNotifications(nextNotificationSwitch);
+                    if (!isLoaded || isLoading) {
+                      return;
                     }
+
+                    updateNotifications(nextNotificationSwitch, previousNotificationSwitch);
                   }}
                   trackColor={{ false: Colors.neutral[600], true: Colors.primary.brand }}
                   thumbColor="#fff"

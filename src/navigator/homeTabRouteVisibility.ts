@@ -1,3 +1,9 @@
+export type HomeTabVisibilityState = {
+  focusedRouteName: string;
+  selectedTab?: string;
+  shouldHideTabBar: boolean;
+};
+
 type RouteLike = {
   name?: string;
   params?: unknown;
@@ -27,7 +33,24 @@ const getNestedScreenParam = (params: unknown): string | undefined => {
   return getScreenParam(params.params);
 };
 
-const getActiveNestedRouteNameFromState = (route: RouteLike | undefined): string | undefined => {
+const getNestedParams = (params: unknown): unknown => {
+  if (!isRecord(params)) {
+    return undefined;
+  }
+
+  return params.params;
+};
+
+const getSelectedTabParam = (params: unknown): string | undefined => {
+  if (!isRecord(params)) {
+    return undefined;
+  }
+
+  const { selectedTab } = params;
+  return typeof selectedTab === 'string' ? selectedTab : undefined;
+};
+
+const getActiveNestedRouteFromState = (route: RouteLike | undefined): RouteLike | undefined => {
   if (
     !route?.state ||
     !Array.isArray(route.state.routes) ||
@@ -41,13 +64,30 @@ const getActiveNestedRouteNameFromState = (route: RouteLike | undefined): string
     return undefined;
   }
 
-  return getActiveNestedRouteNameFromState(childRoute) ?? childRoute.name;
+  return getActiveNestedRouteFromState(childRoute) ?? childRoute;
+};
+
+export const getHomeTabVisibilityState = (route: RouteLike | undefined): HomeTabVisibilityState => {
+  const activeNestedRoute = getActiveNestedRouteFromState(route);
+  const focusedRouteName =
+    activeNestedRoute?.name ??
+    getScreenParam(route?.params) ??
+    getNestedScreenParam(route?.params) ??
+    'Home';
+  const selectedTab = activeNestedRoute
+    ? getSelectedTabParam(activeNestedRoute.params)
+    : getSelectedTabParam(getNestedParams(route?.params));
+
+  return {
+    focusedRouteName,
+    selectedTab,
+    shouldHideTabBar:
+      focusedRouteName === 'Notifications' ||
+      (focusedRouteName === 'Home' && selectedTab === 'pray'),
+  };
 };
 
 const getHomeTabFocusedRouteName = (route: RouteLike | undefined): string =>
-  getActiveNestedRouteNameFromState(route) ??
-  getScreenParam(route?.params) ??
-  getNestedScreenParam(route?.params) ??
-  'Home';
+  getHomeTabVisibilityState(route).focusedRouteName;
 
 export default getHomeTabFocusedRouteName;

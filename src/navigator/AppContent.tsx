@@ -9,6 +9,7 @@ import {
   CommonActions,
 } from '@react-navigation/native';
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import {
   ActivityIndicator,
   AppState,
@@ -61,6 +62,8 @@ import ConfirmLogin from '../screens/login/ConfirmLogin'; // Adjust path
 
 import DrawerNav from './DrawerStack';
 import NewPost from '../screens/post/NewPost'; // Adjust path
+import BlogComposer from '../screens/blogs/BlogComposer';
+import BlogDashboard from '../screens/blogs/BlogDashboard';
 import UploadImage from '../screens/post/UploadImage'; // Adjust path
 import SinglePost from '../screens/post/Single'; // Adjust path
 import RssPost from '../screens/post/RssPost'; // Adjust path
@@ -1410,254 +1413,278 @@ function AppContent() {
         syncConfirmLoginVerificationRoute();
       }}
     >
-      <ReactionProvider>
-        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <MainStack.Navigator
-            initialRouteName="Intro"
-            screenOptions={{
-              gestureEnabled: false,
-              fullScreenGestureEnabled: false,
-              ...(Platform.OS === 'android'
-                ? {
-                    statusBarTranslucent: true,
-                    statusBarColor: 'transparent',
-                  }
-                : {}),
-            }}
-          >
-            <MainStack.Screen
-              name="MainRoot"
-              component={DrawerNav}
-              options={{ headerShown: false }}
-            />
-            <MainStack.Screen
-              name="SinglePost"
-              component={SinglePost}
-              options={{
-                headerShown: Platform.OS !== 'android',
-                headerBackTitleVisible: false,
-                title: 'Comment',
-                headerTitleStyle: {
-                  fontSize: 24,
-                  fontWeight: '700',
-                  letterSpacing: 0.3,
-                },
-                animation: 'slide_from_right',
-              }}
-            />
-            <MainStack.Screen
-              name="SingleRss"
-              component={RssPost}
-              options={{
-                headerShown: Platform.OS !== 'android',
-                headerBackTitleVisible: false,
-                title: 'Comment',
-                animation: 'slide_from_right',
-              }}
-            />
-            <MainStack.Screen
-              name="WatchPortal"
-              component={Watch}
-              options={{
-                headerShown: false,
-                animation: 'fade_from_bottom',
-                statusBarStyle: 'light',
-                statusBarColor: '#000000',
-                statusBarTranslucent: true,
-              }}
-            />
-            <MainStack.Screen
-              name="Post"
-              component={NewPost}
-              options={({ route }) => ({
-                headerShown: false,
-                animation: 'slide_from_right',
-                title: route.params?.postId ? 'Edit Post' : 'Create Post',
-                headerBackTitleVisible: false,
+      <BottomSheetModalProvider>
+        <ReactionProvider>
+          <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+            <MainStack.Navigator
+              initialRouteName="Intro"
+              screenOptions={{
+                gestureEnabled: false,
+                fullScreenGestureEnabled: false,
                 ...(Platform.OS === 'android'
                   ? {
-                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                      statusBarColor:
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                    }
-                  : {}),
-              })}
-            />
-            <MainStack.Screen
-              name="UploadImage"
-              component={UploadImage}
-              options={{
-                headerShown: false,
-                animation: 'slide_from_right',
-              }}
-            />
-            <MainStack.Screen
-              name="ReportPost"
-              component={ReportPost}
-              options={{
-                headerShown: false,
-                animation: 'slide_from_right',
-                ...(Platform.OS === 'android'
-                  ? {
-                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                      statusBarColor:
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      statusBarTranslucent: true,
+                      statusBarColor: 'transparent',
                     }
                   : {}),
               }}
-            />
-            <MainStack.Screen
-              name="ReportStatus"
-              component={ReportStatus}
-              options={{
-                headerShown: false,
-                animation: 'slide_from_right',
-                ...(Platform.OS === 'android'
-                  ? {
-                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
-                      statusBarColor:
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                    }
-                  : {}),
-              }}
-            />
-
-            <MainStack.Screen
-              name="Intro"
-              component={Intro}
-              options={{
-                headerShown: false,
-                ...(Platform.OS === 'android'
-                  ? {
-                      animation: 'slide_from_right',
-                      ...getAndroidAuthRouteOptions(
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
-                      ),
-                    }
-                  : {}),
-              }}
-            />
-            <MainStack.Screen
-              name="AccountType"
-              component={AccountType}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? { ...headerOptions, animation: 'slide_from_right' }
-                  : {}),
-                ...(Platform.OS === 'android' && {
+            >
+              <MainStack.Screen
+                name="MainRoot"
+                component={DrawerNav}
+                options={{ headerShown: false }}
+              />
+              <MainStack.Screen
+                name="SinglePost"
+                component={SinglePost}
+                options={{
+                  headerShown: Platform.OS !== 'android',
+                  headerBackTitleVisible: false,
+                  title: 'Comment',
+                  headerTitleStyle: {
+                    fontSize: 24,
+                    fontWeight: '700',
+                    letterSpacing: 0.3,
+                  },
+                  animation: 'slide_from_right',
+                }}
+              />
+              <MainStack.Screen
+                name="SingleRss"
+                component={RssPost}
+                options={{
+                  headerShown: Platform.OS !== 'android',
+                  headerBackTitleVisible: false,
+                  title: 'Comment',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <MainStack.Screen
+                name="WatchPortal"
+                component={Watch}
+                options={{
+                  headerShown: false,
+                  animation: 'fade_from_bottom',
+                  statusBarStyle: 'light',
+                  statusBarColor: '#000000',
+                  statusBarTranslucent: true,
+                }}
+              />
+              <MainStack.Screen
+                name="Post"
+                component={NewPost}
+                options={({ route }) => ({
                   headerShown: false,
                   animation: 'slide_from_right',
-                  ...getAndroidAuthRouteOptions(
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
-                  ),
-                }),
-              }}
-            />
-            <MainStack.Screen
-              name="Login"
-              component={Login}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? {
-                      ...headerOptions,
-                      headerStyle: {
-                        backgroundColor:
+                  title: route.params?.postId ? 'Edit Post' : 'Create Post',
+                  headerBackTitleVisible: false,
+                  ...(Platform.OS === 'android'
+                    ? {
+                        statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                        statusBarColor:
                           scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      },
-                      headerTransparent: false,
-                    }
-                  : {
-                      headerShown: false,
-                      ...getAndroidAuthRouteOptions(Colors.neutral[700]),
-                    }),
-              }}
-            />
-            <MainStack.Screen
-              name="SignUp"
-              component={Signup}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? {
-                      ...headerOptions,
-                      animation: 'slide_from_right',
-                      headerTransparent: false,
-                      headerStyle: {
-                        backgroundColor:
+                      }
+                    : {}),
+                })}
+              />
+              <MainStack.Screen
+                name="BlogComposer"
+                component={BlogComposer}
+                options={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <MainStack.Screen
+                name="CreatorBlogDashboard"
+                component={BlogDashboard}
+                options={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <MainStack.Screen
+                name="UploadImage"
+                component={UploadImage}
+                options={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <MainStack.Screen
+                name="ReportPost"
+                component={ReportPost}
+                options={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  ...(Platform.OS === 'android'
+                    ? {
+                        statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                        statusBarColor:
                           scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      },
-                    }
-                  : {
-                      headerShown: false,
-                      ...getAndroidAuthRouteOptions(Colors.neutral[700]),
-                    }),
-              }}
-            />
-            <MainStack.Screen
-              name="ForgotPassword"
-              component={ForgotPassword}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? {
-                      ...headerOptions,
-                      headerTransparent: false,
-                      headerStyle: {
-                        backgroundColor:
+                      }
+                    : {}),
+                }}
+              />
+              <MainStack.Screen
+                name="ReportStatus"
+                component={ReportStatus}
+                options={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  ...(Platform.OS === 'android'
+                    ? {
+                        statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                        statusBarColor:
                           scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      },
-                    }
-                  : {
-                      headerShown: false,
-                      ...getAndroidAuthRouteOptions(
-                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
-                      ),
-                    }),
-              }}
-            />
-            <MainStack.Screen
-              name="ConfirmLogin"
-              component={ConfirmLogin}
-              options={() => ({
-                ...(Platform.OS === 'ios'
-                  ? {
-                      presentation: 'modal',
-                      ...headerOptions,
-                      headerTintColor: Colors.primary.brand,
-                      headerBackTitle: '',
-                      headerBackTitleVisible: false,
-                      headerLeft: renderConfirmBackButton,
-                    }
-                  : {
-                      headerShown: false,
-                      ...getAndroidAuthRouteOptions(
-                        scheme === 'dark' ? darkTheme.colors.background : Colors.neutral[700]
-                      ),
-                    }),
-              })}
-            />
-            <MainStack.Screen
-              name="VideoPost"
-              component={VideoPost}
-              options={{
-                headerShown: false,
-              }}
-            />
-          </MainStack.Navigator>
-          {showSplashOverlay && (
-            <Animated.View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: Colors.main.white,
-                transform: [{ translateY: overlayTranslate }],
-              }}
-            />
-          )}
-        </Animated.View>
-      </ReactionProvider>
+                      }
+                    : {}),
+                }}
+              />
+
+              <MainStack.Screen
+                name="Intro"
+                component={Intro}
+                options={{
+                  headerShown: false,
+                  ...(Platform.OS === 'android'
+                    ? {
+                        animation: 'slide_from_right',
+                        ...getAndroidAuthRouteOptions(
+                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
+                        ),
+                      }
+                    : {}),
+                }}
+              />
+              <MainStack.Screen
+                name="AccountType"
+                component={AccountType}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? { ...headerOptions, animation: 'slide_from_right' }
+                    : {}),
+                  ...(Platform.OS === 'android' && {
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    ...getAndroidAuthRouteOptions(
+                      scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
+                    ),
+                  }),
+                }}
+              />
+              <MainStack.Screen
+                name="Login"
+                component={Login}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        headerStyle: {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? darkTheme.colors.background
+                              : theme.colors.background,
+                        },
+                        headerTransparent: false,
+                      }
+                    : {
+                        headerShown: false,
+                        ...getAndroidAuthRouteOptions(Colors.neutral[700]),
+                      }),
+                }}
+              />
+              <MainStack.Screen
+                name="SignUp"
+                component={Signup}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        animation: 'slide_from_right',
+                        headerTransparent: false,
+                        headerStyle: {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? darkTheme.colors.background
+                              : theme.colors.background,
+                        },
+                      }
+                    : {
+                        headerShown: false,
+                        ...getAndroidAuthRouteOptions(Colors.neutral[700]),
+                      }),
+                }}
+              />
+              <MainStack.Screen
+                name="ForgotPassword"
+                component={ForgotPassword}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        headerTransparent: false,
+                        headerStyle: {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? darkTheme.colors.background
+                              : theme.colors.background,
+                        },
+                      }
+                    : {
+                        headerShown: false,
+                        ...getAndroidAuthRouteOptions(
+                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
+                        ),
+                      }),
+                }}
+              />
+              <MainStack.Screen
+                name="ConfirmLogin"
+                component={ConfirmLogin}
+                options={() => ({
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        presentation: 'modal',
+                        ...headerOptions,
+                        headerTintColor: Colors.primary.brand,
+                        headerBackTitle: '',
+                        headerBackTitleVisible: false,
+                        headerLeft: renderConfirmBackButton,
+                      }
+                    : {
+                        headerShown: false,
+                        ...getAndroidAuthRouteOptions(
+                          scheme === 'dark' ? darkTheme.colors.background : Colors.neutral[700]
+                        ),
+                      }),
+                })}
+              />
+              <MainStack.Screen
+                name="VideoPost"
+                component={VideoPost}
+                options={{
+                  headerShown: false,
+                }}
+              />
+            </MainStack.Navigator>
+            {showSplashOverlay && (
+              <Animated.View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  backgroundColor: Colors.main.white,
+                  transform: [{ translateY: overlayTranslate }],
+                }}
+              />
+            )}
+          </Animated.View>
+        </ReactionProvider>
+      </BottomSheetModalProvider>
     </NavigationContainer>
   );
 }

@@ -4,6 +4,7 @@ import {
   getOrientedDimensions,
   normalizeExifOrientation,
   orientationSwapsDimensions,
+  resolveEditorExifOrientation,
 } from '../uploadImageOrientation';
 import {
   CLIENT_IMAGE_MAX_HEIGHT,
@@ -22,6 +23,53 @@ describe('uploadImageOrientation', () => {
   it('extracts orientation from picker metadata payloads', () => {
     expect(extractExifOrientation({ exif: { Orientation: 8 } })).toBe(8);
     expect(extractExifOrientation({ orientation: '6' })).toBe(6);
+  });
+
+  it('suppresses crop-picker EXIF rotation on ios because pixels are already normalized', () => {
+    expect(
+      resolveEditorExifOrientation({
+        orientation: 6,
+        source: 'react-native-image-crop-picker',
+        platform: 'ios',
+      })
+    ).toBeUndefined();
+  });
+
+  it('preserves crop-picker EXIF rotation on android', () => {
+    expect(
+      resolveEditorExifOrientation({
+        orientation: 6,
+        source: 'react-native-image-crop-picker',
+        platform: 'android',
+      })
+    ).toBe(6);
+  });
+
+  it('preserves EXIF rotation for non-crop-picker sources', () => {
+    expect(
+      resolveEditorExifOrientation({
+        orientation: '8',
+        source: 'react-native-image-picker',
+        platform: 'ios',
+      })
+    ).toBe(8);
+  });
+
+  it('returns undefined for missing or invalid editor orientation values', () => {
+    expect(
+      resolveEditorExifOrientation({
+        orientation: undefined,
+        source: 'react-native-image-crop-picker',
+        platform: 'android',
+      })
+    ).toBeUndefined();
+    expect(
+      resolveEditorExifOrientation({
+        orientation: 9,
+        source: 'unknown',
+        platform: 'ios',
+      })
+    ).toBeUndefined();
   });
 
   it('marks rotated EXIF values as dimension-swapping', () => {

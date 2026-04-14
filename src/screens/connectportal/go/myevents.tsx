@@ -184,6 +184,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.filterScrollView}
           contentContainerStyle={styles.filterRow}
         >
           {FILTERS.map((filterName) => {
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
   },
   searchWrap: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 4,
     gap: 10,
   },
   errorBanner: {
@@ -439,10 +440,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 15,
   },
+  filterScrollView: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   filterRow: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
     gap: 10,
+    alignItems: 'center',
   },
   filterChip: {
     minHeight: 38,

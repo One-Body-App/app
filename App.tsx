@@ -20,7 +20,6 @@ import * as Sentry from '@sentry/react-native';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { persistor, store } from './src/redux/store'; // Make sure this path is correct
 import AppContent from './src/navigator/AppContent'; // Import the new component
@@ -60,19 +59,17 @@ function App() {
   return (
     <Provider store={store}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <BottomSheetModalProvider>
-          <KeyboardProvider>
-            <SafeAreaProvider>
-              <ToastProvider offsetTop={60}>
-                <PersistGate loading={null} persistor={persistor}>
-                  <VideoUploadRuntimeHost />
-                  {/* Render the new AppContent component here */}
-                  <AppContent />
-                </PersistGate>
-              </ToastProvider>
-            </SafeAreaProvider>
-          </KeyboardProvider>
-        </BottomSheetModalProvider>
+        <KeyboardProvider>
+          <SafeAreaProvider>
+            <ToastProvider offsetTop={60}>
+              <PersistGate loading={null} persistor={persistor}>
+                <VideoUploadRuntimeHost />
+                {/* Render the new AppContent component here */}
+                <AppContent />
+              </PersistGate>
+            </ToastProvider>
+          </SafeAreaProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </Provider>
   );

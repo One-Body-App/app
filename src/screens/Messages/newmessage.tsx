@@ -98,6 +98,7 @@ function NewMessageScreen({ navigation }: Props) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<ConnectedContact[]>([]);
+  const connectedAccountsRef = useRef<ConnectedContact[]>([]);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRequestIdRef = useRef(0);
   const latestQueryRef = useRef('');
@@ -110,7 +111,7 @@ function NewMessageScreen({ navigation }: Props) {
   }, []);
 
   const scheduleSearch = useCallback(
-    (nextQuery: string, availableContacts: ConnectedContact[] = connectedAccounts) => {
+    (nextQuery: string, availableContacts: ConnectedContact[] = connectedAccountsRef.current) => {
       latestQueryRef.current = nextQuery;
       clearPendingSearch();
 
@@ -174,7 +175,7 @@ function NewMessageScreen({ navigation }: Props) {
         }
       }, 300);
     },
-    [clearPendingSearch, connectedAccounts, token]
+    [clearPendingSearch, token]
   );
 
   const handleQueryChange = useCallback(
@@ -209,12 +210,14 @@ function NewMessageScreen({ navigation }: Props) {
             .filter((item): item is ConnectedContact => Boolean(item))
             .sort((a, b) => a.name.localeCompare(b.name));
 
+          connectedAccountsRef.current = mapped;
           setConnectedAccounts(mapped);
           if (latestQueryRef.current.trim()) {
             scheduleSearch(latestQueryRef.current, mapped);
           }
         } catch {
           if (isMounted) {
+            connectedAccountsRef.current = [];
             setConnectedAccounts([]);
           }
         } finally {

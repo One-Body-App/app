@@ -39,6 +39,13 @@ import {
 } from '@/src/screens/post/uploadImageBridge';
 import { UPLOAD_IMAGE_EXPORT_QUALITY } from '@/src/screens/post/uploadImageConfig';
 import {
+  buildUploadImageColorMatrix,
+  type UploadImageAdjustPresetId as AdjustPresetId,
+  type UploadImageFilterId as FilterId,
+  UPLOAD_IMAGE_ADJUST_OPTIONS,
+  UPLOAD_IMAGE_FILTERS,
+} from '@/src/screens/post/uploadImageFilters';
+import {
   getOrientationTransform,
   normalizeExifOrientation,
 } from '@/src/screens/post/uploadImageOrientation';
@@ -46,8 +53,6 @@ import {
 type Props = StackScreenProps<MainStackParamList, 'UploadImage'>;
 
 type ToolId = 'crop' | 'filters' | 'adjust' | 'text' | 'stickers';
-type FilterId = 'original' | 'warm' | 'cool' | 'bw' | 'dramatic';
-type AdjustPresetId = 'none' | 'lift' | 'depth' | 'vivid';
 type RatioId = 'free' | '9:16' | '3:4' | '1:1';
 type TransformState = {
   scale: number;
@@ -199,109 +204,6 @@ const makeOrientedImage = (image: SkImage, orientation?: number) => {
   surface.flush();
 
   return surface.makeImageSnapshot().makeNonTextureImage();
-};
-
-const identityMatrix = () => [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
-
-const multiply4x5 = (a: number[], b: number[]) => {
-  const out = new Array(20).fill(0);
-  for (let row = 0; row < 4; row += 1) {
-    for (let col = 0; col < 5; col += 1) {
-      const idx = row * 5 + col;
-      out[idx] =
-        a[row * 5 + 0] * (col === 4 ? 0 : b[col + 0]) +
-        a[row * 5 + 1] * (col === 4 ? 0 : b[col + 5]) +
-        a[row * 5 + 2] * (col === 4 ? 0 : b[col + 10]) +
-        a[row * 5 + 3] * (col === 4 ? 0 : b[col + 15]) +
-        (col === 4 ? a[row * 5 + 4] : 0);
-      if (col === 4) {
-        out[idx] += b[row * 5 + 4];
-      }
-    }
-  }
-  return out;
-};
-
-const makeBrightnessMatrix = (delta: number) => {
-  const shift = delta * 255;
-  return [1, 0, 0, 0, shift, 0, 1, 0, 0, shift, 0, 0, 1, 0, shift, 0, 0, 0, 1, 0];
-};
-
-const makeContrastMatrix = (value: number) => {
-  const t = 128 * (1 - value);
-  return [value, 0, 0, 0, t, 0, value, 0, 0, t, 0, 0, value, 0, t, 0, 0, 0, 1, 0];
-};
-
-const makeSaturationMatrix = (saturation: number) => {
-  const ir = 0.213;
-  const ig = 0.715;
-  const ib = 0.072;
-  const inv = 1 - saturation;
-  const r = ir * inv;
-  const g = ig * inv;
-  const b = ib * inv;
-  return [
-    r + saturation,
-    g,
-    b,
-    0,
-    0,
-    r,
-    g + saturation,
-    b,
-    0,
-    0,
-    r,
-    g,
-    b + saturation,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-  ];
-};
-
-const filterMatrixById = (filter: FilterId) => {
-  if (filter === 'warm') {
-    return multiply4x5(makeSaturationMatrix(0.92), makeBrightnessMatrix(0.04));
-  }
-  if (filter === 'cool') {
-    return [0.95, 0, 0.08, 0, -6, 0, 1.0, 0.05, 0, 0, 0.02, 0.04, 1.05, 0, 8, 0, 0, 0, 1, 0];
-  }
-  if (filter === 'bw') {
-    return [
-      0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0,
-      0, 0, 1, 0,
-    ];
-  }
-  if (filter === 'dramatic') {
-    return multiply4x5(makeContrastMatrix(1.18), makeSaturationMatrix(0.9));
-  }
-  return identityMatrix();
-};
-
-const adjustMatrixById = (adjust: AdjustPresetId) => {
-  if (adjust === 'lift') {
-    return multiply4x5(makeBrightnessMatrix(0.06), makeContrastMatrix(1.02));
-  }
-  if (adjust === 'depth') {
-    return multiply4x5(makeContrastMatrix(1.14), makeSaturationMatrix(0.95));
-  }
-  if (adjust === 'vivid') {
-    return multiply4x5(makeSaturationMatrix(1.2), makeContrastMatrix(1.06));
-  }
-  return identityMatrix();
-};
-
-const filterLabel = (id: FilterId) => {
-  if (id === 'warm') return 'Warm';
-  if (id === 'cool') return 'Cool';
-  if (id === 'bw') return 'B&W';
-  if (id === 'dramatic') return 'Dramatic';
-  return 'Original';
 };
 
 const toolLabel = (id: ToolId) => {
@@ -623,19 +525,16 @@ function UploadImage({ navigation, route }: Props) {
     setTransform((previous) => clampTransform(previous));
   });
 
-  const filters = useMemo<FilterId[]>(() => ['original', 'warm', 'cool', 'bw', 'dramatic'], []);
-  const adjustOptions = useMemo<[AdjustPresetId, string][]>(
-    () => [
-      ['none', 'Reset'],
-      ['lift', 'Lift'],
-      ['depth', 'Depth'],
-      ['vivid', 'Vivid'],
-    ],
-    []
-  );
   const combinedColorMatrix = useMemo(
-    () => multiply4x5(adjustMatrixById(adjust), filterMatrixById(filter)),
+    () => buildUploadImageColorMatrix(filter, adjust),
     [adjust, filter]
+  );
+  const filterPreviewMatrices = useMemo(
+    () =>
+      Object.fromEntries(
+        UPLOAD_IMAGE_FILTERS.map(({ id }) => [id, buildUploadImageColorMatrix(id, adjust)])
+      ) as Record<FilterId, number[]>,
+    [adjust]
   );
 
   const getOverlayFont = useCallback((size: number) => {
@@ -1080,7 +979,7 @@ function UploadImage({ navigation, route }: Props) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterRow}
           >
-            {filters.map((id) => (
+            {UPLOAD_IMAGE_FILTERS.map(({ id, label }) => (
               <Pressable key={id} style={styles.filterItem} onPress={() => setFilter(id)}>
                 <View
                   style={[
@@ -1094,9 +993,7 @@ function UploadImage({ navigation, route }: Props) {
                   <Canvas style={styles.filterCanvas}>
                     {image ? (
                       <SkiaImage image={image} x={0} y={0} width={64} height={64} fit="contain">
-                        <ColorMatrix
-                          matrix={multiply4x5(adjustMatrixById(adjust), filterMatrixById(id))}
-                        />
+                        <ColorMatrix matrix={filterPreviewMatrices[id]} />
                       </SkiaImage>
                     ) : (
                       <Rect x={0} y={0} width={64} height={64} color={surfaceColor} />
@@ -1112,7 +1009,7 @@ function UploadImage({ navigation, route }: Props) {
                     },
                   ]}
                 >
-                  {filterLabel(id)}
+                  {label}
                 </StyledText>
               </Pressable>
             ))}
@@ -1125,7 +1022,7 @@ function UploadImage({ navigation, route }: Props) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.adjustRow}
           >
-            {adjustOptions.map(([id, label]) => (
+            {UPLOAD_IMAGE_ADJUST_OPTIONS.map(({ id, label }) => (
               <Pressable
                 key={id}
                 onPress={() => setAdjust(id)}
@@ -1400,7 +1297,7 @@ const styles = StyleSheet.create({
   },
   filterItem: {
     alignItems: 'center',
-    width: 76,
+    width: 96,
   },
   filterThumb: {
     width: 64,
@@ -1417,6 +1314,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontFamily: BODY_FONT,
     fontSize: 11,
+    textAlign: 'center',
   },
   adjustRow: {
     alignItems: 'center',

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   FlatList,
@@ -74,6 +74,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   const { colors, dark } = useTheme();
   const palette = useConnectPalette();
   const insets = useSafeAreaInsets();
+  const [chromeHeight, setChromeHeight] = useState(0);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const {
     snapshot,
@@ -281,13 +282,14 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Animated.View style={[{ zIndex: 1, position: 'relative' }, getSpringboardStyle(0)]}>
+      <Animated.View style={[styles.chromeAbsolute, getSpringboardStyle(0)]}>
         <ConnectPortalChrome
           activeTab={activeTab}
           onTabChange={handleTabChange}
           userAvatarUri={currentUser?.profileImage}
           onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
           addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
+          onLayout={setChromeHeight}
         />
       </Animated.View>
 
@@ -319,7 +321,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           onEndReachedThreshold={0.5}
           contentContainerStyle={[
             styles.contentBody,
-            { paddingTop: CHIP_ROW_HEIGHT, paddingBottom: bottomSearchClearance },
+            { paddingTop: chromeHeight + CHIP_ROW_HEIGHT, paddingBottom: bottomSearchClearance },
           ]}
           ListHeaderComponent={
             <View style={styles.sectionHeader}>
@@ -512,6 +514,13 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  chromeAbsolute: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   chipContentWrap: {
     flex: 1,

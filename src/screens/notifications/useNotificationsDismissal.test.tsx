@@ -4,16 +4,6 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { useNotificationsDismissal } from './useNotificationsDismissal';
 import { cleanupNotificationsDismissal, closeNotifications } from './dismissNotifications';
 
-jest.mock('@react-navigation/native', () => {
-  const ReactLocal = jest.requireActual('react');
-
-  return {
-    useFocusEffect: jest.fn((effect) => {
-      ReactLocal.useEffect(() => effect(), [effect]);
-    }),
-  };
-});
-
 jest.mock('./dismissNotifications', () => ({
   cleanupNotificationsDismissal: jest.fn(),
   closeNotifications: jest.fn(),
@@ -21,6 +11,10 @@ jest.mock('./dismissNotifications', () => ({
 
 type HarnessProps = {
   navigation: {
+    addListener?: (
+      eventName: 'beforeRemove',
+      listener: () => void
+    ) => void | (() => void) | { remove?: () => void };
     canGoBack?: () => boolean;
     getParent?: () => unknown;
     goBack?: () => void;
@@ -54,8 +48,35 @@ describe('useNotificationsDismissal', () => {
     jest.clearAllMocks();
   });
 
-  it('does not run blur cleanup when the tab bar animation object identity changes', () => {
+  it('does not run cleanup when notifications loses focus because settings is pushed', () => {
     const navigation = {
+      addListener: jest.fn(() => jest.fn()),
+      canGoBack: jest.fn(() => true),
+      getParent: jest.fn(),
+      goBack: jest.fn(),
+    };
+    const tabBarAnimation = {
+      resetTabBar: jest.fn(),
+      setTabBarTranslateY: jest.fn(),
+    };
+
+    act(() => {
+      TestRenderer.create(
+        <NotificationsDismissalHarness
+          navigation={navigation}
+          tabBarAnimation={tabBarAnimation}
+          onCloseHandler={jest.fn()}
+        />
+      );
+    });
+
+    expect(navigation.addListener).toHaveBeenCalledWith('beforeRemove', expect.any(Function));
+    expect(cleanupNotificationsDismissal).not.toHaveBeenCalled();
+  });
+
+  it('uses the latest tab bar animation controller when notifications is removed', () => {
+    const navigation = {
+      addListener: jest.fn(),
       canGoBack: jest.fn(() => true),
       getParent: jest.fn(),
       goBack: jest.fn(),
@@ -68,36 +89,36 @@ describe('useNotificationsDismissal', () => {
       resetTabBar: jest.fn(),
       setTabBarTranslateY: jest.fn(),
     };
-    const onCloseHandler = jest.fn();
+    let beforeRemoveHandler: (() => void) | undefined;
 
     let renderer: TestRenderer.ReactTestRenderer;
+    navigation.addListener.mockImplementation((_eventName, listener) => {
+      beforeRemoveHandler = listener;
+      return jest.fn();
+    });
 
     act(() => {
       renderer = TestRenderer.create(
         <NotificationsDismissalHarness
           navigation={navigation}
           tabBarAnimation={firstTabBarAnimation}
-          onCloseHandler={onCloseHandler}
+          onCloseHandler={jest.fn()}
         />
       );
     });
-
-    expect(cleanupNotificationsDismissal).not.toHaveBeenCalled();
 
     act(() => {
       renderer.update(
         <NotificationsDismissalHarness
           navigation={navigation}
           tabBarAnimation={secondTabBarAnimation}
-          onCloseHandler={onCloseHandler}
+          onCloseHandler={jest.fn()}
         />
       );
     });
 
-    expect(cleanupNotificationsDismissal).not.toHaveBeenCalled();
-
     act(() => {
-      renderer.unmount();
+      beforeRemoveHandler?.();
     });
 
     expect(cleanupNotificationsDismissal).toHaveBeenCalledTimes(1);
@@ -105,10 +126,15 @@ describe('useNotificationsDismissal', () => {
       navigation,
       tabBarAnimation: secondTabBarAnimation,
     });
+
+    act(() => {
+      renderer.unmount();
+    });
   });
 
   it('uses the latest tab bar animation controller when the user closes notifications', () => {
     const navigation = {
+      addListener: jest.fn(() => jest.fn()),
       canGoBack: jest.fn(() => true),
       getParent: jest.fn(),
       goBack: jest.fn(),

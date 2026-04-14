@@ -9,7 +9,8 @@ import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
 import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import styles from '@/screens/home/watch/styles';
 import BottomSheetEntranceGlow from '@/components/BottomSheetEntranceGlow';
-import { PostType, WatchPost } from '@/utils/types';
+import { navigateToMentionProfile } from '@/components/mentions/navigation';
+import { CommentPost, PostType, WatchPost } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
@@ -17,6 +18,10 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
 import WatchComments from './watchComments';
 import UniversalVideoCard from '@/src/components/video/UniversalVideoCard';
 import { getWatchVideoLayout } from '@/src/components/video/universalVideoLayout';
@@ -41,6 +46,8 @@ type ScreenNavigationProp = CompositeNavigationProp<
     BottomTabNavigationProp<MainBottomStackParamsList, 'HomeTab'>
   >
 >;
+
+const SHEET_NAVIGATION_DELAY_MS = 220;
 
 const VideoItem = gestureHandlerRootHOC(
   ({
@@ -134,6 +141,35 @@ const VideoItem = gestureHandlerRootHOC(
         />
       ),
       []
+    );
+
+    const handleOpenCommentThread = useCallback(
+      (comment: CommentPost) => {
+        const commentId = getCommentId(comment);
+        const postId = String(item.id ?? item.postId ?? item._id ?? '');
+        if (!commentId || !postId) {
+          return;
+        }
+
+        setTimeout(() => {
+          navigation.push('SingleRss', {
+            postId,
+            postType: PostType.watch,
+            threadRootCommentId: commentId,
+            threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+          });
+        }, SHEET_NAVIGATION_DELAY_MS);
+      },
+      [item.id, item.postId, item._id, navigation]
+    );
+
+    const handleOpenMentionProfile = useCallback(
+      (handle: string) => {
+        setTimeout(() => {
+          navigateToMentionProfile(navigation, handle);
+        }, SHEET_NAVIGATION_DELAY_MS);
+      },
+      [navigation]
     );
 
     return (
@@ -261,6 +297,8 @@ const VideoItem = gestureHandlerRootHOC(
                 bottomSheetModalRef.current?.dismiss();
               }}
               onCountChange={setCommentCount}
+              onOpenCommentThread={handleOpenCommentThread}
+              onOpenMentionProfile={handleOpenMentionProfile}
               onTelemetryEvent={onTelemetryEvent}
             />
           </View>

@@ -1,4 +1,8 @@
 export type ExifOrientation = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type UploadImageOrientationSource =
+  | 'react-native-image-crop-picker'
+  | 'react-native-image-picker'
+  | 'unknown';
 
 export type OrientationCanvasTransform = {
   matrix: [number, number, number, number, number, number, number, number, number];
@@ -56,6 +60,30 @@ export const extractExifOrientation = (value: unknown): ExifOrientation | undefi
     normalizeExifOrientation(candidate.metadata?.Orientation) ||
     normalizeExifOrientation(candidate.metadata?.orientation)
   );
+};
+
+export const resolveEditorExifOrientation = ({
+  orientation,
+  source = 'unknown',
+  platform,
+}: {
+  orientation: unknown;
+  source?: UploadImageOrientationSource;
+  platform?: string;
+}): ExifOrientation | undefined => {
+  const normalizedOrientation = normalizeExifOrientation(orientation);
+  if (!normalizedOrientation) {
+    return undefined;
+  }
+
+  // react-native-image-crop-picker on iOS already writes normalized pixels for our
+  // current JPG/compression flow, so applying the EXIF rotation again in the editor
+  // produces sideways previews.
+  if (platform === 'ios' && source === 'react-native-image-crop-picker') {
+    return undefined;
+  }
+
+  return normalizedOrientation;
 };
 
 export const orientationSwapsDimensions = (orientation?: ExifOrientation) =>

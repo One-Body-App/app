@@ -8,7 +8,7 @@ import {
   ListRenderItem,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useTheme } from '@react-navigation/native';
 import { Tabs } from 'react-native-collapsible-tab-view';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -18,6 +18,7 @@ import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
 import globalStyle from '@/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
 import { ArticleType } from '@/utils/types';
+import { creatorBlogService } from '@/src/services/creatorBlogs';
 
 function BlogFlatlist({
   userId,
@@ -33,6 +34,7 @@ function BlogFlatlist({
   // const offset = useRef(new Animated.Value(0)).current;
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const navigation = useNavigation<any>();
   const [page, setPage] = useState<number>(1);
   const [blogs, setBlogs] = useState<any>([]);
   const [show, setShow] = useState<boolean>(false);
@@ -46,6 +48,10 @@ function BlogFlatlist({
       setLoadingMore(true);
 
       try {
+        const localBlogs =
+          pageNumber === 1 && user && userId === user._id
+            ? await creatorBlogService.listPublishedArticlesForAuthor(user as any)
+            : [];
         const res = await ApiCall({
           route: `user/get-blog-feed/${userId}/${pageNumber}`,
           verb: 'post',
@@ -53,9 +59,14 @@ function BlogFlatlist({
         });
 
         if (res?.status === 200) {
+          const mergedItems = [...localBlogs, ...(res?.response ?? [])].filter(
+            (item, index, allItems) =>
+              index ===
+              allItems.findIndex((candidate) => String(candidate?.id) === String(item?.id))
+          );
           if (pageNumber === 1) {
             setIsEndOfList(false);
-            setBlogs(res?.response ?? []);
+            setBlogs(mergedItems);
           } else if (res?.response.length < 1) {
             setIsEndOfList(true);
           } else {
@@ -75,7 +86,7 @@ function BlogFlatlist({
         setPage(pageNumber);
       }
     },
-    [token, userId]
+    [token, user, userId]
   );
 
   useFocusEffect(
@@ -91,6 +102,13 @@ function BlogFlatlist({
     <ArticleItem
       key={`article_${item.id}`}
       item={item}
+      onPress={
+        !item.link && item.id
+          ? () => {
+              navigation.navigate('SingleRss', { postId: String(item.id) });
+            }
+          : undefined
+      }
       imageSizeType="contain"
       blogPostStyle={{
         marginBottom: spacing.x24,

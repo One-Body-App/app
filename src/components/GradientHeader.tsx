@@ -14,7 +14,7 @@ function GradientHeader({ title, left }: Props) {
   return (
     <View
       style={{
-        backgroundColor: 'red',
+        backgroundColor: '#032F3C',
         shadowColor: '#126BB7',
         shadowOffset: {
           width: 0,
@@ -32,15 +32,6 @@ function GradientHeader({ title, left }: Props) {
           height: getHeight(30),
           justifyContent: 'space-around',
           alignItems: 'center',
-
-          shadowColor: '#126BB7',
-          shadowOffset: {
-            width: 0,
-            height: 20,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 20,
-          elevation: 0,
         }}
       >
         {left}

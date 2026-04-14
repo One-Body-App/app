@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { StyleProp, Text, TextProps, TextStyle } from 'react-native';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { NavigationContext, useTheme } from '@react-navigation/native';
 import StyledText from '@/components/styled/Text';
 import type { TaggedMention } from '@/utils/types';
 import { navigateToMentionProfile, MENTION_BRAND_COLOR } from './navigation';
@@ -23,7 +23,7 @@ function ParsedText({
   style,
   ...textProps
 }: ParsedTextProps) {
-  const navigation = useNavigation<any>();
+  const navigation = useContext(NavigationContext);
   const { colors } = useTheme();
 
   const children = useMemo(() => {

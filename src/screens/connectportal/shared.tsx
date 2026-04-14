@@ -98,6 +98,7 @@ type ChromeProps = {
   headerActionIconName?: ComponentProps<typeof MaterialIcons>['name'];
   onHeaderActionPress?: () => void;
   headerActionAccessibilityLabel?: string;
+  onLayout?: (height: number) => void;
 };
 
 type MapSearchRowProps = {
@@ -1264,6 +1265,7 @@ export function ConnectPortalChrome({
   headerActionIconName,
   onHeaderActionPress,
   headerActionAccessibilityLabel,
+  onLayout,
 }: ChromeProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -1319,32 +1321,54 @@ export function ConnectPortalChrome({
     );
   }
 
+  const useGlass = Platform.OS === 'ios';
+
   return (
     <View
+      onLayout={onLayout ? (e) => onLayout(e.nativeEvent.layout.height) : undefined}
       style={[
         styles.chromeWrap,
-        overlay ? styles.chromeWrapOverlay : null,
-        { backgroundColor: 'transparent' },
+        overlay || useGlass ? styles.chromeWrapOverlay : null,
         { paddingTop: insets.top + (overlay ? spacing.x5 : spacing.x8) },
       ]}
     >
-      {overlay ? (
+      {useGlass ? (
         <>
           <BlurView
             pointerEvents="none"
             style={StyleSheet.absoluteFill}
             blurType={palette.isDark ? 'dark' : 'light'}
-            blurAmount={18}
+            blurAmount={25}
             reducedTransparencyFallbackColor={palette.glassFallback}
           />
           <View
-            style={[styles.chromeOverlayScrim, { backgroundColor: palette.overlayScrim }]}
             pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: palette.isDark ? 'rgba(13,13,13,0.72)' : 'rgba(246,246,247,0.72)',
+              },
+            ]}
           />
         </>
+      ) : !overlay ? (
+        <View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { backgroundColor: palette.screenBackground }]}
+        />
       ) : null}
 
-      <HeaderGradientOverlay color={overlay ? palette.overlayScrim : palette.screenBackground} />
+      {useGlass ? (
+        <HeaderGradientOverlay
+          color={
+            overlay
+              ? palette.overlayScrim
+              : palette.isDark
+                ? 'rgba(13,13,13,0.72)'
+                : 'rgba(246,246,247,0.72)'
+          }
+        />
+      ) : null}
 
       <View style={styles.topBar}>
         <TouchableOpacity

@@ -44,7 +44,10 @@ export const getVisibleProfileTabs = (profile: User): ProfileTabKey[] => {
     tabs.push('social');
   }
 
-  if (profile.influencerProfile?.rssUrl) {
+  if (
+    profile.influencerProfile?.rssUrl ||
+    profile.influencerProfile?.influencerStatus === 'approved'
+  ) {
     tabs.push('blog');
   }
 

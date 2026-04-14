@@ -52,6 +52,7 @@ import { fontSize, lineHeight } from '@/src/styles/typography';
 
 import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 import ErrorBoundary from '@/src/components/ErrorBoundry';
+import isCreatorBlogEligible from '@/src/utils/creatorBlogAccess';
 import {
   createUploadImageRequestId,
   waitForUploadImageResult,
@@ -61,7 +62,10 @@ import {
   CLIENT_IMAGE_MAX_WIDTH,
   CLIENT_IMAGE_PICKER_QUALITY,
 } from '@/src/screens/post/uploadImageConfig';
-import { extractExifOrientation } from '@/src/screens/post/uploadImageOrientation';
+import {
+  extractExifOrientation,
+  resolveEditorExifOrientation,
+} from '@/src/screens/post/uploadImageOrientation';
 import {
   buildImageDataUri,
   buildPendingModerationReviewPayload,
@@ -102,6 +106,7 @@ function NewPost({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData) as
     | ProfileSummary
     | undefined;
@@ -825,7 +830,11 @@ function NewPost({ navigation, route }: Props) {
           fileName: normalizedName,
           fileSize: typeof item.size === 'number' ? item.size : undefined,
           type: 'image/jpeg',
-          orientation: extractExifOrientation(item),
+          orientation: resolveEditorExifOrientation({
+            orientation: extractExifOrientation(item),
+            source: 'react-native-image-crop-picker',
+            platform: Platform.OS,
+          }),
         };
       });
 
@@ -973,6 +982,37 @@ function NewPost({ navigation, route }: Props) {
       !!uploadImagesObject?.length ||
       imagesObject.length > 0 ||
       !!mediaGif;
+  const canOpenBlogComposer =
+    !route.params?.postId && !isQuoteMode && isCreatorBlogEligible(currentUser as any);
+  const openBlogComposer = () => {
+    const navigateToBlogComposer = () => {
+      navigation.navigate('BlogComposer');
+    };
+
+    if (!hasUploadData) {
+      navigateToBlogComposer();
+      return;
+    }
+
+    Alert.alert(
+      'Switch to writer mode?',
+      'Your current social post draft will stay here. Open the blog composer separately?',
+      [
+        { text: 'Keep Posting', style: 'cancel' },
+        {
+          text: 'Open Writer',
+          onPress: navigateToBlogComposer,
+        },
+      ]
+    );
+  };
+
+  let submitButtonLabel = 'Post';
+  if (route.params?.postId) {
+    submitButtonLabel = 'Update Post';
+  } else if (isQuoteMode) {
+    submitButtonLabel = 'Quote Post';
+  }
 
   return (
     <ErrorBoundary>
@@ -1556,6 +1596,19 @@ function NewPost({ navigation, route }: Props) {
                       color={location ? Colors.primary.brand : Colors.neutral[300]}
                     />
                   </TouchableOpacity>
+                  {canOpenBlogComposer ? (
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel="Open writer composer"
+                      onPress={openBlogComposer}
+                    >
+                      <MaterialCommunityIcons
+                        name="pencil-outline"
+                        size={ACTION_BAR_ICON_SIZE}
+                        color={Colors.primary.brand}
+                      />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               </View>
               <Button
@@ -1592,9 +1645,7 @@ function NewPost({ navigation, route }: Props) {
                     {isLoading ? (
                       <ActivityIndicator />
                     ) : (
-                      <StyledText style={{ color: 'white' }}>
-                        {route.params?.postId ? 'Update Post' : isQuoteMode ? 'Quote Post' : 'Post'}
-                      </StyledText>
+                      <StyledText style={{ color: 'white' }}>{submitButtonLabel}</StyledText>
                     )}
                   </>
                 }

@@ -16,8 +16,6 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useNavigation } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
@@ -31,7 +29,6 @@ import {
   normalizeCommentTreeFallback,
   removeCommentFromTree,
   sortFlatComments,
-  toSerializableCommentSnapshot,
   toDateFromSource,
   updateCommentInTree,
 } from '@/components/comments/commentListUtils';
@@ -39,7 +36,6 @@ import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/compo
 import { CommentPost, PostType, SocialPostReactionType } from '@/utils/types';
 import { sanitizeComposerText } from '@/components/composer/composerText';
 import { COLORS, styles as watchStyles } from './commentstyles';
-import { MainStackParamList } from '@/src/navigator/types';
 import WatchCommentRow from './WatchCommentRow';
 import {
   queueTaggedNotificationDemo,
@@ -51,21 +47,25 @@ type WatchCommentsProps = {
   initialCommentCount?: number;
   onClose: () => void;
   onCountChange?: (nextCount: number) => void;
+  onOpenCommentThread: (comment: CommentPost) => void;
+  onOpenMentionProfile: (handle: string) => void;
   onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
   sheetOpenKey?: number;
 };
 
 const QUICK_EMOJIS = ['🔥', '💪', '👏', '💯', '❤️'];
+const SHEET_NAVIGATION_DELAY_MS = 220;
 
 function WatchComments({
   postId,
   initialCommentCount,
   onClose,
   onCountChange,
+  onOpenCommentThread,
+  onOpenMentionProfile,
   onTelemetryEvent,
   sheetOpenKey,
 }: WatchCommentsProps) {
-  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const insets = useSafeAreaInsets();
@@ -603,7 +603,7 @@ function WatchComments({
   const handleOpenCommentThread = useCallback(
     (comment: CommentPost) => {
       const commentId = getCommentId(comment);
-      if (!commentId || !postId) {
+      if (!commentId) {
         return;
       }
 
@@ -614,15 +614,24 @@ function WatchComments({
       onClose();
 
       setTimeout(() => {
-        navigation.push('SingleRss', {
-          postId,
-          postType: PostType.watch,
-          threadRootCommentId: commentId,
-          threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
-        });
-      }, 220);
+        onOpenCommentThread(comment);
+      }, SHEET_NAVIGATION_DELAY_MS);
     },
-    [navigation, onClose, onTelemetryEvent, postId]
+    [onClose, onOpenCommentThread, onTelemetryEvent]
+  );
+
+  const handleOpenMentionProfile = useCallback(
+    (handle: string) => {
+      if (!handle) {
+        return;
+      }
+
+      onClose();
+      setTimeout(() => {
+        onOpenMentionProfile(handle);
+      }, SHEET_NAVIGATION_DELAY_MS);
+    },
+    [onClose, onOpenMentionProfile]
   );
 
   const handleEndReached = useCallback(() => {
@@ -639,6 +648,7 @@ function WatchComments({
           item={rowItem}
           currentUserId={user?._id}
           isReacting={reactingCommentId === rowItem.id}
+          onMentionPress={handleOpenMentionProfile}
           onToggleReaction={handleToggleReaction}
           onReply={handleOpenCommentThread}
           onLongPress={rowItem.comment.userData?._id === user?._id ? openCommentActions : undefined}
@@ -648,6 +658,7 @@ function WatchComments({
     [
       user?._id,
       reactingCommentId,
+      handleOpenMentionProfile,
       handleToggleReaction,
       openCommentActions,
       handleOpenCommentThread,
@@ -761,6 +772,7 @@ function WatchComments({
                 submitComment().catch(() => undefined);
               }}
               returnKeyType="send"
+              suggestionsPlacement="above"
               suggestionsContainerStyle={{
                 backgroundColor: COLORS.slate900,
                 borderColor: COLORS.slate700,

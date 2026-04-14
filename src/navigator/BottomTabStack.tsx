@@ -20,7 +20,7 @@ import { MainBottomStackParamsList } from './types';
 import ConnectStack from './ConnectStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
-import getHomeTabFocusedRouteName from './homeTabRouteVisibility';
+import { getHomeTabVisibilityState } from './homeTabRouteVisibility';
 import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationContext';
 import { RootTabTransitionProvider, useRootTabTransition } from './RootTabTransitionContext';
 import { ROOT_TAB_SCENE_MOTION_MODE } from './motionPolicy';
@@ -30,6 +30,7 @@ import Home2Icon from '@/assets/icons/home2.svg';
 import MessagesIcon from '@/assets/icons/messages.svg';
 import MessagesStack from './MessagesStack';
 import { useChatUnreadCount } from '@/src/services/chat/unreadIndicator';
+import { buildTabBarVisibilityStyle } from './tabBarStyle';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -404,32 +405,26 @@ function BottomStack() {
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const tabBarTotalHeight = getHeight(7) + insets.bottom;
-  const defaultTabBarStyle = {
+  const baseVisibleTabBarStyle = {
     height: tabBarTotalHeight,
+    paddingBottom: insets.bottom,
+    overflow: 'visible' as const,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  };
+  const defaultTabBarStyle = {
+    ...baseVisibleTabBarStyle,
     borderTopWidth: 0,
     borderTopColor: 'transparent',
     backgroundColor: 'transparent',
     elevation: 0,
-    overflow: 'visible' as const,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingBottom: insets.bottom,
   };
-  const connectVisibleTabBarStyle = {
-    height: getHeight(7) + insets.bottom,
-    paddingBottom: insets.bottom,
+  const raisedTabBarStyle = {
+    ...baseVisibleTabBarStyle,
     borderTopWidth: 1,
     borderTopColor: 'rgba(230,234,236,0.08)',
     zIndex: 20,
     elevation: 20,
-    overflow: 'visible' as const,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  };
-  const exploreTabBarStyle = {
-    ...defaultTabBarStyle,
-    height: getHeight(7) + insets.bottom,
-    paddingBottom: insets.bottom,
   };
   const brandColors = {
     primaryBase: '#41899f',
@@ -440,9 +435,17 @@ function BottomStack() {
     black: '#032f3c',
   };
 
-  const tabBarGradientColors = dark
-    ? ['rgba(13,13,13,0.98)', 'rgba(13,13,13,0.92)']
-    : ['rgba(246,246,247,0.98)', 'rgba(230,234,236,0.95)'];
+  // iOS: translucent glass over BlurView. Android: solid — no native blur available.
+  let tabBarGradientColors: [string, string];
+  if (Platform.OS === 'ios') {
+    tabBarGradientColors = dark
+      ? ['rgba(13,13,13,0.72)', 'rgba(13,13,13,0.65)']
+      : ['rgba(246,246,247,0.72)', 'rgba(230,234,236,0.65)'];
+  } else {
+    tabBarGradientColors = dark
+      ? ['rgba(13,13,13,0.98)', 'rgba(13,13,13,0.92)']
+      : ['rgba(246,246,247,0.98)', 'rgba(230,234,236,0.95)'];
+  }
 
   return (
     <RootTabTransitionProvider>
@@ -467,27 +470,22 @@ function BottomStack() {
                   <BlurView
                     style={StyleSheet.absoluteFill}
                     blurType={dark ? 'dark' : 'light'}
-                    blurAmount={20}
+                    blurAmount={25}
                     reducedTransparencyFallbackColor={dark ? '#0D0D0D' : colors.background}
                   />
                 ) : null}
                 <LinearGradient
                   colors={tabBarGradientColors}
                   start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    StyleSheet.absoluteFill,
-                    {
-                      backgroundColor: dark ? '#0D0D0D' : colors.background,
-                    },
-                  ]}
+                  end={{ x: 0, y: 1 }}
+                  style={StyleSheet.absoluteFill}
                 />
                 <View
                   style={[
                     StyleSheet.absoluteFill,
                     {
                       borderTopWidth: 1,
-                      borderTopColor: dark ? 'rgba(255,255,255,0.08)' : brandColors.scale100,
+                      borderTopColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)',
                     },
                   ]}
                 />
@@ -514,15 +512,12 @@ function BottomStack() {
               },
             }}
             options={({ route }) => {
-              const focusedRouteName = getHomeTabFocusedRouteName(route);
-              const shouldHideTabBar = focusedRouteName === 'Notifications';
+              const { shouldHideTabBar } = getHomeTabVisibilityState(route);
 
               return {
                 tabBarLabel: 'Home',
                 tabBarIcon: HomeTabIcon,
-                tabBarStyle: shouldHideTabBar
-                  ? { ...defaultTabBarStyle, display: 'none', height: 0, opacity: 0 }
-                  : defaultTabBarStyle,
+                tabBarStyle: buildTabBarVisibilityStyle(defaultTabBarStyle, !shouldHideTabBar),
               };
             }}
           />
@@ -532,7 +527,7 @@ function BottomStack() {
             options={{
               tabBarLabel: 'Explore',
               tabBarIcon: ExploreTabIcon,
-              tabBarStyle: exploreTabBarStyle,
+              tabBarStyle: defaultTabBarStyle,
             }}
           />
           <Tab.Screen
@@ -577,9 +572,7 @@ function BottomStack() {
               return {
                 tabBarLabel: 'Connect',
                 tabBarIcon: ConnectTabIcon,
-                tabBarStyle: shouldShowTabBar
-                  ? exploreTabBarStyle
-                  : { ...exploreTabBarStyle, display: 'none', height: 0, opacity: 0 },
+                tabBarStyle: buildTabBarVisibilityStyle(defaultTabBarStyle, shouldShowTabBar),
               };
             }}
           />
@@ -601,9 +594,7 @@ function BottomStack() {
               return {
                 tabBarLabel: 'Chat',
                 tabBarIcon: ChatTabIcon,
-                tabBarStyle: shouldShowTabBar
-                  ? connectVisibleTabBarStyle
-                  : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },
+                tabBarStyle: buildTabBarVisibilityStyle(raisedTabBarStyle, shouldShowTabBar),
                 lazy: false,
                 unmountOnBlur: false,
                 freezeOnBlur: false,

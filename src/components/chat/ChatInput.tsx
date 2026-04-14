@@ -1,5 +1,14 @@
 import React, { memo, useCallback, useEffect } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,7 +26,10 @@ import {
   CLIENT_IMAGE_MAX_WIDTH,
   CLIENT_IMAGE_PICKER_QUALITY,
 } from '@/src/screens/post/uploadImageConfig';
-import { extractExifOrientation } from '@/src/screens/post/uploadImageOrientation';
+import {
+  extractExifOrientation,
+  resolveEditorExifOrientation,
+} from '@/src/screens/post/uploadImageOrientation';
 import {
   CHAT_COUNTER_DANGER_THRESHOLD,
   CHAT_COUNTER_VISIBLE_THRESHOLD,
@@ -221,7 +233,11 @@ function ChatInput({
             fileSize: typeof asset.size === 'number' ? asset.size : undefined,
             type: 'image/jpeg',
             usageContext: 'chat',
-            orientation: extractExifOrientation(asset),
+            orientation: resolveEditorExifOrientation({
+              orientation: extractExifOrientation(asset),
+              source: 'react-native-image-crop-picker',
+              platform: Platform.OS,
+            }),
           });
 
           const uploadResult = await resultPromise;

@@ -10,9 +10,8 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
-  ListRenderItemInfo,
   Platform,
+  ScrollView,
   StyleProp,
   StyleSheet,
   TextInput,
@@ -59,6 +58,7 @@ type MentionInputProps = Omit<
   inputStyle?: StyleProp<TextStyle>;
   inputRightAccessory?: ReactNode;
   suggestionsContainerStyle?: StyleProp<ViewStyle>;
+  suggestionsPlacement?: 'above' | 'below';
   showCharCounter?: boolean;
   counterContainerStyle?: StyleProp<ViewStyle>;
   counterTextStyle?: StyleProp<TextStyle>;
@@ -134,6 +134,7 @@ function MentionInput({
   inputStyle,
   inputRightAccessory,
   suggestionsContainerStyle,
+  suggestionsPlacement = 'below',
   showCharCounter,
   counterContainerStyle,
   counterTextStyle,
@@ -179,6 +180,45 @@ function MentionInput({
   const flattenedInputStyle = StyleSheet.flatten(inputStyle) ?? {};
   const resolvedInputColor =
     typeof flattenedInputStyle.color === 'string' ? flattenedInputStyle.color : colors.text;
+  const resolvedFontSize =
+    typeof flattenedInputStyle.fontSize === 'number' ? flattenedInputStyle.fontSize : 16;
+  const resolvedLineHeight =
+    typeof flattenedInputStyle.lineHeight === 'number'
+      ? flattenedInputStyle.lineHeight
+      : Math.round(resolvedFontSize * 1.35);
+  const resolvedPaddingTop =
+    typeof flattenedInputStyle.paddingTop === 'number'
+      ? flattenedInputStyle.paddingTop
+      : typeof flattenedInputStyle.paddingVertical === 'number'
+        ? flattenedInputStyle.paddingVertical
+        : typeof flattenedInputStyle.padding === 'number'
+          ? flattenedInputStyle.padding
+          : 0;
+  const suggestionPanelPositionStyle = useMemo(() => {
+    if (suggestionsPlacement === 'above') {
+      return {
+        bottom: '100%' as const,
+        marginBottom: spacing.x4,
+      };
+    }
+
+    if (inputProps.multiline && flattenedInputStyle.textAlignVertical === 'top') {
+      return {
+        top: resolvedPaddingTop + resolvedLineHeight + spacing.x4,
+      };
+    }
+
+    return {
+      top: '100%' as const,
+      marginTop: spacing.x4,
+    };
+  }, [
+    flattenedInputStyle.textAlignVertical,
+    inputProps.multiline,
+    resolvedLineHeight,
+    resolvedPaddingTop,
+    suggestionsPlacement,
+  ]);
 
   const handleSuggestionPress = useCallback(
     (suggestion: MentionSuggestion) => {
@@ -247,16 +287,6 @@ function MentionInput({
       suggestionPanelVisible,
       suggestions,
     ]
-  );
-
-  const renderSuggestionItem = ({ item }: ListRenderItemInfo<MentionSuggestion>) => (
-    <SuggestionRow
-      handleColor={suggestionHandleColor}
-      item={item}
-      isActive={suggestions[activeSuggestionIndex]?.id === item.id}
-      nameColor={suggestionNameColor}
-      onPress={handleSuggestionPress}
-    />
   );
 
   return (
@@ -357,8 +387,6 @@ function MentionInput({
                 position: 'absolute',
                 left: 0,
                 right: 0,
-                top: '100%',
-                marginTop: spacing.x8,
                 maxHeight: 240,
                 borderRadius: borderRadius.base,
                 backgroundColor: '#ffffff',
@@ -368,6 +396,7 @@ function MentionInput({
                 elevation: 16,
                 overflow: 'hidden',
               },
+              suggestionPanelPositionStyle,
               suggestionsContainerStyle,
             ]}
           >
@@ -384,12 +413,22 @@ function MentionInput({
               </View>
             )}
             {!isLoading && !isError && (
-              <FlatList
+              <ScrollView
                 keyboardShouldPersistTaps="handled"
-                data={suggestions}
-                renderItem={renderSuggestionItem}
-                keyExtractor={(item) => `${item.id}_${item.username}`}
-              />
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+              >
+                {suggestions.map((item) => (
+                  <SuggestionRow
+                    key={`${item.id}_${item.username}`}
+                    handleColor={suggestionHandleColor}
+                    item={item}
+                    isActive={suggestions[activeSuggestionIndex]?.id === item.id}
+                    nameColor={suggestionNameColor}
+                    onPress={handleSuggestionPress}
+                  />
+                ))}
+              </ScrollView>
             )}
           </View>
         ) : null}

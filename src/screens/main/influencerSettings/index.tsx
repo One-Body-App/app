@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import { Colors } from '@/src/styles';
@@ -561,6 +561,7 @@ function InfluencerSettingsForm({
 }
 
 function InfluencerSettings() {
+  const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const userToken = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
@@ -596,14 +597,33 @@ function InfluencerSettings() {
   }
 
   return (
-    <InfluencerSettingsForm
-      key={getInfluencerProfileSeedKey(influencerProfile)}
-      colors={colors}
-      influencerProfile={influencerProfile}
-      isLocked={isLocked}
-      status={status}
-      userToken={userToken}
-    />
+    <View style={{ flex: 1 }}>
+      <InfluencerSettingsForm
+        key={getInfluencerProfileSeedKey(influencerProfile)}
+        colors={colors}
+        influencerProfile={influencerProfile}
+        isLocked={isLocked}
+        status={status}
+        userToken={userToken}
+      />
+      <TouchableOpacity
+        onPress={() => navigation.navigate('CreatorBlogDashboard' as never)}
+        activeOpacity={0.82}
+        style={{
+          position: 'absolute',
+          right: spacing.x24,
+          bottom: 96,
+          backgroundColor: Colors.primarySapphire.brand,
+          paddingHorizontal: spacing.x16,
+          paddingVertical: spacing.x12,
+          borderRadius: borderRadius.button,
+        }}
+      >
+        <StyledText style={{ color: '#FFFFFF', fontFamily: 'Rubik-Medium', fontSize: 13 }}>
+          Manage Blogs
+        </StyledText>
+      </TouchableOpacity>
+    </View>
   );
 }
 

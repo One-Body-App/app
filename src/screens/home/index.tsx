@@ -622,27 +622,25 @@ function PrayerWallTabs({
         onIndexChange={applyPrayerTabIndex}
         initialLayout={{ width: layout.width }}
         sceneContainerStyle={{ paddingBottom: bottomInset / 2 }}
-        renderTabBar={() => {
-          return (
-            <Animated.View
-              pointerEvents={areSubtabsVisible ? 'auto' : 'none'}
-              style={{
-                height: prayerSubtabContainerHeight,
-                opacity: prayerSubtabsVisibility,
-                transform: [{ translateY: prayerSubtabTranslateY }],
-                overflow: 'hidden',
-                paddingHorizontal: spacing.x5,
-                paddingTop: spacing.x8,
-              }}
-            >
-              <GlassTabBar
-                tabs={routes.map((route) => route.title)}
-                activeIndex={index}
-                onTabChange={applyPrayerTabIndex}
-              />
-            </Animated.View>
-          );
-        }}
+        renderTabBar={() => (
+          <Animated.View
+            pointerEvents={areSubtabsVisible ? 'auto' : 'none'}
+            style={{
+              height: prayerSubtabContainerHeight,
+              opacity: prayerSubtabsVisibility,
+              transform: [{ translateY: prayerSubtabTranslateY }],
+              overflow: 'hidden',
+              paddingHorizontal: spacing.x5,
+              paddingTop: spacing.x8,
+            }}
+          >
+            <GlassTabBar
+              tabs={routes.map((route) => route.title)}
+              activeIndex={index}
+              onTabChange={applyPrayerTabIndex}
+            />
+          </Animated.View>
+        )}
       />
       <TouchableOpacity onPress={onNewPrayerPress} style={shareButtonStyle}>
         <StyledText
@@ -1062,6 +1060,16 @@ function Home({ navigation, route }: Props) {
   feedTypeRef.current = feedOptions.type;
   useScrollToTop(listRef as any);
   const scrollIntent = useScrollIntentLock();
+
+  useObservedEffect(() => {
+    if (route.params?.selectedTab === feedOptions.type) {
+      return;
+    }
+
+    navigation.setParams({
+      selectedTab: feedOptions.type,
+    });
+  }, [feedOptions.type, navigation, route.params?.selectedTab]);
 
   useObservedEffect(() => {
     setFeedTelemetryAuthToken(token || undefined);
@@ -1972,6 +1980,7 @@ function Home({ navigation, route }: Props) {
         onLayout={handleHeaderLayout}
         style={{
           paddingTop: insets.top,
+          backgroundColor: androidHeaderBackground,
         }}
       >
         <HeaderGradientOverlay color={androidHeaderBackground} />
@@ -2652,6 +2661,7 @@ function Home({ navigation, route }: Props) {
   const headerVisibility = useRef(new Animated.Value(1)).current;
   const footerVisibility = useRef(new Animated.Value(1)).current;
   const lastScrollRef = useRef(0);
+  const barsVisibleRef = useRef(true);
   const resolvedHeaderHeight = headerHeight || defaultHeaderHeight;
   const headerInset = resolvedHeaderHeight + spacing.x10;
   const iosRefreshOffset = resolvedHeaderHeight + spacing.x13;
@@ -2704,6 +2714,12 @@ function Home({ navigation, route }: Props) {
   const VISIBILITY_EASING = Easing.out(Easing.sin);
 
   const showBars = useCallback(() => {
+    if (barsVisibleRef.current) {
+      return;
+    }
+    barsVisibleRef.current = true;
+    headerVisibility.stopAnimation();
+    footerVisibility.stopAnimation();
     Animated.timing(headerVisibility, {
       toValue: 1,
       duration: VISIBILITY_DURATION,
@@ -2719,6 +2735,12 @@ function Home({ navigation, route }: Props) {
   }, [headerVisibility, VISIBILITY_EASING, footerVisibility]);
 
   const hideBars = useCallback(() => {
+    if (!barsVisibleRef.current) {
+      return;
+    }
+    barsVisibleRef.current = false;
+    headerVisibility.stopAnimation();
+    footerVisibility.stopAnimation();
     Animated.timing(headerVisibility, {
       toValue: 0,
       duration: VISIBILITY_DURATION,
@@ -2741,7 +2763,9 @@ function Home({ navigation, route }: Props) {
           const rawValue = event?.nativeEvent?.contentOffset?.y ?? 0;
           const nextValue = Math.max(0, rawValue);
           const diff = nextValue - lastScrollRef.current;
-          const threshold = 1;
+          const hideThreshold = 4;
+          const showThreshold = -4;
+          const minScrollToHide = 24;
           if (nextValue > 8 && !hasUserInteractedRef.current) {
             hasUserInteractedRef.current = true;
             blockEndReachedUntilInteractionRef.current = false;
@@ -2749,9 +2773,9 @@ function Home({ navigation, route }: Props) {
 
           if (nextValue <= 0) {
             showBars();
-          } else if (diff > threshold) {
+          } else if (diff > hideThreshold && nextValue > minScrollToHide) {
             hideBars();
-          } else if (diff < -threshold) {
+          } else if (diff < showThreshold) {
             showBars();
           }
 
@@ -3100,10 +3124,13 @@ function Home({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       lastScrollRef.current = 0;
+      barsVisibleRef.current = true;
       headerVisibility.stopAnimation();
       footerVisibility.stopAnimation();
+      scrollY.stopAnimation();
       headerVisibility.setValue(1);
       footerVisibility.setValue(1);
+      scrollY.setValue(0);
       tabBarAnimationRef.current?.setTabBarTranslateY(0);
 
       const frameId = requestAnimationFrame(() => {
@@ -3114,30 +3141,7 @@ function Home({ navigation, route }: Props) {
         cancelAnimationFrame(frameId);
         tabBarAnimationRef.current?.resetTabBar();
       };
-    }, [footerTranslateY, footerVisibility, headerVisibility])
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      const parent = navigation.getParent?.();
-      if (!parent || feedOptions.type !== FeedTypes.Pray) {
-        return undefined;
-      }
-
-      parent.setOptions({
-        tabBarStyle: {
-          height: 0,
-          opacity: 0,
-          display: 'none',
-        },
-      });
-
-      return () => {
-        parent.setOptions({
-          tabBarStyle: undefined,
-        });
-      };
-    }, [feedOptions.type, navigation])
+    }, [footerTranslateY, footerVisibility, headerVisibility, scrollY])
   );
 
   const handleFeedRefresh = useCallback(() => {

@@ -13,11 +13,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { BlurView } from '@react-native-community/blur';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import HeaderGradientOverlay from '@/components/HeaderGradientOverlay';
 import ChatIcon from '@/assets/icons/chat.svg';
 import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -553,7 +555,6 @@ function ChatListScreen({ navigation }: Props) {
           styles.filterContainer,
           {
             borderBottomColor: dark ? 'rgba(255,255,255,0.08)' : '#e6eaec',
-            backgroundColor: colors.background,
           },
         ]}
       >
@@ -864,57 +865,85 @@ function ChatListScreen({ navigation }: Props) {
     );
   }
 
+  const glassOverlayColor = dark ? 'rgba(13,13,13,0.72)' : 'rgba(246,246,247,0.72)';
+  const androidHeaderBg = dark ? '#0d0d0d' : '#f6f6f7';
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Animated.View
-        style={[
-          styles.headerRow,
-          { marginTop: insets.top + (isIOS ? 6 : 12) },
-          getSpringboardStyle(0),
-        ]}
-      >
-        <View style={styles.headerSideSlot}>
-          {hasProfileImage ? (
-            <Image
-              source={{ uri: currentUser!.profileImage }}
-              style={[styles.headerAvatar, { borderColor: colors.border }]}
-            />
-          ) : (
-            <ProfileFill width={32} height={32} color="#126b87" />
-          )}
-        </View>
-
+      {/* Glass header wrapper — full width so BlurView fills edge-to-edge */}
+      <View style={styles.headerGlassWrap}>
         {isIOS ? (
-          <View style={styles.headerCenterWrap} pointerEvents="none">
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
-          </View>
-        ) : (
-          <View style={styles.headerAndroidTitleWrap}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
-          </View>
-        )}
-
-        <View style={styles.headerSideSlot}>
-          <Pressable onPress={openSettings} style={styles.settingsButton}>
-            <MaterialIcons name="settings" size={30} color="#126b87" />
-          </Pressable>
-        </View>
-      </Animated.View>
-
-      <Animated.View style={getSpringboardStyle(1)}>
-        <View style={[styles.searchWrap, { backgroundColor: colors.card }]}>
-          <MaterialIcons name="search" size={20} color={colors.text} />
-          <TextInput
-            ref={searchInputRef}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search conversations..."
-            placeholderTextColor={colors.text}
-            style={[styles.searchInput, { color: colors.text }]}
+          <BlurView
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+            blurType={dark ? 'dark' : 'light'}
+            blurAmount={25}
+            reducedTransparencyFallbackColor={colors.background}
           />
+        ) : null}
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: isIOS ? glassOverlayColor : androidHeaderBg },
+          ]}
+        />
+        {isIOS && <HeaderGradientOverlay color={glassOverlayColor} />}
+        <View style={styles.headerGlassContent}>
+          <Animated.View
+            style={[
+              styles.headerRow,
+              { marginTop: insets.top + (isIOS ? 6 : 12) },
+              getSpringboardStyle(0),
+            ]}
+          >
+            <View style={styles.headerSideSlot}>
+              {hasProfileImage ? (
+                <Image
+                  source={{ uri: currentUser!.profileImage }}
+                  style={[styles.headerAvatar, { borderColor: colors.border }]}
+                />
+              ) : (
+                <ProfileFill width={32} height={32} color="#126b87" />
+              )}
+            </View>
+
+            {isIOS ? (
+              <View style={styles.headerCenterWrap} pointerEvents="none">
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
+              </View>
+            ) : (
+              <View style={styles.headerAndroidTitleWrap}>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
+              </View>
+            )}
+
+            <View style={styles.headerSideSlot}>
+              <Pressable onPress={openSettings} style={styles.settingsButton}>
+                <MaterialIcons name="settings" size={30} color="#126b87" />
+              </Pressable>
+            </View>
+          </Animated.View>
+
+          <Animated.View style={getSpringboardStyle(1)}>
+            <View style={[styles.searchWrap, { backgroundColor: colors.card }]}>
+              <MaterialIcons name="search" size={20} color={colors.text} />
+              <TextInput
+                ref={searchInputRef}
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search conversations..."
+                placeholderTextColor={colors.text}
+                style={[styles.searchInput, { color: colors.text }]}
+              />
+            </View>
+            {renderFilters()}
+          </Animated.View>
         </View>
-        {renderFilters()}
-      </Animated.View>
+        {/* headerGlassContent */}
+      </View>
+      {/* headerGlassWrap */}
+
       <Animated.View style={[{ flex: 1 }, getSpringboardStyle(2)]}>
         {conversationsContent}
       </Animated.View>
@@ -941,6 +970,13 @@ function ChatListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 22,
+  },
+  headerGlassWrap: {
+    marginHorizontal: -22,
+    overflow: 'hidden',
+  },
+  headerGlassContent: {
     paddingHorizontal: 22,
   },
   headerRow: {
