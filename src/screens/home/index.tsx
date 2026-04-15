@@ -1983,7 +1983,6 @@ function Home({ navigation, route }: Props) {
           backgroundColor: androidHeaderBackground,
         }}
       >
-        <HeaderGradientOverlay color={androidHeaderBackground} />
         <View
           style={{
             height: headerRowHeight,
