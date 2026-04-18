@@ -135,7 +135,7 @@ export type HomeStackParamsList = {
 };
 
 export type ExploreStackParamsList = {
-  Explore: undefined;
+  Explore: { openProfileSearch?: boolean } | undefined;
   UserProfile: {
     id?: string;
     handle?: string;

@@ -1,6 +1,7 @@
 import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -28,6 +29,7 @@ import {
 } from '@/components/comments/commentListUtils';
 import CreatorBlogReader from '@/src/screens/blogs/CreatorBlogReader';
 import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import { deleteOwnedPost, emitOwnedPostDeleted } from '@/services/ownedPostDeletion';
 import {
   createPostTelemetryRequestId,
   trackPostTelemetry,
@@ -146,6 +148,34 @@ function RssPost({ navigation, route }: Props) {
   });
 
   const commentType = route.params?.postType === 'watch' ? PostType.watch : PostType.rss;
+  const removeWatchPost = useCallback(
+    async (type: string, id: string) => {
+      const normalizedId = String(id ?? '').trim();
+      if (normalizedId.length < 1) {
+        Toast.show('Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      const result = await deleteOwnedPost({
+        type,
+        id: normalizedId,
+        token: token ?? undefined,
+      });
+
+      if (!result.ok) {
+        Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      emitOwnedPostDeleted({
+        type: result.type,
+        id: normalizedId,
+      });
+      handleBackPress();
+    },
+    [handleBackPress, token]
+  );
+
   const openCommentThread = useCallback(
     (comment: CommentPost) => {
       const commentId = getCommentId(comment);
@@ -230,6 +260,7 @@ function RssPost({ navigation, route }: Props) {
           viewHeight={200}
           width={50}
           fromSavedPosts={false}
+          removePost={removeWatchPost}
           onTelemetryEvent={trackSingleRssTelemetry}
           onShowDismissCard={undefined}
         />

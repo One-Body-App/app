@@ -35,6 +35,7 @@ type VideoItemProps = {
   currentIndex: number;
   fromSavedPosts: boolean;
   parentRefreshContent?: Function;
+  removePost?: (type: string, postId: string) => void;
   onShowDismissCard?: (e?: boolean) => void;
   onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
 };
@@ -57,6 +58,7 @@ const VideoItem = gestureHandlerRootHOC(
     width,
     fromSavedPosts,
     parentRefreshContent,
+    removePost,
     onShowDismissCard,
     onTelemetryEvent,
   }: PropsWithChildren<VideoItemProps>) => {
@@ -287,6 +289,7 @@ const VideoItem = gestureHandlerRootHOC(
           commentCount={commentCount}
           fromSavedPosts={fromSavedPosts}
           parentRefreshContent={parentRefreshContent}
+          removePost={removePost}
           progress={progress}
           onTelemetryEvent={onTelemetryEvent}
           onCommentsPress={handlePresentModalPress}

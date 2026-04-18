@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity, Platform } from 'react-native';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 
 import { NavigationProp, useNavigation } from '@react-navigation/native';
@@ -15,6 +16,11 @@ import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
 import { usePrayerListTelemetry } from '@/components/prayerWall/usePrayerListTelemetry';
+import {
+  deleteOwnedPost,
+  emitOwnedPostDeleted,
+  subscribeToOwnedPostDeleted,
+} from '@/services/ownedPostDeletion';
 
 function PrayerWallEmpty() {
   return (
@@ -174,20 +180,60 @@ function PrayerWallComponent({
     refreshPrayerPosts();
   }, [refreshPrayerPosts, refreshSignal]);
 
-  const removePost = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `prayer/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status === 200) {
-        setPage(1);
+  useEffect(() => {
+    return subscribeToOwnedPostDeleted(({ type, id }) => {
+      if (type !== 'prayer') {
+        return;
       }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      setPrayers((previous) =>
+        previous.filter((post) => String(post.postId ?? post.id ?? '') !== id)
+      );
+    });
+  }, []);
+
+  const removePost = async (type: string, id: string) => {
+    const normalizedId = String(id ?? '').trim();
+    if (normalizedId.length < 1) {
+      Toast.show('Unable to delete this post right now.', Toast.SHORT);
+      return;
     }
+
+    let removedPost: PrayerPost | undefined;
+    let removedIndex = -1;
+    setPrayers((previous) => {
+      removedIndex = previous.findIndex(
+        (post) => String(post.postId ?? post.id ?? '') === normalizedId
+      );
+      if (removedIndex < 0) {
+        return previous;
+      }
+      removedPost = previous[removedIndex];
+      return previous.filter((_, index) => index !== removedIndex);
+    });
+
+    const result = await deleteOwnedPost({
+      type,
+      id: normalizedId,
+      token: token ?? undefined,
+    });
+
+    if (!result.ok) {
+      if (removedPost && removedIndex >= 0) {
+        setPrayers((previous) => {
+          const restored = [...previous];
+          restored.splice(Math.min(removedIndex, restored.length), 0, removedPost as PrayerPost);
+          return restored;
+        });
+      }
+      Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+      return;
+    }
+
+    emitOwnedPostDeleted({
+      type: result.type,
+      id: normalizedId,
+    });
+    refreshPrayerPosts();
   };
 
   const editPost = async (id: string) => {

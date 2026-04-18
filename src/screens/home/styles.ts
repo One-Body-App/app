@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   },
   promptInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     height: 40,
   },
   promptIcon: {

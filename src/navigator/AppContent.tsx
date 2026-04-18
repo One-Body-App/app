@@ -949,16 +949,25 @@ function AppContent() {
     return true;
   };
 
-  const shouldIgnoreAuthLink = useCallback((url?: string | null) => {
-    if (!url) return false;
-    if (!ignoreAuthLinksRef.current) return false;
-    return (
-      url.includes('/auth/action') ||
-      url.includes('/__/auth/action') ||
-      url.includes('/verify/') ||
-      url.includes('/verify-email')
-    );
-  }, []);
+  const shouldIgnoreAuthLink = useCallback(
+    (url?: string | null) => {
+      if (!url) return false;
+      if (!ignoreAuthLinksRef.current) return false;
+      const currentRouteName = navigationRef.isReady()
+        ? navigationRef.getCurrentRoute()?.name
+        : routeNameRef.current;
+      if (isPublicAuthRoute(currentRouteName)) {
+        return false;
+      }
+      return (
+        url.includes('/auth/action') ||
+        url.includes('/__/auth/action') ||
+        url.includes('/verify/') ||
+        url.includes('/verify-email')
+      );
+    },
+    [navigationRef]
+  );
 
   const openNotificationsCenter = useCallback(() => {
     navigationRef.dispatch(
@@ -1007,6 +1016,11 @@ function AppContent() {
 
     const profileData = authState.getProfileData;
     if (!profileData) {
+      return undefined;
+    }
+
+    if (profileData.emailVerified !== true) {
+      disconnectChatSocket();
       return undefined;
     }
 

@@ -365,7 +365,7 @@ function SearchItemSeparator() {
   return <View style={{ height: 12 }} />;
 }
 
-function Explore({ navigation }: Props) {
+function Explore({ navigation, route }: Props) {
   const dispatch = useDispatch();
   const rootTabReplayToken = useRootTabSwitchReplayToken('ExploreTab');
   const { getSpringboardStyle } = useSpringboardEntry(rootTabReplayToken, 3, {
@@ -427,6 +427,7 @@ function Explore({ navigation }: Props) {
 
   const requestSequenceRef = useRef(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<TextInput>(null);
   const chipOffset = useRef(new Animated.Value(0)).current;
   const browseOpacity = useRef(new Animated.Value(1)).current;
   const browseTranslateY = useRef(new Animated.Value(0)).current;
@@ -1231,6 +1232,16 @@ function Explore({ navigation }: Props) {
     useCallback(() => {
       fetchAllSections();
     }, [fetchAllSections])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!route.params?.openProfileSearch) return;
+      setActiveFilter(SearchFeedFilter.profiles);
+      navigation.setParams({ openProfileSearch: undefined });
+      const timer = setTimeout(() => searchInputRef.current?.focus(), 300);
+      return () => clearTimeout(timer);
+    }, [route.params?.openProfileSearch, setActiveFilter, navigation])
   );
 
   useMountEffect(() => {
@@ -2076,6 +2087,7 @@ function Explore({ navigation }: Props) {
               stroke={dark ? Colors.neutral[300] : Colors.neutral[300]}
             />
             <TextInput
+              ref={searchInputRef}
               style={[styles.searchInput, { color: primaryTextColor }]}
               placeholder="Search posts, people, serve, go"
               placeholderTextColor={dark ? Colors.neutral[300] : Colors.neutral[300]}

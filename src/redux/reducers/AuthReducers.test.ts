@@ -71,6 +71,45 @@ describe('AuthReducer logout flow', () => {
     expect(refreshedState.sessionAuthMethod).toBe('social');
     expect(refreshedState.bypassMandatoryMfaOnboarding).toBe(true);
   });
+
+  it('clears stale profile state when a new session explicitly resets profile data', () => {
+    const loggedInState = authReducer(
+      authReducer(
+        undefined,
+        setLoginData({
+          token: 'old-access-token',
+          authMethod: 'social',
+          bypassMandatoryMfaOnboarding: true,
+        })
+      ),
+      getProfile.Success({
+        _id: 'user-1',
+        emailVerified: true,
+        isProfileCompleted: true,
+        name: 'Previous User',
+      })
+    );
+
+    const nextState = authReducer(
+      loggedInState,
+      setLoginData({
+        token: 'new-access-token',
+        resetProfile: true,
+      })
+    );
+
+    expect(nextState.userToken).toBe('new-access-token');
+    expect(nextState.userProfile).toBeNull();
+    expect(nextState.userData).toBeNull();
+    expect(nextState.getProfileData).toBeNull();
+    expect(nextState.getProfileError).toBeNull();
+    expect(nextState.getProfileSuccess).toBeUndefined();
+    expect(nextState.verifyEmailTokenPending).toBe(false);
+    expect(nextState.verifyEmailTokenError).toBeNull();
+    expect(nextState.verifyEmailTokenSuccess).toBeUndefined();
+    expect(nextState.sessionAuthMethod).toBe('social');
+    expect(nextState.bypassMandatoryMfaOnboarding).toBe(true);
+  });
 });
 
 describe('AuthReducer verify email token flow', () => {

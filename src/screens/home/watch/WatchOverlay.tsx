@@ -48,6 +48,7 @@ type WatchOverlayProps = {
   commentCount: number;
   fromSavedPosts: boolean;
   parentRefreshContent?: Function;
+  removePost?: (type: string, postId: string) => void;
   onCommentsPress: () => void;
   onProfilePress: () => void;
   onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
@@ -255,6 +256,7 @@ function WatchOverlay({
   commentCount,
   fromSavedPosts,
   parentRefreshContent,
+  removePost,
   onCommentsPress,
   onProfilePress,
   onTelemetryEvent,
@@ -862,6 +864,7 @@ function WatchOverlay({
           userData: item.userData,
         }}
         hideSavePost={false}
+        removePost={removePost}
       />
 
       <CustomModal

@@ -13,6 +13,7 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
+import Toast from 'react-native-simple-toast';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -45,6 +46,11 @@ import {
   mergeRecentCompletedWatchUploads,
   subscribeRecentCompletedWatchUploads,
 } from '@/src/services/recentCompletedWatchUploads';
+import {
+  deleteOwnedPost,
+  emitOwnedPostDeleted,
+  subscribeToOwnedPostDeleted,
+} from '@/services/ownedPostDeletion';
 
 function Watch({ navigation, route }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -89,6 +95,45 @@ function Watch({ navigation, route }: any) {
     if (!post) return null;
     const candidate = post.postId ?? post.id ?? post._id;
     return candidate ? String(candidate) : null;
+  }, []);
+
+  const removeWatchPostLocally = useCallback(
+    (postId: string) => {
+      let removedPost: WatchPost | undefined;
+      let removedIndex = -1;
+
+      setFeedData((previous) => {
+        removedIndex = previous.findIndex((post) => getWatchPostId(post) === postId);
+        if (removedIndex < 0) {
+          return previous;
+        }
+
+        removedPost = previous[removedIndex];
+        const nextPosts = previous.filter((_, currentIndex) => currentIndex !== removedIndex);
+        setIndex((currentIndex) => {
+          if (nextPosts.length < 1) {
+            return 0;
+          }
+          if (currentIndex > removedIndex) {
+            return currentIndex - 1;
+          }
+          return Math.min(currentIndex, nextPosts.length - 1);
+        });
+        return nextPosts;
+      });
+
+      return { removedPost, removedIndex };
+    },
+    [getWatchPostId]
+  );
+
+  const restoreWatchPostLocally = useCallback((post: WatchPost, atIndex: number) => {
+    setFeedData((previous) => {
+      const restored = [...previous];
+      restored.splice(Math.min(atIndex, restored.length), 0, post);
+      return restored;
+    });
+    setIndex((currentIndex) => (atIndex <= currentIndex ? currentIndex + 1 : currentIndex));
   }, []);
 
   const normalizeTelemetryTags = useCallback((value: unknown): string[] => {
@@ -351,6 +396,15 @@ function Watch({ navigation, route }: any) {
     });
   }, [mergeOptimisticWatchPosts]);
 
+  useEffect(() => {
+    return subscribeToOwnedPostDeleted(({ type, id }) => {
+      if (type !== 'watch') {
+        return;
+      }
+      removeWatchPostLocally(id);
+    });
+  }, [removeWatchPostLocally]);
+
   useObservedEffect(() => {
     hasAppliedInitialSelectionRef.current = false;
   }, [initialPlaybackId, initialPostId]);
@@ -448,6 +502,38 @@ function Watch({ navigation, route }: any) {
       flushFeedTelemetry(token || undefined).catch(() => undefined);
     };
   });
+
+  const handleRemoveWatchPost = useCallback(
+    async (type: string, id: string) => {
+      const normalizedId = String(id ?? '').trim();
+      if (normalizedId.length < 1) {
+        Toast.show('Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      const { removedPost, removedIndex } = removeWatchPostLocally(normalizedId);
+      const result = await deleteOwnedPost({
+        type,
+        id: normalizedId,
+        token: token ?? undefined,
+      });
+
+      if (!result.ok) {
+        if (removedPost && removedIndex >= 0) {
+          restoreWatchPostLocally(removedPost, removedIndex);
+        }
+        Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      emitOwnedPostDeleted({
+        type: result.type,
+        id: normalizedId,
+      });
+      setIsRefreshing(true);
+    },
+    [removeWatchPostLocally, restoreWatchPostLocally, token]
+  );
 
   const shouldShowInitialLoader = isLoading && page === 1 && !isRefreshing;
   const shouldShowWatchFeed = !shouldShowInitialLoader && feedData.length > 0;
@@ -558,6 +644,7 @@ function Watch({ navigation, route }: any) {
                 viewHeight={viewHeight}
                 frameWidth={screenWidth}
                 fromSavedPosts={false}
+                removePost={handleRemoveWatchPost}
                 onTelemetryEvent={(eventType, metadata) => {
                   const post = feedData[index];
                   trackWatchTelemetryEvent(

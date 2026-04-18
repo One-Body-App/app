@@ -1,4 +1,13 @@
-import React, { useCallback, useLayoutEffect, useRef, useState, memo, useMemo, JSX } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  memo,
+  useMemo,
+  JSX,
+} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -66,8 +75,12 @@ import ArticleItem from '@/components/listItems/ArticleItem';
 import SocialItem from '@/components/listItems/SocialItem';
 import PrayerItem from '@/components/listItems/PrayerItem';
 import FeedAvatar from '@/components/avatar/FeedAvatar';
-import { resolveFeedAvatarUri, resolveProfileAvatarUri } from '@/components/avatar/feedAvatarUtils';
-import { ArticleType, PostType, PrayerPost, SocialPost, User } from '@/utils/types';
+import {
+  resolveFeedAvatarUri,
+  resolveProfileAvatarUri,
+  isFeedAvatarPlaceholderUri,
+} from '@/components/avatar/feedAvatarUtils';
+import { AccountType, ArticleType, PostType, PrayerPost, SocialPost, User } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import useScrollIntentLock from '@/src/hooks/useScrollIntentLock';
@@ -83,6 +96,12 @@ import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayers
 import GlassTabBar from '@/components/GlassTabBar';
 import HeaderGradientOverlay from '@/components/HeaderGradientOverlay';
 import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import {
+  deleteOwnedPost,
+  emitOwnedPostDeleted,
+  normalizeOwnedPostType,
+  subscribeToOwnedPostDeleted,
+} from '@/services/ownedPostDeletion';
 import {
   createPostTelemetryRequestId,
   maybeTrackQualifiedPostView,
@@ -413,6 +432,7 @@ const FEED_INTRO_CARD_STAGGER_MS = 75;
 const FEED_INTRO_MAX_VISIBLE_CARDS = 5;
 const SUGGESTION_INTERVAL = 15;
 const MAX_SUGGESTIONS_VISIBLE = 7;
+const SUGGESTIONS_FETCH_SIZE = 24;
 const FEED_STALE_MS = 60 * 1000;
 const FEED_REFRESH_DEBOUNCE_MS = DEFAULT_REFRESH_DEBOUNCE_MS;
 
@@ -811,6 +831,17 @@ function StatusInput({
 
 const getSuggestionUserId = (user: User) => user._id || user.id || user.userId || '';
 
+function filterSuggestedUsers(users: User[], followingIds: string[]): User[] {
+  return users.filter((u) => {
+    if (u.accountType !== AccountType.individual) return false;
+    const avatar = u.profileImage ?? '';
+    if (!avatar || isFeedAvatarPlaceholderUri(avatar)) return false;
+    const uid = getSuggestionUserId(u);
+    if (uid && followingIds.includes(uid)) return false;
+    return true;
+  });
+}
+
 type SuggestionsRailProps = {
   title: string;
   users: User[];
@@ -832,7 +863,9 @@ function SuggestionsRail({
   onOpenProfile,
   onSeeAll,
 }: SuggestionsRailProps) {
-  const visibleUsers = users.slice(0, MAX_SUGGESTIONS_VISIBLE);
+  const visibleUsers = users
+    .filter((u) => !selectedUserIds.includes(getSuggestionUserId(u)))
+    .slice(0, MAX_SUGGESTIONS_VISIBLE);
 
   return (
     <View style={styles.discoveryContainer}>
@@ -1136,6 +1169,7 @@ function Home({ navigation, route }: Props) {
   const latestVisibleItems = useRef<ViewToken[]>([]);
   const suggestionsRequestSequenceRef = useRef(0);
   const isPaginatingRef = useRef(false);
+  const suggestionsDirtyRef = useRef(false);
   const [peopleYouMayKnowUsers, setPeopleYouMayKnowUsers] = useState<User[]>([]);
   const [suggestedForYouUsers, setSuggestedForYouUsers] = useState<User[]>([]);
   const [connectingSuggestionIds, setConnectingSuggestionIds] = useState<string[]>([]);
@@ -1548,7 +1582,10 @@ function Home({ navigation, route }: Props) {
   const handleOpenExplore = useCallback(() => {
     navigation.navigate('MainRoot', {
       screen: 'Main',
-      params: { screen: 'ExploreTab', params: { screen: 'Explore' } },
+      params: {
+        screen: 'ExploreTab',
+        params: { screen: 'Explore', params: { openProfileSearch: true } },
+      },
     });
   }, [navigation]);
 
@@ -1576,7 +1613,7 @@ function Home({ navigation, route }: Props) {
       const sortQuery = sort ? `&sort=${sort}` : '';
       try {
         const res = await ApiCall({
-          route: `user/get-users-to-subscribe/1?itemsPerPage=${MAX_SUGGESTIONS_VISIBLE}${sortQuery}`,
+          route: `user/get-users-to-subscribe/1?itemsPerPage=${SUGGESTIONS_FETCH_SIZE}${sortQuery}`,
           token,
           verb: 'get',
         });
@@ -1635,6 +1672,8 @@ function Home({ navigation, route }: Props) {
               ? ((res?.response as { message: string }).message ?? '').trim()
               : '';
           Toast.show(message || 'Error following, please try again later.', Toast.LONG);
+        } else {
+          suggestionsDirtyRef.current = true;
         }
       } catch (error) {
         setSelectedSuggestionIds((previous) =>
@@ -1649,6 +1688,19 @@ function Home({ navigation, route }: Props) {
     },
     [selectedSuggestionIds, token]
   );
+
+  const handleFeedScroll = useCallback(() => {
+    if (!suggestionsDirtyRef.current) return;
+    suggestionsDirtyRef.current = false;
+    setSelectedSuggestionIds([]);
+    const following: string[] = userProfile?.following ?? [];
+    Promise.all([getSuggestedUsers(), getSuggestedUsers('popular')])
+      .then(([peopleResult, suggestedResult]) => {
+        setPeopleYouMayKnowUsers(filterSuggestedUsers(peopleResult, following));
+        setSuggestedForYouUsers(filterSuggestedUsers(suggestedResult, following));
+      })
+      .catch(() => {});
+  }, [getSuggestedUsers, userProfile?.following]);
 
   const getFeedEntryKey = useCallback((item: RenderFeedEntry, index: number) => {
     const identity = getRenderEntryIdentity(item);
@@ -1672,6 +1724,105 @@ function Home({ navigation, route }: Props) {
     return entries.map((entry, index) => getFeedEntryIdentity(entry) ?? `fallback:${index}`);
   }, []);
 
+  const matchesOwnedFeedEntry = useCallback((entry: FeedEntry, type: string, id: string) => {
+    const normalizedType = normalizeOwnedPostType(type);
+    const normalizedId = String(id ?? '').trim();
+    if (!normalizedType || normalizedId.length < 1) {
+      return false;
+    }
+
+    const unwrappedEntry = unwrapFeedItem(entry);
+    if (!unwrappedEntry || readEntryId(unwrappedEntry) !== normalizedId) {
+      return false;
+    }
+
+    if (isPrayerPost(unwrappedEntry)) {
+      return normalizedType === PostType.prayer;
+    }
+
+    const normalizedFeedEntry = normalizeFeedImage(unwrappedEntry as FeedPost);
+    if (normalizedType === PostType.watch) {
+      return isWatchPost(normalizedFeedEntry);
+    }
+
+    return (
+      normalizedType === PostType.social &&
+      (isSocialPost(normalizedFeedEntry) || isLikelySocialPost(normalizedFeedEntry))
+    );
+  }, []);
+
+  const handleRemoveOwnedFeedPost = useCallback(
+    async (type: string, id: string) => {
+      const normalizedType = normalizeOwnedPostType(type);
+      const normalizedId = String(id ?? '').trim();
+
+      if (!normalizedType || normalizedId.length < 1) {
+        Toast.show('Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      const removedEntries: Array<{ entry: FeedEntry; index: number }> = [];
+      setFeedData((previous) => {
+        const nextEntries: FeedEntry[] = [];
+        previous.forEach((entry, index) => {
+          if (matchesOwnedFeedEntry(entry, normalizedType, normalizedId)) {
+            removedEntries.push({ entry, index });
+            return;
+          }
+          nextEntries.push(entry);
+        });
+
+        return removedEntries.length > 0 ? nextEntries : previous;
+      });
+
+      const result = await deleteOwnedPost({
+        type: normalizedType,
+        id: normalizedId,
+        token: token ?? undefined,
+      });
+
+      if (!result.ok) {
+        if (removedEntries.length > 0) {
+          setFeedData((previous) => {
+            const restoredEntries = [...previous];
+            removedEntries
+              .slice()
+              .sort((left, right) => left.index - right.index)
+              .forEach(({ entry, index }, offset) => {
+                restoredEntries.splice(Math.min(index + offset, restoredEntries.length), 0, entry);
+              });
+            return restoredEntries;
+          });
+        }
+
+        Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      emitOwnedPostDeleted({
+        type: normalizedType,
+        id: normalizedId,
+      });
+
+      requestFeedRefresh({
+        reason: 'route_refresh',
+        targetType: feedTypeRef.current,
+        forceNetwork: true,
+        allowReorder: isPrimarySocialFeedType(feedTypeRef.current),
+        hardReset: false,
+      });
+    },
+    [matchesOwnedFeedEntry, requestFeedRefresh, token]
+  );
+
+  useEffect(() => {
+    return subscribeToOwnedPostDeleted(({ type, id }) => {
+      setFeedData((previous) =>
+        previous.filter((entry) => !matchesOwnedFeedEntry(entry, type, id))
+      );
+    });
+  }, [matchesOwnedFeedEntry]);
+
   useObservedEffect(() => {
     if (feedOptions.type !== FeedTypes.Connected && feedOptions.type !== FeedTypes.ForYou) {
       return undefined;
@@ -1690,8 +1841,9 @@ function Home({ navigation, route }: Props) {
         return;
       }
 
-      setPeopleYouMayKnowUsers(peopleResult);
-      setSuggestedForYouUsers(suggestedResult);
+      const following: string[] = userProfile?.following ?? [];
+      setPeopleYouMayKnowUsers(filterSuggestedUsers(peopleResult, following));
+      setSuggestedForYouUsers(filterSuggestedUsers(suggestedResult, following));
     };
 
     loadSuggestions();
@@ -1699,7 +1851,7 @@ function Home({ navigation, route }: Props) {
     return () => {
       isCancelled = true;
     };
-  }, [feedOptions.type, getSuggestedUsers]);
+  }, [feedOptions.type, getSuggestedUsers, userProfile]);
 
   const feedDataWithSuggestions = useMemo<RenderFeedEntry[]>(() => {
     const isPrimaryFeed =
@@ -2567,7 +2719,7 @@ function Home({ navigation, route }: Props) {
           <PrayerItem
             item={unwrapped}
             originFeedType={feedOptions.type}
-            removePost={() => undefined}
+            removePost={handleRemoveOwnedFeedPost}
             onTelemetryEvent={(eventType, metadata) => {
               if (!prayerTelemetryPayload) {
                 return;
@@ -2628,7 +2780,7 @@ function Home({ navigation, route }: Props) {
                 watchItemId !== null &&
                 viewableSocialPostIds.has(String(watchItemId))
               }
-              removePost={() => undefined}
+              removePost={handleRemoveOwnedFeedPost}
               parentRefreshContent={() => {
                 getFeedData(feedOptions.type, 1);
               }}
@@ -2729,7 +2881,7 @@ function Home({ navigation, route }: Props) {
                 socialItemId !== null &&
                 viewableSocialPostIds.has(String(socialItemId))
               }
-              removePost={() => undefined}
+              removePost={handleRemoveOwnedFeedPost}
               parentRefreshContent={() => {
                 getFeedData(feedOptions.type, 1);
               }}
@@ -2904,6 +3056,7 @@ function Home({ navigation, route }: Props) {
       feedOptions.type,
       getFeedData,
       getFeedEntryKey,
+      handleRemoveOwnedFeedPost,
       handleConnectSuggestion,
       handleOpenExplore,
       handleOpenSuggestedProfile,
@@ -3085,9 +3238,10 @@ function Home({ navigation, route }: Props) {
           }
 
           lastScrollRef.current = nextValue;
+          handleFeedScroll();
         },
       }),
-    [scrollY, showBars, hideBars]
+    [scrollY, showBars, hideBars, handleFeedScroll]
   );
 
   const showBlockingLoader =

@@ -365,7 +365,7 @@ function LoginComponent({
   const completeLogin = useCallback(
     (accessToken: string) => {
       clearPendingSocialContinuation();
-      dispatch(setLoginData({ token: accessToken }));
+      dispatch(setLoginData({ token: accessToken, resetProfile: true }));
       navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
     },
     [dispatch, navigation]
@@ -1075,6 +1075,7 @@ function LoginComponent({
           dispatch(
             setLoginData({
               token: accessToken,
+              resetProfile: true,
               authMethod: res.response?.authMethod ?? 'social',
               bypassMandatoryMfaOnboarding: res.response?.bypassMandatoryMfaOnboarding !== false,
             })

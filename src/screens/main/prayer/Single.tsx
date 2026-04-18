@@ -2,6 +2,7 @@
 import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -28,6 +29,7 @@ import {
   type CanonicalPostTelemetryEventName,
   type PostTelemetryEventInput,
 } from '@/services/postTelemetry';
+import { deleteOwnedPost, emitOwnedPostDeleted } from '@/services/ownedPostDeletion';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
 function SinglePrayer({ navigation, route }: Props) {
@@ -124,19 +126,28 @@ function SinglePrayer({ navigation, route }: Props) {
   }, [postId, token]);
 
   const removePost = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `prayer/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status === 200) {
-        await getPostPrayer();
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+    const normalizedId = String(id ?? '').trim();
+    if (normalizedId.length < 1) {
+      Toast.show('Unable to delete this post right now.', Toast.SHORT);
+      return;
     }
+
+    const result = await deleteOwnedPost({
+      type,
+      id: normalizedId,
+      token: token ?? undefined,
+    });
+
+    if (!result.ok) {
+      Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+      return;
+    }
+
+    emitOwnedPostDeleted({
+      type: result.type,
+      id: normalizedId,
+    });
+    handleBackPress();
   };
 
   const editPost = async (id: string) => {

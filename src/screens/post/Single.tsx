@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/ionicons';
@@ -31,6 +32,7 @@ import {
 } from '@/components/comments/commentListUtils';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import { deleteOwnedPost, emitOwnedPostDeleted } from '@/services/ownedPostDeletion';
 import {
   createPostTelemetryRequestId,
   trackPostTelemetry,
@@ -126,19 +128,28 @@ function SinglePost({ navigation, route }: Props) {
   // }, [post]);
 
   const removePost = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `social/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status === 200) {
-        await getPost();
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+    const normalizedId = String(id ?? '').trim();
+    if (normalizedId.length < 1) {
+      Toast.show('Unable to delete this post right now.', Toast.SHORT);
+      return;
     }
+
+    const result = await deleteOwnedPost({
+      type,
+      id: normalizedId,
+      token: token ?? undefined,
+    });
+
+    if (!result.ok) {
+      Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+      return;
+    }
+
+    emitOwnedPostDeleted({
+      type: result.type,
+      id: normalizedId,
+    });
+    handleBackPress();
   };
 
   const editPost = async (id: string) => {

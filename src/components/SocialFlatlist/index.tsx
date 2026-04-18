@@ -3,11 +3,13 @@ import React, {
   ReactElement,
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
 } from 'react';
 import { FlatList, RefreshControl, View, ListRenderItem, useWindowDimensions } from 'react-native';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Tabs } from 'react-native-collapsible-tab-view';
@@ -21,6 +23,11 @@ import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
+import {
+  deleteOwnedPost,
+  emitOwnedPostDeleted,
+  subscribeToOwnedPostDeleted,
+} from '@/services/ownedPostDeletion';
 
 type SocialListFooterProps = {
   isEndOfList: boolean;
@@ -159,20 +166,60 @@ const SocialFlatlist = forwardRef<
       }, [getSocialPosts])
     );
 
-    const removePost = async (type: string, id: string) => {
-      try {
-        const res = await ApiCall({
-          route: `social/remove-post/${id}`,
-          verb: 'delete',
-          token,
-        });
-
-        if (res?.status === 200) {
-          getSocialPosts(1).then(() => undefined);
+    useEffect(() => {
+      return subscribeToOwnedPostDeleted(({ type, id }) => {
+        if (type !== 'social') {
+          return;
         }
-      } catch (e: any) {
-        console.log('saga error -- ', e.toString());
+        setSocialPosts((previous) =>
+          previous.filter((post) => String(post.postId ?? post.id ?? post._id ?? '') !== id)
+        );
+      });
+    }, []);
+
+    const removePost = async (type: string, id: string) => {
+      const normalizedId = String(id ?? '').trim();
+      if (normalizedId.length < 1) {
+        Toast.show('Unable to delete this post right now.', Toast.SHORT);
+        return;
       }
+
+      let removedPost: SocialPost | undefined;
+      let removedIndex = -1;
+      setSocialPosts((previous) => {
+        removedIndex = previous.findIndex(
+          (post) => String(post.postId ?? post.id ?? post._id ?? '') === normalizedId
+        );
+        if (removedIndex < 0) {
+          return previous;
+        }
+        removedPost = previous[removedIndex];
+        return previous.filter((_, index) => index !== removedIndex);
+      });
+
+      const result = await deleteOwnedPost({
+        type,
+        id: normalizedId,
+        token: token ?? undefined,
+      });
+
+      if (!result.ok) {
+        if (removedPost && removedIndex >= 0) {
+          setSocialPosts((previous) => {
+            const restored = [...previous];
+            restored.splice(Math.min(removedIndex, restored.length), 0, removedPost as SocialPost);
+            return restored;
+          });
+        }
+        Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      emitOwnedPostDeleted({
+        type: result.type,
+        id: normalizedId,
+      });
+      getSocialPosts(1).then(() => undefined);
     };
 
     const editPost = async (id: string) => {

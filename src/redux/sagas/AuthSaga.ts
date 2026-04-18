@@ -187,7 +187,7 @@ function* loginSocialRequest(params: {
         yield put(setLoader(false));
       }
       params.data.sendFcm(params.data.data.token);
-      yield put(setLoginData({ token: params.data.data.token }));
+      yield put(setLoginData({ token: params.data.data.token, resetProfile: true }));
     } else {
       params.data.seterror(res?.response?.message);
       yield put(setLoader(false));
@@ -355,7 +355,7 @@ function* signUpSaga(params: { data: any; type: string }) {
             );
           }
         }
-        yield put(setLoginData({ token: accessToken }));
+        yield put(setLoginData({ token: accessToken, resetProfile: true }));
       }
       yield put(setAccountType(''));
       yield put(signUp.Success((res?.response as any)?.user ?? res?.response));

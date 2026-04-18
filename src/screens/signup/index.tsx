@@ -553,6 +553,7 @@ function SignupForm({ navigation, route }: Props) {
           dispatch(
             setLoginData({
               token: res.response.tokens.accessToken,
+              resetProfile: true,
               authMethod: res.response?.authMethod ?? 'social',
               bypassMandatoryMfaOnboarding: res.response?.bypassMandatoryMfaOnboarding !== false,
             })

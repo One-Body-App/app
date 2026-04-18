@@ -81,10 +81,21 @@ const resetLogoutState = {
 
 const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
-    case ACTIONS.FETCH_LOGIN_DATA:
+    case ACTIONS.FETCH_LOGIN_DATA: {
+      const shouldResetSessionProfile = action.data?.resetProfile === true;
       return {
         ...state,
         userToken: action.data?.token,
+        userProfile: shouldResetSessionProfile ? null : state.userProfile,
+        userData: shouldResetSessionProfile ? null : state.userData,
+        getProfileData: shouldResetSessionProfile ? null : state.getProfileData,
+        getProfileSuccess: shouldResetSessionProfile ? undefined : state.getProfileSuccess,
+        getProfileError: shouldResetSessionProfile ? null : state.getProfileError,
+        verifyEmailTokenPending: shouldResetSessionProfile ? false : state.verifyEmailTokenPending,
+        verifyEmailTokenError: shouldResetSessionProfile ? null : state.verifyEmailTokenError,
+        verifyEmailTokenSuccess: shouldResetSessionProfile
+          ? undefined
+          : state.verifyEmailTokenSuccess,
         sessionAuthMethod:
           action.data && Object.prototype.hasOwnProperty.call(action.data, 'authMethod')
             ? (action.data?.authMethod ?? null)
@@ -96,6 +107,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
             : state.bypassMandatoryMfaOnboarding,
         ...resetLogoutState,
       };
+    }
 
     case ACTIONS.FETCH_SIGN_UP:
       return {
