@@ -3,7 +3,6 @@ import TestRenderer, { act } from 'react-test-renderer';
 import VideoUploadRuntimeHost from '../VideoUploadRuntimeHost';
 
 const mockVideoProcessingRuntime = jest.fn(() => null);
-const mockVideoModerationBridge = jest.fn(() => null);
 
 jest.mock('react-redux', () => ({
   useSelector: jest.fn((selector: (state: any) => unknown) =>
@@ -28,11 +27,6 @@ jest.mock('../VideoProcessingRuntime', () => ({
   default: (props: unknown) => mockVideoProcessingRuntime(props),
 }));
 
-jest.mock('../VideoModerationBridge', () => ({
-  __esModule: true,
-  default: () => mockVideoModerationBridge(),
-}));
-
 jest.mock('@/src/services/notification/pushNotificationService', () => ({
   displayVideoUploadLocalNotification: jest.fn(() => Promise.resolve()),
 }));
@@ -42,12 +36,11 @@ describe('VideoUploadRuntimeHost', () => {
     jest.clearAllMocks();
   });
 
-  it('mounts both the upload runtime and the moderation bridge', () => {
+  it('mounts the upload runtime host without a moderation bridge', () => {
     act(() => {
       TestRenderer.create(<VideoUploadRuntimeHost />);
     });
 
-    expect(mockVideoModerationBridge).toHaveBeenCalledTimes(1);
     expect(mockVideoProcessingRuntime).toHaveBeenCalledTimes(1);
   });
 });

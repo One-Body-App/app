@@ -2123,6 +2123,7 @@ function Explore({ navigation }: Props) {
             styles.searchContentWrap,
             getSpringboardStyle(1),
             {
+              top: exploreHeaderHeight,
               backgroundColor: screenBackgroundColor,
               opacity: searchOpacity,
               transform: [{ translateY: searchTranslateY }],
@@ -2182,7 +2183,7 @@ function Explore({ navigation }: Props) {
             contentContainerStyle={[
               styles.searchContentContainer,
               {
-                paddingTop: CHIP_ROW_HEIGHT,
+                paddingTop: CHIP_ROW_HEIGHT + spacing.x8,
                 paddingBottom: getHeight(7) + insets.bottom,
               },
             ]}
@@ -2622,7 +2623,10 @@ const createStyles = (dark: boolean) =>
       fontSize: 12,
     },
     searchContentWrap: {
-      ...StyleSheet.absoluteFillObject,
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
       zIndex: 2,
     },
     chipOverlay: {

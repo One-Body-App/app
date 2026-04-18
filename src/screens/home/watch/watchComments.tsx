@@ -330,7 +330,7 @@ function WatchComments({
             ),
             commentId: editingCommentId,
           }).catch(() => undefined);
-          onTelemetryEvent?.('edit_comment', {
+          onTelemetryEvent?.('post_comment_edit', {
             postType: PostType.watch,
           });
           return;
@@ -384,7 +384,7 @@ function WatchComments({
               result?.response?.commentId ?? result?.response?._id ?? result?.response?.id ?? ''
             ).trim() || undefined,
         }).catch(() => undefined);
-        onTelemetryEvent?.('post_comment', {
+        onTelemetryEvent?.('post_comment_add', {
           postType: PostType.watch,
         });
         return;
@@ -444,7 +444,7 @@ function WatchComments({
         });
 
         if (result?.status === 200) {
-          onTelemetryEvent?.('delete_comment', {
+          onTelemetryEvent?.('post_comment_delete', {
             postType: PostType.watch,
           });
           return;
@@ -571,11 +571,14 @@ function WatchComments({
             placement: 'bottom',
           });
         } else {
-          onTelemetryEvent?.('comment_reaction', {
-            postType: PostType.watch,
-            reactionType,
-            commentId,
-          });
+          onTelemetryEvent?.(
+            reactionType ? 'post_comment_reaction_add' : 'post_comment_reaction_remove',
+            {
+              postType: PostType.watch,
+              reactionType,
+              commentId,
+            }
+          );
         }
       } catch (_error) {
         setComments(previousComments);
@@ -607,7 +610,7 @@ function WatchComments({
         return;
       }
 
-      onTelemetryEvent?.('open_comment_thread', {
+      onTelemetryEvent?.('post_comment_open', {
         postType: PostType.watch,
         commentId,
       });

@@ -82,11 +82,15 @@ import TestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
 import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
 import GlassTabBar from '@/components/GlassTabBar';
 import HeaderGradientOverlay from '@/components/HeaderGradientOverlay';
+import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
 import {
-  flushFeedTelemetry,
-  setFeedTelemetryAuthToken,
-  trackFeedTelemetry,
-} from '@/services/feedTelemetry';
+  createPostTelemetryRequestId,
+  maybeTrackQualifiedPostView,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+  type PostTelemetrySurface,
+} from '@/services/postTelemetry';
 
 import {
   HomeStackParamsList,
@@ -175,6 +179,24 @@ type SuggestionsModuleItem = {
 };
 type RenderFeedEntry = FeedEntry | SuggestionsModuleItem;
 
+type HomeTelemetryPayload = {
+  postId: string;
+  postType?: string;
+  contentType?: string;
+  tags?: string[];
+  authorId?: string;
+  isRepost?: boolean;
+  privacyState?: string;
+};
+
+type FeedVisibleTelemetryRecord = {
+  feedType: FeedTypes;
+  payload: HomeTelemetryPayload;
+  rankPosition: number;
+  requestId: string;
+  startedAt: number;
+};
+
 type UserProfile = User & { avatar?: string; profile_image?: string };
 
 export enum FeedTypes {
@@ -189,12 +211,14 @@ type TelemetryTrackedFeedType =
   | FeedTypes.Connected
   | FeedTypes.ForYou
   | FeedTypes.Read
+  | FeedTypes.Pray
   | FeedTypes.Watch;
 
 const isTelemetryTrackedFeedType = (feedType: FeedTypes): feedType is TelemetryTrackedFeedType =>
   feedType === FeedTypes.Connected ||
   feedType === FeedTypes.ForYou ||
   feedType === FeedTypes.Read ||
+  feedType === FeedTypes.Pray ||
   feedType === FeedTypes.Watch;
 
 const isPrimarySocialFeedType = (feedType: FeedTypes) =>
@@ -247,6 +271,14 @@ const getFeedPostId = (item: FeedPost) => {
   return fallbackId ? String(fallbackId) : undefined;
 };
 
+const normalizedFeedImageCache = new WeakMap<FeedPost, FeedPost>();
+const normalizedWatchFeedItemCache = new WeakMap<
+  FeedPost,
+  SocialPost & { type?: 'watch'; playBackId?: string }
+>();
+const normalizedSocialFeedItemCache = new WeakMap<FeedPost, SocialPost & { type?: 'social' }>();
+const normalizedRssFeedItemCache = new WeakMap<FeedPost, ArticleType>();
+
 const unwrapFeedItem = (entry: FeedEntry): FeedPost | PrayerPost | null => {
   if ('type' in entry && entry.type === 'tasteBreaker') {
     return entry.items?.[0] ?? null;
@@ -258,10 +290,74 @@ const unwrapFeedItem = (entry: FeedEntry): FeedPost | PrayerPost | null => {
 };
 
 const normalizeFeedImage = (entry: FeedPost): FeedPost => {
-  if (typeof entry.image === 'string') {
-    return { ...entry, image: { url: entry.image } };
+  if (typeof entry.image !== 'string') {
+    return entry;
   }
-  return entry;
+
+  const cachedEntry = normalizedFeedImageCache.get(entry);
+  if (cachedEntry) {
+    return cachedEntry;
+  }
+
+  const normalizedEntry = { ...entry, image: { url: entry.image } };
+  normalizedFeedImageCache.set(entry, normalizedEntry);
+  return normalizedEntry;
+};
+
+const buildWatchFeedItem = (entry: FeedPost) => {
+  const cachedEntry = normalizedWatchFeedItemCache.get(entry);
+  if (cachedEntry) {
+    return cachedEntry;
+  }
+
+  const watchBody = 'body' in entry ? entry.body : undefined;
+  const normalizedEntry = {
+    ...entry,
+    type: 'watch' as const,
+    mediaType: entry.mediaType ?? 'video',
+    mediaUrl:
+      entry.mediaUrl ||
+      (entry.playBackId ? `https://stream.mux.com/${entry.playBackId}.m3u8` : undefined),
+    content: entry.content || watchBody || getFeedTitleText(entry.title) || '',
+    reactions: entry.reactions ?? [],
+  } as SocialPost & { type?: 'watch'; playBackId?: string };
+
+  normalizedWatchFeedItemCache.set(entry, normalizedEntry);
+  return normalizedEntry;
+};
+
+const buildSocialFeedItem = (entry: FeedPost) => {
+  const cachedEntry = normalizedSocialFeedItemCache.get(entry);
+  if (cachedEntry) {
+    return cachedEntry;
+  }
+
+  const socialBody = 'body' in entry ? entry.body : undefined;
+  const normalizedEntry = {
+    ...entry,
+    type: 'social' as const,
+    content: entry.content || socialBody || getFeedTitleText(entry.title) || '',
+    reactions: entry.reactions ?? [],
+  } as SocialPost & { type?: 'social' };
+
+  normalizedSocialFeedItemCache.set(entry, normalizedEntry);
+  return normalizedEntry;
+};
+
+const buildRssFeedItem = (entry: FeedPost) => {
+  const cachedEntry = normalizedRssFeedItemCache.get(entry);
+  if (cachedEntry) {
+    return cachedEntry;
+  }
+
+  const normalizedEntry = {
+    ...entry,
+    image: typeof entry.image === 'string' ? { url: entry.image } : entry.image,
+    reactions: entry.reactions ?? [],
+  } as ArticleType;
+
+  normalizedRssFeedItemCache.set(entry, normalizedEntry);
+  return normalizedEntry;
 };
 
 const isPrayerPost = (entry: FeedPost | PrayerPost): entry is PrayerPost =>
@@ -674,7 +770,7 @@ function StatusInput({
   hasText: boolean;
   isSubmitting: boolean;
 }) {
-  const promptContainerColor = dark ? '#232b38' : BRAND.white;
+  const promptContainerColor = dark ? Colors.neutral[700] : BRAND.white;
   const promptActionBackground = dark ? 'rgba(65, 219, 225, 0.16)' : 'rgba(18, 107, 135, 0.1)';
   const promptActionColor = dark ? '#7ee7f2' : BRAND.primaryDark;
 
@@ -912,7 +1008,7 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
         {/* Media */}
         {mediaUrl && (
           <View style={styles.mediaContainer}>
-            <Image source={{ uri: mediaUrl }} resizeMode="contain" style={styles.mediaImage} />
+            <Image source={{ uri: mediaUrl }} resizeMode="cover" style={styles.mediaImage} />
           </View>
         )}
       </TouchableOpacity>
@@ -1054,7 +1150,7 @@ function Home({ navigation, route }: Props) {
   const listRef = useRef<FlatList<RenderFeedEntry>>(null);
   const renderEntryFallbackKeyMapRef = useRef(new WeakMap<object, string>());
   const renderEntryFallbackKeySequenceRef = useRef(0);
-  const feedVisibleStartByKeyRef = useRef<Map<string, number>>(new Map());
+  const feedVisibleStartByKeyRef = useRef<Map<string, FeedVisibleTelemetryRecord>>(new Map());
   const feedImpressionsByKeyRef = useRef<Set<string>>(new Set());
   const [viewableSocialPostIds, setViewableSocialPostIds] = useState<Set<string>>(new Set());
   feedTypeRef.current = feedOptions.type;
@@ -1074,6 +1170,201 @@ function Home({ navigation, route }: Props) {
   useObservedEffect(() => {
     setFeedTelemetryAuthToken(token || undefined);
   }, [token]);
+
+  const feedTelemetryRequestIdRef = useRef<Record<FeedTypes, string>>({
+    [FeedTypes.Connected]: createPostTelemetryRequestId(),
+    [FeedTypes.ForYou]: createPostTelemetryRequestId(),
+    [FeedTypes.Read]: createPostTelemetryRequestId(),
+    [FeedTypes.Pray]: createPostTelemetryRequestId(),
+    [FeedTypes.Watch]: createPostTelemetryRequestId(),
+  });
+
+  const getFeedTelemetryRequestId = useCallback((feedType: FeedTypes) => {
+    const existing = feedTelemetryRequestIdRef.current[feedType];
+    if (existing) {
+      return existing;
+    }
+    const nextRequestId = createPostTelemetryRequestId();
+    feedTelemetryRequestIdRef.current[feedType] = nextRequestId;
+    return nextRequestId;
+  }, []);
+
+  const resetFeedTelemetryRequestId = useCallback((feedType: FeedTypes) => {
+    const nextRequestId = createPostTelemetryRequestId();
+    feedTelemetryRequestIdRef.current[feedType] = nextRequestId;
+    return nextRequestId;
+  }, []);
+
+  const getTelemetrySurfaceForFeedType = useCallback(
+    (feedType: FeedTypes): PostTelemetrySurface =>
+      feedType === FeedTypes.Pray ? 'prayer_portal' : 'social_feed',
+    []
+  );
+
+  const getTelemetryEntrypointForFeedType = useCallback((feedType: FeedTypes) => {
+    if (feedType === FeedTypes.Pray) {
+      return 'home_prayer_feed';
+    }
+    if (feedType === FeedTypes.Read) {
+      return 'home_read_feed';
+    }
+    if (feedType === FeedTypes.Connected) {
+      return 'home_connected_feed';
+    }
+    if (feedType === FeedTypes.ForYou) {
+      return 'home_for_you_feed';
+    }
+    return 'home_feed';
+  }, []);
+
+  const getTelemetryAlgorithmForFeedType = useCallback((feedType: FeedTypes) => {
+    if (feedType === FeedTypes.ForYou) {
+      return 'for_you';
+    }
+    if (feedType === FeedTypes.Read) {
+      return 'read';
+    }
+    if (feedType === FeedTypes.Pray) {
+      return 'prayer_wall';
+    }
+    if (feedType === FeedTypes.Watch) {
+      return 'watch';
+    }
+    return 'connected';
+  }, []);
+
+  const trackHomeTelemetryWithPayload = useCallback(
+    (
+      payload: HomeTelemetryPayload,
+      postIndex: number,
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>,
+      feedTypeOverride?: FeedTypes
+    ) => {
+      const resolvedFeedType = feedTypeOverride ?? feedOptions.type;
+      if (!payload.postId || !isTelemetryTrackedFeedType(resolvedFeedType)) {
+        return;
+      }
+
+      trackPostTelemetry({
+        postId: payload.postId,
+        postType: payload.postType,
+        contentType: payload.contentType,
+        tags: payload.tags,
+        authorId: payload.authorId,
+        userId: userProfile?._id ? String(userProfile._id) : undefined,
+        surface: getTelemetrySurfaceForFeedType(resolvedFeedType),
+        surfaceTab: resolvedFeedType,
+        entrypoint: getTelemetryEntrypointForFeedType(resolvedFeedType),
+        requestId: getFeedTelemetryRequestId(resolvedFeedType),
+        rankPosition: postIndex,
+        feedAlgorithm: getTelemetryAlgorithmForFeedType(resolvedFeedType),
+        isOwnPost:
+          Boolean(userProfile?._id) && Boolean(payload.authorId)
+            ? String(payload.authorId) === String(userProfile?._id)
+            : undefined,
+        isRepost: payload.isRepost,
+        privacyState: payload.privacyState,
+        ...overrides,
+        eventName,
+        metadata: {
+          source: 'home_feed',
+          ...(metadata ?? {}),
+          ...(overrides?.metadata ?? {}),
+        },
+      });
+    },
+    [
+      feedOptions.type,
+      getFeedTelemetryRequestId,
+      getTelemetryAlgorithmForFeedType,
+      getTelemetryEntrypointForFeedType,
+      getTelemetrySurfaceForFeedType,
+      userProfile?._id,
+    ]
+  );
+
+  const finalizeFeedTelemetryRecord = useCallback(
+    (telemetryKey: string, reason: string) => {
+      const record = feedVisibleStartByKeyRef.current.get(telemetryKey);
+      if (!record) {
+        return;
+      }
+
+      feedVisibleStartByKeyRef.current.delete(telemetryKey);
+      const dwellTimeMs = Date.now() - record.startedAt;
+      if (dwellTimeMs < 1200) {
+        return;
+      }
+
+      trackHomeTelemetryWithPayload(
+        record.payload,
+        record.rankPosition,
+        'post_dwell',
+        { reason },
+        { requestId: record.requestId, dwellMs: dwellTimeMs },
+        record.feedType
+      );
+
+      maybeTrackQualifiedPostView(
+        {
+          postId: record.payload.postId,
+          postType: record.payload.postType,
+          contentType: record.payload.contentType,
+          tags: record.payload.tags,
+          authorId: record.payload.authorId,
+          userId: userProfile?._id ? String(userProfile._id) : undefined,
+          surface: getTelemetrySurfaceForFeedType(record.feedType),
+          surfaceTab: record.feedType,
+          entrypoint: getTelemetryEntrypointForFeedType(record.feedType),
+          requestId: record.requestId,
+          rankPosition: record.rankPosition,
+          feedAlgorithm: getTelemetryAlgorithmForFeedType(record.feedType),
+          isOwnPost:
+            Boolean(userProfile?._id) && Boolean(record.payload.authorId)
+              ? String(record.payload.authorId) === String(userProfile._id)
+              : undefined,
+          isRepost: record.payload.isRepost,
+          privacyState: record.payload.privacyState,
+        },
+        dwellTimeMs,
+        { source: 'home_feed', reason }
+      );
+    },
+    [
+      getTelemetryAlgorithmForFeedType,
+      getTelemetryEntrypointForFeedType,
+      getTelemetrySurfaceForFeedType,
+      trackHomeTelemetryWithPayload,
+      userProfile?._id,
+    ]
+  );
+
+  const finalizeVisibleFeedTelemetry = useCallback(
+    (feedType: FeedTypes, reason: string) => {
+      Array.from(feedVisibleStartByKeyRef.current.entries()).forEach(([telemetryKey, record]) => {
+        if (record.feedType !== feedType) {
+          return;
+        }
+        finalizeFeedTelemetryRecord(telemetryKey, reason);
+      });
+    },
+    [finalizeFeedTelemetryRecord]
+  );
+
+  const clearFeedTelemetryStateForType = useCallback((feedType: FeedTypes) => {
+    Array.from(feedVisibleStartByKeyRef.current.entries()).forEach(([telemetryKey, record]) => {
+      if (record.feedType === feedType) {
+        feedVisibleStartByKeyRef.current.delete(telemetryKey);
+      }
+    });
+    Array.from(feedImpressionsByKeyRef.current).forEach((telemetryKey) => {
+      if (telemetryKey.startsWith(`${feedType}:`)) {
+        feedImpressionsByKeyRef.current.delete(telemetryKey);
+      }
+    });
+  }, []);
 
   useObservedEffect(() => {
     const followingIds = (userProfile?.following ?? [])
@@ -1147,9 +1438,15 @@ function Home({ navigation, route }: Props) {
       showRefreshSpinner?: boolean;
       refreshSeed?: number;
     }) => {
+      const currentFeedType = feedTypeRef.current;
+
       if (targetType === FeedTypes.Pray) {
         feedRequestSequenceRef.current += 1;
         isPaginatingRef.current = false;
+        finalizeVisibleFeedTelemetry(currentFeedType, 'refresh_reset');
+        clearFeedTelemetryStateForType(currentFeedType);
+        resetFeedTelemetryRequestId(targetType);
+        clearFeedTelemetryStateForType(targetType);
         setIsRefreshing(false);
         setIsLoadingMore(false);
         if (hardReset) {
@@ -1179,6 +1476,10 @@ function Home({ navigation, route }: Props) {
       feedRequestSequenceRef.current += 1;
       activeFirstPageRequestRef.current = null;
       isPaginatingRef.current = false;
+      finalizeVisibleFeedTelemetry(currentFeedType, reason);
+      clearFeedTelemetryStateForType(currentFeedType);
+      resetFeedTelemetryRequestId(targetType);
+      clearFeedTelemetryStateForType(targetType);
       blockEndReachedUntilInteractionRef.current = true;
       hasUserInteractedRef.current = false;
       setIsLoadingMore(false);
@@ -1222,7 +1523,12 @@ function Home({ navigation, route }: Props) {
 
       return true;
     },
-    [scrollFeedToTop]
+    [
+      clearFeedTelemetryStateForType,
+      finalizeVisibleFeedTelemetry,
+      resetFeedTelemetryRequestId,
+      scrollFeedToTop,
+    ]
   );
 
   const reloadFeed = useCallback(
@@ -1442,11 +1748,14 @@ function Home({ navigation, route }: Props) {
         : null;
 
       if (isFirstPageLoad) {
-        pendingFirstPageContextRef.current = null;
         const activeFirstPage = activeFirstPageRequestRef.current;
         if (activeFirstPage && activeFirstPage.feedType === type) {
           return;
         }
+        pendingFirstPageContextRef.current = null;
+        finalizeVisibleFeedTelemetry(type, pageOneContext?.reason ?? 'refresh_reset');
+        resetFeedTelemetryRequestId(type);
+        clearFeedTelemetryStateForType(type);
         isPaginatingRef.current = false;
         setIsLoading(true);
         setIsLoadingMore(false);
@@ -1560,7 +1869,13 @@ function Home({ navigation, route }: Props) {
         activeFirstPageRequestRef.current = null;
       }
     },
-    [getFeedIdentitySequence, token]
+    [
+      clearFeedTelemetryStateForType,
+      finalizeVisibleFeedTelemetry,
+      getFeedIdentitySequence,
+      resetFeedTelemetryRequestId,
+      token,
+    ]
   );
 
   useObservedEffect(() => {
@@ -2138,7 +2453,7 @@ function Home({ navigation, route }: Props) {
       unwrapped = entry;
     }
 
-    if (!unwrapped || ('category' in unwrapped && 'commentNumber' in unwrapped)) {
+    if (!unwrapped) {
       return null;
     }
 
@@ -2146,9 +2461,24 @@ function Home({ navigation, route }: Props) {
       typeof unwrapped.image === 'string'
         ? { ...unwrapped, image: { url: unwrapped.image } }
         : unwrapped;
-    const postId = getFeedPostId(normalized);
+    const postId =
+      'category' in normalized && 'commentNumber' in normalized
+        ? String(normalized.postId ?? normalized.id ?? '')
+        : getFeedPostId(normalized);
     if (!postId) {
       return null;
+    }
+
+    if ('category' in normalized && 'commentNumber' in normalized) {
+      return {
+        postId,
+        postType: 'prayer',
+        contentType: normalized.category || 'prayer',
+        tags: normalizeTelemetryTags(getObjectField(normalized, 'tags')),
+        authorId: normalized.userData?._id,
+        isRepost: false,
+        privacyState: normalized.private ? 'private' : 'public',
+      };
     }
 
     const normalizedContentTypeField = getObjectField(normalized, 'contentType');
@@ -2181,6 +2511,15 @@ function Home({ navigation, route }: Props) {
       postType,
       contentType,
       tags: normalizeTelemetryTags(getObjectField(normalized, 'tags')),
+      authorId:
+        'userData' in normalized && normalized.userData?._id
+          ? String(normalized.userData._id)
+          : undefined,
+      isRepost: Boolean(getObjectField(normalized, 'repost')),
+      privacyState:
+        getObjectField(normalized, 'private') === true || getObjectField(normalized, 'isPrivate')
+          ? 'private'
+          : 'public',
     };
   }, []);
 
@@ -2211,19 +2550,45 @@ function Home({ navigation, route }: Props) {
         if (feedOptions.type !== FeedTypes.Pray) {
           return null;
         }
+        const prayerPostId = String(unwrapped.postId ?? unwrapped.id ?? '');
+        const prayerTelemetryPayload =
+          prayerPostId.length > 0
+            ? {
+                postId: prayerPostId,
+                postType: 'prayer',
+                contentType: unwrapped.category || 'prayer',
+                tags: normalizeTelemetryTags(getObjectField(unwrapped, 'tags')),
+                authorId: unwrapped.userData?._id,
+                isRepost: false,
+                privacyState: unwrapped.private ? 'private' : 'public',
+              }
+            : null;
         renderedItem = (
           <PrayerItem
             item={unwrapped}
             originFeedType={feedOptions.type}
             removePost={() => undefined}
-            onCommentsPress={() => {
-              const postId = unwrapped.postId ?? unwrapped.id;
-              if (!postId) {
+            onTelemetryEvent={(eventType, metadata) => {
+              if (!prayerTelemetryPayload) {
                 return;
               }
+              trackHomeTelemetryWithPayload(
+                prayerTelemetryPayload,
+                index,
+                eventType as CanonicalPostTelemetryEventName,
+                metadata
+              );
+            }}
+            onCommentsPress={() => {
+              if (!prayerTelemetryPayload) {
+                return;
+              }
+              trackHomeTelemetryWithPayload(prayerTelemetryPayload, index, 'post_open', {
+                origin: 'prayer_card',
+              });
               navigation.navigate('PrayerWall', {
                 screen: 'Single',
-                params: { postId },
+                params: { postId: prayerTelemetryPayload.postId },
               } as any);
             }}
             parentRefreshContent={() => {
@@ -2236,24 +2601,21 @@ function Home({ navigation, route }: Props) {
         const normalizedWithImage = normalizeFeedImage(unwrapped);
 
         if (isWatchPost(normalizedWithImage)) {
-          const watchBody = 'body' in normalizedWithImage ? normalizedWithImage.body : undefined;
-          const watchItem = {
-            ...normalizedWithImage,
-            type: 'watch',
-            mediaType: normalizedWithImage.mediaType ?? 'video',
-            mediaUrl:
-              normalizedWithImage.mediaUrl ||
-              (normalizedWithImage.playBackId
-                ? `https://stream.mux.com/${normalizedWithImage.playBackId}.m3u8`
-                : undefined),
-            content:
-              normalizedWithImage.content ||
-              watchBody ||
-              getFeedTitleText(normalizedWithImage.title) ||
-              '',
-            reactions: normalizedWithImage.reactions ?? [],
-          } as SocialPost & { type?: 'watch'; playBackId?: string };
+          const watchItem = buildWatchFeedItem(normalizedWithImage);
           const watchItemId = watchItem.postId ?? watchItem.id ?? watchItem._id;
+          const watchTelemetryPayload =
+            watchItemId !== undefined && watchItemId !== null
+              ? {
+                  postId: String(watchItemId),
+                  postType: 'watch',
+                  contentType: 'watch',
+                  tags: normalizeTelemetryTags(getObjectField(watchItem, 'tags')),
+                  authorId: watchItem.userData?._id,
+                  isRepost: Boolean(getObjectField(watchItem, 'repost')),
+                  privacyState:
+                    getObjectField(watchItem, 'private') === true ? 'private' : 'public',
+                }
+              : null;
           renderedItem = (
             <SocialItem
               itemData={watchItem}
@@ -2272,44 +2634,37 @@ function Home({ navigation, route }: Props) {
               }}
               fromSavedPosts={false}
               onTelemetryEvent={(eventType, metadata) => {
-                const postId = watchItem.postId ?? watchItem.id ?? watchItem._id;
-                if (!postId || !isTelemetryTrackedFeedType(feedOptions.type)) {
+                if (!watchTelemetryPayload) {
                   return;
                 }
-                trackFeedTelemetry({
-                  eventType,
-                  feedType: feedOptions.type,
-                  postId: String(postId),
-                  postType: 'watch',
-                  contentType: 'watch',
-                  tags: normalizeTelemetryTags(getObjectField(watchItem, 'tags')),
-                  position: index,
-                  source: 'home_feed',
-                  metadata,
-                });
+                trackHomeTelemetryWithPayload(
+                  watchTelemetryPayload,
+                  index,
+                  eventType as CanonicalPostTelemetryEventName,
+                  metadata
+                );
               }}
               onCommentsPress={() => {
                 preserveFeedPositionOnNextFocus();
-                const postId = watchItem.postId ?? watchItem.id ?? watchItem._id;
                 const { playBackId } = watchItem;
-                if (!postId) {
+                if (!watchTelemetryPayload) {
                   return;
                 }
                 if (playBackId && isHomeWatchPortalEligible(watchItem)) {
                   navigation.push('WatchPortal', {
-                    initialPostId: String(postId),
+                    initialPostId: watchTelemetryPayload.postId,
                     initialPlaybackId: playBackId,
                     initialWatchPost: {
                       ...watchItem,
                       playBackId,
-                      postId: String(postId),
+                      postId: watchTelemetryPayload.postId,
                     },
                   } as any);
                   return;
                 }
 
                 navigation.navigate('SingleRss', {
-                  postId: String(postId),
+                  postId: watchTelemetryPayload.postId,
                   postType: PostType.watch,
                 } as any);
               }}
@@ -2332,17 +2687,6 @@ function Home({ navigation, route }: Props) {
                   return;
                 }
                 preserveFeedPositionOnNextFocus();
-                if (postId && isTelemetryTrackedFeedType(feedOptions.type)) {
-                  trackFeedTelemetry({
-                    eventType: 'open_watch',
-                    feedType: feedOptions.type,
-                    postId: String(postId),
-                    postType: 'watch',
-                    contentType: 'watch',
-                    position: index,
-                    source: 'home_feed',
-                  });
-                }
                 navigation.push('WatchPortal', {
                   initialPostId: postId ? String(postId) : undefined,
                   initialPlaybackId: playBackId,
@@ -2359,18 +2703,21 @@ function Home({ navigation, route }: Props) {
             />
           );
         } else if (isSocialPost(normalizedWithImage) || isLikelySocialPost(normalizedWithImage)) {
-          const socialBody = 'body' in normalizedWithImage ? normalizedWithImage.body : undefined;
-          const socialItem = {
-            ...normalizedWithImage,
-            type: 'social',
-            content:
-              normalizedWithImage.content ||
-              socialBody ||
-              getFeedTitleText(normalizedWithImage.title) ||
-              '',
-            reactions: normalizedWithImage.reactions ?? [],
-          } as SocialPost & { type?: 'social' };
+          const socialItem = buildSocialFeedItem(normalizedWithImage);
           const socialItemId = socialItem.postId ?? socialItem.id ?? socialItem._id;
+          const socialTelemetryPayload =
+            socialItemId !== undefined && socialItemId !== null
+              ? {
+                  postId: String(socialItemId),
+                  postType: 'social',
+                  contentType: socialItem.type ?? 'social',
+                  tags: normalizeTelemetryTags(getObjectField(socialItem, 'tags')),
+                  authorId: socialItem.userData?._id,
+                  isRepost: Boolean(getObjectField(socialItem, 'repost')),
+                  privacyState:
+                    getObjectField(socialItem, 'private') === true ? 'private' : 'public',
+                }
+              : null;
           renderedItem = (
             <SocialItem
               itemData={socialItem}
@@ -2388,38 +2735,22 @@ function Home({ navigation, route }: Props) {
               }}
               fromSavedPosts={false}
               onTelemetryEvent={(eventType, metadata) => {
-                const postId = socialItem.postId ?? socialItem.id ?? socialItem._id;
-                if (!postId || !isTelemetryTrackedFeedType(feedOptions.type)) {
+                if (!socialTelemetryPayload) {
                   return;
                 }
-                trackFeedTelemetry({
-                  eventType,
-                  feedType: feedOptions.type,
-                  postId: String(postId),
-                  postType: 'social',
-                  contentType: socialItem.type ?? 'social',
-                  tags: normalizeTelemetryTags(getObjectField(socialItem, 'tags')),
-                  position: index,
-                  source: 'home_feed',
-                  metadata,
-                });
+                trackHomeTelemetryWithPayload(
+                  socialTelemetryPayload,
+                  index,
+                  eventType as CanonicalPostTelemetryEventName,
+                  metadata
+                );
               }}
               onCommentsPress={() => {
                 preserveFeedPositionOnNextFocus();
-                const postId = socialItem.postId ?? socialItem.id ?? socialItem._id;
-                if (postId) {
-                  if (isTelemetryTrackedFeedType(feedOptions.type)) {
-                    trackFeedTelemetry({
-                      eventType: 'open_post',
-                      feedType: feedOptions.type,
-                      postId: String(postId),
-                      postType: 'social',
-                      contentType: socialItem.type ?? 'social',
-                      position: index,
-                      source: 'home_feed',
-                    });
-                  }
-                  navigation.navigate('SinglePost', { postId } as any);
+                if (socialTelemetryPayload) {
+                  navigation.navigate('SinglePost', {
+                    postId: socialTelemetryPayload.postId,
+                  } as any);
                 }
               }}
               onOpenVideoPress={({
@@ -2434,17 +2765,6 @@ function Home({ navigation, route }: Props) {
                   return;
                 }
                 preserveFeedPositionOnNextFocus();
-                if (postId && isTelemetryTrackedFeedType(feedOptions.type)) {
-                  trackFeedTelemetry({
-                    eventType: 'open_watch',
-                    feedType: feedOptions.type,
-                    postId: String(postId),
-                    postType: 'social',
-                    contentType: socialItem.type ?? 'social',
-                    position: index,
-                    source: 'home_feed',
-                  });
-                }
                 navigation.push('WatchPortal', {
                   initialPostId: postId ? String(postId) : undefined,
                   initialPlaybackId: playBackId,
@@ -2461,14 +2781,7 @@ function Home({ navigation, route }: Props) {
             />
           );
         } else if (isRssPost(normalizedWithImage)) {
-          const rssItem: ArticleType = {
-            ...normalizedWithImage,
-            image:
-              typeof normalizedWithImage.image === 'string'
-                ? { url: normalizedWithImage.image }
-                : normalizedWithImage.image,
-            reactions: normalizedWithImage.reactions ?? [],
-          };
+          const rssItem = buildRssFeedItem(normalizedWithImage);
           let rssContentType = 'posts';
           const rssTypeField = getObjectField(rssItem, 'type');
           const rssContentTypeField = getObjectField(rssItem, 'contentType');
@@ -2477,56 +2790,39 @@ function Home({ navigation, route }: Props) {
           } else if (typeof rssContentTypeField === 'string') {
             rssContentType = rssContentTypeField;
           }
+          const rssTelemetryPayload =
+            rssItem.id !== undefined && rssItem.id !== null
+              ? {
+                  postId: String(rssItem.id),
+                  postType: 'rss',
+                  contentType: rssContentType,
+                  tags: normalizeTelemetryTags(getObjectField(rssItem, 'tags')),
+                  authorId: rssItem.userData?._id,
+                  isRepost: Boolean(getObjectField(rssItem, 'repost')),
+                  privacyState: getObjectField(rssItem, 'private') === true ? 'private' : 'public',
+                }
+              : null;
           renderedItem = (
             <ArticleItem
               item={rssItem}
               originFeedType={feedOptions.type}
               imageSizeType="contain"
               onTelemetryEvent={(eventType, metadata) => {
-                if (!rssItem.id || !isTelemetryTrackedFeedType(feedOptions.type)) {
+                if (!rssTelemetryPayload) {
                   return;
                 }
-                trackFeedTelemetry({
-                  eventType,
-                  feedType: feedOptions.type,
-                  postId: String(rssItem.id),
-                  postType: 'rss',
-                  contentType: rssContentType,
-                  tags: normalizeTelemetryTags(getObjectField(rssItem, 'tags')),
-                  position: index,
-                  source: 'home_feed',
-                  metadata,
-                });
+                trackHomeTelemetryWithPayload(
+                  rssTelemetryPayload,
+                  index,
+                  eventType as CanonicalPostTelemetryEventName,
+                  metadata
+                );
               }}
-              onPress={() => {
-                if (!rssItem.id || !isTelemetryTrackedFeedType(feedOptions.type)) {
-                  return;
-                }
-                trackFeedTelemetry({
-                  eventType: 'open_article',
-                  feedType: feedOptions.type,
-                  postId: String(rssItem.id),
-                  postType: 'rss',
-                  contentType: rssContentType,
-                  position: index,
-                  source: 'home_feed',
-                });
-              }}
+              onPress={() => undefined}
               onCommentsPress={() => {
                 preserveFeedPositionOnNextFocus();
-                if (rssItem.id) {
-                  if (isTelemetryTrackedFeedType(feedOptions.type)) {
-                    trackFeedTelemetry({
-                      eventType: 'open_comments',
-                      feedType: feedOptions.type,
-                      postId: String(rssItem.id),
-                      postType: 'rss',
-                      contentType: rssContentType,
-                      position: index,
-                      source: 'home_feed',
-                    });
-                  }
-                  navigation.navigate('SingleRss', { postId: rssItem.id } as any);
+                if (rssTelemetryPayload) {
+                  navigation.navigate('SingleRss', { postId: rssTelemetryPayload.postId } as any);
                 }
               }}
             />
@@ -2537,20 +2833,29 @@ function Home({ navigation, route }: Props) {
               item={normalizedWithImage}
               onPress={() => {
                 const postId = getFeedPostId(normalizedWithImage);
-                if (postId && isTelemetryTrackedFeedType(feedOptions.type)) {
-                  trackFeedTelemetry({
-                    eventType: 'open_post',
-                    feedType: feedOptions.type,
-                    postId,
-                    postType: normalizedWithImage.type ?? 'post',
-                    contentType:
-                      typeof getObjectField(normalizedWithImage, 'contentType') === 'string'
-                        ? (getObjectField(normalizedWithImage, 'contentType') as string)
-                        : normalizedWithImage.type,
-                    tags: normalizeTelemetryTags(getObjectField(normalizedWithImage, 'tags')),
-                    position: index,
-                    source: 'home_feed',
-                  });
+                if (postId) {
+                  trackHomeTelemetryWithPayload(
+                    {
+                      postId,
+                      postType: normalizedWithImage.type ?? 'post',
+                      contentType:
+                        typeof getObjectField(normalizedWithImage, 'contentType') === 'string'
+                          ? (getObjectField(normalizedWithImage, 'contentType') as string)
+                          : normalizedWithImage.type,
+                      tags: normalizeTelemetryTags(getObjectField(normalizedWithImage, 'tags')),
+                      authorId:
+                        'userData' in normalizedWithImage && normalizedWithImage.userData?._id
+                          ? String(normalizedWithImage.userData._id)
+                          : undefined,
+                      isRepost: Boolean(getObjectField(normalizedWithImage, 'repost')),
+                      privacyState:
+                        getObjectField(normalizedWithImage, 'private') === true
+                          ? 'private'
+                          : 'public',
+                    },
+                    index,
+                    'post_open'
+                  );
                 }
                 navigateToDetail(normalizedWithImage);
               }}
@@ -2610,6 +2915,7 @@ function Home({ navigation, route }: Props) {
       preserveFeedPositionOnNextFocus,
       selectedSuggestionIds,
       suggestedForYouUsers,
+      trackHomeTelemetryWithPayload,
       viewableSocialPostIds,
     ]
   );
@@ -2915,56 +3221,48 @@ function Home({ navigation, route }: Props) {
           return;
         }
 
-        const telemetryKey = `${telemetryFeedType}:${telemetryPayload.postId}`;
+        const requestId = getFeedTelemetryRequestId(telemetryFeedType);
+        const telemetryKey = `${telemetryFeedType}:${requestId}:${telemetryPayload.postId}`;
+        const rankPosition =
+          typeof tokenItem.index === 'number' && tokenItem.index >= 0 ? tokenItem.index : 0;
         if (tokenItem.isViewable) {
           if (!feedVisibleStartByKeyRef.current.has(telemetryKey)) {
-            feedVisibleStartByKeyRef.current.set(telemetryKey, Date.now());
+            feedVisibleStartByKeyRef.current.set(telemetryKey, {
+              feedType: telemetryFeedType,
+              payload: telemetryPayload,
+              rankPosition,
+              requestId,
+              startedAt: Date.now(),
+            });
           }
           if (!feedImpressionsByKeyRef.current.has(telemetryKey)) {
             feedImpressionsByKeyRef.current.add(telemetryKey);
-            trackFeedTelemetry({
-              eventType: 'impression',
-              feedType: telemetryFeedType,
-              postId: telemetryPayload.postId,
-              postType: telemetryPayload.postType,
-              contentType: telemetryPayload.contentType,
-              tags: telemetryPayload.tags,
-              position:
-                typeof tokenItem.index === 'number' && tokenItem.index >= 0
-                  ? tokenItem.index
-                  : undefined,
-              source: 'home_feed',
-            });
+            trackHomeTelemetryWithPayload(
+              telemetryPayload,
+              rankPosition,
+              'post_impression',
+              undefined,
+              { requestId },
+              telemetryFeedType
+            );
           }
           return;
         }
 
-        const startedAt = feedVisibleStartByKeyRef.current.get(telemetryKey);
-        if (!startedAt) {
+        if (!feedVisibleStartByKeyRef.current.has(telemetryKey)) {
           return;
         }
-        feedVisibleStartByKeyRef.current.delete(telemetryKey);
-        const dwellTimeMs = Date.now() - startedAt;
-        if (dwellTimeMs < 1200) {
-          return;
-        }
-        trackFeedTelemetry({
-          eventType: 'dwell',
-          feedType: telemetryFeedType,
-          postId: telemetryPayload.postId,
-          postType: telemetryPayload.postType,
-          contentType: telemetryPayload.contentType,
-          tags: telemetryPayload.tags,
-          durationMs: dwellTimeMs,
-          position:
-            typeof tokenItem.index === 'number' && tokenItem.index >= 0
-              ? tokenItem.index
-              : undefined,
-          source: 'home_feed',
-        });
+        finalizeFeedTelemetryRecord(telemetryKey, 'view_end');
       });
     },
-    [feedOptions.type, getTelemetryFromRenderEntry, maybeStartFeedCardIntro]
+    [
+      feedOptions.type,
+      finalizeFeedTelemetryRecord,
+      getFeedTelemetryRequestId,
+      getTelemetryFromRenderEntry,
+      maybeStartFeedCardIntro,
+      trackHomeTelemetryWithPayload,
+    ]
   );
 
   const feedViewabilityConfig = useRef({
@@ -2973,41 +3271,15 @@ function Home({ navigation, route }: Props) {
   }).current;
 
   useObservedEffect(() => {
-    const visibleStartByKey = feedVisibleStartByKeyRef.current;
-    const impressionsByKey = feedImpressionsByKeyRef.current;
-
     return () => {
       if (!isTelemetryTrackedFeedType(feedOptions.type)) {
         return;
       }
-      const telemetryFeedType = feedOptions.type;
-
-      visibleStartByKey.forEach((startedAt, telemetryKey) => {
-        if (!telemetryKey.startsWith(`${telemetryFeedType}:`)) {
-          return;
-        }
-
-        const postId = telemetryKey.split(':')[1];
-        const dwellTimeMs = Date.now() - startedAt;
-        if (!postId || dwellTimeMs < 1200) {
-          return;
-        }
-
-        trackFeedTelemetry({
-          eventType: 'dwell',
-          feedType: telemetryFeedType,
-          postId,
-          durationMs: dwellTimeMs,
-          source: 'home_feed',
-          metadata: { reason: 'feed_cleanup' },
-        });
-      });
-
-      visibleStartByKey.clear();
-      impressionsByKey.clear();
+      finalizeVisibleFeedTelemetry(feedOptions.type, 'feed_cleanup');
+      clearFeedTelemetryStateForType(feedOptions.type);
       flushFeedTelemetry(token || undefined).catch(() => undefined);
     };
-  }, [feedOptions.type, token]);
+  }, [clearFeedTelemetryStateForType, feedOptions.type, finalizeVisibleFeedTelemetry, token]);
 
   useObservedEffect(() => {
     if (!shouldRunHomeFeedIntro) {

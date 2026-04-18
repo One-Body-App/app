@@ -54,6 +54,7 @@ type PrayerItemProps = {
   item: PrayerPost;
   style?: StyleProp<ViewStyle>;
   onCommentsPress?: () => void;
+  onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
 
   parentRefreshContent?: Function;
   fromSavedPosts?: boolean;
@@ -70,6 +71,7 @@ function PrayerItem({
   parentRefreshContent,
   fromSavedPosts,
   onCommentsPress,
+  onTelemetryEvent,
   limitContentLines = false,
   originFeedType,
 }: PrayerItemProps) {
@@ -340,6 +342,7 @@ function PrayerItem({
         }}
         parentRefreshContent={parentRefreshContent}
         created={item?.created}
+        onTelemetryEvent={onTelemetryEvent}
         userData={
           item.private
             ? {

@@ -1354,7 +1354,7 @@ export function ConnectPortalChrome({
       ) : !overlay ? (
         <View
           pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { backgroundColor: palette.screenBackground }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: CONNECT_BRAND.backgroundDark }]}
         />
       ) : null}
 

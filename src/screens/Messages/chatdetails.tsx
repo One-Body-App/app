@@ -28,7 +28,6 @@ import { MessagesStackParamsList } from '@/src/navigator/types';
 import {
   APP_HEADER_CONTENT_GAP,
   APP_HEADER_ROW_HEIGHT,
-  APP_HEADER_ROW_OFFSET,
   APP_HEADER_TITLE_LINE_HEIGHT,
 } from '@/src/styles/headerLayout';
 import {
@@ -40,6 +39,7 @@ import {
   onChatMessageStatus,
 } from '@/src/services/chat/socketClient';
 import {
+  decryptDirectMessageEnvelope,
   loadAndDecryptConversation,
   loadGroupConversation,
   ensureChatReady,
@@ -819,7 +819,35 @@ function ChatDetailScreen({ navigation, route }: Props) {
                 return;
               }
 
-              // Fallback: show encrypted marker until next refresh if decrypt context is missing.
+              let nextText = '[Encrypted message]';
+              let nextMediaType: LocalMessage['mediaType'] =
+                payload.messageType === 'image' ||
+                payload.messageType === 'gif' ||
+                payload.messageType === 'images'
+                  ? payload.messageType
+                  : undefined;
+              let nextMediaUrl: string | undefined;
+              let nextMediaUrls: string[] | undefined;
+
+              try {
+                const plaintext = await decryptDirectMessageEnvelope({
+                  message: payload,
+                  peerUserId,
+                  token: token || undefined,
+                });
+                const parsed = parseChatMessagePayload(plaintext);
+                nextText = parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text;
+                nextMediaType = parsed.type !== 'text' ? parsed.type : undefined;
+                nextMediaUrl = parsed.mediaUrl;
+                nextMediaUrls = parsed.mediaUrls;
+              } catch {
+                // Keep the existing encrypted placeholder fallback when decrypt context fails.
+              }
+
+              if (!isMounted) {
+                return;
+              }
+
               setMessages((prev) =>
                 sortMessages([
                   ...prev,
@@ -827,15 +855,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
                     id: String(payload._id),
                     senderId,
                     receiverId,
-                    text: normalizeMessageText('[Encrypted message]'),
+                    text: nextText,
                     status: payload.status || 'sent',
                     createdAt: payload.createdAt || new Date().toISOString(),
-                    mediaType:
-                      payload.messageType === 'image' ||
-                      payload.messageType === 'gif' ||
-                      payload.messageType === 'images'
-                        ? payload.messageType
-                        : undefined,
+                    mediaType: nextMediaType,
+                    mediaUrl: nextMediaUrl,
+                    mediaUrls: nextMediaUrls,
                     reactions: normalizeChatReactions(payload.reactions),
                   },
                 ])
@@ -1503,7 +1528,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
   );
 
   const renderMediaMessage = useCallback(
-    (item: LocalMessage, isMine: boolean) => {
+    (
+      item: LocalMessage,
+      isMine: boolean,
+      isHighlighted: boolean,
+      captionBubbleStyle: { backgroundColor: string }
+    ) => {
       if (!item.mediaType) {
         return null;
       }
@@ -1554,11 +1584,20 @@ function ChatDetailScreen({ navigation, route }: Props) {
         <View style={styles.mediaMessageContent}>
           {mediaNode}
           {hasCaption ? (
-            <Text
-              style={[styles.mediaCaptionText, isMine ? styles.mineText : { color: colors.text }]}
+            <View
+              style={[
+                styles.mediaCaptionBubble,
+                isMine ? styles.mineBubble : styles.theirsBubble,
+                captionBubbleStyle,
+                isHighlighted ? styles.highlightedBubble : null,
+              ]}
             >
-              {normalizeMessageText(item.text)}
-            </Text>
+              <Text
+                style={[styles.mediaCaptionText, isMine ? styles.mineText : { color: colors.text }]}
+              >
+                {normalizeMessageText(item.text)}
+              </Text>
+            </View>
           ) : null}
         </View>
       );
@@ -1644,6 +1683,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
               : { backgroundColor: 'transparent', padding: 0 };
           }
 
+          const isImageOnlyMessage = isMediaMessage;
           const bubbleNode = (
             <View
               ref={(node) => registerMessageAnchor(item.id, node)}
@@ -1660,14 +1700,16 @@ function ChatDetailScreen({ navigation, route }: Props) {
                 disabled={item.id.startsWith('local-')}
                 onPress={singleMediaUrl ? () => openFullscreenMedia([singleMediaUrl]) : undefined}
                 style={[
-                  styles.messageBubble,
-                  isMine ? styles.mineBubble : styles.theirsBubble,
-                  bubbleColor,
-                  isHighlighted ? styles.highlightedBubble : null,
+                  isImageOnlyMessage ? styles.mediaMessagePressable : styles.messageBubble,
+                  !isImageOnlyMessage ? (isMine ? styles.mineBubble : styles.theirsBubble) : null,
+                  !isImageOnlyMessage ? bubbleColor : null,
+                  !isImageOnlyMessage && isHighlighted ? styles.highlightedBubble : null,
                 ]}
               >
                 {isMediaMessage ? (
-                  renderMediaMessage(item, isMine)
+                  renderMediaMessage(item, isMine, isHighlighted, {
+                    backgroundColor: isMine ? '#126b87' : 'rgba(18, 210, 217, 0.15)',
+                  })
                 ) : (
                   <Text
                     style={[styles.messageText, isMine ? styles.mineText : { color: colors.text }]}
@@ -1929,7 +1971,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     minHeight: APP_HEADER_ROW_HEIGHT,
-    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+    paddingBottom: 4,
     borderBottomWidth: 1,
   },
   iconButton: {
@@ -1961,6 +2003,7 @@ const styles = StyleSheet.create({
   },
   headerTitleBlock: {
     minWidth: 0,
+    paddingBottom: 2,
   },
   headerNameRow: {
     flexDirection: 'row',
@@ -1972,11 +2015,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     flexShrink: 1,
-    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
+    lineHeight: 22,
   },
   headerUsername: {
-    marginTop: 1,
-    fontSize: 12,
+    marginTop: 2,
+    fontSize: 15,
+    lineHeight: 18,
     color: '#68828a',
   },
   contentWrap: {
@@ -2198,6 +2242,9 @@ const styles = StyleSheet.create({
   mediaMessageContent: {
     gap: 8,
   },
+  mediaMessagePressable: {
+    alignSelf: 'flex-start',
+  },
   mediaGrid: {
     width: 220,
     flexDirection: 'row',
@@ -2222,6 +2269,12 @@ const styles = StyleSheet.create({
     width: 220,
     aspectRatio: 1.5,
     borderRadius: 16,
+  },
+  mediaCaptionBubble: {
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
   },
   mediaCaptionText: {
     fontSize: 15,

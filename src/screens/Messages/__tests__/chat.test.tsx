@@ -233,7 +233,6 @@ describe('ChatListScreen', () => {
     });
     await flushEffects();
 
-    expect(renderer!.root.findByProps({ testID: 'mock-glass-tab-bar' })).toBeTruthy();
     expect(renderer!.root.findAllByType(Text).some((node) => node.props.children === 'Inbox')).toBe(
       true
     );
@@ -255,7 +254,7 @@ describe('ChatListScreen', () => {
     expect(currentTitles()).not.toContain('Archived Friend');
 
     act(() => {
-      renderer!.root.findByProps({ testID: 'mock-glass-tab-1' }).props.onPress();
+      renderer!.root.findByProps({ testID: 'chat-filter-groups' }).props.onPress();
     });
 
     expect(currentTitles()).not.toContain('Inbox Friend');
@@ -263,7 +262,7 @@ describe('ChatListScreen', () => {
     expect(currentTitles()).not.toContain('Archived Friend');
 
     act(() => {
-      renderer!.root.findByProps({ testID: 'mock-glass-tab-2' }).props.onPress();
+      renderer!.root.findByProps({ testID: 'chat-filter-archived' }).props.onPress();
     });
 
     expect(currentTitles()).not.toContain('Inbox Friend');
@@ -271,13 +270,12 @@ describe('ChatListScreen', () => {
     expect(currentTitles()).toContain('Archived Friend');
   });
 
-  it('keeps the header action functional and navigates to Settings', async () => {
-    const navigateToSettings = jest.fn();
+  it('hides the search bar by default and reveals it from the header action', async () => {
     const navigation = {
       navigate: jest.fn(),
       getParent: jest.fn(() => ({
         getParent: jest.fn(() => ({
-          navigate: navigateToSettings,
+          navigate: jest.fn(),
         })),
       })),
     } as any;
@@ -288,10 +286,13 @@ describe('ChatListScreen', () => {
     });
     await flushEffects();
 
+    expect(renderer!.root.findAllByProps({ testID: 'chat-search-wrap' })).toHaveLength(0);
+
     act(() => {
-      renderer!.root.findByProps({ testID: 'chat-settings-button' }).props.onPress();
+      renderer!.root.findByProps({ testID: 'chat-search-button' }).props.onPress();
     });
 
-    expect(navigateToSettings).toHaveBeenCalledWith('Settings');
+    expect(renderer!.root.findByProps({ testID: 'chat-search-wrap' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ testID: 'chat-search-input' })).toBeTruthy();
   });
 });

@@ -21,6 +21,13 @@ import {
   getCommentId,
   toSerializableCommentSnapshot,
 } from '@/components/comments/commentListUtils';
+import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import {
+  createPostTelemetryRequestId,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+} from '@/services/postTelemetry';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
 function SinglePrayer({ navigation, route }: Props) {
@@ -33,6 +40,7 @@ function SinglePrayer({ navigation, route }: Props) {
   const returnTo = route.params?.returnTo;
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const requestIdRef = useState(() => createPostTelemetryRequestId())[0];
   const resetToPrayerWallIndex = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
@@ -153,9 +161,44 @@ function SinglePrayer({ navigation, route }: Props) {
     [navigation, postId, returnTo]
   );
 
+  const trackPrayerTelemetry = useCallback(
+    (
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>
+    ) => {
+      if (!postId) {
+        return;
+      }
+
+      trackPostTelemetry({
+        postId,
+        postType: 'prayer',
+        contentType: prayer?.category || 'prayer',
+        authorId: prayer?.userData?._id,
+        userId: user?._id ? String(user._id) : undefined,
+        surface: 'prayer_portal',
+        surfaceTab: 'detail',
+        entrypoint: 'prayer_post_detail',
+        requestId: requestIdRef,
+        isOwnPost:
+          Boolean(user?._id) && Boolean(prayer?.userData?._id)
+            ? String(user._id) === String(prayer.userData._id)
+            : undefined,
+        isRepost: false,
+        privacyState: prayer?.private ? 'private' : 'public',
+        ...overrides,
+        eventName,
+        metadata,
+      });
+    },
+    [postId, prayer, requestIdRef, user?._id]
+  );
+
   useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
     getPostPrayer();
-  }, [getPostPrayer]);
+  }, [getPostPrayer, token]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -187,6 +230,7 @@ function SinglePrayer({ navigation, route }: Props) {
               threadRootCommentId={route.params?.threadRootCommentId}
               threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
               onOpenCommentThread={openCommentThread}
+              onTelemetryEvent={trackPrayerTelemetry}
               isPrivate={Boolean(prayer.private)}
               hideComposer={prayer.answered}
               headerContainerStyle={{
@@ -200,6 +244,7 @@ function SinglePrayer({ navigation, route }: Props) {
                   editPost={editPost}
                   removePost={prayer.answered ? undefined : removePost}
                   item={prayer}
+                  onTelemetryEvent={trackPrayerTelemetry}
                   style={{
                     marginHorizontal: 0,
                     marginBottom: 0,

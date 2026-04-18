@@ -46,18 +46,7 @@ jest.mock('@/src/services/moderation/clientModeration', () => ({
     flagged: false,
     model: 'omni-moderation-latest',
     results: [],
-  })),
-  moderateClientVideoFrames: jest.fn(async () => ({
-    action: 'allow',
-    source: 'nsfwjs',
-    scores: {
-      neutral: 1,
-      drawing: 0,
-      sexy: 0,
-      porn: 0,
-      hentai: 0,
-    },
-    model: 'nsfwjs',
+    matchedCategories: [],
   })),
 }));
 
@@ -773,9 +762,11 @@ describe('videoUploadQueue', () => {
     ]);
   });
 
-  it('bypasses device video moderation and proceeds directly to export', async () => {
+  it('moderates sample frames with the backend before export', async () => {
     const storage = createMemoryStorage();
     const log = jest.fn();
+    const videoTrimModule = jest.requireMock('react-native-video-trim');
+    videoTrimModule.extractEditedFrames.mockResolvedValue(['/tmp/frame-1.jpg', '/tmp/frame-2.jpg']);
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
@@ -790,22 +781,14 @@ describe('videoUploadQueue', () => {
     await queue.start();
     await queue.waitForIdle();
 
-    const videoTrimModule = jest.requireMock('react-native-video-trim');
-    expect(videoTrimModule.extractEditedFrames).not.toHaveBeenCalled();
+    expect(videoTrimModule.extractEditedFrames).toHaveBeenCalledTimes(1);
     expect(videoTrimModule.exportEditedVideo).toHaveBeenCalledTimes(1);
-    expect(log).toHaveBeenCalledWith(
-      'queue-stage',
-      expect.objectContaining({
-        processingStage: 'moderation_bypassed',
-        moderationError: 'device-video-moderation-bypassed',
-      })
-    );
     expect(queue.getItems()).toEqual([
       expect.objectContaining({
         status: 'complete',
-        moderationDecision: 'unsure' as const,
-        moderationScores: null,
-        moderationError: 'device-video-moderation-bypassed',
+        moderationDecision: 'safe' as const,
+        moderationScores: {},
+        moderationError: undefined,
       }),
     ]);
   });

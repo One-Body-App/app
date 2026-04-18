@@ -811,7 +811,7 @@ export default function VideoPost({ navigation, route }: Props) {
           },
         });
 
-        if (fallbackResponse.finalAction === 'flag_for_admin_review') {
+        if (fallbackResponse.finalAction !== 'allow') {
           toast.show(
             'This Watch caption was flagged for review and cannot be published right now.',
             { type: 'danger' }

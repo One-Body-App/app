@@ -194,7 +194,13 @@ function OnboardingInterests({ navigation, route }: Props) {
                               borderColor: Colors.primary.brand,
                             },
                           ]
-                        : iterestListItem
+                        : [
+                            iterestListItem,
+                            {
+                              backgroundColor: Colors.neutral[800],
+                              borderColor: Colors.neutral[700],
+                            },
+                          ]
                     }
                   >
                     <StyledText

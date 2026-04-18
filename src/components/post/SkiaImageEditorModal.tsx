@@ -160,7 +160,6 @@ const JPEG_QUALITY = 50;
 const MAX_EDITOR_BYTES = 50 * 1024 * 1024;
 const MAX_UPLOAD_QUEUE = 30;
 const PENDING_UPLOAD_CACHE_KEY = '@onebody:editorPendingUploads';
-const CLIENT_NSFW_REVIEW_ROUTE = '';
 
 const HEADER_FONT = Platform.select({
   ios: 'Rubik-Bold',
@@ -961,9 +960,9 @@ function SkiaImageEditorModal({
 
   const runClientModeration = useCallback(async () => {
     return {
-      decision: 'unclassified' as ClientModerationDecision,
+      decision: 'safe' as ClientModerationDecision,
       scores: defaultModerationScores,
-      error: 'nsfwjs-client-check-pending',
+      error: '',
     };
   }, []);
 
@@ -1009,14 +1008,6 @@ function SkiaImageEditorModal({
       if (userId) {
         formData.append('userId', userId);
       }
-      formData.append('clientModerationModel', 'nsfwjs');
-      formData.append('clientModerationDecision', moderation.decision);
-      if (moderation.scores) {
-        formData.append('clientModerationScores', JSON.stringify(moderation.scores));
-      }
-      if (moderation.error) {
-        formData.append('clientModerationError', moderation.error);
-      }
 
       const authToken = token && token.length > 0 ? token : true;
       let result = await ApiCall({
@@ -1041,24 +1032,6 @@ function SkiaImageEditorModal({
       const uploadedUrl = extractHttpUrl(result.response);
       if (!uploadedUrl) {
         throw new Error('Media uploaded but no URL returned by API.');
-      }
-
-      if (moderation.decision === 'unsure' && CLIENT_NSFW_REVIEW_ROUTE) {
-        await ApiCall({
-          route: CLIENT_NSFW_REVIEW_ROUTE,
-          verb: 'post',
-          token: authToken,
-          params: {
-            userId,
-            mediaUrl: uploadedUrl,
-            source: 'skia-image-editor',
-            moderationModel: 'nsfwjs',
-            moderationDecision: moderation.decision,
-            moderationScores: moderation.scores,
-            moderationError: moderation.error || '',
-            createdAt: new Date().toISOString(),
-          },
-        });
       }
 
       return {

@@ -154,7 +154,7 @@ function ArticleItem({
     >
       <TouchableOpacity
         onPress={() => {
-          onTelemetryEvent?.('open_article', {
+          onTelemetryEvent?.('post_open', {
             postType: 'rss',
           });
           if (itemData?.link) OpenURLButton(itemData?.link);

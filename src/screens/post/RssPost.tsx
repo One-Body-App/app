@@ -1,5 +1,5 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
@@ -27,6 +27,13 @@ import {
   toSerializableCommentSnapshot,
 } from '@/components/comments/commentListUtils';
 import CreatorBlogReader from '@/src/screens/blogs/CreatorBlogReader';
+import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import {
+  createPostTelemetryRequestId,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+} from '@/services/postTelemetry';
 
 type Props = StackScreenProps<MainStackParamList, 'SingleRss'>;
 function RssPost({ navigation, route }: Props) {
@@ -36,8 +43,10 @@ function RssPost({ navigation, route }: Props) {
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const { colors, dark } = useTheme();
   const backNavigationInFlightRef = useRef(false);
+  const requestIdRef = useRef(createPostTelemetryRequestId());
   const resetToHomeFeed = useCallback(() => {
     navigation.reset({
       index: 0,
@@ -126,6 +135,10 @@ function RssPost({ navigation, route }: Props) {
   //   }
   // }, [post]);
 
+  useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
+  }, [token]);
+
   useMountEffect(() => {
     if (route.params?.postId) {
       getRssPost();
@@ -149,6 +162,46 @@ function RssPost({ navigation, route }: Props) {
       });
     },
     [navigation, route.params?.postId, route.params?.postType]
+  );
+
+  const trackSingleRssTelemetry = useCallback(
+    (
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>
+    ) => {
+      const postId = route.params?.postId;
+      if (!postId) {
+        return;
+      }
+
+      const resolvedPostType = route.params?.postType === 'watch' ? 'watch' : 'rss';
+      trackPostTelemetry({
+        postId,
+        postType: resolvedPostType,
+        contentType: route.params?.postType === 'watch' ? 'watch' : (post?.type ?? 'posts'),
+        tags: Array.isArray((post as { tags?: unknown } | undefined)?.tags)
+          ? ((post as { tags?: string[] }).tags ?? [])
+          : [],
+        authorId: post?.userData?._id,
+        userId: currentUser?._id ? String(currentUser._id) : undefined,
+        surface: resolvedPostType === 'watch' ? 'watch' : 'social_feed',
+        surfaceTab: 'detail',
+        entrypoint: resolvedPostType === 'watch' ? 'watch_detail' : 'single_rss',
+        requestId: requestIdRef.current,
+        isOwnPost:
+          Boolean(currentUser?._id) && Boolean(post?.userData?._id)
+            ? String(currentUser._id) === String(post.userData._id)
+            : undefined,
+        isRepost: Boolean((post as { repost?: unknown } | undefined)?.repost),
+        privacyState:
+          (post as { private?: boolean } | undefined)?.private === true ? 'private' : 'public',
+        ...overrides,
+        eventName,
+        metadata,
+      });
+    },
+    [currentUser?._id, post, route.params?.postId, route.params?.postType]
   );
 
   let contentNode = (
@@ -177,12 +230,14 @@ function RssPost({ navigation, route }: Props) {
           viewHeight={200}
           width={50}
           fromSavedPosts={false}
+          onTelemetryEvent={trackSingleRssTelemetry}
           onShowDismissCard={undefined}
         />
       ) : (
         <ArticleItem
           item={post}
           imageSizeType="contain"
+          onTelemetryEvent={trackSingleRssTelemetry}
           blogPostStyle={{
             marginHorizontal: 0,
             marginBottom: 0,
@@ -213,6 +268,7 @@ function RssPost({ navigation, route }: Props) {
         onOpenCommentThread={openCommentThread}
         enablePagination
         onPostRefresh={getRssPost}
+        onTelemetryEvent={trackSingleRssTelemetry}
         scrollToEndOnPublish
         headerContainerStyle={{
           paddingHorizontal: 0,

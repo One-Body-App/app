@@ -93,6 +93,7 @@ import {
   isExplicitLogoutActive,
   isMfaEnrollmentScreenActive,
   isPublicAuthRoute,
+  shouldImmediatelyBeginMandatoryMfaOnboarding,
   shouldBeginMandatoryMfaOnboarding,
 } from '@/src/utils/authFlow';
 import getConfirmLoginVerificationDecision from '@/src/utils/confirmLoginVerification';
@@ -154,6 +155,7 @@ function AppContent() {
   const hasFetchedProfileRef = useRef(false);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
   const mfaOnboardingInFlightRef = useRef(false);
+  const previousProfileCompletedRef = useRef(false);
   const handledLogoutCompletedAtRef = useRef<number | undefined>(undefined);
   const scheme = useColorScheme();
   const handleConfirmBackPress = useCallback(() => {
@@ -455,6 +457,7 @@ function AppContent() {
       hasFetchedProfileRef.current = false;
       mfaOnboardingRequestedUserRef.current = null;
       mfaOnboardingInFlightRef.current = false;
+      previousProfileCompletedRef.current = false;
       return;
     }
 
@@ -499,6 +502,7 @@ function AppContent() {
     hasFetchedProfileRef.current = false;
     mfaOnboardingRequestedUserRef.current = null;
     mfaOnboardingInFlightRef.current = false;
+    previousProfileCompletedRef.current = false;
     ignoreAuthLinksRef.current = false;
     handledConfirmLoginVerificationTokenRef.current = null;
 
@@ -511,6 +515,49 @@ function AppContent() {
       })
     );
   }, [logoutCompletedAt, logoutDestination, navigationReady, navigationRef]);
+
+  useLayoutEffect(() => {
+    const wasProfileCompleted = previousProfileCompletedRef.current;
+    const isProfileCompleted = getProfileData?.isProfileCompleted === true;
+    previousProfileCompletedRef.current = isProfileCompleted;
+
+    if (!navigationReady || !navigationRef.isReady()) {
+      return;
+    }
+
+    const currentRoute = navigationRef.getCurrentRoute();
+    const currentRouteName = currentRoute?.name;
+    const currentRouteParams = (currentRoute?.params ?? {}) as any;
+    const shouldImmediatelyBeginMfaOnboarding = shouldImmediatelyBeginMandatoryMfaOnboarding({
+      navigationReady,
+      userToken: token,
+      isProfileLoading: isLoading,
+      bypassMandatoryMfaOnboarding,
+      currentRouteName,
+      currentRouteParams,
+      getProfileData,
+      logoutPending,
+      logoutCompletedAt,
+      previousProfileCompleted: wasProfileCompleted,
+    });
+
+    if (!shouldImmediatelyBeginMfaOnboarding || explicitLogoutActive) {
+      return;
+    }
+
+    beginMandatoryMfaGate(getProfileData).catch(() => undefined);
+  }, [
+    navigationReady,
+    navigationRef,
+    token,
+    isLoading,
+    bypassMandatoryMfaOnboarding,
+    getProfileData,
+    logoutPending,
+    logoutCompletedAt,
+    explicitLogoutActive,
+    beginMandatoryMfaGate,
+  ]);
 
   useLayoutEffect(() => {
     if (!navigationReady) {
@@ -538,6 +585,17 @@ function AppContent() {
       currentRouteParams,
       getProfileData: profileData,
     });
+    const shouldPauseForMandatoryMfaOnboarding = shouldBeginMandatoryMfaOnboarding({
+      navigationReady,
+      userToken: token,
+      isProfileLoading,
+      bypassMandatoryMfaOnboarding,
+      currentRouteName,
+      currentRouteParams,
+      getProfileData: profileData,
+      logoutPending,
+      logoutCompletedAt,
+    });
 
     if (__DEV__) {
       console.log('[AppContent Navigation] Effect triggered:', {
@@ -557,6 +615,15 @@ function AppContent() {
     if (explicitLogoutActive) {
       if (__DEV__) {
         console.log('[AppContent Navigation] Explicit logout active, skipping auth navigation');
+      }
+      return;
+    }
+
+    if (shouldPauseForMandatoryMfaOnboarding) {
+      if (__DEV__) {
+        console.log(
+          '[AppContent Navigation] Holding navigation for immediate mandatory MFA onboarding'
+        );
       }
       return;
     }
@@ -705,11 +772,13 @@ function AppContent() {
     token,
     getProfileData,
     isLoading,
+    bypassMandatoryMfaOnboarding,
     getProfileError,
     dispatch,
     beginMandatoryMfaGate,
     explicitLogoutActive,
     logoutCompletedAt,
+    logoutPending,
   ]);
 
   useLayoutEffect(() => {

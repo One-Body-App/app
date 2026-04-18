@@ -14,11 +14,11 @@ import {
 } from '../actions/UserAction';
 import { getProfile } from '../actions/AuthActions';
 
-function* UserGetRequest(params: any): any {
+export function* UserGetRequest(params: any): any {
   try {
     const res = yield ApiCall({
       token: params.data.token,
-      route: `user/my-profile?pullSavedData=${params.pullSavedData ?? false}`,
+      route: `user/my-profile?pullSavedData=${params.data.pullSavedData ?? false}`,
       verb: 'get',
     });
 

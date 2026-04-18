@@ -19,7 +19,7 @@ import {
   ChatTransportError,
 } from './socketClient';
 import { isValidMongoObjectId } from './conversationTarget';
-import { ChatConversationTargetPayload, ReactChatMessagePayload } from './types';
+import { ChatConversationTargetPayload, ChatEnvelope, ReactChatMessagePayload } from './types';
 
 export const ensureChatReady = async (token?: string) => {
   return ensureChatKeypair({ token });
@@ -132,6 +132,24 @@ export const loadAndDecryptConversation = async (args: {
   );
 
   return decryptedMessages;
+};
+
+export const decryptDirectMessageEnvelope = async (args: {
+  message: ChatEnvelope;
+  peerUserId: string;
+  token?: string;
+}) => {
+  const myKeys = await getMyChatKeypair();
+  const peerKey = await getPeerPublicKey(args.peerUserId, args.token);
+
+  return decryptE2EEMessage({
+    encryptedPayload: args.message.encryptedPayload,
+    nonce: args.message.nonce,
+    authTag: args.message.authTag,
+    aad: args.message.aad,
+    myPrivateKeyBase64: myKeys.privateKey,
+    peerPublicKeyBase64: peerKey.publicKey,
+  });
 };
 
 export const loadGroupConversation = async (args: {

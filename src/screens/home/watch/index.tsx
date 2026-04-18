@@ -25,11 +25,14 @@ import { FeedTypes } from '@/screens/home';
 
 import VideoItem from './VideoItem';
 import { WatchPost } from '@/utils/types';
+import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
 import {
-  flushFeedTelemetry,
-  setFeedTelemetryAuthToken,
-  trackFeedTelemetry,
-} from '@/services/feedTelemetry';
+  createPostTelemetryRequestId,
+  maybeTrackQualifiedPostView,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+} from '@/services/postTelemetry';
 import { spacing } from '@/src/styles/spacing';
 import {
   BRAND_VIDEO_BACKGROUND,
@@ -60,9 +63,14 @@ function Watch({ navigation, route }: any) {
   const scrollViewRef = useRef<ScrollView>(null);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const { width: screenWidth } = useWindowDimensions();
-  const activeWatchStartMsRef = useRef<number | null>(null);
-  const activeWatchTelemetryKeyRef = useRef<string | null>(null);
+  const activeWatchTelemetryRef = useRef<{
+    postId: string;
+    postIndex: number;
+    requestId: string;
+    startedAt: number;
+  } | null>(null);
   const seenWatchImpressionsRef = useRef<Set<string>>(new Set());
+  const telemetryRequestIdRef = useRef(createPostTelemetryRequestId());
   const hasAppliedInitialSelectionRef = useRef(false);
   const entryOpacity = useRef(new Animated.Value(0)).current;
   const entryScale = useRef(new Animated.Value(0.985)).current;
@@ -83,61 +91,150 @@ function Watch({ navigation, route }: any) {
     return candidate ? String(candidate) : null;
   }, []);
 
-  const trackWatchImpression = useCallback(
-    (post: WatchPost | null, postIndex: number) => {
+  const normalizeTelemetryTags = useCallback((value: unknown): string[] => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item;
+        }
+        if (item && typeof item === 'object') {
+          const candidate = item as { name?: string; _id?: string | number; id?: string | number };
+          return (
+            candidate.name ??
+            (candidate._id !== undefined ? String(candidate._id) : undefined) ??
+            (candidate.id !== undefined ? String(candidate.id) : undefined)
+          );
+        }
+        return undefined;
+      })
+      .filter((item): item is string => Boolean(item))
+      .slice(0, 32);
+  }, []);
+
+  const buildWatchTelemetryContext = useCallback(
+    (post: WatchPost | null | undefined, postIndex: number) => {
       const postId = getWatchPostId(post);
       if (!postId) {
+        return null;
+      }
+
+      return {
+        postId,
+        postType: 'watch',
+        contentType: 'watch',
+        authorId: post?.userData?._id,
+        tags: normalizeTelemetryTags((post as { tags?: unknown } | undefined)?.tags),
+        userId: currentUser?._id ? String(currentUser._id) : undefined,
+        surface: 'watch' as const,
+        surfaceTab: 'watch',
+        entrypoint: initialPlaybackId || initialPostId ? 'watch_feed_deeplink' : 'watch_feed',
+        requestId: telemetryRequestIdRef.current,
+        rankPosition: postIndex,
+        isOwnPost:
+          Boolean(currentUser?._id) && Boolean(post?.userData?._id)
+            ? String(post?.userData?._id) === String(currentUser?._id)
+            : undefined,
+        isRepost: Boolean((post as { repost?: unknown } | undefined)?.repost),
+        privacyState: (post as { private?: boolean } | undefined)?.private ? 'private' : 'public',
+      };
+    },
+    [currentUser?._id, getWatchPostId, initialPlaybackId, initialPostId, normalizeTelemetryTags]
+  );
+
+  const trackWatchTelemetryEvent = useCallback(
+    (
+      post: WatchPost | null | undefined,
+      postIndex: number,
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>
+    ) => {
+      const context = buildWatchTelemetryContext(post, postIndex);
+      if (!context) {
         return;
       }
-      const telemetryKey = `watch:${postId}`;
+
+      trackPostTelemetry({
+        ...context,
+        ...overrides,
+        eventName,
+        metadata: {
+          source: 'watch_feed',
+          ...(metadata ?? {}),
+          ...(overrides?.metadata ?? {}),
+        },
+      });
+    },
+    [buildWatchTelemetryContext]
+  );
+
+  const trackWatchImpression = useCallback(
+    (post: WatchPost | null, postIndex: number) => {
+      const context = buildWatchTelemetryContext(post, postIndex);
+      if (!context) {
+        return;
+      }
+      const telemetryKey = `${context.requestId}:${context.postId}`;
       if (seenWatchImpressionsRef.current.has(telemetryKey)) {
         return;
       }
       seenWatchImpressionsRef.current.add(telemetryKey);
-      trackFeedTelemetry({
-        eventType: 'impression',
-        feedType: 'watch',
-        postId,
-        postType: 'watch',
-        contentType: 'watch',
-        position: postIndex,
-        source: 'watch_feed',
-      });
+      trackWatchTelemetryEvent(post, postIndex, 'post_impression');
     },
-    [getWatchPostId]
+    [buildWatchTelemetryContext, trackWatchTelemetryEvent]
   );
 
   const finalizeWatchDwell = useCallback(
     (reason: 'index_change' | 'unmount' | 'refresh' = 'index_change') => {
-      if (!activeWatchStartMsRef.current || !activeWatchTelemetryKeyRef.current) {
+      const activeTelemetry = activeWatchTelemetryRef.current;
+      if (!activeTelemetry) {
         return;
       }
-      const dwellTimeMs = Date.now() - activeWatchStartMsRef.current;
-      const [, postId] = activeWatchTelemetryKeyRef.current.split(':');
-      activeWatchStartMsRef.current = null;
-      activeWatchTelemetryKeyRef.current = null;
-
-      if (!postId || dwellTimeMs < 1200) {
+      activeWatchTelemetryRef.current = null;
+      const activePost = feedData[activeTelemetry.postIndex] ?? null;
+      const dwellTimeMs = Date.now() - activeTelemetry.startedAt;
+      if (!activeTelemetry.postId || dwellTimeMs < 1200) {
         return;
       }
 
-      trackFeedTelemetry({
-        eventType: 'dwell',
-        feedType: 'watch',
-        postId,
-        postType: 'watch',
-        contentType: 'watch',
-        durationMs: dwellTimeMs,
-        source: 'watch_feed',
-        metadata: { reason },
-      });
+      trackWatchTelemetryEvent(
+        activePost,
+        activeTelemetry.postIndex,
+        'post_dwell',
+        { reason },
+        {
+          requestId: activeTelemetry.requestId,
+          dwellMs: dwellTimeMs,
+        }
+      );
+      maybeTrackQualifiedPostView(
+        {
+          ...(buildWatchTelemetryContext(activePost, activeTelemetry.postIndex) ?? {
+            postId: activeTelemetry.postId,
+            postType: 'watch',
+            surface: 'watch' as const,
+          }),
+          requestId: activeTelemetry.requestId,
+        },
+        dwellTimeMs,
+        { reason, source: 'watch_feed' }
+      );
     },
-    []
+    [buildWatchTelemetryContext, feedData, trackWatchTelemetryEvent]
   );
 
   const getFeedData = useCallback(async () => {
     setIsLoading(true);
     try {
+      if (page === 1) {
+        finalizeWatchDwell('refresh');
+        telemetryRequestIdRef.current = createPostTelemetryRequestId();
+        seenWatchImpressionsRef.current.clear();
+      }
       const res = await ApiCall({
         route: `user/get-following-feed/${FeedTypes.Watch}/${page}${
           page === 1 ? `?refresh=${Date.now()}` : ''
@@ -205,7 +302,15 @@ function Watch({ navigation, route }: any) {
       setIsRefreshing(false);
       // console.log('watch feed error -- ', e.toString());
     }
-  }, [initialPlaybackId, initialPostId, initialWatchPost, mergeOptimisticWatchPosts, page, token]);
+  }, [
+    finalizeWatchDwell,
+    initialPlaybackId,
+    initialPostId,
+    initialWatchPost,
+    mergeOptimisticWatchPosts,
+    page,
+    token,
+  ]);
 
   useObservedEffect(() => {
     // getData(page);
@@ -233,12 +338,6 @@ function Watch({ navigation, route }: any) {
   useObservedEffect(() => {
     getFeedData();
   }, [getFeedData, page]);
-
-  useObservedEffect(() => {
-    if (page === 1) {
-      seenWatchImpressionsRef.current.clear();
-    }
-  }, [page]);
 
   useFocusEffect(
     useCallback(() => {
@@ -301,21 +400,30 @@ function Watch({ navigation, route }: any) {
 
   useObservedEffect(() => {
     const activePost = feedData[index];
-    const postId = getWatchPostId(activePost);
-    if (!postId) {
+    const context = buildWatchTelemetryContext(activePost, index);
+    if (!context) {
+      finalizeWatchDwell('refresh');
       return;
     }
 
-    const telemetryKey = `watch:${postId}`;
-    if (activeWatchTelemetryKeyRef.current === telemetryKey) {
+    const activeTelemetry = activeWatchTelemetryRef.current;
+    if (
+      activeTelemetry?.postId === context.postId &&
+      activeTelemetry.requestId === context.requestId &&
+      activeTelemetry.postIndex === index
+    ) {
       return;
     }
 
     finalizeWatchDwell('index_change');
-    activeWatchTelemetryKeyRef.current = telemetryKey;
-    activeWatchStartMsRef.current = Date.now();
+    activeWatchTelemetryRef.current = {
+      postId: context.postId,
+      postIndex: index,
+      requestId: context.requestId ?? telemetryRequestIdRef.current,
+      startedAt: Date.now(),
+    };
     trackWatchImpression(activePost, index);
-  }, [feedData, finalizeWatchDwell, getWatchPostId, index, trackWatchImpression]);
+  }, [buildWatchTelemetryContext, feedData, finalizeWatchDwell, index, trackWatchImpression]);
 
   useObservedEffect(() => {
     entryOpacity.setValue(0);
@@ -452,20 +560,12 @@ function Watch({ navigation, route }: any) {
                 fromSavedPosts={false}
                 onTelemetryEvent={(eventType, metadata) => {
                   const post = feedData[index];
-                  const postId = getWatchPostId(post);
-                  if (!postId) {
-                    return;
-                  }
-                  trackFeedTelemetry({
-                    eventType,
-                    feedType: 'watch',
-                    postId,
-                    postType: 'watch',
-                    contentType: 'watch',
-                    position: index,
-                    source: 'watch_feed',
-                    metadata,
-                  });
+                  trackWatchTelemetryEvent(
+                    post,
+                    index,
+                    eventType as CanonicalPostTelemetryEventName,
+                    metadata
+                  );
                 }}
                 onShowDismissCard={(e?: boolean) => {
                   setIsScrollEnable(!e);

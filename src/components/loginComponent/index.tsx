@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   BackHandler,
+  InteractionManager,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
@@ -261,6 +262,23 @@ function LoginComponent({
   const clipboardRef = useRef<CustomClipboardHandle>(null);
   const submissionInFlightRef = useRef(false);
   const passkeyInFlightRef = useRef<Promise<void> | null>(null);
+  const initialMfaChallengeSignature = [
+    initialMfaChallenge?.mfaToken ?? '',
+    initialMfaChallenge?.enrollmentRequired ? '1' : '0',
+    initialMfaChallenge?.preferredMethod ?? '',
+    initialMfaChallenge?.availableMethods?.join(',') ?? '',
+    initialMfaChallenge?.emailMasked ?? '',
+    initialMfaChallenge?.reason ?? '',
+  ].join('|');
+  const resolvedInitialMfaChallengeRef = useRef(initialMfaChallenge);
+  const resolvedInitialMfaChallengeSignatureRef = useRef(initialMfaChallengeSignature);
+
+  if (resolvedInitialMfaChallengeSignatureRef.current !== initialMfaChallengeSignature) {
+    resolvedInitialMfaChallengeSignatureRef.current = initialMfaChallengeSignature;
+    resolvedInitialMfaChallengeRef.current = initialMfaChallenge;
+  }
+
+  const resolvedInitialMfaChallenge = resolvedInitialMfaChallengeRef.current;
 
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
@@ -299,11 +317,11 @@ function LoginComponent({
   }, []);
 
   useEffect(() => {
-    if (!initialMfaChallenge) return;
+    if (!resolvedInitialMfaChallenge) return;
 
-    const preferredMethod = resolveInitialMfaMethod(initialMfaChallenge);
+    const preferredMethod = resolveInitialMfaMethod(resolvedInitialMfaChallenge);
 
-    setMfaChallenge(initialMfaChallenge);
+    setMfaChallenge(resolvedInitialMfaChallenge);
     setSelectedMfaMethod(preferredMethod);
     setForm((prev) => ({
       ...prev,
@@ -326,21 +344,23 @@ function LoginComponent({
     trackMfaEvent('mfa_method_selected', {
       method: preferredMethod,
       source: 'challenge_prefill',
-      enrollment_required: initialMfaChallenge.enrollmentRequired,
-      reason: initialMfaChallenge.reason,
-      fallback: preferredMethod !== initialMfaChallenge.preferredMethod,
+      enrollment_required: resolvedInitialMfaChallenge.enrollmentRequired,
+      reason: resolvedInitialMfaChallenge.reason,
+      fallback: preferredMethod !== resolvedInitialMfaChallenge.preferredMethod,
     });
 
-    if (preferredMethod === 'email' && !initialMfaChallenge.enrollmentRequired) {
-      sendEmailMfaCode({ mfaToken: initialMfaChallenge.mfaToken })
+    if (preferredMethod === 'email' && !resolvedInitialMfaChallenge.enrollmentRequired) {
+      sendEmailMfaCode({ mfaToken: resolvedInitialMfaChallenge.mfaToken })
         .then((res) => {
           if (res.status === 200) {
-            setSuccessText(`A verification code was sent to ${initialMfaChallenge.emailMasked}.`);
+            setSuccessText(
+              `A verification code was sent to ${resolvedInitialMfaChallenge.emailMasked}.`
+            );
           }
         })
         .catch(() => undefined);
     }
-  }, [currentUserEmail, initialMfaChallenge, trackMfaEvent]);
+  }, [currentUserEmail, resolvedInitialMfaChallenge, trackMfaEvent]);
 
   const completeLogin = useCallback(
     (accessToken: string) => {
@@ -627,16 +647,43 @@ function LoginComponent({
   }, [mfaChallenge?.mfaToken]);
 
   useEffect(() => {
-    if (!mfaChallenge) return;
-    if (mfaChallenge.enrollmentRequired) return;
-    if (selectedMfaMethod !== 'passkey') return;
-    if (isPasskeyAssociationUnavailable) return;
-    if (hasAutoPromptedPasskey) return;
+    if (!mfaChallenge) return undefined;
+    if (selectedMfaMethod !== 'passkey') return undefined;
+    if (isPasskeyAssociationUnavailable) return undefined;
+    if (hasAutoPromptedPasskey) return undefined;
 
     setHasAutoPromptedPasskey(true);
-    runPasskey().catch((e: any) => {
-      setError(e?.message ?? 'Passkey verification failed.');
-    });
+    let isCancelled = false;
+    let interactionTask:
+      | {
+          cancel?: () => void;
+        }
+      | undefined;
+
+    const startPasskey = () => {
+      if (isCancelled) {
+        return;
+      }
+
+      runPasskey().catch((e: any) => {
+        if (!isCancelled) {
+          setError(e?.message ?? 'Passkey verification failed.');
+        }
+      });
+    };
+
+    if (Platform.OS === 'android') {
+      interactionTask = InteractionManager.runAfterInteractions(() => {
+        startPasskey();
+      });
+    } else {
+      startPasskey();
+    }
+
+    return () => {
+      isCancelled = true;
+      interactionTask?.cancel?.();
+    };
   }, [
     hasAutoPromptedPasskey,
     isPasskeyAssociationUnavailable,

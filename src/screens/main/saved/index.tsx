@@ -6,29 +6,27 @@ import {
   ScrollView,
   useWindowDimensions,
   Image,
+  Platform,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
-import { CompositeScreenProps } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons';
 
-import { styles as legacyStyles } from './styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { getuserGet } from '@/src/redux/actions/UserAction';
 import StyledText from '@/components/styled/Text';
-import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 import SocialItem from '@/components/listItems/SocialItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import { SavedPost } from '@/utils/types';
-import Button from '@/components/Button';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import {
@@ -55,12 +53,20 @@ const SAPPHIRE = '#126B87';
 const SAPPHIRE_LIGHT = '#E7F0F3';
 const SAPPHIRE_MID = '#5997AB';
 
-function SavedEmptyState() {
+function SavedEmptyState({ dark }: { dark: boolean }) {
   return (
-    <View style={emptyStyles.root}>
+    <View style={[emptyStyles.root, { backgroundColor: dark ? '#0d0f12' : '#F7F9FA' }]}>
       {/* Large decorative bookmark */}
       <View style={emptyStyles.iconWrap}>
-        <View style={emptyStyles.iconRing}>
+        <View
+          style={[
+            emptyStyles.iconRing,
+            {
+              backgroundColor: dark ? 'rgba(18, 107, 135, 0.14)' : SAPPHIRE_LIGHT,
+              borderColor: dark ? 'rgba(184, 211, 219, 0.28)' : '#B8D3DB',
+            },
+          ]}
+        >
           <FontAwesomeIcon icon={faBookmark} size={48} color={SAPPHIRE} />
         </View>
         {/* Decorative dots */}
@@ -69,14 +75,23 @@ function SavedEmptyState() {
         <View style={[emptyStyles.dotSmall, emptyStyles.dotTR]} />
       </View>
 
-      <StyledText style={emptyStyles.heading}>Nothing saved yet</StyledText>
-      <StyledText style={emptyStyles.body}>
+      <StyledText style={[emptyStyles.heading, { color: dark ? '#f4f7fb' : '#1A3A4A' }]}>
+        Nothing saved yet
+      </StyledText>
+      <StyledText style={[emptyStyles.body, { color: dark ? '#8fb4c1' : SAPPHIRE_MID }]}>
         Tap the bookmark on any article or post{'\n'}and it will appear here.
       </StyledText>
 
       {/* Decorative rule */}
-      <View style={emptyStyles.rule} />
-      <StyledText style={emptyStyles.hint}>Your reading list, curated by you</StyledText>
+      <View
+        style={[
+          emptyStyles.rule,
+          { backgroundColor: dark ? 'rgba(184, 211, 219, 0.32)' : '#B8D3DB' },
+        ]}
+      />
+      <StyledText style={[emptyStyles.hint, { color: dark ? '#79a9b9' : '#89B5C3' }]}>
+        Your reading list, curated by you
+      </StyledText>
     </View>
   );
 }
@@ -115,6 +130,7 @@ function GridCard({ item }: { item: SavedPost }) {
 }
 
 function Saved({ navigation }: Props) {
+  const { dark } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const authState = useSelector((state: RootState) => state.auth);
@@ -196,7 +212,7 @@ function Saved({ navigation }: Props) {
         token,
         params: { link, type },
       });
-      if (res?.status === 200) dispatch(getuserGet({ token }));
+      if (res?.status === 200) dispatch(getuserGet({ token, pullSavedData: true }));
       dispatch(setLoader(false));
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
@@ -220,19 +236,32 @@ function Saved({ navigation }: Props) {
     (filter === ContentType.All && socialPosts.length === 0 && gridPosts.length > 0);
 
   return (
-    <SafeAreaView style={screenStyles.root}>
+    <SafeAreaView style={[screenStyles.root, { backgroundColor: dark ? '#0d0f12' : '#F7F9FA' }]}>
       {/* Filter bar — only shown when there are posts */}
       {savedPosts.length > 0 && (
         <ScrollView
           horizontal
-          style={screenStyles.filterBar}
+          style={[
+            screenStyles.filterBar,
+            {
+              borderBottomColor: dark ? 'rgba(255,255,255,0.08)' : SAPPHIRE_LIGHT,
+            },
+          ]}
           contentContainerStyle={screenStyles.filterBarContent}
           showsHorizontalScrollIndicator={false}
         >
           {([ContentType.All, ContentType.RSS, ContentType.Social] as ContentType[]).map((type) => (
             <TouchableOpacity
               key={type}
-              style={[screenStyles.filterChip, filter === type && screenStyles.filterChipActive]}
+              style={[
+                screenStyles.filterChip,
+                {
+                  borderColor: dark ? 'rgba(255,255,255,0.12)' : SAPPHIRE_LIGHT,
+                  backgroundColor:
+                    filter === type ? SAPPHIRE : dark ? 'rgba(255,255,255,0.03)' : 'transparent',
+                },
+                filter === type && screenStyles.filterChipActive,
+              ]}
               onPress={() => {
                 if (filter !== type) setFilter(type);
               }}
@@ -241,6 +270,7 @@ function Saved({ navigation }: Props) {
               <StyledText
                 style={[
                   screenStyles.filterLabel,
+                  { color: filter === type ? '#FFFFFF' : dark ? '#a9b8c2' : SAPPHIRE },
                   filter === type && screenStyles.filterLabelActive,
                 ]}
               >
@@ -262,7 +292,7 @@ function Saved({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           onRefresh={() => setIsRefreshing(true)}
           refreshing={isRefreshing}
-          ListEmptyComponent={<SavedEmptyState />}
+          ListEmptyComponent={<SavedEmptyState dark={dark} />}
           renderItem={({ item }) => <GridCard item={item} />}
           removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
           initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
@@ -281,10 +311,14 @@ function Saved({ navigation }: Props) {
           scrollEnabled={isScrollEnable}
           refreshing={isRefreshing}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={<SavedEmptyState />}
+          ListEmptyComponent={<SavedEmptyState dark={dark} />}
           ItemSeparatorComponent={() => (
             <View
-              style={{ height: 1, backgroundColor: SAPPHIRE_LIGHT, marginHorizontal: spacing.x16 }}
+              style={{
+                height: 1,
+                backgroundColor: dark ? 'rgba(255,255,255,0.08)' : SAPPHIRE_LIGHT,
+                marginHorizontal: spacing.x16,
+              }}
             />
           )}
           renderItem={({ item, index }) => {
@@ -308,13 +342,13 @@ function Saved({ navigation }: Props) {
                   />
                 );
               }
-            } else if (user && item.created && item.image) {
+            } else if (user && item.title) {
               return (
                 <ArticleItem
                   item={{
                     ...item,
                     created: item.created ?? new Date(),
-                    image: { url: item.image ?? '' },
+                    image: item.image ? { url: item.image } : undefined,
                     userData: user,
                     reactions: [],
                   }}
@@ -487,8 +521,15 @@ const emptyStyles = StyleSheet.create({
     fontFamily: 'Rubik-SemiBold',
     color: '#1A3A4A',
     letterSpacing: -0.3,
+    lineHeight: 28,
     textAlign: 'center',
     marginBottom: 12,
+    ...(Platform.OS === 'android'
+      ? {
+          paddingBottom: 2,
+          includeFontPadding: true,
+        }
+      : null),
   },
   body: {
     fontSize: 14,

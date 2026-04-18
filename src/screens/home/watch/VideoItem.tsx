@@ -78,6 +78,9 @@ const VideoItem = gestureHandlerRootHOC(
     const user = useSelector((state: RootState) => state.auth.getProfileData);
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
     const hasPlayedSheetGlowRef = useRef(false);
+    const hasTrackedVideoStartRef = useRef(false);
+    const hasTrackedVideoCompleteRef = useRef(false);
+    const progressMilestonesRef = useRef<Set<number>>(new Set());
     const [sheetGlowPlayKey, setSheetGlowPlayKey] = useState(0);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
 
@@ -93,7 +96,11 @@ const VideoItem = gestureHandlerRootHOC(
       bottomSheetModalRef.current?.present();
       onShowDismissCard?.(true);
       setCommentsOpenKey((previous) => previous + 1);
-    }, [onShowDismissCard]);
+      onTelemetryEvent?.('post_comment_open', {
+        postType: PostType.watch,
+        origin: 'watch_sheet',
+      });
+    }, [onShowDismissCard, onTelemetryEvent]);
 
     const handleSheetChanges = useCallback(
       (index: number) => {
@@ -116,7 +123,14 @@ const VideoItem = gestureHandlerRootHOC(
         setPlayedTimes(playedTimes + 1);
       }
       setProgress(1);
-    }, [isPaused, playedTimes]);
+      if (!hasTrackedVideoCompleteRef.current) {
+        hasTrackedVideoCompleteRef.current = true;
+        onTelemetryEvent?.('post_video_complete', {
+          postType: PostType.watch,
+          completionPct: 100,
+        });
+      }
+    }, [isPaused, onTelemetryEvent, playedTimes]);
 
     useEffect(() => {
       if (playedTimes > 2) {
@@ -128,6 +142,9 @@ const VideoItem = gestureHandlerRootHOC(
       setProgress(0);
       setDurationSeconds(item.durationMs ? item.durationMs / 1000 : Number(item.duration ?? 0));
       setIsLoading(true);
+      hasTrackedVideoStartRef.current = false;
+      hasTrackedVideoCompleteRef.current = false;
+      progressMilestonesRef.current = new Set();
     }, [item.duration, item.durationMs, item.id, item.playBackId, item.postId, item._id]);
 
     const renderBackdrop = useCallback(
@@ -203,7 +220,7 @@ const VideoItem = gestureHandlerRootHOC(
           onPress={() => {
             const nextPaused = !isPaused;
             setIsPaused(nextPaused);
-            onTelemetryEvent?.(nextPaused ? 'video_pause' : 'video_play', {
+            onTelemetryEvent?.(nextPaused ? 'post_video_pause' : 'post_video_start', {
               postType: PostType.watch,
             });
           }}
@@ -227,6 +244,12 @@ const VideoItem = gestureHandlerRootHOC(
               if (Number.isFinite(nextDuration) && nextDuration > 0) {
                 setDurationSeconds(nextDuration);
               }
+              if (!hasTrackedVideoStartRef.current) {
+                hasTrackedVideoStartRef.current = true;
+                onTelemetryEvent?.('post_video_start', {
+                  postType: PostType.watch,
+                });
+              }
             }}
             onProgress={(progressData) => {
               const currentTime = Number(progressData?.currentTime);
@@ -238,7 +261,21 @@ const VideoItem = gestureHandlerRootHOC(
               if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) {
                 return;
               }
+              const completionPct = Math.max(
+                0,
+                Math.min((currentTime / effectiveDuration) * 100, 100)
+              );
               setProgress(Math.max(0, Math.min(currentTime / effectiveDuration, 1)));
+              [25, 50, 75].forEach((milestone) => {
+                if (completionPct >= milestone && !progressMilestonesRef.current.has(milestone)) {
+                  progressMilestonesRef.current.add(milestone);
+                  onTelemetryEvent?.('post_video_progress', {
+                    postType: PostType.watch,
+                    completionPct: milestone,
+                    playbackMs: Math.round(currentTime * 1000),
+                  });
+                }
+              });
             }}
             onEnd={onEnd}
           >

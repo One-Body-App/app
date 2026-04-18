@@ -67,10 +67,8 @@ import {
   resolveEditorExifOrientation,
 } from '@/src/screens/post/uploadImageOrientation';
 import {
-  buildImageDataUri,
   buildPendingModerationReviewPayload,
   callBackendFallbackModeration,
-  moderateClientImages,
   moderateClientText,
 } from '@/src/services/moderation/clientModeration';
 import { queueTaggedNotificationDemo } from '@/src/services/notification/taggedNotificationDispatch';
@@ -95,7 +93,6 @@ type ProfileSummary = {
 
 const TEXT_MODERATION_BLOCK_MESSAGE =
   'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
-const IMAGE_MODERATION_BLOCK_MESSAGE = 'Photo violates terms of use ';
 const FALLBACK_FLAGGED_MESSAGE = 'Your post was submitted for review.';
 
 function NewPost({ navigation, route }: Props) {
@@ -201,74 +198,11 @@ function NewPost({ navigation, route }: Props) {
             },
           });
 
-          if (fallbackResponse.finalAction === 'flag_for_admin_review') {
+          if (fallbackResponse.finalAction !== 'allow') {
             return {
               blocked: false,
               pendingReviewCheck: {
                 type: 'text',
-                clientSource: result.source,
-                clientScores: result.scores,
-                clientReason: result.reason,
-                clientModel: result.model,
-                fallbackAction: fallbackResponse.finalAction,
-                fallbackProvider: fallbackResponse.provider,
-                fallbackFlagged: fallbackResponse.flagged,
-                fallbackModel: fallbackResponse.model,
-                fallbackResults: fallbackResponse.results,
-              } satisfies ModerationReviewCheckPayload,
-            } as const;
-          }
-        } catch (error) {
-          toast.show('Unable to complete moderation right now. Please try again.', {
-            type: 'danger',
-            placement: 'bottom',
-          });
-          return { blocked: true } as const;
-        }
-      }
-
-      return { blocked: false } as const;
-    },
-    [toast]
-  );
-
-  const runImageModeration = useCallback(
-    async (uris: string[]) => {
-      const normalizedUris = uris.map((uri) => String(uri ?? '').trim()).filter(Boolean);
-      if (normalizedUris.length === 0) {
-        return { blocked: false } as const;
-      }
-
-      const result = await moderateClientImages(normalizedUris);
-      if (result.action === 'block') {
-        toast.show(IMAGE_MODERATION_BLOCK_MESSAGE, {
-          type: 'danger',
-          placement: 'bottom',
-        });
-        return { blocked: true } as const;
-      }
-
-      if (result.action === 'fallback') {
-        try {
-          const imagePayload = await Promise.all(
-            normalizedUris.map((uri) => buildImageDataUri(uri))
-          );
-          const fallbackResponse = await callBackendFallbackModeration({
-            type: 'image',
-            content: imagePayload,
-            clientMetadata: {
-              source: result.source,
-              scores: result.scores,
-              reason: result.reason,
-              model: result.model,
-            },
-          });
-
-          if (fallbackResponse.finalAction === 'flag_for_admin_review') {
-            return {
-              blocked: false,
-              pendingReviewCheck: {
-                type: 'image',
                 clientSource: result.source,
                 clientScores: result.scores,
                 clientReason: result.reason,
@@ -568,18 +502,8 @@ function NewPost({ navigation, route }: Props) {
         return;
       }
 
-      const imageModeration = await runImageModeration(
-        imagesToUpload.map((image) => String(image?.uri ?? ''))
-      );
-      if (imageModeration.blocked) {
-        setIsLoading(false);
-        return;
-      }
-
       const moderationReview = buildPendingModerationReviewPayload(
-        [textModeration.pendingReviewCheck, imageModeration.pendingReviewCheck].filter(
-          Boolean
-        ) as ModerationReviewCheckPayload[]
+        [textModeration.pendingReviewCheck].filter(Boolean) as ModerationReviewCheckPayload[]
       );
       const createRequest = buildCreateSocialPostRequest({
         content: mergedContent,

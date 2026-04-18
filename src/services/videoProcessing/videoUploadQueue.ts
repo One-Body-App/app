@@ -15,12 +15,17 @@ import {
   type NativeMuxDirectUploadRecord,
 } from './muxDirectUploadBridge';
 import {
+  extractEditedFrames,
   exportEditedVideo,
   normalizeVideoProcessingUri,
   stripFileScheme,
 } from './nativeVideoProcessing';
 import { ApiCall } from '@/src/services/api';
 import { queueTaggedNotificationDemo } from '@/src/services/notification/taggedNotificationDispatch';
+import {
+  buildImageDataUri,
+  callBackendFallbackModeration,
+} from '@/src/services/moderation/clientModeration';
 
 const VIDEO_UPLOAD_QUEUE_STORAGE_KEY = 'video-processing.pending-watch-posts.v1';
 const MAX_RETRY_COUNT = 3;
@@ -416,7 +421,7 @@ const buildNativeStartupFailureMessage = (record?: NativeMuxDirectUploadRecord |
   return 'Native Mux upload stalled before its first callback.';
 };
 
-const DEVICE_VIDEO_MODERATION_BYPASSED_ERROR = 'device-video-moderation-bypassed';
+const VIDEO_MODERATION_SAMPLE_FRAME_COUNT = 5;
 
 const defaultDependencies: QueueDependencies = {
   storage: AsyncStorage,
@@ -440,11 +445,60 @@ const defaultDependencies: QueueDependencies = {
       // ignore temporary file cleanup failures
     }
   },
-  moderateVideo: async () => ({
-    moderationDecision: 'unsure',
-    moderationScores: null,
-    moderationError: DEVICE_VIDEO_MODERATION_BYPASSED_ERROR,
-  }),
+  moderateVideo: async (recipe) => {
+    const frameUris = await extractEditedFrames(recipe.sourceUri, {
+      startTime: recipe.trimStartMs,
+      endTime: recipe.trimEndMs,
+      cropX: recipe.cropRect.x,
+      cropY: recipe.cropRect.y,
+      cropWidth: recipe.cropRect.width,
+      cropHeight: recipe.cropRect.height,
+      outputWidth: recipe.outputWidth,
+      outputHeight: recipe.outputHeight,
+      frameCount: VIDEO_MODERATION_SAMPLE_FRAME_COUNT,
+    });
+
+    if (frameUris.length < 1) {
+      throw new Error('No video frames available for moderation.');
+    }
+
+    try {
+      const payload = await Promise.all(frameUris.map((uri) => buildImageDataUri(uri)));
+      const moderation = await callBackendFallbackModeration({
+        type: 'video',
+        content: payload,
+      });
+      const moderationScores = moderation.matchedCategories
+        ? Object.fromEntries(
+            moderation.matchedCategories.map((item) => [item.category, item.score])
+          )
+        : {};
+
+      return {
+        moderationDecision:
+          moderation.finalAction === 'allow'
+            ? 'safe'
+            : moderation.finalAction === 'pending_review'
+              ? 'unsure'
+              : 'blocked',
+        moderationScores,
+        moderationError: moderation.finalAction === 'allow' ? undefined : moderation.finalAction,
+      };
+    } finally {
+      await Promise.all(
+        frameUris.map(async (uri) => {
+          if (!uri || uri.startsWith('content://')) {
+            return;
+          }
+          try {
+            await RNFS.unlink(stripFileScheme(uri));
+          } catch {
+            // ignore temporary frame cleanup failures
+          }
+        })
+      );
+    }
+  },
   exportVideo: async (recipe) => {
     const result = await exportEditedVideo(recipe.sourceUri, {
       saveToPhoto: false,
@@ -1116,13 +1170,6 @@ export const createVideoUploadQueue = (
       );
     }
 
-    if (moderation.moderationError === DEVICE_VIDEO_MODERATION_BYPASSED_ERROR) {
-      logStage(item, 'moderation_bypassed', {
-        moderationDecision: moderation.moderationDecision,
-        moderationError: moderation.moderationError,
-      });
-    }
-
     await updateItem(
       item.id,
       {
@@ -1134,7 +1181,11 @@ export const createVideoUploadQueue = (
     );
 
     if (moderation.moderationDecision === 'blocked') {
-      throw new QueueError('nsfw-blocked', 'Video blocked by client moderation.');
+      throw new QueueError('nsfw-blocked', 'Video blocked by moderation.');
+    }
+
+    if (moderation.moderationDecision === 'unsure') {
+      throw new QueueError('nsfw-blocked', 'Video requires review before it can be published.');
     }
 
     if (moderation.moderationDecision === 'unclassified') {

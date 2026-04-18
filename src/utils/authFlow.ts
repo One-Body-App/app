@@ -33,6 +33,10 @@ type MandatoryMfaGateState = LogoutGuardState & {
   } | null;
 };
 
+type ImmediateMandatoryMfaGateState = MandatoryMfaGateState & {
+  previousProfileCompleted?: boolean | null;
+};
+
 type ProfileResultGuard = LogoutGuardState & {
   currentToken?: string | null;
   requestToken?: string | null;
@@ -53,6 +57,10 @@ export function isExplicitLogoutActive(state: LogoutGuardState): boolean {
 
 export function isPublicAuthRoute(routeName?: string | null): boolean {
   return typeof routeName === 'string' && PUBLIC_AUTH_ROUTES.has(routeName);
+}
+
+export function isOnboardingRoute(routeName?: string | null): boolean {
+  return typeof routeName === 'string' && routeName.startsWith('Onboarding');
 }
 
 export function getDrawerNavMode(state: DrawerAuthState): 'main' | 'onboarding' | 'placeholder' {
@@ -114,6 +122,16 @@ export function shouldBeginMandatoryMfaOnboarding(state: MandatoryMfaGateState):
   }
 
   return true;
+}
+
+export function shouldImmediatelyBeginMandatoryMfaOnboarding(
+  state: ImmediateMandatoryMfaGateState
+): boolean {
+  if (state.previousProfileCompleted !== false) {
+    return false;
+  }
+
+  return shouldBeginMandatoryMfaOnboarding(state);
 }
 
 export function shouldAcceptProfileResult(state: ProfileResultGuard): boolean {

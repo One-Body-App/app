@@ -2,9 +2,11 @@ import {
   getDrawerNavMode,
   isExplicitLogoutActive,
   isMfaEnrollmentScreenActive,
+  isOnboardingRoute,
   isPublicAuthRoute,
   shouldAcceptProfileResult,
   shouldBeginMandatoryMfaOnboarding,
+  shouldImmediatelyBeginMandatoryMfaOnboarding,
 } from './authFlow';
 
 describe('authFlow', () => {
@@ -26,6 +28,11 @@ describe('authFlow', () => {
   it('treats AccountType as a public auth route', () => {
     expect(isPublicAuthRoute('AccountType')).toBe(true);
     expect(isPublicAuthRoute('MainRoot')).toBe(false);
+  });
+
+  it('identifies onboarding stack routes', () => {
+    expect(isOnboardingRoute('OnboardingInfluencers')).toBe(true);
+    expect(isOnboardingRoute('Login')).toBe(false);
   });
 
   it('uses a placeholder drawer mode during explicit logout even with stale profile data', () => {
@@ -109,6 +116,40 @@ describe('authFlow', () => {
         },
       })
     ).toBe(true);
+  });
+
+  it('immediately begins mandatory MFA onboarding when onboarding just completed', () => {
+    expect(
+      shouldImmediatelyBeginMandatoryMfaOnboarding({
+        navigationReady: true,
+        userToken: 'token',
+        isProfileLoading: false,
+        currentRouteName: 'OnboardingInfluencers',
+        previousProfileCompleted: false,
+        getProfileData: {
+          emailVerified: true,
+          isProfileCompleted: true,
+          mfaConfig: { isMfaActive: false },
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('does not immediately begin mandatory MFA onboarding when completion was already handled', () => {
+    expect(
+      shouldImmediatelyBeginMandatoryMfaOnboarding({
+        navigationReady: true,
+        userToken: 'token',
+        isProfileLoading: false,
+        currentRouteName: 'OnboardingInfluencers',
+        previousProfileCompleted: true,
+        getProfileData: {
+          emailVerified: true,
+          isProfileCompleted: true,
+          mfaConfig: { isMfaActive: false },
+        },
+      })
+    ).toBe(false);
   });
 
   it('does not begin mandatory MFA onboarding when MFA is already active', () => {

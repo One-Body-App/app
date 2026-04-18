@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
   StyleSheet,
@@ -54,6 +53,7 @@ import {
 } from './shared';
 import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
 import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
+import { useTabBarAnimation } from '@/src/navigator/TabBarAnimationContext';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
 
@@ -90,6 +90,21 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     serve,
   } = useConnectPortalData();
   const { keyboardHeight, keyboardVisible } = useConnectKeyboardMetrics();
+
+  const tabBarAnimation = useTabBarAnimation();
+  const tabBarAnimationRef = useRef(tabBarAnimation);
+  tabBarAnimationRef.current = tabBarAnimation;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const tabBarHeight = CONNECT_BOTTOM_NAV_BASE_OFFSET + insets.bottom;
+  const tabBarScrollTranslate = useMemo(
+    () =>
+      Animated.diffClamp(scrollY, 0, tabBarHeight).interpolate({
+        inputRange: [0, tabBarHeight],
+        outputRange: [0, tabBarHeight],
+        extrapolate: 'clamp',
+      }),
+    [scrollY, tabBarHeight]
+  );
 
   const CHIP_ROW_HEIGHT = 46;
   const chipOffset = useRef(new Animated.Value(0)).current;
@@ -146,6 +161,19 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     }, [activeTab, refresh])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      tabBarAnimationRef.current?.setTabBarTranslateY(0);
+      const frameId = requestAnimationFrame(() => {
+        tabBarAnimationRef.current?.setTabBarTranslateY(tabBarScrollTranslate);
+      });
+      return () => {
+        cancelAnimationFrame(frameId);
+        tabBarAnimationRef.current?.resetTabBar();
+      };
+    }, [tabBarScrollTranslate])
+  );
+
   const eventRecords = useMemo(() => {
     return filterConnectGoEvents({
       events: snapshot.publicPublished,
@@ -200,8 +228,9 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     (tab: ConnectTab) => {
       setActiveTab(tab);
       navigation.setParams?.({ initialTab: tab });
+      scrollY.setValue(0);
     },
-    [navigation, setActiveTab]
+    [navigation, scrollY, setActiveTab]
   );
 
   const resolvedGoChips =
@@ -311,17 +340,23 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           />
         </Animated.View>
 
-        <FlatList
+        <Animated.FlatList
           key={activeTab}
           data={listData}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
-          onScroll={handleListScroll}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+            listener: handleListScroll,
+          })}
           onEndReachedThreshold={0.5}
           contentContainerStyle={[
             styles.contentBody,
-            { paddingTop: chromeHeight + CHIP_ROW_HEIGHT, paddingBottom: bottomSearchClearance },
+            {
+              paddingTop: chromeHeight + CHIP_ROW_HEIGHT - spacing.x8,
+              paddingBottom: bottomSearchClearance,
+            },
           ]}
           ListHeaderComponent={
             <View style={styles.sectionHeader}>
@@ -541,7 +576,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.x10,
+    marginTop: spacing.x5,
     marginBottom: spacing.x10,
   },
   sectionTitle: {

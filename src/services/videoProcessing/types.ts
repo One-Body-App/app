@@ -4,13 +4,7 @@ export type VideoRatioId = '1:1' | '4:3' | '16:9' | '9:16';
 
 export type ClientModerationDecision = 'safe' | 'unsure' | 'blocked' | 'unclassified';
 
-export type ClientModerationScores = {
-  neutral: number;
-  drawing: number;
-  sexy: number;
-  porn: number;
-  hentai: number;
-};
+export type ClientModerationScores = Record<string, number>;
 
 export type VideoTransformState = {
   scale: number;

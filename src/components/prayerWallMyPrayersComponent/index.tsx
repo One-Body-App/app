@@ -11,6 +11,8 @@ import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import PrayerItem from '../listItems/PrayerItem';
 import { ApiCall } from '@/services/api';
+import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import { usePrayerListTelemetry } from '@/components/prayerWall/usePrayerListTelemetry';
 
 type PrayerWallMyPrayersProps = {
   onOpenPost?: (postId: string) => void;
@@ -33,6 +35,7 @@ function PrayerWallMyPrayersComponent({
 }: PrayerWallMyPrayersProps) {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
@@ -40,6 +43,19 @@ function PrayerWallMyPrayersComponent({
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const requestSequenceRef = useRef(0);
+  const pageRef = useRef(page);
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+  const {
+    finalizeAllVisible,
+    onViewableItemsChanged,
+    resetPrayerTelemetryRequest,
+    trackPrayerTelemetry,
+    viewabilityConfig,
+  } = usePrayerListTelemetry({
+    currentUserId: currentUser?._id ? String(currentUser._id) : undefined,
+    entrypoint: 'prayer_wall_my_prayers',
+  });
 
   const extractPrayerEntries = (payload: unknown): PrayerPost[] => {
     if (Array.isArray(payload)) return payload as PrayerPost[];
@@ -55,6 +71,9 @@ function PrayerWallMyPrayersComponent({
   const getPrayerPosts = useCallback(
     async (pageNumber: number) => {
       const requestSequence = ++requestSequenceRef.current;
+      if (pageNumber === 1) {
+        resetPrayerTelemetryRequest();
+      }
       setIsLoading(true);
 
       try {
@@ -90,28 +109,42 @@ function PrayerWallMyPrayersComponent({
         }
       }
     },
-    [token]
+    [resetPrayerTelemetryRequest, token]
   );
 
   const refreshPrayerPosts = useCallback(() => {
     setRefreshing(true);
     setIsEndOfList(false);
-    if (page === 1) {
+    if (pageRef.current === 1) {
       getPrayerPosts(1);
       return;
     }
     setPage(1);
-  }, [getPrayerPosts, page]);
+  }, [getPrayerPosts]);
+
+  useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
+  }, [token]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       refreshPrayerPosts();
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, [navigation, refreshPrayerPosts]);
 
   useEffect(() => {
+    return () => {
+      finalizeAllVisible('unmount');
+      flushFeedTelemetry(tokenRef.current || undefined).catch(() => undefined);
+    };
+  }, [finalizeAllVisible]);
+
+  useEffect(() => {
+    pageRef.current = page;
     getPrayerPosts(page);
   }, [getPrayerPosts, page]);
 
@@ -171,6 +204,8 @@ function PrayerWallMyPrayersComponent({
         }
         ListEmptyComponent={EmptyMyPrayers}
         onEndReachedThreshold={0.8}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         scrollEnabled={isScrollEnable}
         onScroll={(event) => {
           onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);
@@ -180,6 +215,9 @@ function PrayerWallMyPrayersComponent({
           const postId = item.postId ?? item.id;
           const openPost = () => {
             if (!postId) return;
+            trackPrayerTelemetry(item, index, 'post_open', {
+              origin: 'prayer_card',
+            });
             if (onOpenPost) {
               onOpenPost(postId);
               return;
@@ -195,6 +233,9 @@ function PrayerWallMyPrayersComponent({
                 editPost={editPost}
                 removePost={removePost}
                 item={item}
+                onTelemetryEvent={(eventType, metadata) => {
+                  trackPrayerTelemetry(item, index, eventType as any, metadata);
+                }}
                 onCommentsPress={openPost}
                 limitContentLines
               />

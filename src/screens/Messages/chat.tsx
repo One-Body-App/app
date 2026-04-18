@@ -7,6 +7,7 @@ import {
   Image,
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -135,6 +136,7 @@ function ChatListScreen({ navigation }: Props) {
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<ChatSectionFilter>('inbox');
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const searchInputRef = useRef<TextInput>(null);
@@ -408,11 +410,23 @@ function ChatListScreen({ navigation }: Props) {
   const fabBottom = insets.bottom + 78;
   const encryptedBottom = insets.bottom + 88;
 
-  const openSettings = () => {
-    const parentNavigation = navigation.getParent();
-    const drawerNavigation = parentNavigation?.getParent?.() ?? parentNavigation;
-    (drawerNavigation as any)?.navigate?.('Settings');
-  };
+  useEffect(() => {
+    if (!isSearchVisible) {
+      return;
+    }
+
+    searchInputRef.current?.focus();
+  }, [isSearchVisible]);
+
+  const handleToggleSearch = useCallback(() => {
+    setIsSearchVisible((currentValue) => {
+      const nextValue = !currentValue;
+      if (!nextValue) {
+        setQuery('');
+      }
+      return nextValue;
+    });
+  }, []);
 
   const renderConversationAvatar = (item: ConversationListItem) => {
     if (isGroupConversationItem(item)) {
@@ -565,6 +579,7 @@ function ChatListScreen({ navigation }: Props) {
               key={filter.value}
               style={[styles.filterItem, isActive && styles.filterItemSelected]}
               onPress={() => setSelectedFilter(filter.value)}
+              testID={`chat-filter-${filter.value}`}
             >
               <View style={[styles.filterUnderline, isActive && styles.filterUnderlineSelected]}>
                 <Text
@@ -870,6 +885,13 @@ function ChatListScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {Platform.OS === 'android' ? (
+        <StatusBar
+          barStyle={dark ? 'light-content' : 'dark-content'}
+          backgroundColor={androidHeaderBg}
+          translucent={false}
+        />
+      ) : null}
       {/* Glass header wrapper — full width so BlurView fills edge-to-edge */}
       <View style={styles.headerGlassWrap}>
         {isIOS ? (
@@ -909,7 +931,10 @@ function ChatListScreen({ navigation }: Props) {
             </View>
 
             {isIOS ? (
-              <View style={styles.headerCenterWrap} pointerEvents="none">
+              <View
+                style={[styles.headerCenterWrap, styles.headerCenterWrapIos]}
+                pointerEvents="none"
+              >
                 <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
               </View>
             ) : (
@@ -919,24 +944,34 @@ function ChatListScreen({ navigation }: Props) {
             )}
 
             <View style={styles.headerSideSlot}>
-              <Pressable onPress={openSettings} style={styles.settingsButton}>
-                <MaterialIcons name="settings" size={30} color="#126b87" />
+              <Pressable
+                onPress={handleToggleSearch}
+                style={styles.settingsButton}
+                testID="chat-search-button"
+              >
+                <MaterialIcons name="search" size={28} color="#126b87" />
               </Pressable>
             </View>
           </Animated.View>
 
           <Animated.View style={getSpringboardStyle(1)}>
-            <View style={[styles.searchWrap, { backgroundColor: colors.card }]}>
-              <MaterialIcons name="search" size={20} color={colors.text} />
-              <TextInput
-                ref={searchInputRef}
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Search conversations..."
-                placeholderTextColor={colors.text}
-                style={[styles.searchInput, { color: colors.text }]}
-              />
-            </View>
+            {isSearchVisible ? (
+              <View
+                style={[styles.searchWrap, { backgroundColor: colors.card }]}
+                testID="chat-search-wrap"
+              >
+                <MaterialIcons name="search" size={20} color={colors.text} />
+                <TextInput
+                  ref={searchInputRef}
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Search conversations..."
+                  placeholderTextColor={colors.text}
+                  style={[styles.searchInput, { color: colors.text }]}
+                  testID="chat-search-input"
+                />
+              </View>
+            ) : null}
             {renderFilters()}
           </Animated.View>
         </View>
@@ -961,7 +996,7 @@ function ChatListScreen({ navigation }: Props) {
         }}
         style={[styles.fab, { bottom: fabBottom }]}
       >
-        <ChatIcon width={30} height={30} color="#032f3c" />
+        <ChatIcon width={30} height={30} color={dark ? '#12d2d9' : '#126b87'} />
       </Pressable>
     </View>
   );
@@ -1004,6 +1039,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerCenterWrapIos: {
+    transform: [{ translateY: -8 }],
+  },
   headerAvatar: {
     width: 32,
     height: 32,
@@ -1034,6 +1072,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 6,
     paddingBottom: 10,
+    marginHorizontal: -22,
+    paddingHorizontal: 22,
     borderBottomWidth: 1,
   },
   filterItem: {

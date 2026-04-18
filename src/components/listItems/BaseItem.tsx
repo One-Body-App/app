@@ -218,6 +218,14 @@ const getFallbackReactionIdFromType = (type?: SocialPostReactionType): string | 
   return undefined;
 };
 
+const isShareDialogDismissed = (result: unknown) => {
+  if (!result || typeof result !== 'object') {
+    return false;
+  }
+  const { action } = result as { action?: unknown };
+  return typeof action === 'string' && action.toLowerCase().includes('dismiss');
+};
+
 const normalizeReactionType = (type?: SocialPostReactionType) => {
   if (type === SocialPostReactionType.happy) {
     return SocialPostReactionType.praise;
@@ -496,15 +504,25 @@ function BaseItem({
     const linkToShare = getShareLink();
     if (!linkToShare) return;
 
-    onTelemetryEvent?.('share', {
+    onTelemetryEvent?.('post_share_initiated', {
       postType: postData.type,
     });
-
-    await Share.share({
-      title: `${postData?.title ?? ''}`,
-      url: Platform.OS === 'ios' ? linkToShare : '',
-      message: Platform.OS === 'android' ? linkToShare : linkToShare,
-    });
+    try {
+      const result = await Share.share({
+        title: `${postData?.title ?? ''}`,
+        url: Platform.OS === 'ios' ? linkToShare : '',
+        message: Platform.OS === 'android' ? linkToShare : linkToShare,
+      });
+      onTelemetryEvent?.('post_share_completed', {
+        postType: postData.type,
+        result: isShareDialogDismissed(result) ? 'cancel' : 'success',
+      });
+    } catch (_error) {
+      onTelemetryEvent?.('post_share_completed', {
+        postType: postData.type,
+        result: 'fail',
+      });
+    }
   };
 
   const openRepostSheet = () => {
@@ -546,7 +564,7 @@ function BaseItem({
         Toast.show(responseMessage || 'Post reposted to your feed', Toast.LONG);
         setDisplayRepostCount((previous) => previous + 1);
         setShowRepostSheet(false);
-        onTelemetryEvent?.('repost', {
+        onTelemetryEvent?.('post_repost', {
           postType: postData.type,
           repostType: 'repost',
           sourceType: effectiveRepostPayload.sourceType,
@@ -573,7 +591,7 @@ function BaseItem({
       return;
     }
     setShowRepostSheet(false);
-    onTelemetryEvent?.('repost', {
+    onTelemetryEvent?.('post_quote_create', {
       postType: postData.type,
       repostType: 'quote',
       sourceType: effectiveRepostPayload.sourceType,
@@ -743,7 +761,7 @@ function BaseItem({
         setDisplayReactions(nextReactions);
         setMyReaction(foundReaction);
 
-        onTelemetryEvent?.('reaction', {
+        onTelemetryEvent?.('post_reaction_add', {
           postType: postData.type,
           reactionType: normalizedType,
         });
@@ -792,7 +810,7 @@ function BaseItem({
         const foundReaction = nextReactions.find((reaction) => reaction.userId === user?._id);
         setDisplayReactions(nextReactions);
         setMyReaction(foundReaction);
-        onTelemetryEvent?.('reaction_removed', {
+        onTelemetryEvent?.('post_reaction_remove', {
           postType: postData.type,
         });
       } else {
@@ -822,7 +840,7 @@ function BaseItem({
     userId?: string,
     link?: string,
     image?: string
-  ) => {
+  ): Promise<boolean> => {
     dispatch(setLoader(true));
 
     try {
@@ -843,15 +861,20 @@ function BaseItem({
       });
 
       if (res?.status === 200) {
-        dispatch(getuserGet({ token, pullSavedData: fromSavedPosts }));
+        dispatch(getuserGet({ token, pullSavedData: true }));
+        Toast.show('Post saved!', Toast.SHORT);
+        return true;
       }
-      dispatch(setLoader(false));
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
+    } finally {
+      dispatch(setLoader(false));
     }
+    Toast.show('Failed to save. Please try again.', Toast.LONG);
+    return false;
   };
 
-  const removeSavedPost = async (type?: string, link?: string, id?: string) => {
+  const removeSavedPost = async (type?: string, link?: string, id?: string): Promise<boolean> => {
     dispatch(setLoader(true));
 
     try {
@@ -867,12 +890,17 @@ function BaseItem({
       });
 
       if (res?.status === 200) {
-        dispatch(getuserGet({ token, pullSavedData: fromSavedPosts }));
+        dispatch(getuserGet({ token, pullSavedData: true }));
+        Toast.show('Post removed from saved.', Toast.SHORT);
+        return true;
       }
-      dispatch(setLoader(false));
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
+    } finally {
+      dispatch(setLoader(false));
     }
+    Toast.show('Failed to remove. Please try again.', Toast.LONG);
+    return false;
   };
 
   let isThisPostSaved = false;
@@ -1073,7 +1101,7 @@ function BaseItem({
               disabled={!onCommentsPress}
               onPress={() => {
                 if (onCommentsPress) {
-                  onTelemetryEvent?.('open_comments', {
+                  onTelemetryEvent?.('post_comment_open', {
                     postType: postData.type,
                   });
                   onCommentsPress();
@@ -1134,25 +1162,34 @@ function BaseItem({
             <TouchableOpacity
               onPress={() => {
                 if (isThisPostSaved) {
-                  onTelemetryEvent?.('unsave', {
-                    postType: postData.type,
+                  const removePromise = postData.id
+                    ? removeSavedPost(postData.type, undefined, postData.id)
+                    : removeSavedPost(postData.type, postData.postlink);
+                  removePromise.then((didRemove) => {
+                    if (didRemove) {
+                      onTelemetryEvent?.('post_save_remove', {
+                        postType: postData.type,
+                      });
+                    }
                   });
-                  if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                  else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
-                } else {
-                  onTelemetryEvent?.('save', {
-                    postType: postData.type,
-                  });
-                  savePost(
-                    postData?.id,
-                    postData?.type,
-                    postData.title,
-                    created,
-                    userData?._id,
-                    postData?.postlink,
-                    postData?.image?.url
-                  );
+                  return;
                 }
+
+                savePost(
+                  postData?.id,
+                  postData?.type,
+                  postData.title,
+                  created,
+                  userData?._id,
+                  postData?.postlink,
+                  postData?.image?.url
+                ).then((didSave) => {
+                  if (didSave) {
+                    onTelemetryEvent?.('post_save_add', {
+                      postType: postData.type,
+                    });
+                  }
+                });
               }}
               style={{ alignItems: 'center' }}
             >
@@ -1659,7 +1696,7 @@ function BaseItem({
               disabled={!onCommentsPress}
               onPress={() => {
                 if (onCommentsPress) {
-                  onTelemetryEvent?.('open_comments', {
+                  onTelemetryEvent?.('post_comment_open', {
                     postType: postData.type,
                   });
                   onCommentsPress();
@@ -1718,25 +1755,34 @@ function BaseItem({
             <TouchableOpacity
               onPress={() => {
                 if (isThisPostSaved) {
-                  onTelemetryEvent?.('unsave', {
-                    postType: postData.type,
+                  const removePromise = postData.id
+                    ? removeSavedPost(postData.type, undefined, postData.id)
+                    : removeSavedPost(postData.type, postData.postlink);
+                  removePromise.then((didRemove) => {
+                    if (didRemove) {
+                      onTelemetryEvent?.('post_save_remove', {
+                        postType: postData.type,
+                      });
+                    }
                   });
-                  if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                  else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
-                } else {
-                  onTelemetryEvent?.('save', {
-                    postType: postData.type,
-                  });
-                  savePost(
-                    postData?.id,
-                    postData?.type,
-                    postData.title,
-                    created,
-                    userData?._id,
-                    postData?.postlink,
-                    postData?.image?.url
-                  );
+                  return;
                 }
+
+                savePost(
+                  postData?.id,
+                  postData?.type,
+                  postData.title,
+                  created,
+                  userData?._id,
+                  postData?.postlink,
+                  postData?.image?.url
+                ).then((didSave) => {
+                  if (didSave) {
+                    onTelemetryEvent?.('post_save_add', {
+                      postType: postData.type,
+                    });
+                  }
+                });
               }}
             >
               <MaterialIcons

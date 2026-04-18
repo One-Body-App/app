@@ -13436,16 +13436,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nsfwjs@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "nsfwjs@npm:4.3.0"
-  peerDependencies:
-    "@tensorflow/tfjs": ^4.0.0
-    buffer: ^6.0.3
-  checksum: 10/ea1469f8a0330eba81ab550e002361510881d04dca71ef744a1a67ed0b94ba5d6a9f5267eeca2043af3465646420b659ca1a6fefc1f1df9a2104d8b293a46ffc
-  languageName: node
-  linkType: hard
-
 "nth-check@npm:^2.0.1":
   version: 2.1.1
   resolution: "nth-check@npm:2.1.1"
@@ -13729,7 +13719,6 @@ __metadata:
     lottie-ios: "npm:^4.3.4"
     lottie-react-native: "npm:^7.3.5"
     node-git-hooks: "npm:^1.0.7"
-    nsfwjs: "npm:^4.3.0"
     object-to-formdata: "npm:^4.5.1"
     patch-package: "npm:^8.0.1"
     path: "npm:^0.12.7"

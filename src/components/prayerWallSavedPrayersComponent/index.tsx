@@ -11,6 +11,8 @@ import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import PrayerItem from '../listItems/PrayerItem';
 import { getProfile } from '@/src/redux/actions/AuthActions';
+import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import { usePrayerListTelemetry } from '@/components/prayerWall/usePrayerListTelemetry';
 
 type PrayerWallSavedPrayersProps = {
   onOpenPost?: (postId: string) => void;
@@ -35,6 +37,22 @@ function PrayerWallSavedPrayersComponent({
   const [savedPosts, setSavedPosts] = useState<PrayerPost[]>([]);
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+  const {
+    finalizeAllVisible,
+    onViewableItemsChanged,
+    resetPrayerTelemetryRequest,
+    trackPrayerTelemetry,
+    viewabilityConfig,
+  } = usePrayerListTelemetry({
+    currentUserId: user?._id ? String(user._id) : undefined,
+    entrypoint: 'prayer_wall_saved',
+  });
+
+  useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
+  }, [token]);
 
   useEffect(() => {
     if (token) {
@@ -45,13 +63,23 @@ function PrayerWallSavedPrayersComponent({
         })
       );
     }
-  }, [token, refreshing]);
+  }, [dispatch, refreshing, token]);
+
+  useEffect(() => {
+    return () => {
+      finalizeAllVisible('unmount');
+      flushFeedTelemetry(tokenRef.current || undefined).catch(() => undefined);
+    };
+  }, [finalizeAllVisible]);
 
   useEffect(() => {
     setRefreshing(false);
   }, [authState.getProfileSuccess]);
 
   const getPrayerPosts = async (pageNumber: number) => {
+    if (pageNumber === 1) {
+      resetPrayerTelemetryRequest();
+    }
     setIsLoading(true);
 
     try {
@@ -161,6 +189,8 @@ function PrayerWallSavedPrayersComponent({
           </StyledText>
         )}
         // onEndReachedThreshold={0.8}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         scrollEnabled={isScrollEnable}
         onScroll={(event) => {
           onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);
@@ -170,6 +200,9 @@ function PrayerWallSavedPrayersComponent({
           const postId = item.postId ?? item.id;
           const openPost = () => {
             if (!postId) return;
+            trackPrayerTelemetry(item, index, 'post_open', {
+              origin: 'prayer_card',
+            });
             if (onOpenPost) {
               onOpenPost(postId);
               return;
@@ -185,6 +218,9 @@ function PrayerWallSavedPrayersComponent({
                 editPost={editPost}
                 removePost={removePost}
                 item={item}
+                onTelemetryEvent={(eventType, metadata) => {
+                  trackPrayerTelemetry(item, index, eventType as any, metadata);
+                }}
                 onCommentsPress={openPost}
                 limitContentLines
               />

@@ -74,7 +74,7 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
           },
         });
 
-        if (fallbackResponse.finalAction === 'flag_for_admin_review') {
+        if (fallbackResponse.finalAction !== 'allow') {
           pendingReviewCheck = {
             type: 'text',
             clientSource: moderation.source,

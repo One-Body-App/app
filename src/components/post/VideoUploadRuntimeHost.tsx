@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
 import VideoProcessingRuntime from './VideoProcessingRuntime';
-import VideoModerationBridge from './VideoModerationBridge';
 import { displayVideoUploadLocalNotification } from '@/src/services/notification/pushNotificationService';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
@@ -40,13 +39,10 @@ export default function VideoUploadRuntimeHost() {
   );
 
   return (
-    <>
-      <VideoModerationBridge />
-      <VideoProcessingRuntime
-        onCompleteUpload={handleCompletedUpload}
-        showUploadToast={toast.show}
-        showUploadNotification={handleUploadNotification}
-      />
-    </>
+    <VideoProcessingRuntime
+      onCompleteUpload={handleCompletedUpload}
+      showUploadToast={toast.show}
+      showUploadNotification={handleUploadNotification}
+    />
   );
 }

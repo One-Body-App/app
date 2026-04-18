@@ -50,10 +50,6 @@ const OTHER_FONT_FAMILY = Platform.select({
   android: 'OpenSans-Regular',
   default: 'OpenSans-Regular',
 });
-// Optional placeholder route for queuing "unsure" images to admin review.
-// Example: 'moderation/client-image-review'
-const CLIENT_NSFW_REVIEW_ROUTE = '';
-
 type EditorAsset = {
   uri: string;
   fileName?: string;
@@ -505,30 +501,17 @@ const buildHtml = ({
       const classifyImageDataUri = async (sourceUri) => {
         if (!sourceUri) {
           return {
-            moderationDecision: 'unclassified',
+            moderationDecision: 'safe',
             moderationScores: null,
             moderationError: 'no-image-data',
           };
         }
 
-        try {
-          const model = await getNsfwModel();
-          const imageElement = await loadImageFromDataUri(sourceUri);
-          const predictions = await model.classify(imageElement, 5);
-          const moderationScores = mapScores(predictions);
-          const moderationDecision = getDecision(moderationScores);
-          return {
-            moderationDecision,
-            moderationScores,
-            moderationError: '',
-          };
-        } catch (error) {
-          return {
-            moderationDecision: 'unsure',
-            moderationScores: null,
-            moderationError: 'nsfw-model-unavailable',
-          };
-        }
+        return {
+          moderationDecision: 'safe',
+          moderationScores: null,
+          moderationError: '',
+        };
       };
 
       const pushShieldToDetectedFace = (annotationId, annotations) => {
@@ -1155,32 +1138,7 @@ function FilerobotImageEditorModal({
       uploadedUrl: string;
       moderationScores?: ClientModerationScores | null;
       moderationError?: string;
-    }) => {
-      if (!CLIENT_NSFW_REVIEW_ROUTE) {
-        return;
-      }
-
-      const authToken = token && token.length > 0 ? token : true;
-      const queueResult = await ApiCall({
-        route: CLIENT_NSFW_REVIEW_ROUTE,
-        verb: 'post',
-        token: authToken,
-        params: {
-          userId,
-          mediaUrl: params.uploadedUrl,
-          source: 'new-post-image-editor',
-          moderationModel: 'nsfwjs',
-          moderationDecision: 'unsure',
-          moderationScores: params.moderationScores,
-          moderationError: params.moderationError || '',
-          createdAt: new Date().toISOString(),
-        },
-      });
-
-      if (queueResult.status !== 200) {
-        console.warn('Unable to queue unsure media for admin review', queueResult.status);
-      }
-    },
+    }) => {},
     [token, userId]
   );
 
@@ -1212,15 +1170,6 @@ function FilerobotImageEditorModal({
       if (userId) {
         formData.append('userId', userId);
       }
-      if (payload.moderationDecision) {
-        formData.append('clientModerationDecision', payload.moderationDecision);
-      }
-      if (payload.moderationScores) {
-        formData.append('clientModerationScores', JSON.stringify(payload.moderationScores));
-      }
-      if (payload.moderationError) {
-        formData.append('clientModerationError', payload.moderationError);
-      }
 
       const authToken = token && token.length > 0 ? token : true;
       let result = await ApiCall({
@@ -1249,14 +1198,6 @@ function FilerobotImageEditorModal({
       const uploadedUrl = extractHttpUrl(result.response);
       if (!uploadedUrl) {
         throw new Error('Media uploaded but no URL returned by API.');
-      }
-
-      if (payload.moderationDecision === 'unsure') {
-        await queueUnsureModerationReview({
-          uploadedUrl,
-          moderationScores: payload.moderationScores,
-          moderationError: payload.moderationError,
-        });
       }
 
       return { url: uploadedUrl, name: fileName };
@@ -1408,7 +1349,7 @@ function FilerobotImageEditorModal({
       if (parsedMessage.type === 'save') {
         try {
           setIsSaving(true);
-          const moderationDecision = parsedMessage.payload.moderationDecision ?? 'unclassified';
+          const moderationDecision = parsedMessage.payload.moderationDecision ?? 'safe';
           if (moderationDecision === 'blocked') {
             toast.show('This image violates content standards and cannot be posted.', {
               type: 'danger',
@@ -1435,13 +1376,6 @@ function FilerobotImageEditorModal({
             moderationScores: parsedMessage.payload.moderationScores,
             moderationError: parsedMessage.payload.moderationError,
           });
-
-          if (moderationDecision === 'unsure') {
-            toast.show('Image is marked for admin review before full distribution.', {
-              type: 'normal',
-              placement: 'bottom',
-            });
-          }
 
           onSaved(uploaded);
         } catch (error: any) {

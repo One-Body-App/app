@@ -98,6 +98,14 @@ const REACTION_BAR_ITEMS: AnimatedReaction[] = [
   { id: 'angry', iconUrl: REACTION_ICON_URLS.angry },
 ];
 
+const isShareDialogDismissed = (result: unknown) => {
+  if (!result || typeof result !== 'object') {
+    return false;
+  }
+  const { action } = result as { action?: unknown };
+  return typeof action === 'string' && action.toLowerCase().includes('dismiss');
+};
+
 const InlineReactionBar = React.forwardRef<
   ReactionBarRef,
   { onDismiss: () => void; onReactionSelect: (reaction: AnimatedReaction) => void }
@@ -387,7 +395,7 @@ function WatchOverlay({
           const foundReaction = nextReactions.find((reaction) => reaction.userId === user?._id);
           setDisplayReactions(nextReactions);
           setMyReaction(foundReaction);
-          onTelemetryEvent?.('reaction', {
+          onTelemetryEvent?.('post_reaction_add', {
             postType: PostType.watch,
             reactionType: normalizedType,
           });
@@ -430,7 +438,7 @@ function WatchOverlay({
         const foundReaction = nextReactions.find((reaction) => reaction.userId === user?._id);
         setDisplayReactions(nextReactions);
         setMyReaction(foundReaction);
-        onTelemetryEvent?.('reaction_removed', {
+        onTelemetryEvent?.('post_reaction_remove', {
           postType: PostType.watch,
         });
         return;
@@ -492,8 +500,7 @@ function WatchOverlay({
       };
 
       if (isSaved) {
-        onTelemetryEvent?.('unsave', { postType: PostType.watch });
-        await ApiCall({
+        const result = await ApiCall({
           route: 'user/remove-saved-post',
           verb: 'delete',
           token,
@@ -503,16 +510,25 @@ function WatchOverlay({
             link: item.link,
           },
         });
+        if (result?.status === 200) {
+          onTelemetryEvent?.('post_save_remove', { postType: PostType.watch });
+        } else {
+          throw new Error('save-remove-failed');
+        }
       } else {
-        onTelemetryEvent?.('save', { postType: PostType.watch });
-        await ApiCall({
+        const result = await ApiCall({
           route: 'user/save-post',
           verb: 'post',
           token,
           params,
         });
+        if (result?.status === 200) {
+          onTelemetryEvent?.('post_save_add', { postType: PostType.watch });
+        } else {
+          throw new Error('save-add-failed');
+        }
       }
-      dispatch(getuserGet({ token, pullSavedData: fromSavedPosts }));
+      dispatch(getuserGet({ token, pullSavedData: true }));
     } catch (_error) {
       Toast.show('Unable to update saved posts right now.', Toast.LONG);
     } finally {
@@ -562,7 +578,7 @@ function WatchOverlay({
       if (res?.status === 200) {
         setDisplayRepostCount((previous) => previous + 1);
         setShowRepostSheet(false);
-        onTelemetryEvent?.('repost', {
+        onTelemetryEvent?.('post_repost', {
           postType: PostType.watch,
           repostType: 'repost',
           sourceType: PostType.social,
@@ -582,7 +598,7 @@ function WatchOverlay({
 
   const openQuoteComposer = useCallback(() => {
     setShowRepostSheet(false);
-    onTelemetryEvent?.('repost', {
+    onTelemetryEvent?.('post_quote_create', {
       postType: PostType.watch,
       repostType: 'quote',
       sourceType: PostType.social,
@@ -617,12 +633,26 @@ function WatchOverlay({
     if (!linkToShare) {
       return;
     }
-    await Share.share({
-      title: item.title ?? '',
-      url: Platform.OS === 'ios' ? linkToShare : '',
-      message: Platform.OS === 'android' ? linkToShare : linkToShare,
+    onTelemetryEvent?.('post_share_initiated', {
+      postType: PostType.watch,
     });
-  }, [item.id, item.link, item.postId, item.title, item._id]);
+    try {
+      const result = await Share.share({
+        title: item.title ?? '',
+        url: Platform.OS === 'ios' ? linkToShare : '',
+        message: Platform.OS === 'android' ? linkToShare : linkToShare,
+      });
+      onTelemetryEvent?.('post_share_completed', {
+        postType: PostType.watch,
+        result: isShareDialogDismissed(result) ? 'cancel' : 'success',
+      });
+    } catch (_error) {
+      onTelemetryEvent?.('post_share_completed', {
+        postType: PostType.watch,
+        result: 'fail',
+      });
+    }
+  }, [item.id, item.link, item.postId, item.title, item._id, onTelemetryEvent]);
 
   const selectedReactionIconUrl =
     selectedReactionId &&

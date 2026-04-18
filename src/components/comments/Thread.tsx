@@ -88,6 +88,7 @@ interface CommentThreadProps {
   threadRootCommentId?: string;
   threadRootCommentSnapshot?: SerializableCommentSnapshot;
   onOpenCommentThread?: (comment: CommentPost) => void;
+  onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
 }
 
 type ReplyTarget = {
@@ -96,6 +97,14 @@ type ReplyTarget = {
 };
 
 const ONEBODY_APP_BASE_URL = 'https://app.onebodyapp.com';
+
+const isShareDialogDismissed = (result: unknown) => {
+  if (!result || typeof result !== 'object') {
+    return false;
+  }
+  const { action } = result as { action?: unknown };
+  return typeof action === 'string' && action.toLowerCase().includes('dismiss');
+};
 
 const isLocalImageUri = (value: string) =>
   value.startsWith('file://') || value.startsWith('content://');
@@ -144,6 +153,7 @@ function CommentThread({
   threadRootCommentId,
   threadRootCommentSnapshot,
   onOpenCommentThread,
+  onTelemetryEvent,
 }: CommentThreadProps) {
   const navigation = useNavigation<any>();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -982,6 +992,10 @@ function CommentThread({
             if (onPostRefresh) {
               onPostRefresh();
             }
+            onTelemetryEvent?.('post_comment_edit', {
+              postType: type,
+              commentId: editingCommentId,
+            });
             return true;
           }
 
@@ -1080,6 +1094,11 @@ function CommentThread({
               listRef.current?.scrollToOffset({ animated: true, offset: 0 });
             });
           }
+          onTelemetryEvent?.('post_comment_add', {
+            postType: type,
+            commentId: getCommentId(optimisticComment),
+            parentCommentId: replyingTo?.id,
+          });
           return true;
         }
 
@@ -1106,6 +1125,7 @@ function CommentThread({
       mediaGif,
       mediaImages,
       onCommentPublished,
+      onTelemetryEvent,
       onPostRefresh,
       postId,
       resetReplyTarget,
@@ -1146,6 +1166,10 @@ function CommentThread({
           if (onPostRefresh) {
             onPostRefresh();
           }
+          onTelemetryEvent?.('post_comment_delete', {
+            postType: type,
+            commentId,
+          });
           return;
         }
 
@@ -1167,6 +1191,7 @@ function CommentThread({
     [
       clearEditingState,
       editingCommentId,
+      onTelemetryEvent,
       onPostRefresh,
       postId,
       replyingTo?.id,
@@ -1333,6 +1358,15 @@ function CommentThread({
             type: 'danger',
             placement: 'bottom',
           });
+        } else {
+          onTelemetryEvent?.(
+            reactionType ? 'post_comment_reaction_add' : 'post_comment_reaction_remove',
+            {
+              postType: type,
+              reactionType,
+              commentId,
+            }
+          );
         }
       } catch (_error) {
         setComments(previousComments);
@@ -1347,7 +1381,7 @@ function CommentThread({
         setReactingCommentId('');
       }
     },
-    [postId, threadRootShadow, rootHeaderComment, token, toast, type, user?._id]
+    [onTelemetryEvent, postId, threadRootShadow, rootHeaderComment, token, toast, type, user?._id]
   );
 
   const handleToggleReaction = useCallback(
@@ -1448,6 +1482,11 @@ function CommentThread({
       }
 
       if (withQuote) {
+        onTelemetryEvent?.('post_quote_create', {
+          postType: type,
+          commentId,
+          sourceType: 'comment',
+        });
         navigation.navigate('Post', {
           repostDraft: {
             sourceType: 'comment',
@@ -1497,6 +1536,11 @@ function CommentThread({
               repostCount: Number(previous.repostCount ?? 0) + 1,
             };
           });
+          onTelemetryEvent?.('post_repost', {
+            postType: type,
+            commentId,
+            sourceType: 'comment',
+          });
           return;
         }
 
@@ -1515,7 +1559,7 @@ function CommentThread({
         setRepostingCommentId('');
       }
     },
-    [navigation, toast, token]
+    [navigation, onTelemetryEvent, toast, token, type]
   );
 
   const handleOpenRepostActions = useCallback(
@@ -1577,14 +1621,30 @@ function CommentThread({
 
       const postType = type === PostType.prayer ? PostType.prayer : PostType.social;
       const shareUrl = `${ONEBODY_APP_BASE_URL}/post/${postType}/${postId}?commentId=${encodeURIComponent(commentId)}`;
-
-      await Share.share({
-        title: comment.content ?? '',
-        url: Platform.OS === 'ios' ? shareUrl : '',
-        message: Platform.OS === 'android' ? shareUrl : shareUrl,
+      onTelemetryEvent?.('post_share_initiated', {
+        postType: type,
+        commentId,
       });
+      try {
+        const result = await Share.share({
+          title: comment.content ?? '',
+          url: Platform.OS === 'ios' ? shareUrl : '',
+          message: Platform.OS === 'android' ? shareUrl : shareUrl,
+        });
+        onTelemetryEvent?.('post_share_completed', {
+          postType: type,
+          commentId,
+          result: isShareDialogDismissed(result) ? 'cancel' : 'success',
+        });
+      } catch (_error) {
+        onTelemetryEvent?.('post_share_completed', {
+          postType: type,
+          commentId,
+          result: 'fail',
+        });
+      }
     },
-    [postId, type]
+    [onTelemetryEvent, postId, type]
   );
 
   rootToggleReactionRef.current = handleToggleReaction;
@@ -1612,9 +1672,14 @@ function CommentThread({
       if (!onOpenCommentThread || editingCommentId) {
         return;
       }
+      onTelemetryEvent?.('post_comment_open', {
+        postType: type,
+        commentId: getCommentId(comment),
+        origin: 'thread',
+      });
       onOpenCommentThread(comment);
     },
-    [editingCommentId, onOpenCommentThread]
+    [editingCommentId, onOpenCommentThread, onTelemetryEvent, type]
   );
 
   const handleScrollBeginDrag = useCallback(() => {

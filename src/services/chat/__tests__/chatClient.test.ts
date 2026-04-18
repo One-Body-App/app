@@ -1,6 +1,9 @@
 const mockEmitChatConversationRead = jest.fn();
 const mockMarkChatConversationRead = jest.fn();
 const mockUpdateChatConversationReadState = jest.fn();
+const mockGetMyChatKeypair = jest.fn();
+const mockGetPeerPublicKey = jest.fn();
+const mockDecryptE2EEMessage = jest.fn();
 
 class MockChatTransportError extends Error {
   public readonly code: string;
@@ -28,12 +31,12 @@ jest.mock('../api', () => ({
 
 jest.mock('../keyManager', () => ({
   ensureChatKeypair: jest.fn(),
-  getMyChatKeypair: jest.fn(),
-  getPeerPublicKey: jest.fn(),
+  getMyChatKeypair: (...args: any[]) => mockGetMyChatKeypair(...args),
+  getPeerPublicKey: (...args: any[]) => mockGetPeerPublicKey(...args),
 }));
 
 jest.mock('../crypto', () => ({
-  decryptE2EEMessage: jest.fn(),
+  decryptE2EEMessage: (...args: any[]) => mockDecryptE2EEMessage(...args),
   encryptE2EEMessage: jest.fn(),
 }));
 
@@ -49,6 +52,9 @@ describe('chatClient markConversationRead', () => {
     mockEmitChatConversationRead.mockReset();
     mockMarkChatConversationRead.mockReset();
     mockUpdateChatConversationReadState.mockReset();
+    mockGetMyChatKeypair.mockReset();
+    mockGetPeerPublicKey.mockReset();
+    mockDecryptE2EEMessage.mockReset();
     // eslint-disable-next-line global-require
     chatClient = require('../chatClient') as typeof import('../chatClient');
   });
@@ -181,5 +187,62 @@ describe('chatClient markConversationRead', () => {
       },
       'token'
     );
+  });
+});
+
+describe('chatClient decryptDirectMessageEnvelope', () => {
+  let chatClient: typeof import('../chatClient');
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockEmitChatConversationRead.mockReset();
+    mockMarkChatConversationRead.mockReset();
+    mockUpdateChatConversationReadState.mockReset();
+    mockGetMyChatKeypair.mockReset();
+    mockGetPeerPublicKey.mockReset();
+    mockDecryptE2EEMessage.mockReset();
+    // eslint-disable-next-line global-require
+    chatClient = require('../chatClient') as typeof import('../chatClient');
+  });
+
+  it('decrypts a direct realtime message envelope with the current and peer keys', async () => {
+    mockGetMyChatKeypair.mockResolvedValue({
+      privateKey: 'my-private-key',
+    });
+    mockGetPeerPublicKey.mockResolvedValue({
+      publicKey: 'peer-public-key',
+      keyVersion: 1,
+    });
+    mockDecryptE2EEMessage.mockResolvedValue('hello from socket');
+
+    await expect(
+      chatClient.decryptDirectMessageEnvelope({
+        peerUserId: '65f000000000000000000010',
+        token: 'token',
+        message: {
+          _id: 'm1',
+          senderId: '65f000000000000000000010',
+          receiverId: '65f000000000000000000011',
+          conversationType: 'direct',
+          encryptedPayload: 'encrypted-payload',
+          nonce: 'nonce',
+          authTag: 'box:v1',
+          aad: 'aad',
+          messageType: 'text',
+          status: 'delivered',
+        },
+      })
+    ).resolves.toBe('hello from socket');
+
+    expect(mockGetMyChatKeypair).toHaveBeenCalledTimes(1);
+    expect(mockGetPeerPublicKey).toHaveBeenCalledWith('65f000000000000000000010', 'token');
+    expect(mockDecryptE2EEMessage).toHaveBeenCalledWith({
+      encryptedPayload: 'encrypted-payload',
+      nonce: 'nonce',
+      authTag: 'box:v1',
+      aad: 'aad',
+      myPrivateKeyBase64: 'my-private-key',
+      peerPublicKeyBase64: 'peer-public-key',
+    });
   });
 });

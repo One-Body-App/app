@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Image, Platform, Text, TouchableOpacity } from 'react-native';
+import { Image, InteractionManager, Platform, Text, TouchableOpacity } from 'react-native';
 import type { MfaChallengeResponse } from '@/services/login';
 import { PASSKEY_ASSOCIATION_FALLBACK_MESSAGE } from '@/src/utils/passkeyErrors';
 import LoginComponent from './index';
@@ -145,6 +145,8 @@ const challengeBase: MfaChallengeResponse = {
 };
 
 const originalPlatformOs = Platform.OS;
+let runAfterInteractionsSpy: jest.SpyInstance | undefined;
+const mountedRenderers: TestRenderer.ReactTestRenderer[] = [];
 
 const associationError = new Error(
   "RequestFailed: The operation couldn't be completed. Unable to verify webcredentials association of 9N63S64RJ2.com.onebodyapp with domain app.onebodyapp.com. Please try again in a few seconds. (code: 1004, domain: com.apple.AuthenticationServices.AuthorizationError)"
@@ -193,6 +195,13 @@ const findTouchableByLabel = (renderer: TestRenderer.ReactTestRenderer, label: s
 describe('LoginComponent passkey fallback', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    runAfterInteractionsSpy?.mockRestore();
+    runAfterInteractionsSpy = jest
+      .spyOn(InteractionManager, 'runAfterInteractions')
+      .mockImplementation((work: any) => {
+        work?.();
+        return { cancel: jest.fn() } as any;
+      });
     Object.defineProperty(Platform, 'OS', {
       configurable: true,
       value: 'ios',
@@ -236,6 +245,12 @@ describe('LoginComponent passkey fallback', () => {
   });
 
   afterEach(() => {
+    act(() => {
+      while (mountedRenderers.length > 0) {
+        mountedRenderers.pop()?.unmount();
+      }
+    });
+    runAfterInteractionsSpy?.mockRestore();
     Object.defineProperty(Platform, 'OS', {
       configurable: true,
       value: originalPlatformOs,
@@ -250,6 +265,7 @@ describe('LoginComponent passkey fallback', () => {
         <LoginComponent currentUserEmail="person@example.com" initialMfaChallenge={challengeBase} />
       );
     });
+    mountedRenderers.push(renderer!);
 
     await flushPromises();
 
@@ -272,7 +288,7 @@ describe('LoginComponent passkey fallback', () => {
     expect(mockBeginPasskeyLogin).toHaveBeenCalledTimes(1);
   }, 15000);
 
-  it('does not auto-fallback to email during passkey enrollment', async () => {
+  it('auto-starts passkey enrollment without requiring a manual tap', async () => {
     let renderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
@@ -286,21 +302,54 @@ describe('LoginComponent passkey fallback', () => {
         />
       );
     });
+    mountedRenderers.push(renderer!);
 
-    const setupButton = findTouchableByLabel(renderer!, 'Set up your Passkey');
-    expect(setupButton).toBeTruthy();
-
-    await act(async () => {
-      setupButton?.props.onPress?.();
-    });
     await flushPromises();
 
     expect(mockBeginPasskeyRegistration).toHaveBeenCalledTimes(1);
     expect(mockSendEmailMfaCode).not.toHaveBeenCalled();
+  });
 
-    const renderedText = getRenderedText(renderer!);
-    expect(renderedText).toContain('Unable to verify webcredentials association');
-    expect(renderedText).not.toContain(PASSKEY_ASSOCIATION_FALLBACK_MESSAGE);
+  it('runs passkey enrollment only once per challenge token on Android rerenders', async () => {
+    Object.defineProperty(Platform, 'OS', {
+      configurable: true,
+      value: 'android',
+    });
+    mockRegister.mockRejectedValue(new Error('NotAllowedError: User canceled'));
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <LoginComponent
+          currentUserEmail="person@example.com"
+          initialMfaChallenge={{
+            ...challengeBase,
+            enrollmentRequired: true,
+          }}
+        />
+      );
+    });
+    mountedRenderers.push(renderer!);
+
+    await flushPromises();
+
+    act(() => {
+      renderer!.update(
+        <LoginComponent
+          currentUserEmail="person@example.com"
+          initialMfaChallenge={{
+            ...challengeBase,
+            enrollmentRequired: true,
+          }}
+        />
+      );
+    });
+
+    await flushPromises();
+
+    expect(mockBeginPasskeyRegistration).toHaveBeenCalledTimes(1);
+    expect(InteractionManager.runAfterInteractions).toHaveBeenCalledTimes(1);
   });
 
   it('routes new social users to account type selection instead of auto-creating an account', async () => {
@@ -321,6 +370,7 @@ describe('LoginComponent passkey fallback', () => {
     act(() => {
       renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
     });
+    mountedRenderers.push(renderer!);
 
     const googleButton = renderer!.root.findAllByType(TouchableOpacity).find((node) => {
       return node.findAllByType(Image).length > 0;
@@ -372,6 +422,7 @@ describe('LoginComponent passkey fallback', () => {
     act(() => {
       renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
     });
+    mountedRenderers.push(renderer!);
 
     const appleButton = renderer!.root.findAllByType(TouchableOpacity).find((node) => {
       return node.props.accessibilityLabel === 'Continue with Apple';

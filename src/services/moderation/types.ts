@@ -1,6 +1,6 @@
 export type ClientModerationAction = 'allow' | 'block' | 'fallback';
 
-export type ClientModerationSource = 'heuristic' | 'toxicity' | 'nsfwjs';
+export type ClientModerationSource = 'heuristic' | 'toxicity';
 
 export type ClientTextModerationScores = {
   maxToxicity: number;
@@ -29,13 +29,6 @@ export type ClientModerationResult =
       scores: ClientTextModerationScores;
       reason?: string;
       model: 'tfjs-toxicity';
-    }
-  | {
-      action: ClientModerationAction;
-      source: 'nsfwjs';
-      scores: ClientImageModerationScores;
-      reason?: string;
-      model: 'nsfwjs';
     };
 
 export type BackendFallbackModerationRequest = {
@@ -45,11 +38,16 @@ export type BackendFallbackModerationRequest = {
 };
 
 export type BackendFallbackModerationResponse = {
-  finalAction: 'allow' | 'flag_for_admin_review';
+  finalAction: 'allow' | 'pending_review' | 'block';
   provider: 'openai';
   flagged: boolean;
   model?: string;
   results?: unknown[];
+  matchedCategories?: Array<{
+    category: string;
+    score: number;
+    threshold: number;
+  }>;
 };
 
 export type ModerationReviewCheckPayload = {

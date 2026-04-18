@@ -699,7 +699,7 @@ function SocialItem({
         return;
       }
 
-      onTelemetryEvent?.('open_watch', {
+      onTelemetryEvent?.('post_open', {
         postType,
         playBackId,
       });
@@ -732,7 +732,7 @@ function SocialItem({
 
   const handleContentPress = () => {
     if (handleCommentsPress) {
-      onTelemetryEvent?.(isWatchPost ? 'open_watch' : 'open_post', {
+      onTelemetryEvent?.('post_open', {
         postType,
       });
       handleCommentsPress();
@@ -818,7 +818,7 @@ function SocialItem({
       return;
     }
 
-    onTelemetryEvent?.('open_post', {
+    onTelemetryEvent?.('post_open', {
       postType:
         sourceSnapshot.sourceType === 'comment'
           ? sourceSnapshot.sourceObjectType || sourceSnapshot.sourceType
@@ -1076,7 +1076,7 @@ function SocialItem({
                             imageResizeMode="cover"
                             frameBackgroundColor="transparent"
                             onImagePress={(selectedIndex) => {
-                              onTelemetryEvent?.('media_open', {
+                              onTelemetryEvent?.('post_media_open', {
                                 mediaType: 'image',
                                 sourceType: sourceSnapshot?.sourceType,
                               });
@@ -1345,7 +1345,7 @@ function SocialItem({
               frameBackgroundColor={isPrimaryHomeFeed ? 'transparent' : Colors.containFrame}
               setImageModalIndexVisible={(selectedIndex) => {
                 if (selectedIndex > -1) {
-                  onTelemetryEvent?.('media_open', {
+                  onTelemetryEvent?.('post_media_open', {
                     mediaType: 'image',
                   });
                 }
@@ -1378,6 +1378,7 @@ function SocialItem({
             onCommentPublished={() => {
               setInlineCommentCount((previous) => previous + 1);
             }}
+            onTelemetryEvent={onTelemetryEvent}
             contentContainerStyle={{ paddingBottom: spacing.x16 }}
             listStyle={{ maxHeight: 420 }}
           />

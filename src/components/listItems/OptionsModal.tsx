@@ -124,7 +124,7 @@ function OptionsModal({
       });
 
       if (res?.status === 200) {
-        dispatch(getuserGet({ token }));
+        dispatch(getuserGet({ token, pullSavedData: true }));
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
@@ -161,7 +161,7 @@ function OptionsModal({
       });
 
       if (res?.status === 200) {
-        dispatch(getuserGet({ token }));
+        dispatch(getuserGet({ token, pullSavedData: true }));
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());

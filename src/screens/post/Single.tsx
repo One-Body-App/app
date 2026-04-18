@@ -1,5 +1,5 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -30,6 +30,13 @@ import {
   toSerializableCommentSnapshot,
 } from '@/components/comments/commentListUtils';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
+import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import {
+  createPostTelemetryRequestId,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+} from '@/services/postTelemetry';
 
 type Props = StackScreenProps<MainStackParamList, 'SinglePost'>;
 
@@ -39,11 +46,13 @@ function SinglePost({ navigation, route }: Props) {
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const { colors, dark } = useTheme();
   const { width } = useWindowDimensions();
   const { imageViewer, openImages } = useSharedImageViewer();
   const socialItemContentWidth = Math.max(width - spacing.x16 * 2, 0);
   const backNavigationInFlightRef = useRef(false);
+  const requestIdRef = useRef(createPostTelemetryRequestId());
   const resetToHomeFeed = useCallback(() => {
     navigation.reset({
       index: 0,
@@ -153,6 +162,49 @@ function SinglePost({ navigation, route }: Props) {
     [navigation, route.params?.postId]
   );
 
+  const trackSinglePostTelemetry = useCallback(
+    (
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>
+    ) => {
+      const postId = route.params?.postId;
+      if (!postId) {
+        return;
+      }
+
+      trackPostTelemetry({
+        postId,
+        postType: 'social',
+        contentType: post?.type ?? 'social',
+        tags: Array.isArray((post as { tags?: unknown } | undefined)?.tags)
+          ? ((post as { tags?: string[] }).tags ?? [])
+          : [],
+        authorId: post?.userData?._id,
+        userId: currentUser?._id ? String(currentUser._id) : undefined,
+        surface: 'social_feed',
+        surfaceTab: 'detail',
+        entrypoint: 'single_post',
+        requestId: requestIdRef.current,
+        isOwnPost:
+          Boolean(currentUser?._id) && Boolean(post?.userData?._id)
+            ? String(currentUser._id) === String(post.userData._id)
+            : undefined,
+        isRepost: Boolean((post as { repost?: unknown } | undefined)?.repost),
+        privacyState:
+          (post as { private?: boolean } | undefined)?.private === true ? 'private' : 'public',
+        ...overrides,
+        eventName,
+        metadata,
+      });
+    },
+    [currentUser?._id, post, route.params?.postId]
+  );
+
+  useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
+  }, [token]);
+
   useMountEffect(() => {
     if (route.params?.postId) {
       getPost();
@@ -191,6 +243,7 @@ function SinglePost({ navigation, route }: Props) {
           threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
           onOpenCommentThread={openCommentThread}
           onPostRefresh={getPost}
+          onTelemetryEvent={trackSinglePostTelemetry}
           headerContainerStyle={{
             paddingHorizontal: 0,
             paddingTop: 0,
@@ -205,6 +258,7 @@ function SinglePost({ navigation, route }: Props) {
               visible
               contentWidth={socialItemContentWidth}
               onOpenImages={openImages}
+              onTelemetryEvent={trackSinglePostTelemetry}
               socialPostviewStyle={{
                 marginHorizontal: 0,
                 marginBottom: 0,
