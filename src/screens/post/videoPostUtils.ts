@@ -1,9 +1,11 @@
 import { CommonActions } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import {
   AUDIO_BITRATE,
   resolveSupportedUploadRatioId,
 } from '@/src/services/videoProcessing/videoEditMath';
 import { enqueuePendingVideoUpload } from '@/src/services/videoProcessing/videoUploadQueue';
+import type { MainStackParamList } from '@/src/navigator/types';
 import type {
   VideoCropRect,
   VideoEditRecipe,
@@ -32,12 +34,7 @@ export const BLOCKED_WATCH_CAPTION_MESSAGE =
 export const UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE =
   'Only 1:1, 4:3, 16:9, and 9:16 videos can be uploaded to Watch.';
 
-type VideoPostNavigation = {
-  canGoBack: () => boolean;
-  goBack: () => void;
-  navigate: (routeName: string, params?: object) => void;
-  dispatch: (action: unknown) => void;
-};
+type VideoPostNavigation = StackNavigationProp<MainStackParamList, 'VideoPost'>;
 
 type QueuePendingWatchUpload = typeof enqueuePendingVideoUpload;
 type ShowQueuedWatchUploadToast = (

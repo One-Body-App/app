@@ -28,6 +28,7 @@ import {
   useScrollToTop,
   DrawerActions,
   useFocusEffect,
+  useIsFocused,
 } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BlurView } from '@react-native-community/blur';
@@ -172,7 +173,9 @@ type RelatedContentItem = {
   item: FeedPost;
 };
 
-type FeedEntry = FeedPost | TasteBreakerItem | RelatedContentItem | PrayerPost;
+type FeedEntry = (FeedPost | TasteBreakerItem | RelatedContentItem | PrayerPost) & {
+  feedInstanceId?: string;
+};
 type SuggestionsModuleType = 'peopleYouMayKnow' | 'suggestedForYou';
 type SuggestionsModuleItem = {
   type: 'suggestionsModule';
@@ -468,6 +471,10 @@ const readEntryId = (value: unknown): string | undefined => {
 const getFeedEntryIdentity = (entry: FeedEntry): string | null => {
   if (!entry) {
     return null;
+  }
+
+  if (typeof entry.feedInstanceId === 'string' && entry.feedInstanceId.length > 0) {
+    return `instance:${entry.feedInstanceId}`;
   }
 
   if ('type' in entry && entry.type === 'tasteBreaker') {
@@ -1003,7 +1010,15 @@ function Home({ navigation, route }: Props) {
   const feedImpressionsByKeyRef = useRef<Set<string>>(new Set());
   const [viewableSocialPostIds, setViewableSocialPostIds] = useState<Set<string>>(new Set());
   feedTypeRef.current = feedOptions.type;
-  useScrollToTop(listRef as any);
+  const iosScrollToTopRef = useRef({
+    scrollToOffset: ({ offset, animated }: { offset: number; animated?: boolean }) => {
+      listRef.current?.scrollToOffset({
+        offset: -(headerHeightRef.current || defaultHeaderHeight),
+        animated,
+      });
+    },
+  });
+  useScrollToTop(Platform.OS === 'ios' ? (iosScrollToTopRef as any) : (listRef as any));
   const scrollIntent = useScrollIntentLock();
 
   useObservedEffect(() => {
@@ -1262,10 +1277,11 @@ function Home({ navigation, route }: Props) {
       if (!pendingScrollToTopRef.current) {
         return;
       }
-      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      const offset = Platform.OS === 'ios' ? -(headerHeightRef.current || defaultHeaderHeight) : 0;
+      listRef.current?.scrollToOffset({ offset, animated: false });
       pendingScrollToTopRef.current = false;
     });
-  }, []);
+  }, [defaultHeaderHeight]);
 
   const requestFeedRefresh = useCallback(
     ({
@@ -1877,6 +1893,12 @@ function Home({ navigation, route }: Props) {
         navigation.push('WatchPortal');
         return;
       }
+
+      if (tabValue === FeedTypes.Pray) {
+        handledRouteSelectedTabRef.current = tabValue;
+        navigation.setParams({ selectedTab: tabValue });
+      }
+
       reloadFeed(tabValue);
     },
     [navigation, reloadFeed]
@@ -2883,25 +2905,26 @@ function Home({ navigation, route }: Props) {
       );
     },
     [
-      connectingSuggestionIds,
-      dark,
-      feedOptions.type,
-      getFeedData,
       getFeedEntryKey,
-      handleRemoveOwnedFeedPost,
-      handleConnectSuggestion,
-      handleOpenExplore,
-      handleOpenSuggestedProfile,
       introAnimatedCardKeySet,
-      navigation,
-      navigateToDetail,
-      navigateToProfile,
       peopleYouMayKnowUsers,
-      preserveFeedPositionOnNextFocus,
-      selectedSuggestionIds,
       suggestedForYouUsers,
+      dark,
+      connectingSuggestionIds,
+      selectedSuggestionIds,
+      handleConnectSuggestion,
+      handleOpenSuggestedProfile,
+      handleOpenExplore,
+      feedOptions.type,
+      handleRemoveOwnedFeedPost,
       trackHomeTelemetryWithPayload,
+      navigation,
+      getFeedData,
+      openImages,
       viewableSocialPostIds,
+      preserveFeedPositionOnNextFocus,
+      navigateToProfile,
+      navigateToDetail,
     ]
   );
 
@@ -2937,6 +2960,9 @@ function Home({ navigation, route }: Props) {
     if (isLoading || !isEndOfList || feedDataWithSuggestions.length < 1) {
       return null;
     }
+    if (feedOptions.type === FeedTypes.ForYou) {
+      return null;
+    }
     return (
       <View style={styles.endOfFeedContainer}>
         <StyledText style={styles.endOfFeedText}>You are all caught up.</StyledText>
@@ -2947,6 +2973,7 @@ function Home({ navigation, route }: Props) {
   const tabBarAnimation = useTabBarAnimation();
   const tabBarAnimationRef = useRef(tabBarAnimation);
   tabBarAnimationRef.current = tabBarAnimation;
+  const isScreenFocused = useIsFocused();
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerVisibility = useRef(new Animated.Value(1)).current;
   const footerVisibility = useRef(new Animated.Value(1)).current;
@@ -2998,6 +3025,17 @@ function Home({ navigation, route }: Props) {
   const footerTranslateY = useMemo(
     () => Animated.multiply(footerTranslateYBase, Animated.subtract(1, footerVisibility)),
     [footerTranslateYBase, footerVisibility]
+  );
+  const syncRootTabBarVisibility = useCallback(
+    (feedType: FeedTypes) => {
+      if (feedType === FeedTypes.Pray) {
+        tabBarAnimationRef.current?.setTabBarTranslateY(footerHeight);
+        return;
+      }
+
+      tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
+    },
+    [footerHeight, footerTranslateY]
   );
 
   const VISIBILITY_DURATION = 180;
@@ -3391,15 +3429,22 @@ function Home({ navigation, route }: Props) {
       tabBarAnimationRef.current?.setTabBarTranslateY(0);
 
       const frameId = requestAnimationFrame(() => {
-        tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
+        syncRootTabBarVisibility(feedTypeRef.current);
       });
 
       return () => {
         cancelAnimationFrame(frameId);
         tabBarAnimationRef.current?.resetTabBar();
       };
-    }, [footerTranslateY, footerVisibility, headerVisibility, scrollY])
+    }, [footerVisibility, headerVisibility, scrollY, syncRootTabBarVisibility])
   );
+
+  useObservedEffect(() => {
+    if (!isScreenFocused) {
+      return;
+    }
+    syncRootTabBarVisibility(feedOptions.type);
+  }, [feedOptions.type, isScreenFocused, syncRootTabBarVisibility]);
 
   const handleFeedRefresh = useCallback(() => {
     if (feedOptions.type === FeedTypes.Pray || isRefreshing) {
@@ -3457,6 +3502,11 @@ function Home({ navigation, route }: Props) {
       setFeedOptions((prev) => ({ ...prev, page: prev.page + 1 }));
     }
   }, [feedData.length, feedOptions.type, isEndOfList, isLoading, isLoadingMore, isRefreshing]);
+
+  const prayFeedBottomInset = useMemo(
+    () => insets.bottom + (Platform.OS === 'ios' ? spacing.x60 : spacing.x48),
+    [insets.bottom]
+  );
 
   const listContentContainerStyle = useMemo(
     () => ({
@@ -3521,7 +3571,7 @@ function Home({ navigation, route }: Props) {
     mainFeedContent = (
       <PrayerWallTabs
         topInset={resolvedHeaderHeight + spacing.x5}
-        bottomInset={footerHeight + spacing.x16}
+        bottomInset={prayFeedBottomInset}
         wallRefreshSignal={prayerWallRefreshSignal}
         onNewPrayerPress={handleNewPrayerPress}
         onOpenPost={handleOpenPrayerPost}
@@ -3541,6 +3591,7 @@ function Home({ navigation, route }: Props) {
         updateCellsBatchingPeriod={16}
         windowSize={HOME_FEED_LIST_BATCH_CONFIG.windowSize}
         contentContainerStyle={listContentContainerStyle}
+        contentOffset={Platform.OS === 'ios' ? { x: 0, y: -resolvedHeaderHeight } : undefined}
         contentInset={Platform.OS === 'ios' ? { top: resolvedHeaderHeight } : undefined}
         scrollIndicatorInsets={Platform.OS === 'ios' ? { top: resolvedHeaderHeight } : undefined}
         automaticallyAdjustContentInsets={false}

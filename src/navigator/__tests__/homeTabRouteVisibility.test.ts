@@ -45,6 +45,21 @@ describe('getHomeTabFocusedRouteName', () => {
     expect(visibilityState.shouldHideTabBar).toBe(false);
   });
 
+  it('keeps the tab bar visible for non-home nested routes even if stale pray params exist', () => {
+    const visibilityState = getHomeTabVisibilityState({
+      name: 'HomeTab',
+      params: { screen: 'Home', params: { selectedTab: 'pray' } },
+      state: {
+        index: 1,
+        routes: [{ name: 'Home', params: { selectedTab: 'pray' } }, { name: 'UserProfile' }],
+      },
+    });
+
+    expect(visibilityState.focusedRouteName).toBe('UserProfile');
+    expect(visibilityState.selectedTab).toBeUndefined();
+    expect(visibilityState.shouldHideTabBar).toBe(false);
+  });
+
   it('prefers active nested state over stale notification params after goBack', () => {
     const route = {
       name: 'HomeTab',

@@ -50,6 +50,7 @@ import {
   normalizeExifOrientation,
 } from '@/src/screens/post/uploadImageOrientation';
 
+type MaterialCommunityIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 type Props = StackScreenProps<MainStackParamList, 'UploadImage'>;
 
 type ToolId = 'crop' | 'filters' | 'adjust' | 'text' | 'stickers';
@@ -214,7 +215,7 @@ const toolLabel = (id: ToolId) => {
   return 'Stickers';
 };
 
-const toolIcon = (id: ToolId) => {
+const toolIcon = (id: ToolId): MaterialCommunityIconName => {
   if (id === 'crop') return 'crop';
   if (id === 'filters') return 'image-filter-center-focus-weak';
   if (id === 'adjust') return 'tune-vertical';

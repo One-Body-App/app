@@ -20,6 +20,11 @@ import {
   subscribeToFeedItemUnavailable,
   subscribeToOwnedPostDeleted,
 } from '@/services/ownedPostDeletion';
+import {
+  appendUniquePrayerPosts,
+  dedupePrayerPosts,
+  getPrayerPostIdentity,
+} from '@/components/prayerWall/prayerPostList';
 
 type PrayerWallMyPrayersProps = {
   onOpenPost?: (postId: string) => void;
@@ -98,11 +103,11 @@ function PrayerWallMyPrayersComponent({
           const nextPosts = extractPrayerEntries(res?.response);
           if (pageNumber === 1) {
             setIsEndOfList(false);
-            setMyPrayers(nextPosts);
+            setMyPrayers(dedupePrayerPosts(nextPosts));
           } else if (nextPosts.length < 1) {
             setIsEndOfList(true);
           } else {
-            setMyPrayers((previous) => [...previous, ...nextPosts]);
+            setMyPrayers((previous) => appendUniquePrayerPosts(previous, nextPosts));
           }
         } else {
           console.log('error', res?.response);
@@ -241,7 +246,7 @@ function PrayerWallMyPrayersComponent({
           flexGrow: 1,
         }}
         keyExtractor={(item, index) => {
-          const postKey = item.postId ?? item.id ?? `row-${index}`;
+          const postKey = getPrayerPostIdentity(item) ?? `row-${index}`;
           return `${postKey}-${index}`;
         }}
         refreshing={refreshing}

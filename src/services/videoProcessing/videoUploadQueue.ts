@@ -48,6 +48,8 @@ type WatchPostResponse = {
   postId?: string;
   playBackId?: string;
   processingStatus?: WatchBackendProcessingStatus;
+  moderationStatus?: 'ACTIVE' | 'PENDING_REVIEW' | 'REMOVED' | 'VERIFIED_SAFE';
+  pendingReview?: boolean;
   message?: string;
   syncFailureReason?: string;
 };
@@ -60,6 +62,7 @@ type TerminalWatchSyncFailureReason = Exclude<WatchSyncFailureReason, 'missing_v
 type WatchResponseDisposition =
   | 'ready'
   | 'pending'
+  | 'submitted_for_review'
   | 'grace_period_pending_sync_failure'
   | 'terminal_review_failure'
   | 'terminal_sync_failure';
@@ -256,6 +259,8 @@ const classifyWatchResponse = (
   const watchProcessingStatus = normalizeWatchProcessingStatus(watch, fallback);
   const syncFailureReason = resolveWatchSyncFailureReason(watch);
   const remoteProcessingAgeMs = options?.remoteProcessingAgeMs ?? 0;
+  const pendingReview =
+    watch?.pendingReview === true || watch?.moderationStatus === 'PENDING_REVIEW';
 
   if (playBackId) {
     return {
@@ -267,9 +272,9 @@ const classifyWatchResponse = (
     };
   }
 
-  if (watchProcessingStatus === 'FAILED_REVIEW') {
+  if (pendingReview || watchProcessingStatus === 'FAILED_REVIEW') {
     return {
-      disposition: 'terminal_review_failure',
+      disposition: 'submitted_for_review',
       watchId,
       watchProcessingStatus,
       syncFailureReason,
@@ -1357,11 +1362,30 @@ export const createVideoUploadQueue = (
       remoteProcessingAgeMs: 0,
     });
 
-    if (
-      classifiedWatch.disposition === 'terminal_sync_failure' ||
-      classifiedWatch.disposition === 'terminal_review_failure'
-    ) {
+    if (classifiedWatch.disposition === 'terminal_sync_failure') {
       throw new QueueError('processing', resolveWatchFailureMessage(createdWatch));
+    }
+
+    if (classifiedWatch.disposition === 'submitted_for_review') {
+      const latestItem = getItemById(item.id) ?? item;
+      await updateItem(
+        item.id,
+        {
+          status: 'complete',
+          watchId,
+          watchProcessingStatus: classifiedWatch.watchProcessingStatus,
+          playBackId: undefined,
+          remotePollAttempt: undefined,
+          remotePollStartedAt: undefined,
+          nextRemotePollAt: undefined,
+          nextRetryAt: undefined,
+          lastError: undefined,
+          failureCode: undefined,
+        },
+        'submitted-for-review'
+      );
+      await cleanupItemArtifacts(latestItem);
+      return;
     }
 
     if (
@@ -1555,11 +1579,30 @@ export const createVideoUploadQueue = (
       remoteProcessingAgeMs,
     });
 
-    if (
-      remoteWatch.disposition === 'terminal_sync_failure' ||
-      remoteWatch.disposition === 'terminal_review_failure'
-    ) {
+    if (remoteWatch.disposition === 'terminal_sync_failure') {
       throw new QueueError('processing', resolveWatchFailureMessage(latestWatch));
+    }
+
+    if (remoteWatch.disposition === 'submitted_for_review') {
+      const latestItem = getItemById(item.id) ?? item;
+      await updateItem(
+        item.id,
+        {
+          status: 'complete',
+          watchProcessingStatus: remoteWatch.watchProcessingStatus,
+          watchId: remoteWatch.watchId ?? latestItem.watchId ?? item.watchId,
+          playBackId: undefined,
+          remotePollAttempt: undefined,
+          remotePollStartedAt: undefined,
+          nextRemotePollAt: undefined,
+          nextRetryAt: undefined,
+          lastError: undefined,
+          failureCode: undefined,
+        },
+        'submitted-for-review'
+      );
+      await cleanupItemArtifacts(latestItem);
+      return;
     }
 
     if (remoteWatch.disposition === 'ready') {

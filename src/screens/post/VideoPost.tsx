@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -53,12 +53,8 @@ import type {
   VideoRatioId,
   VideoTransformState,
 } from '@/src/services/videoProcessing/types';
+import { moderateClientText } from '@/src/services/moderation/clientModeration';
 import {
-  callBackendFallbackModeration,
-  moderateClientText,
-} from '@/src/services/moderation/clientModeration';
-import {
-  BLOCKED_WATCH_CAPTION_MESSAGE,
   buildPendingVideoUploadRecipe,
   ConfirmedVideoCropSelection,
   copyVideoSourceToAppCache,
@@ -70,6 +66,7 @@ import {
 import { sanitizeComposerText } from '@/components/composer/composerText';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
+type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
 type ThemePalette = {
   background: string;
@@ -166,7 +163,7 @@ function ActionButton({
   iconColor,
   labelColor,
 }: {
-  icon: string;
+  icon: MaterialIconName;
   label: string;
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
@@ -196,6 +193,28 @@ function ActionButton({
       </Text>
     </TouchableOpacity>
   );
+}
+
+function PendingTrimLauncher({
+  pendingUri,
+  delayMs,
+  onLaunch,
+}: {
+  pendingUri: string;
+  delayMs: number;
+  onLaunch: (pendingUri: string) => void;
+}) {
+  useMountEffect(() => {
+    const launchTimeout = setTimeout(() => {
+      onLaunch(pendingUri);
+    }, delayMs);
+
+    return () => {
+      clearTimeout(launchTimeout);
+    };
+  });
+
+  return null;
 }
 
 export default function VideoPost({ navigation, route }: Props) {
@@ -239,7 +258,7 @@ export default function VideoPost({ navigation, route }: Props) {
     useState<ConfirmedCropSelection | null>(null);
   const [pendingAutoTrimUri, setPendingAutoTrimUri] = useState<string | null>(null);
   const [requiresInitialTrim, setRequiresInitialTrim] = useState(false);
-  const [isTrimEditorVisible, setIsTrimEditorVisible] = useState(false);
+  const [, setIsTrimEditorVisible] = useState(false);
   const mentionComposer = useMentionComposer({
     initialText: '',
     sanitizeText: (value) => sanitizeComposerText(value, 500),
@@ -409,6 +428,17 @@ export default function VideoPost({ navigation, route }: Props) {
   const handleBackPress = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
+
+  const applySelectedVideoRef = useRef<
+    ((...args: Parameters<typeof applySelectedVideo>) => void) | null
+  >(null);
+  const handleBackPressRef = useRef(handleBackPress);
+  const resolveVideoUriRef = useRef(resolveVideoUri);
+  const editableVideoUriRef = useRef(editableVideoUri);
+  const originalVideoUriRef = useRef(originalVideoUri);
+  const requiresInitialTrimRef = useRef(requiresInitialTrim);
+  const isCropStepRef = useRef(isCropStep);
+  const toastRef = useRef(toast);
 
   const getTrimEditorPath = useCallback((rawPath: string) => {
     if (Platform.OS === 'android' && rawPath.startsWith('file://')) {
@@ -667,25 +697,6 @@ export default function VideoPost({ navigation, route }: Props) {
     openTrimEditor(originalVideoUri || editableVideoUri);
   }, [editableVideoUri, openTrimEditor, originalVideoUri, toast]);
 
-  useEffect(() => {
-    if (!pendingAutoTrimUri || isLiveCameraVisible || isPreparingVideo) {
-      return undefined;
-    }
-
-    const queuedUri = pendingAutoTrimUri;
-    const launchTimeout = setTimeout(
-      () => {
-        setPendingAutoTrimUri((currentValue) => (currentValue === queuedUri ? null : currentValue));
-        openTrimEditor(queuedUri);
-      },
-      Platform.OS === 'ios' ? 300 : 150
-    );
-
-    return () => {
-      clearTimeout(launchTimeout);
-    };
-  }, [isLiveCameraVisible, isPreparingVideo, openTrimEditor, pendingAutoTrimUri]);
-
   const handleClearTrim = useCallback(() => {
     if (!hasVideo) {
       return;
@@ -786,45 +797,8 @@ export default function VideoPost({ navigation, route }: Props) {
       return;
     }
 
-    const captionModeration = moderateWatchCaptionLocally(caption);
-    if (captionModeration.blocked) {
-      toast.show(BLOCKED_WATCH_CAPTION_MESSAGE, { type: 'danger' });
-      return;
-    }
-
-    const nativeCaptionModeration = await moderateClientText(caption);
-    if (nativeCaptionModeration.action === 'block') {
-      toast.show(BLOCKED_WATCH_CAPTION_MESSAGE, { type: 'danger' });
-      return;
-    }
-
-    if (nativeCaptionModeration.action === 'fallback') {
-      try {
-        const fallbackResponse = await callBackendFallbackModeration({
-          type: 'text',
-          content: caption,
-          clientMetadata: {
-            source: nativeCaptionModeration.source,
-            scores: nativeCaptionModeration.scores,
-            reason: nativeCaptionModeration.reason,
-            model: nativeCaptionModeration.model,
-          },
-        });
-
-        if (fallbackResponse.finalAction !== 'allow') {
-          toast.show(
-            'This Watch caption was flagged for review and cannot be published right now.',
-            { type: 'danger' }
-          );
-          return;
-        }
-      } catch {
-        toast.show('Unable to complete moderation right now. Please try again.', {
-          type: 'danger',
-        });
-        return;
-      }
-    }
+    moderateWatchCaptionLocally(caption);
+    moderateClientText(caption);
 
     const activeCropSelection = confirmedCropSelection ?? resolveCurrentCropSelection();
     if (!activeCropSelection?.sourceWidth || !activeCropSelection?.sourceHeight) {
@@ -990,25 +964,35 @@ export default function VideoPost({ navigation, route }: Props) {
     };
   });
 
-  useEffect(() => {
+  applySelectedVideoRef.current = applySelectedVideo;
+  handleBackPressRef.current = handleBackPress;
+  resolveVideoUriRef.current = resolveVideoUri;
+  editableVideoUriRef.current = editableVideoUri;
+  originalVideoUriRef.current = originalVideoUri;
+  requiresInitialTrimRef.current = requiresInitialTrim;
+  isCropStepRef.current = isCropStep;
+  toastRef.current = toast;
+
+  useMountEffect(() => {
     listenerSubscription.current.onFinishTrimming = VideoTrim.onFinishTrimming(
       async ({ outputPath, startTime, endTime }) => {
         const nextTrimStartMs = Math.max(0, Math.round(Number(startTime || 0)));
         const nextTrimEndMs = Math.max(nextTrimStartMs, Math.round(Number(endTime || 0)));
         if (nextTrimEndMs <= nextTrimStartMs) {
           setIsTrimEditorVisible(false);
-          toast.show('Unable to save trim selection.', { type: 'danger' });
+          toastRef.current.show('Unable to save trim selection.', { type: 'danger' });
           return;
         }
 
         try {
-          const resolvedOutputPath = await resolveVideoUri(undefined, outputPath);
-          const nextVideoUri = resolvedOutputPath || editableVideoUri || originalVideoUri;
+          const resolvedOutputPath = await resolveVideoUriRef.current(undefined, outputPath);
+          const nextVideoUri =
+            resolvedOutputPath || editableVideoUriRef.current || originalVideoUriRef.current;
           if (!nextVideoUri) {
             throw new Error('Unable to load trimmed video.');
           }
 
-          applySelectedVideo(nextVideoUri, nextVideoUri);
+          applySelectedVideoRef.current?.(nextVideoUri, nextVideoUri);
           setIsTrimEditorVisible(false);
           setRequiresInitialTrim(false);
           setEditorMode('edit');
@@ -1018,26 +1002,26 @@ export default function VideoPost({ navigation, route }: Props) {
           requestAnimationFrame(() => {
             videoPreviewRef.current?.seek?.(0);
           });
-          toast.show(
-            requiresInitialTrim
-              ? 'Trim saved. Continue editing and post when ready.'
-              : isCropStep
-                ? 'Trim selection saved. Tap Done to continue.'
-                : 'Trim selection saved. Review and post when ready.',
-            { type: 'success' }
-          );
+          let trimSavedMessage = 'Trim selection saved. Review and post when ready.';
+          if (requiresInitialTrimRef.current) {
+            trimSavedMessage = 'Trim saved. Continue editing and post when ready.';
+          } else if (isCropStepRef.current) {
+            trimSavedMessage = 'Trim selection saved. Tap Done to continue.';
+          }
+
+          toastRef.current.show(trimSavedMessage, { type: 'success' });
         } catch {
           setIsTrimEditorVisible(false);
-          toast.show('Unable to load trimmed video.', { type: 'danger' });
+          toastRef.current.show('Unable to load trimmed video.', { type: 'danger' });
         }
       }
     );
 
     listenerSubscription.current.onCancel = VideoTrim.onCancel(() => {
       setIsTrimEditorVisible(false);
-      if (requiresInitialTrim) {
-        toast.show('Video trim was canceled.', { type: 'warning' });
-        handleBackPress();
+      if (requiresInitialTrimRef.current) {
+        toastRef.current.show('Video trim was canceled.', { type: 'warning' });
+        handleBackPressRef.current();
       }
     });
 
@@ -1055,9 +1039,9 @@ export default function VideoPost({ navigation, route }: Props) {
 
     listenerSubscription.current.onError = VideoTrim.onError(({ message }) => {
       setIsTrimEditorVisible(false);
-      toast.show(message || 'Video trim failed.', { type: 'danger' });
-      if (requiresInitialTrim) {
-        handleBackPress();
+      toastRef.current.show(message || 'Video trim failed.', { type: 'danger' });
+      if (requiresInitialTrimRef.current) {
+        handleBackPressRef.current();
       }
     });
 
@@ -1070,16 +1054,7 @@ export default function VideoPost({ navigation, route }: Props) {
       listenerSubscription.current.onError?.remove();
       listenerSubscription.current = {};
     };
-  }, [
-    applySelectedVideo,
-    editableVideoUri,
-    handleBackPress,
-    isCropStep,
-    originalVideoUri,
-    requiresInitialTrim,
-    resolveVideoUri,
-    toast,
-  ]);
+  });
 
   useMountEffect(() => {
     if (!route.params?.openCameraOnMount || hasAutoOpenedCameraRef.current) {
@@ -1121,6 +1096,19 @@ export default function VideoPost({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
+      {pendingAutoTrimUri && !isLiveCameraVisible && !isPreparingVideo ? (
+        <PendingTrimLauncher
+          key={pendingAutoTrimUri}
+          pendingUri={pendingAutoTrimUri}
+          delayMs={Platform.OS === 'ios' ? 300 : 150}
+          onLaunch={(queuedUri) => {
+            setPendingAutoTrimUri((currentValue) =>
+              currentValue === queuedUri ? null : currentValue
+            );
+            openTrimEditor(queuedUri);
+          }}
+        />
+      ) : null}
       {Platform.OS === 'android' ? (
         <StatusBar
           translucent={false}

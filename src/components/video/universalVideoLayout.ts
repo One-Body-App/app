@@ -11,6 +11,7 @@ export type VideoMetadataLike = {
   aspectRatio?: number | string;
   videoWidth?: number | string;
   videoHeight?: number | string;
+  playBackId?: string;
 };
 
 export type ResolvedVideoMetadata = {

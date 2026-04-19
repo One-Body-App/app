@@ -20,6 +20,7 @@ import {
   subscribeToFeedItemUnavailable,
   subscribeToOwnedPostDeleted,
 } from '@/services/ownedPostDeletion';
+import { dedupePrayerPosts, getPrayerPostIdentity } from '@/components/prayerWall/prayerPostList';
 
 type PrayerWallSavedPrayersProps = {
   onOpenPost?: (postId: string) => void;
@@ -109,7 +110,7 @@ function PrayerWallSavedPrayersComponent({
         //   }
         // }
 
-        setSavedPosts(posts);
+        setSavedPosts(dedupePrayerPosts(posts));
       } else {
         console.log('error', res?.response);
       }
@@ -221,7 +222,7 @@ function PrayerWallSavedPrayersComponent({
           flexGrow: 1,
         }}
         keyExtractor={(item, index) => {
-          const postKey = item.postId ?? item.id ?? `row-${index}`;
+          const postKey = getPrayerPostIdentity(item) ?? `row-${index}`;
           return `${postKey}-${index}`;
         }}
         refreshing={refreshing}

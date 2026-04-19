@@ -270,6 +270,21 @@ describe('VideoProcessingRuntime', () => {
     });
   });
 
+  it('builds a review toast event for completed uploads awaiting moderation', () => {
+    expect(
+      getPendingVideoUploadToastEvent(
+        createPendingUpload({
+          status: 'complete',
+          watchProcessingStatus: 'FAILED_REVIEW',
+        })
+      )
+    ).toEqual({
+      dedupeKey: 'pending-watch-1:complete',
+      message: 'Your Watch video was submitted for review.',
+      type: 'success',
+    });
+  });
+
   it('normalizes native processing failures into a user-facing toast message', () => {
     expect(
       getPendingVideoUploadToastEvent(

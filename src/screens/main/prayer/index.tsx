@@ -1,6 +1,13 @@
 import React from 'react';
-import { Animated, Easing, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Animated,
+  Easing,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { TabView } from 'react-native-tab-view';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -20,26 +27,25 @@ type Props = StackScreenProps<PrayerWallStackParamsList, 'index'>;
 type PrayerRoute = {
   key: string;
   title: string;
-  inverted: boolean;
 };
 
 function Prayer({ navigation }: Props) {
   const isIOS = Platform.OS === 'ios';
-  const insets = useSafeAreaInsets();
+  const { dark, colors } = useTheme();
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState<PrayerRoute[]>([
-    { key: 'Wall', title: 'Wall', inverted: true },
-    { key: 'Testimonies', title: 'Testimonies', inverted: true },
-    { key: 'Saved', title: 'Saved', inverted: false },
-    { key: 'MyPrayers', title: 'My Prayers', inverted: false },
+    { key: 'Wall', title: 'Wall' },
+    { key: 'Testimonies', title: 'Testimonies' },
+    { key: 'Saved', title: 'Saved' },
+    { key: 'MyPrayers', title: 'My Prayers' },
   ]);
-  const { dark } = useTheme();
   const [areSubtabsVisible, setAreSubtabsVisible] = React.useState(true);
   const lastPrayerScrollY = React.useRef(0);
   const lastPrayerSubtabToggleAt = React.useRef(0);
   const prayerScrollAccumulator = React.useRef(0);
   const areSubtabsVisibleRef = React.useRef(true);
   const hasInitializedPrayerScroll = React.useRef(false);
+  const hasWallUserScrollGesture = React.useRef(false);
   const prayerSubtabsVisibility = React.useRef(new Animated.Value(1)).current;
   const setSubtabsVisibility = React.useCallback(
     (visible: boolean) => {
@@ -60,21 +66,30 @@ function Prayer({ navigation }: Props) {
   );
   const resetPrayerScrollState = React.useCallback(() => {
     hasInitializedPrayerScroll.current = false;
+    hasWallUserScrollGesture.current = false;
     lastPrayerScrollY.current = 0;
     lastPrayerSubtabToggleAt.current = 0;
     prayerScrollAccumulator.current = 0;
     setSubtabsVisibility(true);
   }, [setSubtabsVisibility]);
-  const handlePrayerWallScroll = React.useCallback(
-    (offsetY: number, inverted = false) => {
+  const handleWallUserScrollStart = React.useCallback(() => {
+    hasWallUserScrollGesture.current = true;
+  }, []);
+  const handleWallScroll = React.useCallback(
+    (offsetY: number) => {
       const now = Date.now();
       const nextY = Math.max(0, offsetY);
       const rawDelta = nextY - lastPrayerScrollY.current;
-      const delta = inverted ? -rawDelta : rawDelta;
+      const delta = -rawDelta;
       const threshold = 6;
       const topZoneThreshold = 24;
       const toggleDistance = 18;
       const toggleCooldownMs = 180;
+
+      if (!hasWallUserScrollGesture.current) {
+        lastPrayerScrollY.current = nextY;
+        return;
+      }
 
       if (!hasInitializedPrayerScroll.current) {
         hasInitializedPrayerScroll.current = true;
@@ -120,18 +135,6 @@ function Prayer({ navigation }: Props) {
       lastPrayerScrollY.current = nextY;
     },
     [setSubtabsVisibility]
-  );
-  const handleInvertedPrayerWallScroll = React.useCallback(
-    (offsetY: number) => {
-      handlePrayerWallScroll(offsetY, true);
-    },
-    [handlePrayerWallScroll]
-  );
-  const handleStandardPrayerWallScroll = React.useCallback(
-    (offsetY: number) => {
-      handlePrayerWallScroll(offsetY, false);
-    },
-    [handlePrayerWallScroll]
   );
 
   useFocusEffect(
@@ -191,25 +194,27 @@ function Prayer({ navigation }: Props) {
     extrapolate: 'clamp',
   });
   const renderScene = ({ route }: { route: PrayerRoute }) => {
-    const scrollHandler = route.inverted
-      ? handleInvertedPrayerWallScroll
-      : handleStandardPrayerWallScroll;
-
     switch (route.key) {
       case 'Wall':
-        return <WallComponent onScrollOffsetChange={scrollHandler} />;
+        return (
+          <WallComponent
+            onScrollOffsetChange={handleWallScroll}
+            onUserScrollStart={handleWallUserScrollStart}
+          />
+        );
       case 'Testimonies':
-        return <TestimoniesComponent onScrollOffsetChange={scrollHandler} />;
+        return <TestimoniesComponent />;
       case 'Saved':
-        return <PrayerWallSavedPrayersComponent onScrollOffsetChange={scrollHandler} />;
+        return <PrayerWallSavedPrayersComponent />;
       case 'MyPrayers':
-        return <PrayersComponent onScrollOffsetChange={scrollHandler} />;
+        return <PrayersComponent />;
       default:
         return null;
     }
   };
+
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ flex: 1 }}>
         <TabView
           navigationState={{ index, routes }}
@@ -222,11 +227,13 @@ function Prayer({ navigation }: Props) {
                 style={[
                   styles.tabBarContainer,
                   {
+                    backgroundColor: colors.background,
                     height: prayerSubtabContainerHeight,
                   },
                 ]}
               >
                 <Animated.View
+                  testID="prayer-subtab-rail"
                   pointerEvents={areSubtabsVisible ? 'auto' : 'none'}
                   style={{
                     opacity: prayerTabBarOpacity,
@@ -241,6 +248,7 @@ function Prayer({ navigation }: Props) {
                 </Animated.View>
 
                 <Animated.View
+                  testID="prayer-subtab-restore-rail"
                   pointerEvents={areSubtabsVisible ? 'none' : 'auto'}
                   style={[styles.restoreRailWrap, { opacity: restoreRailOpacity }]}
                 >
@@ -267,6 +275,7 @@ function Prayer({ navigation }: Props) {
             );
           }}
           onIndexChange={applyTabIndex}
+          style={{ flex: 1, backgroundColor: colors.background }}
         />
         <TouchableOpacity
           onPress={() => {
@@ -284,7 +293,7 @@ function Prayer({ navigation }: Props) {
           </StyledText>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -293,6 +302,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.x5,
     paddingTop: spacing.x8,
     overflow: 'hidden',
+    zIndex: 5,
+    elevation: 5,
   },
   restoreRailWrap: {
     position: 'absolute',

@@ -367,7 +367,7 @@ function BaseItem({
     black: '#032f3c',
   };
   const shareIconColor = dark ? Colors.neutral[400] : '#126b87';
-  const repostIconColor = '#12d2d9';
+  const repostIconColor = dark ? Colors.neutral[400] : '#126b87';
   const ONEBODY_APP_BASE_URL = 'https://app.onebodyapp.com';
   const cardBorderColor = dark ? 'rgba(255,255,255,0.08)' : brandColors.scale100;
   const primaryTextColor = dark ? Colors.neutral.brand : brandColors.black;

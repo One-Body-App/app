@@ -22,6 +22,11 @@ import {
   subscribeToFeedItemUnavailable,
   subscribeToOwnedPostDeleted,
 } from '@/services/ownedPostDeletion';
+import {
+  appendUniquePrayerPosts,
+  dedupePrayerPosts,
+  getPrayerPostIdentity,
+} from '@/components/prayerWall/prayerPostList';
 
 function PrayerWallEmpty() {
   return (
@@ -45,6 +50,7 @@ type PrayerWallComponentProps = {
   onOpenPost?: (postId: string) => void;
   onEditPost?: (postId: string) => void;
   onScrollOffsetChange?: (offsetY: number) => void;
+  onUserScrollStart?: () => void;
   refreshSignal?: number;
 };
 
@@ -52,6 +58,7 @@ function PrayerWallComponent({
   onOpenPost,
   onEditPost,
   onScrollOffsetChange,
+  onUserScrollStart,
   refreshSignal,
 }: PrayerWallComponentProps) {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
@@ -114,11 +121,11 @@ function PrayerWallComponent({
           const nextPosts = extractPrayerEntries(res?.response);
           if (pageNumber === 1) {
             setIsEndOfList(false);
-            setPrayers(nextPosts);
+            setPrayers(dedupePrayerPosts(nextPosts));
           } else if (nextPosts.length < 1) {
             setIsEndOfList(true);
           } else {
-            setPrayers((prev) => [...(prev ?? []), ...nextPosts]);
+            setPrayers((prev) => appendUniquePrayerPosts(prev ?? [], nextPosts));
           }
         } else {
           console.log('error', res?.response);
@@ -276,8 +283,7 @@ function PrayerWallComponent({
           flexGrow: 1,
         }}
         keyExtractor={(item, index) => {
-          const postKey = item.postId ?? item.id ?? `row-${index}`;
-          return `${postKey}`;
+          return getPrayerPostIdentity(item) ?? `row-${index}`;
         }}
         refreshing={refreshing}
         refreshControl={
@@ -293,6 +299,9 @@ function PrayerWallComponent({
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         scrollEnabled={isScrollEnable}
+        onScrollBeginDrag={() => {
+          onUserScrollStart?.();
+        }}
         onScroll={(event) => {
           onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);
         }}

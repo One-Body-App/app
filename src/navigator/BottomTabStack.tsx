@@ -21,7 +21,7 @@ import ConnectStack from './ConnectStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
 import { getHomeTabVisibilityState } from './homeTabRouteVisibility';
-import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationContext';
+import { useTabBarAnimation } from './TabBarAnimationContext';
 import { RootTabTransitionProvider, useRootTabTransition } from './RootTabTransitionContext';
 import { ROOT_TAB_SCENE_MOTION_MODE } from './motionPolicy';
 import { AnimatedRootTabName } from './rootTabTransition';
@@ -31,6 +31,7 @@ import MessagesIcon from '@/assets/icons/messages.svg';
 import MessagesStack from './MessagesStack';
 import { useChatUnreadCount } from '@/src/services/chat/unreadIndicator';
 import { buildTabBarVisibilityStyle } from './tabBarStyle';
+import { shouldHideActiveTabBarWrapper } from './activeTabBarVisibility';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -232,9 +233,25 @@ function PostTabPlaceholder() {
   return null;
 }
 
-function AnimatedTabBar(props: BottomTabBarProps) {
+function isHiddenByParentDrawerRoute(navigation: BottomTabBarProps['navigation']) {
+  const parentState = navigation.getParent?.()?.getState?.();
+  const parentRoute =
+    parentState && Array.isArray(parentState.routes)
+      ? parentState.routes[parentState.index ?? 0]
+      : undefined;
+
+  return Boolean(parentRoute?.name && parentRoute.name !== 'Main');
+}
+
+export function AnimatedTabBar(props: BottomTabBarProps) {
   const tabBarAnimation = useTabBarAnimation();
   const { state, descriptors, navigation, insets } = props;
+  const shouldHideWrapper = shouldHideActiveTabBarWrapper({ state, descriptors });
+  const shouldHideForParentRoute = isHiddenByParentDrawerRoute(navigation);
+
+  if (shouldHideWrapper || shouldHideForParentRoute) {
+    return null;
+  }
 
   if (!tabBarAnimation) {
     return (
@@ -449,160 +466,158 @@ function BottomStack() {
 
   return (
     <RootTabTransitionProvider>
-      <TabBarAnimationProvider>
-        <Tab.Navigator
-          tabBar={TabBarWrapper}
-          sceneContainerStyle={{ backgroundColor: colors.background }}
-          screenOptions={{
-            headerStatusBarHeight: 0,
-            headerShown: false,
-            headerStyle: {
-              backgroundColor: colors.background,
-            },
-            tabBarActiveTintColor: brandColors.primaryDark,
-            tabBarInactiveTintColor: dark ? 'rgba(230,234,236,0.65)' : brandColors.black,
-            tabBarShowLabel: false,
-            tabBarLabelStyle: { paddingTop: 4 },
-            tabBarStyle: defaultTabBarStyle,
-            tabBarBackground: () => (
-              <View style={StyleSheet.absoluteFill}>
-                {Platform.OS === 'ios' ? (
-                  <BlurView
-                    style={StyleSheet.absoluteFill}
-                    blurType={dark ? 'dark' : 'light'}
-                    blurAmount={25}
-                    reducedTransparencyFallbackColor={dark ? '#0D0D0D' : colors.background}
-                  />
-                ) : null}
-                <LinearGradient
-                  colors={tabBarGradientColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
+      <Tab.Navigator
+        tabBar={TabBarWrapper}
+        sceneContainerStyle={{ backgroundColor: colors.background }}
+        screenOptions={{
+          headerStatusBarHeight: 0,
+          headerShown: false,
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          tabBarActiveTintColor: brandColors.primaryDark,
+          tabBarInactiveTintColor: dark ? 'rgba(230,234,236,0.65)' : brandColors.black,
+          tabBarShowLabel: false,
+          tabBarLabelStyle: { paddingTop: 4 },
+          tabBarStyle: defaultTabBarStyle,
+          tabBarBackground: () => (
+            <View style={StyleSheet.absoluteFill}>
+              {Platform.OS === 'ios' ? (
+                <BlurView
                   style={StyleSheet.absoluteFill}
+                  blurType={dark ? 'dark' : 'light'}
+                  blurAmount={25}
+                  reducedTransparencyFallbackColor={dark ? '#0D0D0D' : colors.background}
                 />
-                <View
-                  style={[
-                    StyleSheet.absoluteFill,
-                    {
-                      borderTopWidth: 1,
-                      borderTopColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)',
-                    },
-                  ]}
-                />
+              ) : null}
+              <LinearGradient
+                colors={tabBarGradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    borderTopWidth: 1,
+                    borderTopColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)',
+                  },
+                ]}
+              />
+            </View>
+          ),
+          tabBarItemStyle: {
+            paddingTop: 4,
+            paddingBottom: 4,
+            overflow: 'visible',
+          },
+          tabBarIconStyle: {
+            overflow: 'visible',
+          },
+          tabBarAllowFontScaling: false,
+        }}
+      >
+        <Tab.Screen
+          name="HomeTab"
+          component={HomeTabWrapper}
+          initialParams={{
+            screen: 'Home',
+            params: {
+              selectedTab: FeedTypes.ForYou,
+            },
+          }}
+          options={({ route }) => {
+            const { shouldHideTabBar } = getHomeTabVisibilityState(route);
+
+            return {
+              tabBarLabel: 'Home',
+              tabBarIcon: HomeTabIcon,
+              tabBarStyle: buildTabBarVisibilityStyle(defaultTabBarStyle, !shouldHideTabBar),
+            };
+          }}
+        />
+        <Tab.Screen
+          name="ExploreTab"
+          component={ExploreTabWrapper}
+          options={{
+            tabBarLabel: 'Explore',
+            tabBarIcon: ExploreTabIcon,
+            tabBarStyle: defaultTabBarStyle,
+          }}
+        />
+        <Tab.Screen
+          name="PostTab"
+          component={PostTabPlaceholder}
+          options={{
+            tabBarLabel: 'Post',
+            tabBarIcon: () => (
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: brandColors.primaryDark,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <MaterialIcons name="add" size={26} color="white" />
               </View>
             ),
-            tabBarItemStyle: {
-              paddingTop: 4,
-              paddingBottom: 4,
-              overflow: 'visible',
-            },
-            tabBarIconStyle: {
-              overflow: 'visible',
-            },
-            tabBarAllowFontScaling: false,
           }}
-        >
-          <Tab.Screen
-            name="HomeTab"
-            component={HomeTabWrapper}
-            initialParams={{
-              screen: 'Home',
-              params: {
-                selectedTab: FeedTypes.ForYou,
-              },
-            }}
-            options={({ route }) => {
-              const { shouldHideTabBar } = getHomeTabVisibilityState(route);
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              e.preventDefault();
+              navigation.navigate('Post');
+            },
+          })}
+        />
+        <Tab.Screen
+          name="ConnectTab"
+          component={ConnectTabWrapper}
+          options={({ route }) => {
+            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectMap';
+            const shouldShowTabBar =
+              focusedRouteName === 'ConnectPortal' ||
+              focusedRouteName === 'ConnectMap' ||
+              focusedRouteName === 'ConnectGoLanding' ||
+              focusedRouteName === 'ConnectPlacesHome' ||
+              focusedRouteName === 'ConnectServeHome';
 
-              return {
-                tabBarLabel: 'Home',
-                tabBarIcon: HomeTabIcon,
-                tabBarStyle: buildTabBarVisibilityStyle(defaultTabBarStyle, !shouldHideTabBar),
-              };
-            }}
-          />
-          <Tab.Screen
-            name="ExploreTab"
-            component={ExploreTabWrapper}
-            options={{
-              tabBarLabel: 'Explore',
-              tabBarIcon: ExploreTabIcon,
-              tabBarStyle: defaultTabBarStyle,
-            }}
-          />
-          <Tab.Screen
-            name="PostTab"
-            component={PostTabPlaceholder}
-            options={{
-              tabBarLabel: 'Post',
-              tabBarIcon: () => (
-                <View
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 24,
-                    backgroundColor: brandColors.primaryDark,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MaterialIcons name="add" size={26} color="white" />
-                </View>
-              ),
-            }}
-            listeners={({ navigation }) => ({
-              tabPress: (e) => {
-                e.preventDefault();
-                navigation.navigate('Post');
-              },
-            })}
-          />
-          <Tab.Screen
-            name="ConnectTab"
-            component={ConnectTabWrapper}
-            options={({ route }) => {
-              const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectMap';
-              const shouldShowTabBar =
-                focusedRouteName === 'ConnectPortal' ||
-                focusedRouteName === 'ConnectMap' ||
-                focusedRouteName === 'ConnectGoLanding' ||
-                focusedRouteName === 'ConnectPlacesHome' ||
-                focusedRouteName === 'ConnectServeHome';
+            return {
+              tabBarLabel: 'Connect',
+              tabBarIcon: ConnectTabIcon,
+              tabBarStyle: buildTabBarVisibilityStyle(defaultTabBarStyle, shouldShowTabBar),
+            };
+          }}
+        />
+        <Tab.Screen
+          name="MyProfileTab"
+          component={ProfileStack}
+          options={{
+            tabBarButton: () => null,
+            tabBarStyle: { display: 'none' },
+          }}
+        />
+        <Tab.Screen
+          name="Messages"
+          component={MessagesTabWrapper}
+          options={({ route }) => {
+            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'MessagesList';
+            const shouldShowTabBar = focusedRouteName === 'MessagesList';
 
-              return {
-                tabBarLabel: 'Connect',
-                tabBarIcon: ConnectTabIcon,
-                tabBarStyle: buildTabBarVisibilityStyle(defaultTabBarStyle, shouldShowTabBar),
-              };
-            }}
-          />
-          <Tab.Screen
-            name="MyProfileTab"
-            component={ProfileStack}
-            options={{
-              tabBarButton: () => null,
-              tabBarStyle: { display: 'none' },
-            }}
-          />
-          <Tab.Screen
-            name="Messages"
-            component={MessagesTabWrapper}
-            options={({ route }) => {
-              const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'MessagesList';
-              const shouldShowTabBar = focusedRouteName === 'MessagesList';
-
-              return {
-                tabBarLabel: 'Chat',
-                tabBarIcon: ChatTabIcon,
-                tabBarStyle: buildTabBarVisibilityStyle(raisedTabBarStyle, shouldShowTabBar),
-                lazy: false,
-                unmountOnBlur: false,
-                freezeOnBlur: false,
-              };
-            }}
-          />
-        </Tab.Navigator>
-      </TabBarAnimationProvider>
+            return {
+              tabBarLabel: 'Chat',
+              tabBarIcon: ChatTabIcon,
+              tabBarStyle: buildTabBarVisibilityStyle(raisedTabBarStyle, shouldShowTabBar),
+              lazy: false,
+              unmountOnBlur: false,
+              freezeOnBlur: false,
+            };
+          }}
+        />
+      </Tab.Navigator>
     </RootTabTransitionProvider>
   );
 }

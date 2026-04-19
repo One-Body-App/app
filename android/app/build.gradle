@@ -9,15 +9,10 @@ project.ext.envConfigFiles = [
 apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
 
 
-import groovy.json.JsonSlurper
-import org.gradle.api.JavaVersion
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
-
 def getVersionFromNpm() {
     //  Read and parse package.json file from project root
     def inputFile = new File("$rootDir/../package.json")
-    def packageJson = new JsonSlurper().parseText(inputFile.text)
+    def packageJson = new groovy.json.JsonSlurper().parseText(inputFile.text)
 
 
     println ("Version Name: " +  packageJson["version"]);
@@ -127,8 +122,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_25
-        targetCompatibility JavaVersion.VERSION_25
+        sourceCompatibility '17'
+        targetCompatibility '17'
     }
 
     kotlinOptions {
@@ -137,7 +132,7 @@ android {
 
     kotlin {
         jvmToolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
+            languageVersion.set(org.gradle.jvm.toolchain.JavaLanguageVersion.of(17))
         }
     }
 

@@ -2,12 +2,13 @@ import {
   createNativeStackNavigator,
   NativeStackNavigationProp,
 } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useCallback } from 'react';
 
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useTheme } from '@react-navigation/native';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { Platform, StyleSheet, View } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrayerWallStackParamsList } from './types';
 import { Colors } from '../styles';
 import Prayer from '../screens/main/prayer';
@@ -17,6 +18,8 @@ import NewPrayer from '../screens/main/prayer/NewPrayer';
 import SinglePrayer from '../screens/main/prayer/Single';
 import mainPageOptions from './global';
 import HeaderGradientOverlay from '../components/HeaderGradientOverlay';
+import { getHeight } from '@/utils/ResponsiveFun';
+import { useTabBarAnimation } from './TabBarAnimationContext';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 type PrayerWallNavigationProp = NativeStackNavigationProp<PrayerWallStackParamsList>;
@@ -45,6 +48,19 @@ function PrayerHeaderBackButton() {
 
 function PrayerWall() {
   const { dark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarAnimation = useTabBarAnimation();
+  const footerHeight = getHeight(7) + insets.bottom;
+
+  useFocusEffect(
+    useCallback(() => {
+      tabBarAnimation?.setTabBarTranslateY(footerHeight);
+
+      return () => {
+        tabBarAnimation?.resetTabBar();
+      };
+    }, [footerHeight, tabBarAnimation])
+  );
 
   return (
     <Stack.Navigator
@@ -80,14 +96,18 @@ function PrayerWall() {
             return {
               title: 'Pray',
               headerLeft: IndexHeaderBackButton,
+              contentStyle: { backgroundColor: colors.background },
             };
           }
 
-          return mainPageOptions(
-            navigation,
-            dark ? colors.text : Colors.primary.brand,
-            'Prayer Wall'
-          );
+          return {
+            ...mainPageOptions(
+              navigation,
+              dark ? colors.text : Colors.primary.brand,
+              'Prayer Wall'
+            ),
+            contentStyle: { backgroundColor: colors.background },
+          };
         }}
       />
       <Stack.Screen

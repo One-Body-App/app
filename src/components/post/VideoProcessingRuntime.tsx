@@ -65,7 +65,10 @@ export const getPendingVideoUploadToastEvent = (
   if (item.status === 'complete') {
     return {
       dedupeKey: `${item.id}:complete`,
-      message: 'Your Watch video is live.',
+      message:
+        item.watchProcessingStatus === 'FAILED_REVIEW'
+          ? 'Your Watch video was submitted for review.'
+          : 'Your Watch video is live.',
       type: 'success',
     };
   }

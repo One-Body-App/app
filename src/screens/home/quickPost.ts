@@ -28,8 +28,19 @@ export const moderateQuickPostText = async (
   const result = await moderateClientText(content);
 
   if (result.action === 'block') {
-    notify?.(QUICK_POST_TEXT_BLOCK_MESSAGE);
-    return { blocked: true };
+    return {
+      blocked: false,
+      moderationReview: buildPendingModerationReviewPayload([
+        {
+          type: 'text',
+          clientSource: result.source,
+          clientScores: result.scores,
+          clientReason: result.reason || QUICK_POST_TEXT_BLOCK_MESSAGE,
+          clientModel: result.model,
+          fallbackAction: 'pending_review',
+        } satisfies ModerationReviewCheckPayload,
+      ]),
+    };
   }
 
   if (result.action === 'fallback') {

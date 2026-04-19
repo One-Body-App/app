@@ -32,6 +32,7 @@ import ZoeChat from '../screens/main/zoeChat';
 import mainPageOptions from './global';
 import Home2Icon from '@/assets/icons/home2.svg';
 import { getDrawerNavMode } from '@/src/utils/authFlow';
+import { TabBarAnimationProvider } from './TabBarAnimationContext';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 
@@ -106,139 +107,141 @@ function DrawerNav() {
       drawerType = 'slide';
     }
     return (
-      <DrawerStack.Navigator
-        backBehavior="history"
-        screenOptions={({ navigation }) => {
-          return {
-            drawerType,
-            swipeEnabled: false,
-            headerShown: false,
-            headerTintColor: dark ? colors.text : Colors.primary.brand,
+      <TabBarAnimationProvider>
+        <DrawerStack.Navigator
+          backBehavior="history"
+          screenOptions={({ navigation }) => {
+            return {
+              drawerType,
+              swipeEnabled: false,
+              headerShown: false,
+              headerTintColor: dark ? colors.text : Colors.primary.brand,
 
-            drawerActiveBackgroundColor: Colors.neutral[600],
-            drawerActiveTintColor: dark ? '#ffffff' : '#126b87',
-            drawerInactiveTintColor: dark ? '#f6f6f7' : '#032f3c',
+              drawerActiveBackgroundColor: Colors.neutral[600],
+              drawerActiveTintColor: dark ? '#ffffff' : '#126b87',
+              drawerInactiveTintColor: dark ? '#f6f6f7' : '#032f3c',
 
-            headerLeft: (props: { tintColor?: string }) => {
-              const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
+              headerLeft: (props: { tintColor?: string }) => {
+                const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
 
-              if (navigation.canGoBack() && !isDrawerOpen) {
-                return (
-                  <HeaderBackButton
-                    style={{ marginHorizontal: 11 }}
-                    labelVisible={false}
-                    onPress={() => navigation.goBack()}
-                  />
-                );
-              }
-              const { headerLeft } = mainPageOptions(
-                navigation,
-                props.tintColor ?? colors.text,
-                '',
-                {
-                  marginHorizontal: 11,
+                if (navigation.canGoBack() && !isDrawerOpen) {
+                  return (
+                    <HeaderBackButton
+                      style={{ marginHorizontal: 11 }}
+                      labelVisible={false}
+                      onPress={() => navigation.goBack()}
+                    />
+                  );
                 }
-              );
+                const { headerLeft } = mainPageOptions(
+                  navigation,
+                  props.tintColor ?? colors.text,
+                  '',
+                  {
+                    marginHorizontal: 11,
+                  }
+                );
 
-              if (headerLeft) {
-                return headerLeft({ canGoBack: false });
-              }
+                if (headerLeft) {
+                  return headerLeft({ canGoBack: false });
+                }
 
-              return <View />;
-            },
-          };
-        }}
-        drawerContent={(props) => <DrawerContent {...props} />}
-      >
-        <DrawerStack.Screen
-          name="Main"
-          component={MainTabStack}
-          options={() => {
-            return {
-              title: 'Home',
-              drawerIcon: ({ color, size }) => {
-                return <Home2Icon width={size} height={size} color={color} />;
+                return <View />;
               },
             };
           }}
-        />
+          drawerContent={(props) => <DrawerContent {...props} />}
+        >
+          <DrawerStack.Screen
+            name="Main"
+            component={MainTabStack}
+            options={() => {
+              return {
+                title: 'Home',
+                drawerIcon: ({ color, size }) => {
+                  return <Home2Icon width={size} height={size} color={color} />;
+                },
+              };
+            }}
+          />
 
-        <DrawerStack.Screen
-          name="ZoeAI"
-          component={ZoeChat}
-          options={{
-            headerShown: false,
-            title: 'ZoeAI',
-            drawerLabel: 'ZoeAI',
-            drawerIcon: ({ color, size }) => <ZoeIcon width={size} height={size} color={color} />,
-          }}
-        />
+          <DrawerStack.Screen
+            name="ZoeAI"
+            component={ZoeChat}
+            options={{
+              headerShown: false,
+              title: 'ZoeAI',
+              drawerLabel: 'ZoeAI',
+              drawerIcon: ({ color, size }) => <ZoeIcon width={size} height={size} color={color} />,
+            }}
+          />
 
-        <DrawerStack.Screen
-          name="Saved"
-          component={Saved}
-          options={{
-            headerShown: true,
-            title: 'Saved Posts',
-            drawerIcon: ({ color, size }) => {
-              return <Feather name="bookmark" size={size} color={color} />;
-            },
-          }}
-        />
-
-        <DrawerStack.Screen
-          name="Connections"
-          component={Connections}
-          options={({ navigation }) => {
-            return {
+          <DrawerStack.Screen
+            name="Saved"
+            component={Saved}
+            options={{
               headerShown: true,
-              title: 'My Connections',
-              headerLeft: () => (
-                <TouchableOpacity
-                  style={{ marginHorizontal: 11, padding: 4 }}
-                  onPress={() => navigation.goBack()}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Feather
-                    name="chevron-left"
-                    size={28}
-                    color={dark ? colors.text : Colors.primary.brand}
-                  />
-                </TouchableOpacity>
-              ),
+              title: 'Saved Posts',
               drawerIcon: ({ color, size }) => {
-                return <Profile2User size={size} color={color} />;
+                return <Feather name="bookmark" size={size} color={color} />;
               },
-            };
-          }}
-        />
+            }}
+          />
 
-        <DrawerStack.Screen
-          name="PrayerWall"
-          component={PrayerWallStack}
-          options={() => {
-            return {
-              title: 'Prayer Wall',
-              drawerItemStyle: { display: 'none', height: 0 },
-              drawerIcon: ({ color, size }) => {
-                return <Prayers width={size} height={size} color={color} />;
-              },
-            };
-          }}
-        />
+          <DrawerStack.Screen
+            name="Connections"
+            component={Connections}
+            options={({ navigation }) => {
+              return {
+                headerShown: true,
+                title: 'My Connections',
+                headerLeft: () => (
+                  <TouchableOpacity
+                    style={{ marginHorizontal: 11, padding: 4 }}
+                    onPress={() => navigation.goBack()}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Feather
+                      name="chevron-left"
+                      size={28}
+                      color={dark ? colors.text : Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                ),
+                drawerIcon: ({ color, size }) => {
+                  return <Profile2User size={size} color={color} />;
+                },
+              };
+            }}
+          />
 
-        <DrawerStack.Screen
-          name="Settings"
-          component={SettingsStack}
-          options={() => {
-            return {
-              drawerItemStyle: { display: 'none', height: 0 },
-            };
-          }}
-        />
+          <DrawerStack.Screen
+            name="PrayerWall"
+            component={PrayerWallStack}
+            options={() => {
+              return {
+                title: 'Prayer Wall',
+                drawerItemStyle: { display: 'none', height: 0 },
+                drawerIcon: ({ color, size }) => {
+                  return <Prayers width={size} height={size} color={color} />;
+                },
+              };
+            }}
+          />
 
-        {/* <DrawerStack.Screen name="Help" component={Help} /> */}
-      </DrawerStack.Navigator>
+          <DrawerStack.Screen
+            name="Settings"
+            component={SettingsStack}
+            options={() => {
+              return {
+                drawerItemStyle: { display: 'none', height: 0 },
+              };
+            }}
+          />
+
+          {/* <DrawerStack.Screen name="Help" component={Help} /> */}
+        </DrawerStack.Navigator>
+      </TabBarAnimationProvider>
     );
   }
 
@@ -255,59 +258,61 @@ function DrawerNav() {
   }
 
   return (
-    <DrawerStack.Navigator
-      backBehavior="history"
-      screenOptions={{
-        drawerType,
-        swipeEnabled: false,
-        headerShown: false,
-      }}
-      drawerContent={() => <DrawerPlaceholderScreen />}
-    >
-      <DrawerStack.Screen
-        name="Main"
-        component={DrawerPlaceholderScreen}
-        options={{
-          title: 'Home',
-          drawerItemStyle: { display: 'none', height: 0 },
+    <TabBarAnimationProvider>
+      <DrawerStack.Navigator
+        backBehavior="history"
+        screenOptions={{
+          drawerType,
+          swipeEnabled: false,
+          headerShown: false,
         }}
-      />
-      <DrawerStack.Screen
-        name="ZoeAI"
-        component={DrawerPlaceholderScreen}
-        options={{
-          drawerItemStyle: { display: 'none', height: 0 },
-        }}
-      />
-      <DrawerStack.Screen
-        name="Saved"
-        component={DrawerPlaceholderScreen}
-        options={{
-          drawerItemStyle: { display: 'none', height: 0 },
-        }}
-      />
-      <DrawerStack.Screen
-        name="Connections"
-        component={DrawerPlaceholderScreen}
-        options={{
-          drawerItemStyle: { display: 'none', height: 0 },
-        }}
-      />
-      <DrawerStack.Screen
-        name="PrayerWall"
-        component={DrawerPlaceholderScreen}
-        options={{
-          drawerItemStyle: { display: 'none', height: 0 },
-        }}
-      />
-      <DrawerStack.Screen
-        name="Settings"
-        component={DrawerPlaceholderScreen}
-        options={{
-          drawerItemStyle: { display: 'none', height: 0 },
-        }}
-      />
-    </DrawerStack.Navigator>
+        drawerContent={() => <DrawerPlaceholderScreen />}
+      >
+        <DrawerStack.Screen
+          name="Main"
+          component={DrawerPlaceholderScreen}
+          options={{
+            title: 'Home',
+            drawerItemStyle: { display: 'none', height: 0 },
+          }}
+        />
+        <DrawerStack.Screen
+          name="ZoeAI"
+          component={DrawerPlaceholderScreen}
+          options={{
+            drawerItemStyle: { display: 'none', height: 0 },
+          }}
+        />
+        <DrawerStack.Screen
+          name="Saved"
+          component={DrawerPlaceholderScreen}
+          options={{
+            drawerItemStyle: { display: 'none', height: 0 },
+          }}
+        />
+        <DrawerStack.Screen
+          name="Connections"
+          component={DrawerPlaceholderScreen}
+          options={{
+            drawerItemStyle: { display: 'none', height: 0 },
+          }}
+        />
+        <DrawerStack.Screen
+          name="PrayerWall"
+          component={DrawerPlaceholderScreen}
+          options={{
+            drawerItemStyle: { display: 'none', height: 0 },
+          }}
+        />
+        <DrawerStack.Screen
+          name="Settings"
+          component={DrawerPlaceholderScreen}
+          options={{
+            drawerItemStyle: { display: 'none', height: 0 },
+          }}
+        />
+      </DrawerStack.Navigator>
+    </TabBarAnimationProvider>
   );
 }
 

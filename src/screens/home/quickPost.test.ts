@@ -58,9 +58,21 @@ describe('quickPost helpers', () => {
     });
 
     await expect(moderateQuickPostText('blocked text', notify)).resolves.toEqual({
-      blocked: true,
+      blocked: false,
+      moderationReview: {
+        checks: [
+          {
+            type: 'text',
+            clientSource: 'heuristic',
+            clientScores: undefined,
+            clientReason: 'blocked-pattern',
+            clientModel: undefined,
+            fallbackAction: 'pending_review',
+          },
+        ],
+      },
     });
-    expect(notify).toHaveBeenCalledWith(QUICK_POST_TEXT_BLOCK_MESSAGE);
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it('returns a moderation review payload when fallback moderation flags the content', async () => {

@@ -3,11 +3,14 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  PanResponder,
+  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
@@ -17,7 +20,7 @@ import StyledText from '@/components/styled/Text';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { fontSize } from '@/src/styles/typography';
+import { fontSize, lineHeight } from '@/src/styles/typography';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
@@ -147,6 +150,42 @@ function PostReactionsModal({
   const userProfileCacheRef = useRef<
     Record<string, { name?: string; username?: string; profileImage?: string }>
   >({});
+
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const dragTranslateY = useSharedValue(0);
+
+  const dragHandleResponder = useRef(
+    Platform.OS === 'android'
+      ? PanResponder.create({
+          onStartShouldSetPanResponder: () => true,
+          onMoveShouldSetPanResponder: (_, gs) => gs.dy > 5 && Math.abs(gs.dy) > Math.abs(gs.dx),
+          onPanResponderMove: (_, gs) => {
+            if (gs.dy > 0) {
+              dragTranslateY.value = gs.dy;
+            }
+          },
+          onPanResponderRelease: (_, gs) => {
+            if (gs.dy > 80) {
+              dragTranslateY.value = withTiming(300, { duration: 200 }, (finished) => {
+                if (finished) {
+                  dragTranslateY.value = 0;
+                  onCloseRef.current();
+                } else {
+                  dragTranslateY.value = withSpring(0);
+                }
+              });
+            } else {
+              dragTranslateY.value = withSpring(0);
+            }
+          },
+          onPanResponderTerminate: () => {
+            dragTranslateY.value = withSpring(0);
+          },
+        })
+      : null
+  ).current;
 
   const route = useMemo(() => getReactionsRoute(postType, postId), [postId, postType]);
 
@@ -364,8 +403,10 @@ function PostReactionsModal({
       setConnectingUserIds([]);
       setUseLegacyFallback(false);
       userProfileCacheRef.current = {};
+    } else {
+      dragTranslateY.value = 0;
     }
-  }, [visible]);
+  }, [visible, dragTranslateY]);
 
   const handleToggleConnection = useCallback(
     async (item: ReactionDetailsUser) => {
@@ -509,6 +550,7 @@ function PostReactionsModal({
       modalVisible={visible}
       onclose={onClose}
       enableEntranceGlow
+      externalTranslateY={Platform.OS === 'android' ? dragTranslateY : undefined}
       style={{
         backgroundColor: dark ? '#0f1f25' : '#ffffff',
         borderTopLeftRadius: 28,
@@ -516,7 +558,7 @@ function PostReactionsModal({
         height: '75%',
       }}
     >
-      <View style={styles.dragHandleWrap}>
+      <View style={styles.dragHandleWrap} {...(dragHandleResponder?.panHandlers ?? {})}>
         <View
           style={[
             styles.dragHandle,
@@ -640,6 +682,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...fontSize.x6,
+    ...lineHeight.x6,
     fontWeight: '700',
   },
   closeButton: {

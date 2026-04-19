@@ -1,10 +1,13 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
+import { Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 
 import Home, { FeedTypes } from '../index';
 import { PostType } from '@/utils/types';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
+import { spacing } from '@/src/styles/spacing';
+import { getHeight } from '@/utils/ResponsiveFun';
 
 const mockReact = React;
 const mockSocialItemProps: any[] = [];
@@ -13,6 +16,8 @@ const mockImageViewerElement = mockReact.createElement('MockImageViewer', {
   testID: 'home-image-viewer',
 });
 const mockApiCall = jest.fn();
+const mockSetTabBarTranslateY = jest.fn();
+const mockResetTabBar = jest.fn();
 const mockNavigationObject = {
   setOptions: jest.fn(),
   navigate: jest.fn(),
@@ -23,6 +28,7 @@ const mockNavigationObject = {
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(() => mockNavigationObject),
+  useIsFocused: jest.fn(() => true),
   useTheme: jest.fn(() => ({
     dark: false,
     colors: {
@@ -70,8 +76,8 @@ jest.mock('iconsax-react-native', () => {
 
 jest.mock('@/navigator/TabBarAnimationContext', () => ({
   useTabBarAnimation: jest.fn(() => ({
-    setTabBarTranslateY: jest.fn(),
-    resetTabBar: jest.fn(),
+    setTabBarTranslateY: mockSetTabBarTranslateY,
+    resetTabBar: mockResetTabBar,
   })),
 }));
 
@@ -168,7 +174,7 @@ jest.mock('@/components/imageViewer/useSharedImageViewer', () => ({
 }));
 
 jest.mock('@/services/feedTelemetry', () => ({
-  flushFeedTelemetry: jest.fn(),
+  flushFeedTelemetry: jest.fn(() => Promise.resolve()),
   setFeedTelemetryAuthToken: jest.fn(),
 }));
 
@@ -197,12 +203,14 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const mockedUseSelector = useSelector as jest.Mock;
 const mockedUseSharedImageViewer = useSharedImageViewer as jest.Mock;
+const originalRequestAnimationFrame = global.requestAnimationFrame;
+const originalCancelAnimationFrame = global.cancelAnimationFrame;
 
-const buildSocialFeedItem = () => ({
-  postId: 'social-post-1',
+const buildSocialFeedItem = (postId = 'social-post-1', overrides: Record<string, any> = {}) => ({
+  postId,
   type: 'social',
-  content: 'Social image post',
-  images: ['https://cdn.example.com/social-1.jpg'],
+  content: `Social image post ${postId}`,
+  images: [`https://cdn.example.com/${postId}.jpg`],
   reactions: [],
   comments: [],
   userData: {
@@ -211,6 +219,7 @@ const buildSocialFeedItem = () => ({
     username: 'authorone',
     profileImage: '',
   },
+  ...overrides,
 });
 
 const buildWatchFeedItem = () => ({
@@ -231,9 +240,13 @@ const buildWatchFeedItem = () => ({
 describe('Home image viewer integration', () => {
   beforeEach(() => {
     jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    global.requestAnimationFrame = jest.fn(() => 0) as any;
+    global.cancelAnimationFrame = jest.fn() as any;
     mockSocialItemProps.length = 0;
     mockOpenImages.mockReset();
     mockApiCall.mockReset();
+    mockSetTabBarTranslateY.mockReset();
+    mockResetTabBar.mockReset();
     mockNavigationObject.setOptions.mockReset();
     mockNavigationObject.navigate.mockReset();
     mockNavigationObject.push.mockReset();
@@ -284,6 +297,8 @@ describe('Home image viewer integration', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    global.requestAnimationFrame = originalRequestAnimationFrame;
+    global.cancelAnimationFrame = originalCancelAnimationFrame;
   });
 
   it('passes the shared image opener to Home feed social cards and mounts the viewer', async () => {
@@ -327,5 +342,233 @@ describe('Home image viewer integration', () => {
     expect(watchCard.onOpenImages).toBe(mockOpenImages);
     expect(watchCard.postType).toBe(PostType.watch);
     expect(renderer!.root.findByProps({ testID: 'home-image-viewer' })).toBeTruthy();
+  });
+
+  it('keeps replayed For You rows distinct by feedInstanceId and suppresses the caught-up footer', async () => {
+    mockApiCall.mockImplementation(({ route }: { route: string }) => {
+      if (route.startsWith('user/get-following-feed/foryou/1')) {
+        return Promise.resolve({
+          status: 200,
+          response: [buildSocialFeedItem('social-post-1')],
+        });
+      }
+
+      if (route.startsWith('user/get-following-feed/foryou/2')) {
+        return Promise.resolve({
+          status: 200,
+          response: [
+            buildSocialFeedItem('social-post-1', {
+              feedInstanceId: 'for-you-replay:20:social-post-1',
+            }),
+          ],
+        });
+      }
+
+      if (route.startsWith('user/get-following-feed/foryou/3')) {
+        return Promise.resolve({
+          status: 200,
+          response: [],
+        });
+      }
+
+      if (route.startsWith('user/get-users-to-subscribe/')) {
+        return Promise.resolve({
+          status: 200,
+          response: { data: [] },
+        });
+      }
+
+      return Promise.resolve({
+        status: 200,
+        response: [],
+      });
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <Home
+          navigation={
+            {
+              setParams: jest.fn(),
+              navigate: jest.fn(),
+              push: jest.fn(),
+              dispatch: jest.fn(),
+            } as any
+          }
+          route={
+            {
+              key: 'home-route',
+              name: 'Home',
+              params: { selectedTab: FeedTypes.ForYou },
+            } as any
+          }
+        />
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const getFeedList = () =>
+      renderer!.root.find(
+        (node) =>
+          typeof node.props?.onEndReached === 'function' &&
+          typeof node.props?.data !== 'undefined' &&
+          Array.isArray(node.props.data)
+      );
+
+    await act(async () => {
+      getFeedList().props.onScrollBeginDrag();
+      getFeedList().props.onEndReached();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getFeedList().props.data).toHaveLength(2);
+
+    await act(async () => {
+      getFeedList().props.onScrollBeginDrag();
+      getFeedList().props.onEndReached();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      renderer!
+        .root.findAllByType('Text')
+        .some((node) => node.props.children === 'You are all caught up.')
+    ).toBe(false);
+  });
+
+  it('keeps the Share a Prayer CTA visible without reserving full tab-bar space on the Pray feed', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <Home
+          navigation={
+            {
+              setParams: jest.fn(),
+              navigate: jest.fn(),
+              push: jest.fn(),
+              dispatch: jest.fn(),
+            } as any
+          }
+          route={
+            {
+              key: 'home-route',
+              name: 'Home',
+              params: { selectedTab: FeedTypes.Pray },
+            } as any
+          }
+        />
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const expectedPrayPaddingBottom =
+      (Platform.OS === 'ios' ? spacing.x60 : spacing.x48) / 2;
+    const legacyTabBarPaddingBottom = (getHeight(7) + spacing.x16) / 2;
+
+    expect(
+      renderer!.root
+        .findAllByType('Text')
+        .some((node) => node.props.children === 'Share a Prayer 🙏')
+    ).toBe(true);
+    expect(
+      renderer!.root.find(
+        (node) =>
+          node.type === 'View' &&
+          node.props?.style?.flex === 1 &&
+          node.props?.style?.paddingBottom === expectedPrayPaddingBottom
+      )
+    ).toBeTruthy();
+    expect(expectedPrayPaddingBottom).toBeLessThan(legacyTabBarPaddingBottom);
+  });
+
+  it('pushes the root tab bar fully offscreen while the Pray feed is active', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <Home
+          navigation={
+            {
+              setParams: jest.fn(),
+              navigate: jest.fn(),
+              push: jest.fn(),
+              dispatch: jest.fn(),
+            } as any
+          }
+          route={
+            {
+              key: 'home-route',
+              name: 'Home',
+              params: { selectedTab: FeedTypes.Pray },
+            } as any
+          }
+        />
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockSetTabBarTranslateY).toHaveBeenCalledWith(getHeight(7));
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('mirrors the Pray tab into route params immediately when the user taps Pray', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+    const navigation = {
+      setParams: jest.fn(),
+      navigate: jest.fn(),
+      push: jest.fn(),
+      dispatch: jest.fn(),
+    };
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <Home
+          navigation={navigation as any}
+          route={
+            {
+              key: 'home-route',
+              name: 'Home',
+              params: { selectedTab: FeedTypes.ForYou },
+            } as any
+          }
+        />
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const prayLabel = renderer!.root.findByProps({ children: 'Pray' });
+    let prayButton: typeof prayLabel | null = prayLabel;
+
+    while (prayButton && typeof prayButton.props?.onPress !== 'function') {
+      prayButton = prayButton.parent;
+    }
+
+    expect(prayButton?.props.onPress).toEqual(expect.any(Function));
+
+    await act(async () => {
+      prayButton!.props.onPress();
+    });
+
+    expect(navigation.setParams).toHaveBeenCalledWith({ selectedTab: FeedTypes.Pray });
+
+    await act(async () => {
+      renderer!.unmount();
+    });
   });
 });

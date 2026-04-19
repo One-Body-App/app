@@ -13,6 +13,7 @@ import {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
+  SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -58,6 +59,7 @@ export default function CustomModal({
   style,
   enableEntranceGlow = false,
   avoidKeyboard = false,
+  externalTranslateY,
 }: {
   modalVisible: boolean;
   onclose?: () => void;
@@ -65,6 +67,7 @@ export default function CustomModal({
   style?: StyleProp<ViewStyle>;
   enableEntranceGlow?: boolean;
   avoidKeyboard?: boolean;
+  externalTranslateY?: SharedValue<number>;
 }) {
   const translateY = useSharedValue(0);
   const previouslyVisibleRef = useRef(false);
@@ -135,7 +138,11 @@ export default function CustomModal({
   }, [avoidKeyboard, modalVisible, resolveKeyboardOffset]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value - keyboardOffset }],
+    transform: [
+      {
+        translateY: translateY.value + (externalTranslateY?.value ?? 0) - keyboardOffset,
+      },
+    ],
   }));
 
   const panGesture = Gesture.Pan()

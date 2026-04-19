@@ -588,7 +588,7 @@ describe('videoUploadQueue', () => {
     ]);
   });
 
-  it('fails immediately when watch status returns a review failure', async () => {
+  it('completes and marks the upload as submitted for review when watch status returns a review failure', async () => {
     const storage = createMemoryStorage();
     const queue = createVideoUploadQueue({
       storage,
@@ -623,9 +623,12 @@ describe('videoUploadQueue', () => {
 
     expect(queue.getItems()).toEqual([
       expect.objectContaining({
-        status: 'failed',
-        failureCode: 'processing',
-        lastError: 'This Watch video violates content standards and cannot be published.',
+        status: 'complete',
+        watchId: 'watch-review-failed-1',
+        watchProcessingStatus: 'FAILED_REVIEW',
+        playBackId: undefined,
+        failureCode: undefined,
+        lastError: undefined,
       }),
     ]);
   });

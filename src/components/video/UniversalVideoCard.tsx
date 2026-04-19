@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import CustomVideo from '@/src/components/CustomVideo';
 import StyledText from '@/src/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 import {
   BRAND_VIDEO_BACKGROUND,
@@ -12,6 +13,7 @@ import {
   getFeedVideoLayout,
   getWatchVideoLayout,
 } from './universalVideoLayout';
+import { getSignedWatchPlayback } from '@/src/services/watchPlayback';
 
 type UniversalVideoCardProps = {
   context: 'feed' | 'watch';
@@ -35,6 +37,43 @@ type UniversalVideoCardProps = {
   showExpandButton?: boolean;
   children?: React.ReactNode;
 };
+
+function SignedPlaybackResolver({
+  playbackId,
+  onResolvedPlayback,
+}: {
+  playbackId: string;
+  onResolvedPlayback: (value: { mediaUrl?: string; thumbnailUrl?: string } | null) => void;
+}) {
+  useMountEffect(() => {
+    let cancelled = false;
+
+    if (!playbackId) {
+      onResolvedPlayback(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    getSignedWatchPlayback(playbackId)
+      .then((response) => {
+        if (!cancelled) {
+          onResolvedPlayback(response);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          onResolvedPlayback(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  return null;
+}
 
 function UniversalVideoCard({
   context,
@@ -62,6 +101,20 @@ function UniversalVideoCard({
     context === 'feed'
       ? getFeedVideoLayout(containerWidth ?? 1, metadata)
       : getWatchVideoLayout(viewportWidth ?? 1, viewportHeight ?? 1, metadata);
+  const playbackId = typeof metadata?.playBackId === 'string' ? metadata.playBackId.trim() : '';
+  const [resolvedPlayback, setResolvedPlayback] = useState<{
+    mediaUrl?: string;
+    thumbnailUrl?: string;
+  } | null>(null);
+
+  const resolvedSourceUri = useMemo(
+    () => resolvedPlayback?.mediaUrl || sourceUri,
+    [resolvedPlayback?.mediaUrl, sourceUri]
+  );
+  const resolvedPoster = useMemo(
+    () => resolvedPlayback?.thumbnailUrl || poster,
+    [poster, resolvedPlayback?.thumbnailUrl]
+  );
 
   const shell = (
     <View
@@ -76,6 +129,11 @@ function UniversalVideoCard({
           : undefined,
       ]}
     >
+      <SignedPlaybackResolver
+        key={playbackId || '__no-playback__'}
+        playbackId={playbackId}
+        onResolvedPlayback={setResolvedPlayback}
+      />
       <View
         style={[
           styles.frame,
@@ -92,7 +150,7 @@ function UniversalVideoCard({
       >
         <CustomVideo
           ref={videoRef}
-          source={{ uri: sourceUri }}
+          source={{ uri: resolvedSourceUri }}
           style={StyleSheet.absoluteFillObject}
           controls={controls}
           resizeMode={layout.resizeMode}
@@ -102,7 +160,7 @@ function UniversalVideoCard({
           onLoad={onLoad}
           onProgress={onProgress}
           onEnd={onEnd}
-          poster={poster}
+          poster={resolvedPoster}
         />
 
         {context === 'feed' && showExpandButton && onExpandPress ? (

@@ -178,11 +178,17 @@ function NewPost({ navigation, route }: Props) {
 
       const result = await moderateClientText(normalizedValue);
       if (result.action === 'block') {
-        toast.show(TEXT_MODERATION_BLOCK_MESSAGE, {
-          type: 'danger',
-          placement: 'bottom',
-        });
-        return { blocked: true } as const;
+        return {
+          blocked: false,
+          pendingReviewCheck: {
+            type: 'text',
+            clientSource: result.source,
+            clientScores: result.scores,
+            clientReason: result.reason || TEXT_MODERATION_BLOCK_MESSAGE,
+            clientModel: result.model,
+            fallbackAction: 'pending_review',
+          } satisfies ModerationReviewCheckPayload,
+        } as const;
       }
 
       if (result.action === 'fallback') {
@@ -497,10 +503,6 @@ function NewPost({ navigation, route }: Props) {
 
     try {
       const textModeration = await runTextModeration(mergedContent);
-      if (textModeration.blocked) {
-        setIsLoading(false);
-        return;
-      }
 
       const moderationReview = buildPendingModerationReviewPayload(
         [textModeration.pendingReviewCheck].filter(Boolean) as ModerationReviewCheckPayload[]
@@ -545,12 +547,14 @@ function NewPost({ navigation, route }: Props) {
             placement: 'bottom',
           });
         }
-        dispatchTaggedNotification({
-          postId: String(
-            result.response?.postId ?? result.response?._id ?? result.response?.id ?? ''
-          ).trim(),
-          postType: 'social',
-        });
+        if (!pendingReview) {
+          dispatchTaggedNotification({
+            postId: String(
+              result.response?.postId ?? result.response?._id ?? result.response?.id ?? ''
+            ).trim(),
+            postType: 'social',
+          });
+        }
         mentionComposer.reset();
         navigateAfterSocialPostSuccess('create');
       } else if (result.status === 413) {
