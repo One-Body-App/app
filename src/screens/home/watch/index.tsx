@@ -49,6 +49,7 @@ import {
 import {
   deleteOwnedPost,
   emitOwnedPostDeleted,
+  subscribeToFeedItemUnavailable,
   subscribeToOwnedPostDeleted,
 } from '@/services/ownedPostDeletion';
 
@@ -75,6 +76,7 @@ function Watch({ navigation, route }: any) {
     requestId: string;
     startedAt: number;
   } | null>(null);
+  const feedDataRef = useRef<WatchPost[]>([]);
   const seenWatchImpressionsRef = useRef<Set<string>>(new Set());
   const telemetryRequestIdRef = useRef(createPostTelemetryRequestId());
   const hasAppliedInitialSelectionRef = useRef(false);
@@ -240,7 +242,7 @@ function Watch({ navigation, route }: any) {
         return;
       }
       activeWatchTelemetryRef.current = null;
-      const activePost = feedData[activeTelemetry.postIndex] ?? null;
+      const activePost = feedDataRef.current[activeTelemetry.postIndex] ?? null;
       const dwellTimeMs = Date.now() - activeTelemetry.startedAt;
       if (!activeTelemetry.postId || dwellTimeMs < 1200) {
         return;
@@ -269,7 +271,7 @@ function Watch({ navigation, route }: any) {
         { reason, source: 'watch_feed' }
       );
     },
-    [buildWatchTelemetryContext, feedData, trackWatchTelemetryEvent]
+    [buildWatchTelemetryContext, trackWatchTelemetryEvent]
   );
 
   const getFeedData = useCallback(async () => {
@@ -358,6 +360,10 @@ function Watch({ navigation, route }: any) {
   ]);
 
   useObservedEffect(() => {
+    feedDataRef.current = feedData;
+  }, [feedData]);
+
+  useObservedEffect(() => {
     // getData(page);
     if (isRefreshing) {
       if (page === 1) {
@@ -381,8 +387,12 @@ function Watch({ navigation, route }: any) {
   // }).current;
 
   useObservedEffect(() => {
+    if (isRefreshing) {
+      return;
+    }
+
     getFeedData();
-  }, [getFeedData, page]);
+  }, [getFeedData, isRefreshing, page]);
 
   useFocusEffect(
     useCallback(() => {
@@ -397,12 +407,20 @@ function Watch({ navigation, route }: any) {
   }, [mergeOptimisticWatchPosts]);
 
   useEffect(() => {
-    return subscribeToOwnedPostDeleted(({ type, id }) => {
+    const removeWatchLocally = ({ type, id }: { type: string; id: string }) => {
       if (type !== 'watch') {
         return;
       }
       removeWatchPostLocally(id);
-    });
+    };
+
+    const unsubscribeOwned = subscribeToOwnedPostDeleted(removeWatchLocally);
+    const unsubscribeUnavailable = subscribeToFeedItemUnavailable(removeWatchLocally);
+
+    return () => {
+      unsubscribeOwned();
+      unsubscribeUnavailable();
+    };
   }, [removeWatchPostLocally]);
 
   useObservedEffect(() => {

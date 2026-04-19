@@ -11,6 +11,17 @@ jest.mock('@react-navigation/native', () => ({
     canGoBack: jest.fn(() => true),
     goBack: jest.fn(),
   })),
+  useTheme: jest.fn(() => ({
+    dark: false,
+    colors: {
+      background: '#ffffff',
+      text: '#032f3c',
+      card: '#ffffff',
+      border: '#e6eaec',
+      notification: '#ff0000',
+      primary: '#126b87',
+    },
+  })),
 }));
 
 jest.mock('@react-native-vector-icons/ionicons', () => {

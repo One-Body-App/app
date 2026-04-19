@@ -36,6 +36,56 @@ index 0b7f9e8..044fead 100644
      libraryName = "Passkey"
      codegenJavaPackageName = "com.reactnativepasskey"
    }
+diff --git a/node_modules/react-native-passkey/android/src/main/java/com/reactnativepasskey/PasskeyModule.kt b/node_modules/react-native-passkey/android/src/main/java/com/reactnativepasskey/PasskeyModule.kt
+index 91e9665..799d3a0 100644
+--- a/node_modules/react-native-passkey/android/src/main/java/com/reactnativepasskey/PasskeyModule.kt
++++ b/node_modules/react-native-passkey/android/src/main/java/com/reactnativepasskey/PasskeyModule.kt
+@@ -18,7 +18,7 @@
+ import kotlinx.coroutines.launch
+ 
+ class PasskeyModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+-  private val mainScope = CoroutineScope(Dispatchers.Default)
++  private val mainScope = CoroutineScope(Dispatchers.Main.immediate)
+ 
+   override fun getName(): String {
+     return "Passkey"
+@@ -31,7 +31,16 @@ class PasskeyModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
+ 
+     mainScope.launch {
+       try {
+-        val result = currentActivity?.let { credentialManager.createCredential(it, createPublicKeyCredentialRequest) }
++        val activity =
++          currentActivity
++            ?: run {
++              promise.reject(
++                "Passkey",
++                "ActivityUnavailable: No current activity available for passkey registration."
++              )
++              return@launch
++            }
++        val result = credentialManager.createCredential(activity, createPublicKeyCredentialRequest)
+ 
+         val response =
+           result?.data?.getString("androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON")
+@@ -76,8 +85,16 @@ class PasskeyModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
+ 
+       mainScope.launch {
+         try {
+-          val result =
+-            currentActivity?.let { credentialManager.getCredential(it, getCredentialRequest) }
++          val activity =
++            currentActivity
++              ?: run {
++                promise.reject(
++                  "Passkey",
++                  "ActivityUnavailable: No current activity available for passkey authentication."
++                )
++                return@launch
++              }
++          val result = credentialManager.getCredential(activity, getCredentialRequest)
+ 
+           val response =
+             result?.credential?.data?.getString("androidx.credentials.BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON")
 diff --git a/node_modules/react-native-passkey/ios/Passkey.swift b/node_modules/react-native-passkey/ios/Passkey.swift
 index bcc07c2..acd457f 100644
 --- a/node_modules/react-native-passkey/ios/Passkey.swift

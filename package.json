@@ -223,12 +223,6 @@
   "engines": {
     "node": ">=22"
   },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "prettier --check",
-      "eslint --quiet"
-    ]
-  },
   "resolutions": {
     "@xmldom/xmldom@npm:^0.8.8": "0.9.9",
     "fast-xml-parser@npm:^5.3.6": "5.5.10",

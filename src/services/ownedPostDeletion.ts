@@ -8,9 +8,16 @@ export type OwnedPostDeletedEvent = {
   id: string;
 };
 
+export type FeedItemUnavailableEvent = {
+  type: OwnedPostType;
+  id: string;
+};
+
 type OwnedPostDeletedListener = (event: OwnedPostDeletedEvent) => void;
+type FeedItemUnavailableListener = (event: FeedItemUnavailableEvent) => void;
 
 const ownedPostDeletedListeners = new Set<OwnedPostDeletedListener>();
+const feedItemUnavailableListeners = new Set<FeedItemUnavailableListener>();
 
 const toMessage = (response: unknown, fallback: string) => {
   if (response && typeof response === 'object' && 'message' in response) {
@@ -62,6 +69,14 @@ export const subscribeToOwnedPostDeleted = (listener: OwnedPostDeletedListener) 
   };
 };
 
+export const subscribeToFeedItemUnavailable = (listener: FeedItemUnavailableListener) => {
+  feedItemUnavailableListeners.add(listener);
+
+  return () => {
+    feedItemUnavailableListeners.delete(listener);
+  };
+};
+
 export const emitOwnedPostDeleted = (event: OwnedPostDeletedEvent) => {
   ownedPostDeletedListeners.forEach((listener) => {
     try {
@@ -71,6 +86,37 @@ export const emitOwnedPostDeleted = (event: OwnedPostDeletedEvent) => {
     }
   });
 };
+
+export const emitFeedItemUnavailable = (event: FeedItemUnavailableEvent) => {
+  feedItemUnavailableListeners.forEach((listener) => {
+    try {
+      listener(event);
+    } catch {
+      // Ignore listener failures so one stale subscriber does not block others.
+    }
+  });
+};
+
+export const isFeedItemUnavailableResponse = (status: number | undefined, response: unknown) => {
+  if (
+    status === 200 &&
+    response &&
+    typeof response === 'object' &&
+    (response as { staleContentRemoved?: unknown }).staleContentRemoved === true
+  ) {
+    return true;
+  }
+
+  if (status === 404) {
+    return true;
+  }
+
+  const message = toMessage(response, '');
+  return /no longer available|post not found|not found/i.test(message);
+};
+
+export const getFeedItemUnavailableMessage = (response: unknown) =>
+  toMessage(response, 'This post is no longer available.');
 
 export const deleteOwnedPost = async ({
   type,
@@ -107,10 +153,10 @@ export const deleteOwnedPost = async ({
     token,
   });
 
-  if (response?.status === 200) {
+  if (response?.status === 200 || response?.status === 404) {
     return {
       ok: true,
-      status: 200,
+      status: response?.status ?? 200,
       type: normalizedType,
       id: normalizedId,
     };

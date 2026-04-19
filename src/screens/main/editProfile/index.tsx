@@ -350,7 +350,8 @@ function EditProfile({ navigation, route }: Props) {
             path: uri,
             forceJpg: true,
             maxFiles: 1,
-            compressImageMaxHeight: 150,
+            compressImageMaxWidth: imageType === 'photo' ? 512 : 1280,
+            compressImageMaxHeight: imageType === 'photo' ? 512 : 720,
           });
           const croppedMedia = buildCroppedMediaState({
             image,

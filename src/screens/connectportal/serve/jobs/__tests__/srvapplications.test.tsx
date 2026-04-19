@@ -19,12 +19,25 @@ jest.mock('@react-native-vector-icons/material-icons', () => {
     });
 });
 
-jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
-  useFocusEffect: (effect: () => void | (() => void)) => {
-    effect();
-  },
-}));
+jest.mock('@react-navigation/native', () => {
+  const ReactLocal = require('react');
+  return {
+    useFocusEffect: (effect: () => void | (() => void)) => {
+      ReactLocal.useEffect(() => effect(), []);
+    },
+    useTheme: jest.fn(() => ({
+      dark: false,
+      colors: {
+        background: '#ffffff',
+        text: '#032f3c',
+        card: '#ffffff',
+        border: '#e6eaec',
+        notification: '#ff0000',
+        primary: '#126b87',
+      },
+    })),
+  };
+});
 
 jest.mock('react-native-fs', () => ({
   __esModule: true,

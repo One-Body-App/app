@@ -381,18 +381,32 @@ function ProfileHeader({
               style={styles.avatarWrap}
             >
               {profileData.profileImage ? (
-                // Single AnimatedPressable replaces the Animated.View + Pressable pair —
-                // one fewer compositing layer on Android
-                <AnimatedPressable
-                  onPress={avatarAnimation?.open}
-                  style={[styles.avatar, rAvatarPlaceholderStyle]}
-                >
-                  <FastImage
-                    source={{ uri: profileData.profileImage }}
-                    style={StyleSheet.absoluteFill}
-                    resizeMode={FastImage.resizeMode.cover}
-                  />
-                </AnimatedPressable>
+                avatarAnimation ? (
+                  // Single AnimatedPressable replaces the Animated.View + Pressable pair —
+                  // one fewer compositing layer on Android
+                  <AnimatedPressable
+                    testID="profile-public-avatar-button"
+                    onPress={avatarAnimation.open}
+                    style={[styles.avatar, styles.avatarClipped, rAvatarPlaceholderStyle]}
+                  >
+                    <FastImage
+                      source={{ uri: profileData.profileImage }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  </AnimatedPressable>
+                ) : (
+                  <View
+                    testID="profile-public-avatar-static"
+                    style={[styles.avatar, styles.avatarClipped]}
+                  >
+                    <FastImage
+                      source={{ uri: profileData.profileImage }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  </View>
+                )
               ) : (
                 <View style={[styles.avatar, styles.avatarFallback]}>
                   <ProfileFill width={50} height={50} color={Colors.primarySapphire.brand} />
@@ -599,6 +613,9 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth.base,
     height: AVATAR_SIZE,
     width: AVATAR_SIZE,
+  },
+  avatarClipped: {
+    overflow: 'hidden',
   },
   avatarFallback: {
     alignItems: 'center',

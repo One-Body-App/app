@@ -30,6 +30,7 @@ export type ProfileAvatarAnimationResult = {
   closeBtnOpacity: SharedValue<number>;
   open: () => void;
   close: () => void;
+  reset: () => void;
 };
 
 export function useProfileAvatarAnimation(): ProfileAvatarAnimationResult {
@@ -100,6 +101,21 @@ export function useProfileAvatarAnimation(): ProfileAvatarAnimationResult {
     closeBtnOpacity.value = withTiming(0, { duration: DURATION });
   };
 
+  const reset = () => {
+    'worklet';
+
+    const closedX = measurementX.value || screenCenterX - AVATAR_SIZE / 2;
+    const closedY = measurementY.value || screenCenterY - AVATAR_SIZE / 2;
+
+    isOpen.value = 0;
+    backdropOpacity.value = 0;
+    closeBtnOpacity.value = 0;
+    imageScale.value = 1;
+    imageSize.value = AVATAR_SIZE;
+    imageXCoord.value = closedX;
+    imageYCoord.value = closedY;
+  };
+
   return {
     targetRef,
     onTargetLayout,
@@ -113,5 +129,6 @@ export function useProfileAvatarAnimation(): ProfileAvatarAnimationResult {
     closeBtnOpacity,
     open,
     close,
+    reset,
   };
 }

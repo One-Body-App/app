@@ -56,8 +56,11 @@ jest.mock('@/src/components/CustomModal', () => {
   };
 });
 
-jest.mock('@/src/hooks/useMountEffect', () => (callback: () => void) => {
-  callback();
+jest.mock('@/src/hooks/useMountEffect', () => {
+  const ReactLocal = require('react');
+  return (callback: () => void | (() => void)) => {
+    ReactLocal.useEffect(() => callback(), []);
+  };
 });
 
 jest.mock('../../../go/createflow/shared', () => ({

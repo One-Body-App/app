@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { StackScreenProps } from '@react-navigation/stack';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
@@ -29,12 +29,18 @@ import {
   type CanonicalPostTelemetryEventName,
   type PostTelemetryEventInput,
 } from '@/services/postTelemetry';
-import { deleteOwnedPost, emitOwnedPostDeleted } from '@/services/ownedPostDeletion';
+import {
+  deleteOwnedPost,
+  emitFeedItemUnavailable,
+  emitOwnedPostDeleted,
+  getFeedItemUnavailableMessage,
+} from '@/services/ownedPostDeletion';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
 function SinglePrayer({ navigation, route }: Props) {
   const [prayer, setPrayer] = useState<PrayerPost>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const unavailableHandledRef = useRef(false);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors, dark } = useTheme();
@@ -106,6 +112,21 @@ function SinglePrayer({ navigation, route }: Props) {
     if (!postId) {
       return;
     }
+
+    const handleUnavailablePost = (message?: string) => {
+      if (unavailableHandledRef.current) {
+        return;
+      }
+
+      unavailableHandledRef.current = true;
+      emitFeedItemUnavailable({
+        type: PostType.prayer,
+        id: postId,
+      });
+      Toast.show(message || 'This post is no longer available.', Toast.SHORT);
+      handleBackPress();
+    };
+
     setIsLoading(true);
     try {
       const result = await ApiCall({
@@ -118,12 +139,20 @@ function SinglePrayer({ navigation, route }: Props) {
       setIsLoading(false);
 
       if (result.status === 200) {
-        setPrayer(result.response);
+        if (result.response) {
+          unavailableHandledRef.current = false;
+          setPrayer(result.response);
+        } else {
+          handleUnavailablePost();
+        }
+      } else {
+        handleUnavailablePost(getFeedItemUnavailableMessage(result.response));
       }
     } catch (e) {
       setIsLoading(false);
+      handleUnavailablePost();
     }
-  }, [postId, token]);
+  }, [handleBackPress, postId, token]);
 
   const removePost = async (type: string, id: string) => {
     const normalizedId = String(id ?? '').trim();

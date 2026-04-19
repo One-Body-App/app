@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Share, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { InteractionManager, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
@@ -61,6 +61,7 @@ function UserProfile({ navigation, route }: Props) {
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [user, setUser] = useState<User>();
   const [relatedUsers, setRelatedUsers] = useState<User[] | undefined>();
+  const [avatarExpansionEnabled, setAvatarExpansionEnabled] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const { dark, colors } = useTheme();
   const headerColor = dark ? colors.text : Colors.primary.brand;
@@ -73,6 +74,24 @@ function UserProfile({ navigation, route }: Props) {
   const headerRight = useMemo(
     () => <HeaderMenuButton onPress={() => setShowActions(true)} color={headerColor} />,
     [headerColor]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      setAvatarExpansionEnabled(false);
+      const interactionTask = InteractionManager.runAfterInteractions(() => {
+        if (isActive) {
+          setAvatarExpansionEnabled(true);
+        }
+      });
+
+      return () => {
+        isActive = false;
+        interactionTask.cancel();
+        setAvatarExpansionEnabled(false);
+      };
+    }, [handle, id])
   );
 
   useFocusEffect(
@@ -213,6 +232,7 @@ function UserProfile({ navigation, route }: Props) {
           relatedUsers={relatedUsers}
           handleSubscribe={handleSubscribe}
           handleUnSubscribe={handleUnSubscribe}
+          avatarExpansionEnabled={avatarExpansionEnabled}
           variant="public"
         />
       ) : (

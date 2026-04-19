@@ -17,6 +17,7 @@ import { usePrayerListTelemetry } from '@/components/prayerWall/usePrayerListTel
 import {
   deleteOwnedPost,
   emitOwnedPostDeleted,
+  subscribeToFeedItemUnavailable,
   subscribeToOwnedPostDeleted,
 } from '@/services/ownedPostDeletion';
 
@@ -137,14 +138,22 @@ function PrayerWallSavedPrayersComponent({
   }, [page]);
 
   useEffect(() => {
-    return subscribeToOwnedPostDeleted(({ type, id }) => {
+    const removePrayerLocally = ({ type, id }: { type: string; id: string }) => {
       if (type !== 'prayer') {
         return;
       }
       setSavedPosts((previous) =>
         previous.filter((post) => String(post.postId ?? post.id ?? '') !== id)
       );
-    });
+    };
+
+    const unsubscribeOwned = subscribeToOwnedPostDeleted(removePrayerLocally);
+    const unsubscribeUnavailable = subscribeToFeedItemUnavailable(removePrayerLocally);
+
+    return () => {
+      unsubscribeOwned();
+      unsubscribeUnavailable();
+    };
   }, []);
 
   const removePost = async (type: string, id: string) => {

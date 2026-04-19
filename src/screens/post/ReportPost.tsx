@@ -22,6 +22,12 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { body, header } from '@/src/styles/typography';
+import {
+  emitFeedItemUnavailable,
+  getFeedItemUnavailableMessage,
+  isFeedItemUnavailableResponse,
+  normalizeOwnedPostType,
+} from '@/services/ownedPostDeletion';
 
 type Props = StackScreenProps<MainStackParamList, 'ReportPost'>;
 type ReportReason = 'INAPPROPRIATE' | 'HARASSMENT' | 'SPAM' | 'NON_PROTESTANT' | 'OTHER';
@@ -119,6 +125,22 @@ function ReportPost({ navigation, route }: Props) {
       });
 
       if (result.status === 200) {
+        if (isFeedItemUnavailableResponse(result.status, result.response)) {
+          const normalizedType = normalizeOwnedPostType(route.params.targetType);
+          if (normalizedType) {
+            emitFeedItemUnavailable({
+              type: normalizedType,
+              id: route.params.targetId,
+            });
+          }
+
+          toast.show(getFeedItemUnavailableMessage(result.response), {
+            placement: 'bottom',
+          });
+          navigation.goBack();
+          return;
+        }
+
         if (__DEV__) {
           const state = navigation.getState();
           const currentRouteName = state.routes[state.index]?.name;
@@ -130,6 +152,22 @@ function ReportPost({ navigation, route }: Props) {
         navigation.replace('ReportStatus', {
           reportedUserId: route.params.reportedUserId,
         });
+        return;
+      }
+
+      if (isFeedItemUnavailableResponse(result.status, result.response)) {
+        const normalizedType = normalizeOwnedPostType(route.params.targetType);
+        if (normalizedType) {
+          emitFeedItemUnavailable({
+            type: normalizedType,
+            id: route.params.targetId,
+          });
+        }
+
+        toast.show(getFeedItemUnavailableMessage(result.response), {
+          placement: 'bottom',
+        });
+        navigation.goBack();
         return;
       }
 

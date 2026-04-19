@@ -19,8 +19,11 @@ jest.mock('@/src/services/connectPortal/provider', () => ({
   useConnectPortalData: () => mockUseConnectPortalData(),
 }));
 
-jest.mock('@/src/hooks/useMountEffect', () => (callback: () => void) => {
-  callback();
+jest.mock('@/src/hooks/useMountEffect', () => {
+  const ReactLocal = require('react');
+  return (callback: () => void | (() => void)) => {
+    ReactLocal.useEffect(() => callback(), []);
+  };
 });
 
 jest.mock('../../../go/createflow/shared', () => ({
@@ -175,25 +178,30 @@ describe('ServeCreateJobStep2', () => {
   });
 
   it('uses a scrollable modal list for Android option pickers', async () => {
-    jest.spyOn(Platform, 'OS', 'get').mockReturnValue('android');
-    const testRenderer = await renderScreen({
-      opportunityType: '',
-    });
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { value: 'android', configurable: true });
+    try {
+      const testRenderer = await renderScreen({
+        opportunityType: '',
+      });
 
-    await act(async () => {
-      testRenderer.root.findByProps({ testID: 'opportunity-type-trigger' }).props.onPress();
-    });
+      await act(async () => {
+        testRenderer.root.findByProps({ testID: 'opportunity-type-trigger' }).props.onPress();
+      });
 
-    expect(testRenderer.root.findByProps({ testID: 'option-sheet-modal' })).toBeDefined();
+      expect(testRenderer.root.findByProps({ testID: 'option-sheet-modal' })).toBeDefined();
 
-    await act(async () => {
-      testRenderer.root.findByProps({ testID: 'option-sheet-item-Volunteer' }).props.onPress();
-    });
+      await act(async () => {
+        testRenderer.root.findByProps({ testID: 'option-sheet-item-Volunteer' }).props.onPress();
+      });
 
-    expect(testRenderer.root.findAllByProps({ testID: 'option-sheet-modal' })).toHaveLength(0);
-    expect(
-      testRenderer.root.findAllByType(Text).some((node) => node.props.children === 'Volunteer')
-    ).toBe(true);
+      expect(testRenderer.root.findAllByProps({ testID: 'option-sheet-modal' })).toHaveLength(0);
+      expect(
+        testRenderer.root.findAllByType(Text).some((node) => node.props.children === 'Volunteer')
+      ).toBe(true);
+    } finally {
+      Object.defineProperty(Platform, 'OS', { value: originalOS, configurable: true });
+    }
   });
 
   it('shows a publish error instead of failing silently', async () => {

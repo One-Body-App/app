@@ -1,8 +1,15 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createDrawerNavigator, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
-import { Platform, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Profile2User } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
@@ -28,10 +35,50 @@ import { getDrawerNavMode } from '@/src/utils/authFlow';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 
-function DrawerPlaceholderScreen() {
-  const { colors } = useTheme();
+export function DrawerPlaceholderScreen() {
+  const { dark, colors } = useTheme();
 
-  return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+      }}
+    >
+      <ActivityIndicator size="large" color={Colors.primary.brand} />
+      <View style={{ height: 20 }} />
+      <Feather name="shield" size={28} color={Colors.primary.brand} />
+      <View
+        style={{
+          marginTop: 12,
+          alignItems: 'center',
+        }}
+      >
+        <Text
+          style={{
+            color: dark ? '#FFFFFF' : '#032f3c',
+            fontSize: 18,
+            fontWeight: '600',
+          }}
+        >
+          Loading your account...
+        </Text>
+      </View>
+      <View style={{ marginTop: 8, alignItems: 'center' }}>
+        <Text
+          style={{
+            color: dark ? '#A7B7BC' : '#4e6a71',
+            fontSize: 14,
+          }}
+        >
+          Finishing sign-in and loading the right destination.
+        </Text>
+      </View>
+    </View>
+  );
 }
 
 function DrawerNav() {
@@ -40,6 +87,15 @@ function DrawerNav() {
 
   const { dark, colors } = useTheme();
   const drawerNavMode = getDrawerNavMode(authState);
+
+  useEffect(() => {
+    if (__DEV__ && Platform.OS === 'android' && authState.userToken) {
+      console.log('[AndroidPasskey] route_resolution', {
+        drawerNavMode,
+        hasProfileData: Boolean(authState.getProfileData),
+      });
+    }
+  }, [authState.getProfileData, authState.userToken, drawerNavMode]);
 
   if (drawerNavMode === 'main') {
     let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';

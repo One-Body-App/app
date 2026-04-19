@@ -6,6 +6,7 @@ import ProfileHeader from './ProfileHeader';
 import { AccountType, User } from '../../../utils/types';
 
 const mockNavigate = jest.fn();
+const mockAvatarOpen = jest.fn();
 
 function mockFastImageComponent({
   children,
@@ -194,5 +195,76 @@ describe('ProfileHeader', () => {
 
     expect(renderer!.root.findAllByProps({ testID: 'profile-avatar-edit-button' })).toHaveLength(0);
     expect(renderer!.root.findAllByProps({ testID: 'profile-cover-edit-button' })).toHaveLength(0);
+  });
+
+  it('renders a pressable public avatar when overlay animation is available', () => {
+    const currentUser = buildUser();
+    const profileUser = buildUser({
+      _id: 'user-2',
+      username: 'other-user',
+      profileImage: 'https://cdn.example.com/avatar.jpg',
+    });
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <ProfileHeader
+          currentUser={currentUser}
+          profileData={profileUser}
+          variant="public"
+          avatarAnimation={
+            {
+              close: jest.fn(),
+              closeBtnOpacity: { value: 0 },
+              expandedSize: 240,
+              imageScale: { value: 1 },
+              imageSize: { value: 84 },
+              imageXCoord: { value: 0 },
+              imageYCoord: { value: 0 },
+              isOpen: { value: 0 },
+              onTargetLayout: jest.fn(),
+              open: mockAvatarOpen,
+              reset: jest.fn(),
+              backdropOpacity: { value: 0 },
+              targetRef: null,
+            } as any
+          }
+        />
+      );
+    });
+
+    const avatarButton = renderer!.root.findByProps({ testID: 'profile-public-avatar-button' });
+
+    act(() => {
+      avatarButton.props.onPress();
+    });
+
+    expect(mockAvatarOpen).toHaveBeenCalledTimes(1);
+    expect(renderer!.root.findAllByProps({ testID: 'profile-public-avatar-static' })).toHaveLength(
+      0
+    );
+  });
+
+  it('renders a static public avatar when overlay animation is unavailable', () => {
+    const currentUser = buildUser();
+    const profileUser = buildUser({
+      _id: 'user-2',
+      username: 'other-user',
+      profileImage: 'https://cdn.example.com/avatar.jpg',
+    });
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <ProfileHeader currentUser={currentUser} profileData={profileUser} variant="public" />
+      );
+    });
+
+    expect(renderer!.root.findAllByProps({ testID: 'profile-public-avatar-button' })).toHaveLength(
+      0
+    );
+    expect(
+      renderer!.root.findAllByProps({ testID: 'profile-public-avatar-static' }).length
+    ).toBeGreaterThan(0);
   });
 });

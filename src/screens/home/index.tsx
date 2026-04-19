@@ -1,13 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  memo,
-  useMemo,
-  JSX,
-} from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState, memo, useMemo, JSX } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -22,14 +13,12 @@ import {
   Platform,
   Animated,
   Easing,
-  useWindowDimensions,
   StyleProp,
   StyleSheet,
   NativeScrollEvent,
   NativeSyntheticEvent,
   ViewStyle,
 } from 'react-native';
-import { TabView } from 'react-native-tab-view';
 import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import {
@@ -75,11 +64,7 @@ import ArticleItem from '@/components/listItems/ArticleItem';
 import SocialItem from '@/components/listItems/SocialItem';
 import PrayerItem from '@/components/listItems/PrayerItem';
 import FeedAvatar from '@/components/avatar/FeedAvatar';
-import {
-  resolveFeedAvatarUri,
-  resolveProfileAvatarUri,
-  isFeedAvatarPlaceholderUri,
-} from '@/components/avatar/feedAvatarUtils';
+import { resolveFeedAvatarUri, resolveProfileAvatarUri } from '@/components/avatar/feedAvatarUtils';
 import { AccountType, ArticleType, PostType, PrayerPost, SocialPost, User } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
@@ -90,16 +75,14 @@ import LogoWhite from '@/assets/icons/logo_white.svg';
 import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
 import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import WallComponent from '@/components/prayerWallComponent';
-import PrayersComponent from '@/components/prayerWallMyPrayersComponent';
-import TestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
-import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
-import GlassTabBar from '@/components/GlassTabBar';
 import HeaderGradientOverlay from '@/components/HeaderGradientOverlay';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
 import {
   deleteOwnedPost,
   emitOwnedPostDeleted,
   normalizeOwnedPostType,
+  subscribeToFeedItemUnavailable,
   subscribeToOwnedPostDeleted,
 } from '@/services/ownedPostDeletion';
 import {
@@ -557,97 +540,9 @@ function PrayerWallTabs({
   wallRefreshSignal,
 }: PrayerWallTabsProps) {
   const isIOS = Platform.OS === 'ios';
-  const layout = useWindowDimensions();
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: 'Wall', title: 'Wall' },
-    { key: 'Testimonies', title: 'Testimonies' },
-    { key: 'Saved', title: 'Saved' },
-    { key: 'MyPrayers', title: 'My Prayers' },
-  ]);
   const { dark } = useTheme();
-  const [areSubtabsVisible, setAreSubtabsVisible] = useState(true);
   const [localWallRefreshSignal, setLocalWallRefreshSignal] = useState(0);
   const previousWallRefreshSignalRef = useRef<number | undefined>(wallRefreshSignal);
-  const lastPrayerScrollY = useRef(0);
-  const lastPrayerSubtabToggleAt = useRef(0);
-  const prayerScrollAccumulator = useRef(0);
-  const areSubtabsVisibleRef = useRef(true);
-  const prayerSubtabsVisibility = useRef(new Animated.Value(1)).current;
-  const setSubtabsVisibility = useCallback(
-    (visible: boolean) => {
-      if (areSubtabsVisibleRef.current === visible) {
-        return;
-      }
-      areSubtabsVisibleRef.current = visible;
-      setAreSubtabsVisible(visible);
-      Animated.timing(prayerSubtabsVisibility, {
-        toValue: visible ? 1 : 0,
-        duration: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }).start();
-    },
-    [prayerSubtabsVisibility]
-  );
-  const handlePrayerWallScroll = useCallback(
-    (offsetY: number) => {
-      const now = Date.now();
-      const nextY = Math.max(0, offsetY);
-      const delta = nextY - lastPrayerScrollY.current;
-      const threshold = 6;
-      const topZoneThreshold = 24;
-      const toggleDistance = 18;
-      const toggleCooldownMs = 180;
-
-      if (nextY <= topZoneThreshold) {
-        prayerScrollAccumulator.current = 0;
-        setSubtabsVisibility(true);
-        lastPrayerScrollY.current = nextY;
-        return;
-      }
-
-      if (Math.abs(delta) <= threshold) {
-        lastPrayerScrollY.current = nextY;
-        return;
-      }
-
-      if (now - lastPrayerSubtabToggleAt.current < toggleCooldownMs) {
-        lastPrayerScrollY.current = nextY;
-        return;
-      }
-
-      if (Math.sign(prayerScrollAccumulator.current) !== Math.sign(delta)) {
-        prayerScrollAccumulator.current = 0;
-      }
-      prayerScrollAccumulator.current += delta;
-
-      if (prayerScrollAccumulator.current >= toggleDistance && areSubtabsVisibleRef.current) {
-        setSubtabsVisibility(false);
-        lastPrayerSubtabToggleAt.current = now;
-        prayerScrollAccumulator.current = 0;
-      } else if (
-        prayerScrollAccumulator.current <= -toggleDistance &&
-        !areSubtabsVisibleRef.current
-      ) {
-        setSubtabsVisibility(true);
-        lastPrayerSubtabToggleAt.current = now;
-        prayerScrollAccumulator.current = 0;
-      }
-
-      lastPrayerScrollY.current = nextY;
-    },
-    [setSubtabsVisibility]
-  );
-  const applyPrayerTabIndex = useCallback(
-    (nextIndex: number) => {
-      setIndex(nextIndex);
-      lastPrayerScrollY.current = 0;
-      prayerScrollAccumulator.current = 0;
-      setSubtabsVisibility(true);
-    },
-    [setSubtabsVisibility]
-  );
   const refreshWallFeed = useCallback(() => {
     setLocalWallRefreshSignal((previous) => previous + 1);
   }, []);
@@ -657,20 +552,7 @@ function PrayerWallTabs({
       return;
     }
     previousWallRefreshSignalRef.current = wallRefreshSignal;
-    if (index === 0) {
-      refreshWallFeed();
-    }
-  }, [index, refreshWallFeed, wallRefreshSignal]);
-
-  const prayerSubtabContainerHeight = prayerSubtabsVisibility.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 70],
-    extrapolate: 'clamp',
-  });
-  const prayerSubtabTranslateY = prayerSubtabsVisibility.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-18, 0],
-    extrapolate: 'clamp',
+    refreshWallFeed();
   });
   const shareButtonStyle = isIOS
     ? {
@@ -693,71 +575,13 @@ function PrayerWallTabs({
 
   return (
     <View style={{ flex: 1, paddingTop: topInset }}>
-      <TabView
-        navigationState={{ index, routes }}
-        swipeEnabled={false}
-        renderScene={({ route }) => {
-          switch (route.key) {
-            case 'Wall':
-              return (
-                <WallComponent
-                  refreshSignal={localWallRefreshSignal}
-                  onOpenPost={onOpenPost}
-                  onEditPost={onEditPost}
-                  onScrollOffsetChange={handlePrayerWallScroll}
-                />
-              );
-            case 'Testimonies':
-              return (
-                <TestimoniesComponent
-                  onOpenPost={onOpenPost}
-                  onEditPost={onEditPost}
-                  onScrollOffsetChange={handlePrayerWallScroll}
-                />
-              );
-            case 'Saved':
-              return (
-                <PrayerWallSavedPrayersComponent
-                  onOpenPost={onOpenPost}
-                  onEditPost={onEditPost}
-                  onScrollOffsetChange={handlePrayerWallScroll}
-                />
-              );
-            case 'MyPrayers':
-              return (
-                <PrayersComponent
-                  onOpenPost={onOpenPost}
-                  onEditPost={onEditPost}
-                  onScrollOffsetChange={handlePrayerWallScroll}
-                />
-              );
-            default:
-              return null;
-          }
-        }}
-        onIndexChange={applyPrayerTabIndex}
-        initialLayout={{ width: layout.width }}
-        sceneContainerStyle={{ paddingBottom: bottomInset / 2 }}
-        renderTabBar={() => (
-          <Animated.View
-            pointerEvents={areSubtabsVisible ? 'auto' : 'none'}
-            style={{
-              height: prayerSubtabContainerHeight,
-              opacity: prayerSubtabsVisibility,
-              transform: [{ translateY: prayerSubtabTranslateY }],
-              overflow: 'hidden',
-              paddingHorizontal: spacing.x5,
-              paddingTop: spacing.x8,
-            }}
-          >
-            <GlassTabBar
-              tabs={routes.map((route) => route.title)}
-              activeIndex={index}
-              onTabChange={applyPrayerTabIndex}
-            />
-          </Animated.View>
-        )}
-      />
+      <View style={{ flex: 1, paddingBottom: bottomInset / 2 }}>
+        <WallComponent
+          refreshSignal={localWallRefreshSignal}
+          onOpenPost={onOpenPost}
+          onEditPost={onEditPost}
+        />
+      </View>
       <TouchableOpacity onPress={onNewPrayerPress} style={shareButtonStyle}>
         <StyledText
           style={{
@@ -831,15 +655,8 @@ function StatusInput({
 
 const getSuggestionUserId = (user: User) => user._id || user.id || user.userId || '';
 
-function filterSuggestedUsers(users: User[], followingIds: string[]): User[] {
-  return users.filter((u) => {
-    if (u.accountType !== AccountType.individual) return false;
-    const avatar = u.profileImage ?? '';
-    if (!avatar || isFeedAvatarPlaceholderUri(avatar)) return false;
-    const uid = getSuggestionUserId(u);
-    if (uid && followingIds.includes(uid)) return false;
-    return true;
-  });
+function filterSuggestedUsers(users: User[]): User[] {
+  return users.filter((u) => u.accountType !== AccountType.organization);
 }
 
 type SuggestionsRailProps = {
@@ -863,9 +680,7 @@ function SuggestionsRail({
   onOpenProfile,
   onSeeAll,
 }: SuggestionsRailProps) {
-  const visibleUsers = users
-    .filter((u) => !selectedUserIds.includes(getSuggestionUserId(u)))
-    .slice(0, MAX_SUGGESTIONS_VISIBLE);
+  const visibleUsers = users.slice(0, MAX_SUGGESTIONS_VISIBLE);
 
   return (
     <View style={styles.discoveryContainer}>
@@ -1090,6 +905,7 @@ type Props = CompositeScreenProps<
 
 function Home({ navigation, route }: Props) {
   const stackNavigation = useNavigation<NativeStackNavigationProp<HomeStackParamsList, 'Home'>>();
+  const { imageViewer, openImages } = useSharedImageViewer();
   const rootTabReplayToken = useRootTabSwitchReplayToken('HomeTab');
   const springboardPreset = getTabRootSpringboardPreset('home');
   const shouldRunHomeFeedIntro = SHOULD_RUN_HOME_FEED_INTRO;
@@ -1110,7 +926,6 @@ function Home({ navigation, route }: Props) {
   const defaultHeaderHeight = insets.top + headerRowHeight + spacing.x10 + spacing.x8 + 20;
   const glassOverlayColor = dark ? 'rgba(13,13,13,0.7)' : 'rgba(246,246,247,0.7)';
   const androidHeaderBackground = dark ? 'rgba(13,13,13,1.0)' : 'rgba(246,246,247,1.0)';
-  const androidHeaderBorderColor = dark ? 'rgba(255,255,255,0.08)' : BRAND.gray100;
   const { getSpringboardStyle } = useSpringboardEntry(rootTabReplayToken, 3, {
     preset: springboardPreset,
   });
@@ -1357,7 +1172,7 @@ function Home({ navigation, route }: Props) {
           feedAlgorithm: getTelemetryAlgorithmForFeedType(record.feedType),
           isOwnPost:
             Boolean(userProfile?._id) && Boolean(record.payload.authorId)
-              ? String(record.payload.authorId) === String(userProfile._id)
+              ? String(record.payload.authorId) === String(userProfile?._id)
               : undefined,
           isRepost: record.payload.isRepost,
           privacyState: record.payload.privacyState,
@@ -1613,7 +1428,7 @@ function Home({ navigation, route }: Props) {
       const sortQuery = sort ? `&sort=${sort}` : '';
       try {
         const res = await ApiCall({
-          route: `user/get-users-to-subscribe/1?itemsPerPage=${SUGGESTIONS_FETCH_SIZE}${sortQuery}`,
+          route: `user/get-users-to-subscribe/1?itemsPerPage=${SUGGESTIONS_FETCH_SIZE}&accountType=individual${sortQuery}`,
           token,
           verb: 'get',
         });
@@ -1693,14 +1508,13 @@ function Home({ navigation, route }: Props) {
     if (!suggestionsDirtyRef.current) return;
     suggestionsDirtyRef.current = false;
     setSelectedSuggestionIds([]);
-    const following: string[] = userProfile?.following ?? [];
     Promise.all([getSuggestedUsers(), getSuggestedUsers('popular')])
       .then(([peopleResult, suggestedResult]) => {
-        setPeopleYouMayKnowUsers(filterSuggestedUsers(peopleResult, following));
-        setSuggestedForYouUsers(filterSuggestedUsers(suggestedResult, following));
+        setPeopleYouMayKnowUsers(filterSuggestedUsers(peopleResult));
+        setSuggestedForYouUsers(filterSuggestedUsers(suggestedResult));
       })
       .catch(() => {});
-  }, [getSuggestedUsers, userProfile?.following]);
+  }, [getSuggestedUsers]);
 
   const getFeedEntryKey = useCallback((item: RenderFeedEntry, index: number) => {
     const identity = getRenderEntryIdentity(item);
@@ -1815,13 +1629,30 @@ function Home({ navigation, route }: Props) {
     [matchesOwnedFeedEntry, requestFeedRefresh, token]
   );
 
-  useEffect(() => {
-    return subscribeToOwnedPostDeleted(({ type, id }) => {
+  useMountEffect(() => {
+    const removeEntry = ({ type, id }: { type: string; id: string }) => {
       setFeedData((previous) =>
         previous.filter((entry) => !matchesOwnedFeedEntry(entry, type, id))
       );
+    };
+
+    const unsubscribeOwned = subscribeToOwnedPostDeleted(removeEntry);
+    const unsubscribeUnavailable = subscribeToFeedItemUnavailable(({ type, id }) => {
+      removeEntry({ type, id });
+      requestFeedRefresh({
+        reason: 'route_refresh',
+        targetType: feedTypeRef.current,
+        forceNetwork: true,
+        allowReorder: isPrimarySocialFeedType(feedTypeRef.current),
+        hardReset: false,
+      });
     });
-  }, [matchesOwnedFeedEntry]);
+
+    return () => {
+      unsubscribeOwned();
+      unsubscribeUnavailable();
+    };
+  });
 
   useObservedEffect(() => {
     if (feedOptions.type !== FeedTypes.Connected && feedOptions.type !== FeedTypes.ForYou) {
@@ -1841,9 +1672,8 @@ function Home({ navigation, route }: Props) {
         return;
       }
 
-      const following: string[] = userProfile?.following ?? [];
-      setPeopleYouMayKnowUsers(filterSuggestedUsers(peopleResult, following));
-      setSuggestedForYouUsers(filterSuggestedUsers(suggestedResult, following));
+      setPeopleYouMayKnowUsers(filterSuggestedUsers(peopleResult));
+      setSuggestedForYouUsers(filterSuggestedUsers(suggestedResult));
     };
 
     loadSuggestions();
@@ -1851,7 +1681,7 @@ function Home({ navigation, route }: Props) {
     return () => {
       isCancelled = true;
     };
-  }, [feedOptions.type, getSuggestedUsers, userProfile]);
+  }, [feedOptions.type, getSuggestedUsers]);
 
   const feedDataWithSuggestions = useMemo<RenderFeedEntry[]>(() => {
     const isPrimaryFeed =
@@ -2610,8 +2440,8 @@ function Home({ navigation, route }: Props) {
     }
 
     const normalized =
-      typeof unwrapped.image === 'string'
-        ? { ...unwrapped, image: { url: unwrapped.image } }
+      typeof unwrapped.images === 'string'
+        ? { ...unwrapped, image: { url: unwrapped.images } }
         : unwrapped;
     const postId =
       'category' in normalized && 'commentNumber' in normalized
@@ -2773,6 +2603,7 @@ function Home({ navigation, route }: Props) {
               itemData={watchItem}
               postType={PostType.watch}
               originFeedType={feedOptions.type}
+              onOpenImages={openImages}
               visible={
                 (feedOptions.type === FeedTypes.Connected ||
                   feedOptions.type === FeedTypes.ForYou) &&
@@ -2874,6 +2705,7 @@ function Home({ navigation, route }: Props) {
             <SocialItem
               itemData={socialItem}
               originFeedType={feedOptions.type}
+              onOpenImages={openImages}
               visible={
                 (feedOptions.type === FeedTypes.Connected ||
                   feedOptions.type === FeedTypes.ForYou) &&
@@ -3773,6 +3605,7 @@ function Home({ navigation, route }: Props) {
 
       {/* Main Feed */}
       <Animated.View style={[{ flex: 1 }, getSpringboardStyle(1)]}>{mainFeedContent}</Animated.View>
+      {imageViewer}
     </View>
   );
 }

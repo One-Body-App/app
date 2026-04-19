@@ -626,7 +626,12 @@ function NotificationScreen({ navigation }: Props) {
 
         <Pressable
           onPress={() => {
-            (navigation as any).navigate('NotificationSettings');
+            handleCloseNotifications();
+            setTimeout(() => {
+              (navigation as any).getParent?.()?.getParent?.()?.navigate('Settings', {
+                screen: 'SettingsMain',
+              });
+            }, 0);
           }}
           style={styles.headerActionButton}
         >

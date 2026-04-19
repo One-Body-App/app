@@ -26,6 +26,7 @@ import { Colors, Typography } from '@/src/styles';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
+import { setProfile } from '@/src/redux/actions/AuthActions';
 import {
   disablePushNotifications,
   enablePushNotifications,
@@ -37,6 +38,13 @@ import {
 import { getCreatorMenuLabel, getCreatorMenuState } from '@/src/utils/creatorApplication';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
+type NotificationSwitchState = {
+  pushNotificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  subscribedToNewsletter: boolean;
+  tagNotificationsEnabled: boolean;
+  allowDirectMessages: boolean;
+};
 
 function Settings({ navigation }: Props) {
   const appVersion = DeviceInfo.getVersion();
@@ -44,48 +52,34 @@ function Settings({ navigation }: Props) {
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const userData = useSelector((state: RootState) => state.auth.userData);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [subscribedToNewsletter, setSubscribedToNewsletter] = React.useState(false);
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false);
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(false);
-  const [allowDirectMessages, setAllowDirectMessages] = React.useState(true);
-  const [securePreviewEnabled, setSecurePreviewEnabledState] = React.useState(false);
-  const [isSecurePreviewLoading, setIsSecurePreviewLoading] = React.useState(true);
   const dispatch = useDispatch();
   const toast = useToast();
-
+  const [isLoaded, setIsLoaded] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [notificationSwitch, setNotificationSwitch] = React.useState<NotificationSwitchState>({
+    pushNotificationsEnabled: false,
+    emailNotificationsEnabled: false,
+    subscribedToNewsletter: false,
+    tagNotificationsEnabled: true,
+    allowDirectMessages: true,
+  });
+  const [securePreviewEnabled, setSecurePreviewEnabledState] = React.useState(false);
+  const [isSecurePreviewLoading, setIsSecurePreviewLoading] = React.useState(true);
 
-  const updateSecurePreview = async (enabled: boolean) => {
-    setSecurePreviewEnabledState(enabled);
-    try {
-      await setSecureMessagePreviewEnabled(enabled);
-      toast.hide('securePreviewMessage');
-      toast.show(
-        enabled ? 'Secure lock-screen previews enabled' : 'Secure lock-screen previews disabled',
-        {
-          id: 'securePreviewMessage',
-          type: 'normal',
-          placement: 'top',
-        }
-      );
-    } catch {
-      const fallback = await isSecureMessagePreviewEnabled();
-      setSecurePreviewEnabledState(fallback);
-    }
-  };
+  const { colors } = useTheme();
+  const creatorStatus = userProfile?.influencerProfile?.influencerStatus;
+  const creatorMenuState = getCreatorMenuState(creatorStatus);
+  const creatorMenuLabel = getCreatorMenuLabel(creatorStatus);
+  const creatorMenuDescription =
+    creatorMenuState === 'settings'
+      ? 'Update your creator profile settings'
+      : 'Apply to share your content on One Body';
 
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
 
       const getUserProfile = async () => {
-        // const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
-        //   id: 'loadig',
-        //   placement: 'top',
-        //   style: {
-        //     backgroundColor: colors.background,
-        //   },
-        // });
         try {
           const res = await ApiCall({
             route: 'user/my-profile',
@@ -97,16 +91,19 @@ function Settings({ navigation }: Props) {
             return;
           }
 
-          // dispatch(setProfile({ token, ...res.response }));
-          setEmailNotificationsEnabled(res.response?.emailNotificationsEnabled ?? false);
-          setPushNotificationsEnabled(res.response?.pushNotificationsEnabled ?? false);
-          setSubscribedToNewsletter(res.response?.subscribedToNewsletter ?? false);
-          setAllowDirectMessages(res.response?.allowDirectMessages ?? true);
-
-          // setIsLoaded(true);
-          // toast.hide(toastId);
-        } catch (e) {
-          // toast.hide(toastId);
+          dispatch(setProfile({ token, ...res.response }));
+          setNotificationSwitch({
+            pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
+            emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
+            subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
+            tagNotificationsEnabled: res.response?.tagNotificationsEnabled ?? true,
+            allowDirectMessages: res.response?.allowDirectMessages ?? true,
+          });
+          setIsLoaded(true);
+        } catch {
+          if (isActive) {
+            setIsLoaded(true);
+          }
         }
       };
 
@@ -116,6 +113,7 @@ function Settings({ navigation }: Props) {
           if (!isActive) {
             return;
           }
+
           setSecurePreviewEnabledState(enabled);
         } finally {
           if (isActive) {
@@ -130,72 +128,148 @@ function Settings({ navigation }: Props) {
       return () => {
         isActive = false;
       };
-    }, [token])
+    }, [dispatch, token])
   );
 
-  const updateNotifications = async (
-    nextPushNotificationsEnabled: boolean,
-    nextSubscribedToNewsletter: boolean,
-    nextEmailNotificationsEnabled: boolean,
-    nextAllowDirectMessages: boolean
-  ) => {
-    const toastId = 'loading';
-    toast.hide(toastId);
-    toast.hide('successMessage');
-    toast.show(<ActivityIndicator color={colors.text} />, {
-      id: toastId,
+  const showSavingToast = useCallback(() => {
+    toast.hide('loading');
+    return toast.show(<ActivityIndicator color={colors.text} />, {
+      id: 'loadingB',
       placement: 'top',
       style: {
         backgroundColor: colors.background,
       },
     });
-    setIsLoading(true);
-    try {
-      const notifications = {
-        pushNotificationsEnabled: nextPushNotificationsEnabled,
-        subscribedToNewsletter: nextSubscribedToNewsletter,
-        emailNotificationsEnabled: nextEmailNotificationsEnabled,
-        allowDirectMessages: nextAllowDirectMessages,
-      };
+  }, [colors.background, colors.text, toast]);
 
-      const res = await ApiCall({
-        params: notifications,
-        route: `user/set-notifications`,
-        token,
-        verb: 'patch',
-      });
+  const updateNotifications = useCallback(
+    async (
+      nextNotificationSwitch: NotificationSwitchState,
+      previousNotificationSwitch: NotificationSwitchState
+    ) => {
+      const toastId = showSavingToast();
+      setIsLoading(true);
 
-      if (res?.status === 200) {
+      try {
+        const notifications = {
+          pushNotificationsEnabled: nextNotificationSwitch.pushNotificationsEnabled,
+          subscribedToNewsletter: nextNotificationSwitch.subscribedToNewsletter,
+          emailNotificationsEnabled: nextNotificationSwitch.emailNotificationsEnabled,
+          tagNotificationsEnabled: nextNotificationSwitch.tagNotificationsEnabled,
+          allowDirectMessages: nextNotificationSwitch.allowDirectMessages,
+        };
+
+        const res = await ApiCall({
+          params: notifications,
+          route: 'user/set-notifications',
+          token,
+          verb: 'patch',
+        });
+
+        if (res?.status !== 200) {
+          setNotificationSwitch(previousNotificationSwitch);
+          return;
+        }
+
         dispatch(setUserDataNotifications({ notifications }));
 
-        if (nextPushNotificationsEnabled) {
-          await enablePushNotifications(token, true);
-        } else {
-          await disablePushNotifications(token);
+        if (
+          nextNotificationSwitch.pushNotificationsEnabled !==
+          previousNotificationSwitch.pushNotificationsEnabled
+        ) {
+          if (nextNotificationSwitch.pushNotificationsEnabled) {
+            await enablePushNotifications(token, true);
+          } else {
+            await disablePushNotifications(token);
+          }
         }
 
         toast.show('Notifications Settings Updated Successfully', {
-          id: 'successMessage',
           type: 'success',
           placement: 'top',
         });
+      } catch {
+        setNotificationSwitch(previousNotificationSwitch);
+      } finally {
+        toast.hide(toastId);
+        setIsLoading(false);
       }
-      toast.hide(toastId);
-      setIsLoading(false);
-    } catch (e) {
-      toast.hide(toastId);
-      setIsLoading(false);
-    }
-  };
+    },
+    [dispatch, showSavingToast, toast, token]
+  );
 
-  const { colors } = useTheme();
-  const creatorStatus = userProfile?.influencerProfile?.influencerStatus;
-  const creatorMenuState = getCreatorMenuState(creatorStatus);
-  const creatorMenuLabel = getCreatorMenuLabel(creatorStatus);
-  const creatorMenuDescription =
-    creatorMenuState === 'settings'
-      ? 'Update your creator profile settings'
-      : 'Apply to share your content on One Body';
+  const updateSecurePreview = useCallback(
+    async (enabled: boolean) => {
+      setSecurePreviewEnabledState(enabled);
+
+      try {
+        await setSecureMessagePreviewEnabled(enabled);
+        toast.hide('securePreviewMessage');
+        toast.show(
+          enabled ? 'Secure lock-screen previews enabled' : 'Secure lock-screen previews disabled',
+          {
+            id: 'securePreviewMessage',
+            type: 'normal',
+            placement: 'top',
+          }
+        );
+      } catch {
+        const fallback = await isSecureMessagePreviewEnabled();
+        setSecurePreviewEnabledState(fallback);
+      }
+    },
+    [toast]
+  );
+
+  const renderNotificationRow = (
+    key: keyof NotificationSwitchState,
+    label: string,
+    description: string,
+    Icon: React.ComponentType<{ color: string; size: number }>,
+    marginBottom: number
+  ) => (
+    <View key={key} style={{ flexDirection: 'row', marginBottom }}>
+      <View style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}>
+        <View
+          style={{
+            borderRadius: borderRadius.max,
+            backgroundColor: Colors.neutral[800],
+            padding: 6,
+          }}
+        >
+          <Icon color={Colors.primary.brand} size={18} />
+        </View>
+      </View>
+      <View style={{ flex: 1 }}>
+        <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+          {label}
+        </StyledText>
+        <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+          {description}
+        </StyledText>
+      </View>
+      <View style={{ paddingLeft: spacing.x10, alignItems: 'flex-end' }}>
+        <Switch
+          disabled={isLoading}
+          value={notificationSwitch[key]}
+          onValueChange={(nextValue) => {
+            const previousNotificationSwitch = notificationSwitch;
+            const nextNotificationSwitch = {
+              ...notificationSwitch,
+              [key]: nextValue,
+            };
+
+            setNotificationSwitch(nextNotificationSwitch);
+            if (!isLoaded || isLoading) {
+              return;
+            }
+
+            updateNotifications(nextNotificationSwitch, previousNotificationSwitch);
+          }}
+        />
+      </View>
+    </View>
+  );
 
   return (
     <View
@@ -324,88 +398,23 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
-              onPress={() => navigation.navigate('NotificationSettings')}
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
-                <View
-                  style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
-                  }}
-                >
-                  <Setting color={Colors.primary.brand} size={18} />
-                </View>
-              </View>
-              <View>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Notification Settings
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Manage tagged alerts and notification channels
-                </StyledText>
-              </View>
-            </TouchableOpacity>
+            {renderNotificationRow(
+              'tagNotificationsEnabled',
+              'Tagged',
+              'Notify me when I am tagged in a post',
+              NotificationStatus,
+              spacing.x16
+            )}
 
-            <TouchableOpacity
-              onPress={
-                () => {}
-                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
-                <View
-                  style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
-                  }}
-                >
-                  <NotificationStatus color={Colors.primary.brand} size={18} />
-                </View>
-              </View>
-              <View>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Push Notifications
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Send notifications to phone
-                </StyledText>
-              </View>
-              <View
-                style={{
-                  paddingLeft: spacing.x10,
-                  flex: 1,
-                  alignItems: 'flex-end',
-                }}
-              >
-                <Switch
-                  disabled={isLoading}
-                  value={pushNotificationsEnabled}
-                  onValueChange={(value) => {
-                    setPushNotificationsEnabled(value);
-                    updateNotifications(
-                      value,
-                      subscribedToNewsletter,
-                      emailNotificationsEnabled,
-                      allowDirectMessages
-                    );
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
+            {renderNotificationRow(
+              'pushNotificationsEnabled',
+              'Push Notifications',
+              'Send notifications to phone',
+              NotificationStatus,
+              spacing.x16
+            )}
 
-            <TouchableOpacity
-              onPress={() => {}}
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
+            <View style={{ flexDirection: 'row', marginBottom: spacing.x16 }}>
               <View
                 style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
               >
@@ -427,168 +436,38 @@ function Settings({ navigation }: Props) {
                   Show message text on lock screen
                 </StyledText>
               </View>
-              <View
-                style={{
-                  paddingLeft: spacing.x10,
-                  alignItems: 'flex-end',
-                }}
-              >
+              <View style={{ paddingLeft: spacing.x10, alignItems: 'flex-end' }}>
                 <Switch
                   disabled={isLoading || isSecurePreviewLoading}
                   value={securePreviewEnabled}
                   onValueChange={updateSecurePreview}
                 />
               </View>
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              onPress={
-                () => {}
-                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
-                <View
-                  style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
-                  }}
-                >
-                  <SmsNotification color={Colors.primary.brand} size={18} />
-                </View>
-              </View>
-              <View>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Email Notifications
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Send notifications to email
-                </StyledText>
-              </View>
-              <View
-                style={{
-                  paddingLeft: spacing.x10,
-                  flex: 1,
-                  alignItems: 'flex-end',
-                }}
-              >
-                <Switch
-                  disabled={isLoading}
-                  value={emailNotificationsEnabled}
-                  onValueChange={(value) => {
-                    setEmailNotificationsEnabled(value);
-                    updateNotifications(
-                      pushNotificationsEnabled,
-                      subscribedToNewsletter,
-                      value,
-                      allowDirectMessages
-                    );
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
+            {renderNotificationRow(
+              'emailNotificationsEnabled',
+              'Email Notifications',
+              'Send notifications to email',
+              SmsNotification,
+              spacing.x16
+            )}
 
-            <TouchableOpacity
-              onPress={() => {}}
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
-                <View
-                  style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
-                  }}
-                >
-                  <Sms color={Colors.primary.brand} size={18} />
-                </View>
-              </View>
-              <View style={{ flex: 1 }}>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Allow Direct Messages
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Let connected users send you messages
-                </StyledText>
-              </View>
-              <View
-                style={{
-                  paddingLeft: spacing.x10,
-                  alignItems: 'flex-end',
-                }}
-              >
-                <Switch
-                  disabled={isLoading}
-                  value={allowDirectMessages}
-                  onValueChange={(value) => {
-                    setAllowDirectMessages(value);
-                    updateNotifications(
-                      pushNotificationsEnabled,
-                      subscribedToNewsletter,
-                      emailNotificationsEnabled,
-                      value
-                    );
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
+            {renderNotificationRow(
+              'allowDirectMessages',
+              'Allow Direct Messages',
+              'Let connected users send you messages',
+              Sms,
+              spacing.x16
+            )}
 
-            <TouchableOpacity
-              onPress={
-                () => {}
-                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row' }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
-                <View
-                  style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
-                  }}
-                >
-                  <Note1 color={Colors.primary.brand} size={18} />
-                </View>
-              </View>
-              <View>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Subscribe to Newsletter
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Be updated with One Body
-                </StyledText>
-              </View>
-              <View
-                style={{
-                  paddingLeft: spacing.x10,
-                  flex: 1,
-                  alignItems: 'flex-end',
-                }}
-              >
-                <Switch
-                  disabled={isLoading}
-                  value={subscribedToNewsletter}
-                  onValueChange={(value) => {
-                    setSubscribedToNewsletter(value);
-                    updateNotifications(
-                      pushNotificationsEnabled,
-                      value,
-                      emailNotificationsEnabled,
-                      allowDirectMessages
-                    );
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
+            {renderNotificationRow(
+              'subscribedToNewsletter',
+              'Subscribe to Newsletter',
+              'Be updated with One Body',
+              Note1,
+              0
+            )}
           </View>
           <View
             style={[

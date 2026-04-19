@@ -14,6 +14,8 @@ const mockBeginPasskeyRegistration = jest.fn();
 const mockSendEmailMfaCode = jest.fn();
 const mockAuthenticate = jest.fn();
 const mockRegister = jest.fn();
+const mockFinishPasskeyLogin = jest.fn();
+const mockFinishPasskeyRegistration = jest.fn();
 const mockExchangeSocialToken = jest.fn();
 const mockGetGoogleIdToken = jest.fn();
 const mockGetAppleIdToken = jest.fn();
@@ -45,6 +47,7 @@ jest.mock('@/src/redux/actions/GeneralActions', () => ({
 
 jest.mock('@/src/redux/actions/AuthActions', () => ({
   getProfile: {
+    Request: jest.fn((payload) => ({ type: 'GET_PROFILE_REQUEST', payload })),
     Success: jest.fn((payload) => ({ type: 'GET_PROFILE_SUCCESS', payload })),
   },
   setLoginData: jest.fn((payload) => ({ type: 'SET_LOGIN_DATA', payload })),
@@ -54,8 +57,8 @@ jest.mock('@/services/login', () => ({
   beginPasskeyLogin: (params?: unknown) => mockBeginPasskeyLogin(params),
   beginPasskeyRegistration: (params?: unknown) => mockBeginPasskeyRegistration(params),
   beginTotpSetup: jest.fn(),
-  finishPasskeyLogin: jest.fn(),
-  finishPasskeyRegistration: jest.fn(),
+  finishPasskeyLogin: (params?: unknown) => mockFinishPasskeyLogin(params),
+  finishPasskeyRegistration: (params?: unknown) => mockFinishPasskeyRegistration(params),
   loginWithEmailAndPassword: jest.fn(),
   sendEmailMfaCode: (params?: unknown) => mockSendEmailMfaCode(params),
   verifyBackupCode: jest.fn(),
@@ -223,6 +226,8 @@ describe('LoginComponent passkey fallback', () => {
     });
     mockAuthenticate.mockRejectedValue(associationError);
     mockRegister.mockRejectedValue(associationError);
+    mockFinishPasskeyLogin.mockReset();
+    mockFinishPasskeyRegistration.mockReset();
     mockSendEmailMfaCode.mockResolvedValue({
       status: 200,
       response: { sent: true },
@@ -349,7 +354,67 @@ describe('LoginComponent passkey fallback', () => {
     await flushPromises();
 
     expect(mockBeginPasskeyRegistration).toHaveBeenCalledTimes(1);
-    expect(InteractionManager.runAfterInteractions).toHaveBeenCalledTimes(1);
+    expect(InteractionManager.runAfterInteractions).not.toHaveBeenCalled();
+  });
+
+  it('dispatches immediate profile loading after Android passkey enrollment succeeds', async () => {
+    Object.defineProperty(Platform, 'OS', {
+      configurable: true,
+      value: 'android',
+    });
+    mockRegister.mockResolvedValue({
+      id: 'credential-id',
+      rawId: 'credential-raw-id',
+      type: 'public-key',
+      response: {
+        clientDataJSON: 'client-data',
+        attestationObject: 'attestation-object',
+      },
+    });
+    mockFinishPasskeyRegistration.mockResolvedValue({
+      status: 200,
+      response: {
+        tokens: {
+          accessToken: 'passkey-access-token',
+        },
+      },
+    });
+
+    act(() => {
+      mountedRenderers.push(
+        TestRenderer.create(
+          <LoginComponent
+            currentUserEmail="person@example.com"
+            initialMfaChallenge={{
+              ...challengeBase,
+              enrollmentRequired: true,
+            }}
+          />
+        )
+      );
+    });
+
+    await flushPromises();
+
+    expect(mockBeginPasskeyRegistration).toHaveBeenCalledTimes(1);
+    expect(mockFinishPasskeyRegistration).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_LOGIN_DATA',
+      payload: {
+        token: 'passkey-access-token',
+        resetProfile: true,
+      },
+    });
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'GET_PROFILE_REQUEST',
+      payload: {
+        token: 'passkey-access-token',
+      },
+    });
+    expect(mockReset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'MainRoot' }],
+    });
   });
 
   it('routes new social users to account type selection instead of auto-creating an account', async () => {

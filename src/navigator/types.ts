@@ -465,7 +465,7 @@ export type MainStackParamList = {
   };
   ReportPost: {
     targetId: string;
-    targetType: 'social' | 'prayer' | 'comment';
+    targetType: 'social' | 'prayer' | 'comment' | 'watch';
     title?: string;
     reportedUserId?: string;
   };

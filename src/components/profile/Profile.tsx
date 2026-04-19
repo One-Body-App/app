@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { useProfileAvatarAnimation } from './useProfileAvatarAnimation';
@@ -14,6 +14,7 @@ import WatchFlatlist from '../WatchFlatlist';
 import ProfileHeader from './ProfileHeader';
 import { ProfileProps, ProfileVariant } from './profileTypes';
 import { getVisibleProfileTabs, ProfileTabKey } from './profileUtils';
+import { useAvatarOverlayEligibility } from './avatarOverlayEligibility';
 import {
   getRecentCompletedWatchUploadsSnapshot,
   subscribeRecentCompletedWatchUploads,
@@ -121,9 +122,14 @@ function Profile({
   handleUnSubscribe,
   refreshToken = 0,
   variant = 'public',
+  avatarExpansionEnabled = true,
 }: ProfileProps) {
   const { colors } = useTheme();
   const avatarAnimation = useProfileAvatarAnimation();
+  const canOpenAvatarOverlay = useAvatarOverlayEligibility(
+    profileData.profileImage,
+    avatarAnimation.expandedSize
+  );
   const [recentCompletedWatchUploadsCount, setRecentCompletedWatchUploadsCount] = useState(
     getRecentCompletedWatchUploadsSnapshot().filter(
       (upload) => upload.ownerUserId === currentUser._id
@@ -151,7 +157,16 @@ function Profile({
       );
     });
   });
-  const showAvatarAnimation = variant !== 'self' && Boolean(profileData.profileImage);
+
+  useEffect(() => {
+    avatarAnimation.reset();
+
+    return () => {
+      avatarAnimation.reset();
+    };
+  }, [avatarAnimation, profileData._id, profileData.profileImage]);
+
+  const showAvatarAnimation = variant !== 'self' && avatarExpansionEnabled && canOpenAvatarOverlay;
 
   const headerContent = (
     <>

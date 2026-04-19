@@ -32,7 +32,12 @@ import {
 } from '@/components/comments/commentListUtils';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
-import { deleteOwnedPost, emitOwnedPostDeleted } from '@/services/ownedPostDeletion';
+import {
+  deleteOwnedPost,
+  emitFeedItemUnavailable,
+  emitOwnedPostDeleted,
+  getFeedItemUnavailableMessage,
+} from '@/services/ownedPostDeletion';
 import {
   createPostTelemetryRequestId,
   trackPostTelemetry,
@@ -54,6 +59,7 @@ function SinglePost({ navigation, route }: Props) {
   const { imageViewer, openImages } = useSharedImageViewer();
   const socialItemContentWidth = Math.max(width - spacing.x16 * 2, 0);
   const backNavigationInFlightRef = useRef(false);
+  const unavailableHandledRef = useRef(false);
   const requestIdRef = useRef(createPostTelemetryRequestId());
   const resetToHomeFeed = useCallback(() => {
     navigation.reset({
@@ -93,6 +99,24 @@ function SinglePost({ navigation, route }: Props) {
   };
 
   const getPost = useCallback(async () => {
+    const handleUnavailablePost = (message?: string) => {
+      if (unavailableHandledRef.current) {
+        return;
+      }
+
+      const postId = String(route.params?.postId ?? '').trim();
+      if (postId.length > 0) {
+        emitFeedItemUnavailable({
+          type: PostType.social,
+          id: postId,
+        });
+      }
+
+      unavailableHandledRef.current = true;
+      Toast.show(message || 'This post is no longer available.', Toast.SHORT);
+      handleBackPress();
+    };
+
     setIsLoading(true);
     try {
       const result = await ApiCall({
@@ -106,18 +130,22 @@ function SinglePost({ navigation, route }: Props) {
 
       if (result.status === 200) {
         if (result.response) {
+          unavailableHandledRef.current = false;
           setPost(result.response);
         } else {
           setIsNotFound(true);
+          handleUnavailablePost();
         }
       } else {
         setIsNotFound(true);
+        handleUnavailablePost(getFeedItemUnavailableMessage(result.response));
       }
     } catch (e) {
       setIsLoading(false);
       setIsNotFound(true);
+      handleUnavailablePost();
     }
-  }, [route.params?.postId, token]);
+  }, [handleBackPress, route.params?.postId, token]);
 
   // useEffect(() => {
   //   if (post) {

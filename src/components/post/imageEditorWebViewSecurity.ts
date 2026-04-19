@@ -27,8 +27,19 @@ export const shouldAllowImageEditorNavigation = (url?: string) => {
   return ALLOWED_IMAGE_EDITOR_NAVIGATION_PREFIXES.some((prefix) => url.startsWith(prefix));
 };
 
+const LOCAL_NSFWJS_SCRIPT_URL = `${LOCAL_VIDEO_MODERATION_BASE_URL}nsfwjs.js`;
+
 export const buildLocalImageEditorModerationRuntime = () => `
+    <script src="${LOCAL_NSFWJS_SCRIPT_URL}"></script>
     <script>
-      window.__ONEBODY_GET_NSFW_MODEL__ = async () => null;
+      window.__ONEBODY_GET_NSFW_MODEL__ = (() => {
+        let modelPromise = null;
+        return () => {
+          if (!modelPromise) {
+            modelPromise = window.nsfwjs.load(${JSON.stringify(LOCAL_VIDEO_MODERATION_BASE_URL)});
+          }
+          return modelPromise;
+        };
+      })();
     </script>
   `;

@@ -26,6 +26,7 @@ import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer'
 import {
   deleteOwnedPost,
   emitOwnedPostDeleted,
+  subscribeToFeedItemUnavailable,
   subscribeToOwnedPostDeleted,
 } from '@/services/ownedPostDeletion';
 
@@ -167,14 +168,22 @@ const SocialFlatlist = forwardRef<
     );
 
     useEffect(() => {
-      return subscribeToOwnedPostDeleted(({ type, id }) => {
+      const removePostLocally = ({ type, id }: { type: string; id: string }) => {
         if (type !== 'social') {
           return;
         }
         setSocialPosts((previous) =>
           previous.filter((post) => String(post.postId ?? post.id ?? post._id ?? '') !== id)
         );
-      });
+      };
+
+      const unsubscribeOwned = subscribeToOwnedPostDeleted(removePostLocally);
+      const unsubscribeUnavailable = subscribeToFeedItemUnavailable(removePostLocally);
+
+      return () => {
+        unsubscribeOwned();
+        unsubscribeUnavailable();
+      };
     }, []);
 
     const removePost = async (type: string, id: string) => {

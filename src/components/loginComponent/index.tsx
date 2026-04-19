@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   BackHandler,
-  InteractionManager,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
@@ -22,7 +21,7 @@ import { noop } from 'lodash';
 import QRCode from 'react-native-qrcode-svg';
 import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { setLoginData } from '@/src/redux/actions/AuthActions';
+import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
 import {
   beginPasskeyLogin,
   beginPasskeyRegistration,
@@ -280,6 +279,12 @@ function LoginComponent({
 
   const resolvedInitialMfaChallenge = resolvedInitialMfaChallengeRef.current;
 
+  const logAndroidPasskey = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (__DEV__ && Platform.OS === 'android') {
+      console.log('[AndroidPasskey]', event, payload ?? {});
+    }
+  }, []);
+
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
       setLocationPrompted(val === '1');
@@ -362,13 +367,33 @@ function LoginComponent({
     }
   }, [currentUserEmail, resolvedInitialMfaChallenge, trackMfaEvent]);
 
+  useEffect(() => {
+    if (!mfaChallenge || selectedMfaMethod !== 'passkey') {
+      return;
+    }
+
+    logAndroidPasskey('mfa_challenge_mounted', {
+      enrollmentRequired: mfaChallenge.enrollmentRequired,
+      reason: mfaChallenge.reason,
+      availableMethods: mfaChallenge.availableMethods,
+    });
+  }, [logAndroidPasskey, mfaChallenge, selectedMfaMethod]);
+
   const completeLogin = useCallback(
     (accessToken: string) => {
       clearPendingSocialContinuation();
+      logAndroidPasskey('token_accepted', {
+        hasAccessToken: Boolean(accessToken),
+        source: mfaChallenge?.enrollmentRequired ? 'passkey_enrollment' : 'auth_success',
+      });
       dispatch(setLoginData({ token: accessToken, resetProfile: true }));
+      dispatch(getProfile.Request({ token: accessToken }));
+      logAndroidPasskey('profile_request_start', {
+        source: mfaChallenge?.enrollmentRequired ? 'passkey_enrollment' : 'auth_success',
+      });
       navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
     },
-    [dispatch, navigation]
+    [dispatch, logAndroidPasskey, mfaChallenge?.enrollmentRequired, navigation]
   );
 
   const handleAuthResult = useCallback(
@@ -503,6 +528,9 @@ function LoginComponent({
 
       try {
         if (mfaChallenge.enrollmentRequired) {
+          logAndroidPasskey('begin_registration_start', {
+            reason: mfaChallenge.reason,
+          });
           let begin = await beginPasskeyRegistration({
             mfaToken: mfaChallenge.mfaToken,
             deviceName: Platform.OS === 'ios' ? 'iPhone' : 'Android Device',
@@ -519,10 +547,23 @@ function LoginComponent({
               (begin.response as any)?.message ?? 'Unable to begin passkey registration.'
             );
           }
+          logAndroidPasskey('begin_registration_end', {
+            status: begin.status,
+          });
           const nativeRegistrationRequest = normalizePasskeyRegistrationRequestForNative(
             begin.response
           );
+          logAndroidPasskey('native_prompt_start', {
+            flow,
+          });
           const credential = await register(nativeRegistrationRequest);
+          logAndroidPasskey('native_prompt_end', {
+            flow,
+            success: true,
+          });
+          logAndroidPasskey('finish_registration_start', {
+            reason: mfaChallenge.reason,
+          });
           const finish = await finishPasskeyRegistration({
             mfaToken: mfaChallenge.mfaToken,
             response: normalizePasskeyRegistrationResponseForServer(credential),
@@ -530,6 +571,9 @@ function LoginComponent({
           if (finish.status !== 200) {
             throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
           }
+          logAndroidPasskey('finish_registration_end', {
+            status: finish.status,
+          });
           trackMfaEvent('mfa_method_success', {
             method: 'passkey',
             flow,
@@ -545,7 +589,14 @@ function LoginComponent({
         const nativeAuthenticationRequest = normalizePasskeyAuthenticationRequestForNative(
           begin.response
         );
+        logAndroidPasskey('native_prompt_start', {
+          flow,
+        });
         const assertion = await authenticate(nativeAuthenticationRequest);
+        logAndroidPasskey('native_prompt_end', {
+          flow,
+          success: true,
+        });
         const finish = await finishPasskeyLogin({
           mfaToken: mfaChallenge.mfaToken,
           response: normalizePasskeyAuthenticationResponseForServer(assertion),
@@ -559,6 +610,11 @@ function LoginComponent({
         });
         await handleAuthResult(finish.response);
       } catch (mfaError: any) {
+        logAndroidPasskey('native_prompt_end', {
+          flow,
+          success: false,
+          message: mfaError?.message ?? String(mfaError),
+        });
         if (isPasskeyCancellationError(mfaError)) {
           trackMfaEvent('mfa_method_cancelled', {
             method: 'passkey',
@@ -639,7 +695,7 @@ function LoginComponent({
       }
       setIsSubmitting(false);
     }
-  }, [handleAuthResult, mfaChallenge, requestEmailMfaCode, trackMfaEvent]);
+  }, [handleAuthResult, logAndroidPasskey, mfaChallenge, requestEmailMfaCode, trackMfaEvent]);
 
   useEffect(() => {
     setHasAutoPromptedPasskey(false);
@@ -654,17 +710,16 @@ function LoginComponent({
 
     setHasAutoPromptedPasskey(true);
     let isCancelled = false;
-    let interactionTask:
-      | {
-          cancel?: () => void;
-        }
-      | undefined;
 
     const startPasskey = () => {
       if (isCancelled) {
         return;
       }
 
+      logAndroidPasskey('auto_start_requested', {
+        enrollmentRequired: mfaChallenge.enrollmentRequired,
+        reason: mfaChallenge.reason,
+      });
       runPasskey().catch((e: any) => {
         if (!isCancelled) {
           setError(e?.message ?? 'Passkey verification failed.');
@@ -672,19 +727,13 @@ function LoginComponent({
       });
     };
 
-    if (Platform.OS === 'android') {
-      interactionTask = InteractionManager.runAfterInteractions(() => {
-        startPasskey();
-      });
-    } else {
-      startPasskey();
-    }
+    startPasskey();
 
     return () => {
       isCancelled = true;
-      interactionTask?.cancel?.();
     };
   }, [
+    logAndroidPasskey,
     hasAutoPromptedPasskey,
     isPasskeyAssociationUnavailable,
     mfaChallenge,

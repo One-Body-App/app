@@ -2,6 +2,6 @@
 
 import { type DependencyList, type EffectCallback, useEffect } from 'react';
 
-export default function useObservedEffect(effect: EffectCallback, deps: DependencyList): void {
+export default function useObservedEffect(effect: EffectCallback, deps?: DependencyList): void {
   useEffect(effect, deps);
 }

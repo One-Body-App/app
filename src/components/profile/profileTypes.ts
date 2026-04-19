@@ -11,5 +11,6 @@ export interface ProfileProps {
   handleUnSubscribe?: Function;
   refreshToken?: number;
   variant?: ProfileVariant;
+  avatarExpansionEnabled?: boolean;
   avatarAnimation?: ProfileAvatarAnimationResult;
 }

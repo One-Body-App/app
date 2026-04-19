@@ -237,10 +237,13 @@ function OptionsModal({
     savedIconBackgroundColor = '#22363d';
   }
 
-  const getReportTargetType = (popupItem?: PopupItem): 'social' | 'prayer' | 'comment' | null => {
+  const getReportTargetType = (
+    popupItem?: PopupItem
+  ): 'social' | 'prayer' | 'comment' | 'watch' | null => {
     if (!popupItem) return null;
     if (popupItem.type === PostType.social) return 'social';
     if (popupItem.type === PostType.prayer) return 'prayer';
+    if (popupItem.type === PostType.watch) return 'watch';
     if (popupItem.type === PostType.comment) {
       if (
         popupItem.objectType &&
@@ -426,6 +429,7 @@ function OptionsModal({
         height: sheetHeight,
         minHeight: sheetHeight,
         maxHeight: sheetHeight,
+        backgroundColor: 'transparent',
       }}
     >
       <CustomClipboard ref={clipboardRef} />

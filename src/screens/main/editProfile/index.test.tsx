@@ -210,6 +210,8 @@ describe('EditProfile native media chooser', () => {
       expect.objectContaining({
         path: '/tmp/gallery.jpg',
         cropperCircleOverlay: true,
+        compressImageMaxWidth: 512,
+        compressImageMaxHeight: 512,
       })
     );
 
@@ -252,6 +254,8 @@ describe('EditProfile native media chooser', () => {
       expect.objectContaining({
         path: '/tmp/camera.jpg',
         cropperCircleOverlay: false,
+        compressImageMaxWidth: 1280,
+        compressImageMaxHeight: 720,
         width: expect.any(Number),
         height: expect.any(Number),
       })
