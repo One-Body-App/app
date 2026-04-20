@@ -163,10 +163,12 @@ export const callBackendFallbackModeration = async (
   });
 
   if (response.status !== 200) {
-    throw new Error(
+    const error = new Error(
       (response.response as { message?: string } | undefined)?.message ||
         'Unable to complete fallback moderation.'
-    );
+    ) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
   return response.response;

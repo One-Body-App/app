@@ -23,6 +23,7 @@ import { useTabBarAnimation } from './TabBarAnimationContext';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 type PrayerWallNavigationProp = NativeStackNavigationProp<PrayerWallStackParamsList>;
+const PRAYER_WALL_TAB_BAR_OWNER = 'prayer-wall';
 
 function IndexHeaderBackButton() {
   const navigation = useNavigation<PrayerWallNavigationProp>();
@@ -54,10 +55,11 @@ function PrayerWall() {
 
   useFocusEffect(
     useCallback(() => {
-      tabBarAnimation?.setTabBarTranslateY(footerHeight);
+      tabBarAnimation?.hideTabBar(PRAYER_WALL_TAB_BAR_OWNER);
+      tabBarAnimation?.setTabBarTranslateY(footerHeight, PRAYER_WALL_TAB_BAR_OWNER);
 
       return () => {
-        tabBarAnimation?.resetTabBar();
+        tabBarAnimation?.resetTabBar(PRAYER_WALL_TAB_BAR_OWNER);
       };
     }, [footerHeight, tabBarAnimation])
   );
@@ -96,6 +98,10 @@ function PrayerWall() {
             return {
               title: 'Pray',
               headerLeft: IndexHeaderBackButton,
+              headerTransparent: false,
+              headerBlurEffect: undefined,
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
               contentStyle: { backgroundColor: colors.background },
             };
           }
@@ -106,6 +112,10 @@ function PrayerWall() {
               dark ? colors.text : Colors.primary.brand,
               'Prayer Wall'
             ),
+            headerTransparent: false,
+            headerBlurEffect: undefined,
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colors.background },
             contentStyle: { backgroundColor: colors.background },
           };
         }}

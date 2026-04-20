@@ -3,10 +3,14 @@ import { Animated } from 'react-native';
 
 type TabBarTranslateY = Animated.Value | Animated.AnimatedInterpolation<number>;
 
+type TabBarAnimationOwnerId = string | undefined;
+
 type TabBarAnimationContextValue = {
+  hiddenOwnerId?: string;
   tabBarTranslateY: TabBarTranslateY;
-  setTabBarTranslateY: (value: TabBarTranslateY | number) => void;
-  resetTabBar: () => void;
+  hideTabBar: (ownerId?: string) => void;
+  setTabBarTranslateY: (value: TabBarTranslateY | number, ownerId?: string) => void;
+  resetTabBar: (ownerId?: string) => void;
 };
 
 const TabBarAnimationContext = createContext<TabBarAnimationContextValue | null>(null);
@@ -17,11 +21,20 @@ type TabBarAnimationProviderProps = {
 
 export function TabBarAnimationProvider({ children }: TabBarAnimationProviderProps) {
   const defaultTranslateY = useRef(new Animated.Value(0)).current;
+  const ownerIdRef = useRef<TabBarAnimationOwnerId>(undefined);
+  const hiddenOwnerIdRef = useRef<TabBarAnimationOwnerId>(undefined);
+  const [hiddenOwnerId, setHiddenOwnerId] = useState<string | undefined>(undefined);
   const [tabBarTranslateY, setTabBarTranslateYState] =
     useState<TabBarTranslateY>(defaultTranslateY);
 
   const setTabBarTranslateY = useCallback(
-    (nextValue: TabBarTranslateY | number) => {
+    (nextValue: TabBarTranslateY | number, ownerId?: string) => {
+      if (hiddenOwnerIdRef.current && hiddenOwnerIdRef.current !== ownerId) {
+        return;
+      }
+
+      ownerIdRef.current = ownerId;
+
       if (typeof nextValue === 'number') {
         const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
         defaultTranslateY.setValue(safeValue);
@@ -40,18 +53,36 @@ export function TabBarAnimationProvider({ children }: TabBarAnimationProviderPro
     [defaultTranslateY]
   );
 
-  const resetTabBar = useCallback(() => {
-    defaultTranslateY.setValue(0);
-    setTabBarTranslateYState(defaultTranslateY);
-  }, [defaultTranslateY]);
+  const hideTabBar = useCallback((ownerId?: string) => {
+    ownerIdRef.current = ownerId;
+    hiddenOwnerIdRef.current = ownerId;
+    setHiddenOwnerId(ownerId);
+  }, []);
+
+  const resetTabBar = useCallback(
+    (ownerId?: string) => {
+      if (ownerId && ownerIdRef.current && ownerIdRef.current !== ownerId) {
+        return;
+      }
+
+      ownerIdRef.current = undefined;
+      hiddenOwnerIdRef.current = undefined;
+      setHiddenOwnerId(undefined);
+      defaultTranslateY.setValue(0);
+      setTabBarTranslateYState(defaultTranslateY);
+    },
+    [defaultTranslateY]
+  );
 
   const value = useMemo(
     () => ({
+      hiddenOwnerId,
+      hideTabBar,
       tabBarTranslateY,
       setTabBarTranslateY,
       resetTabBar,
     }),
-    [resetTabBar, setTabBarTranslateY, tabBarTranslateY]
+    [hiddenOwnerId, hideTabBar, resetTabBar, setTabBarTranslateY, tabBarTranslateY]
   );
 
   return (

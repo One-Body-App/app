@@ -54,15 +54,15 @@ function NewPrayer({ navigation, route }: Props) {
   const resetToPrayerWallIndex = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
-        index: 0,
+        index: 1,
         routes: [
           {
             name: 'MainRoot',
+          },
+          {
+            name: 'PrayerWall',
             params: {
-              screen: 'PrayerWall',
-              params: {
-                screen: 'index',
-              },
+              screen: 'index',
             },
           },
         ],

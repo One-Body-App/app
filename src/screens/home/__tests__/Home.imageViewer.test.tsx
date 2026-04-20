@@ -7,7 +7,6 @@ import Home, { FeedTypes } from '../index';
 import { PostType } from '@/utils/types';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import { spacing } from '@/src/styles/spacing';
-import { getHeight } from '@/utils/ResponsiveFun';
 
 const mockReact = React;
 const mockSocialItemProps: any[] = [];
@@ -16,6 +15,7 @@ const mockImageViewerElement = mockReact.createElement('MockImageViewer', {
   testID: 'home-image-viewer',
 });
 const mockApiCall = jest.fn();
+const mockHideTabBar = jest.fn();
 const mockSetTabBarTranslateY = jest.fn();
 const mockResetTabBar = jest.fn();
 const mockNavigationObject = {
@@ -76,6 +76,7 @@ jest.mock('iconsax-react-native', () => {
 
 jest.mock('@/navigator/TabBarAnimationContext', () => ({
   useTabBarAnimation: jest.fn(() => ({
+    hideTabBar: mockHideTabBar,
     setTabBarTranslateY: mockSetTabBarTranslateY,
     resetTabBar: mockResetTabBar,
   })),
@@ -159,6 +160,13 @@ jest.mock('@/components/listItems/ArticleItem', () => 'ArticleItem');
 jest.mock('@/components/listItems/PrayerItem', () => 'PrayerItem');
 jest.mock('@/components/avatar/FeedAvatar', () => 'FeedAvatar');
 jest.mock('@/components/prayerWallComponent', () => 'PrayerWallComponent');
+jest.mock('@/components/prayerWallSavedPrayersComponent', () => 'PrayerWallSavedPrayersComponent');
+jest.mock('@/components/prayerWallMyPrayersComponent', () => 'PrayerWallMyPrayersComponent');
+jest.mock(
+  '@/components/prayerWallTestimoniesComponent',
+  () => 'PrayerWallTestimoniesComponent'
+);
+jest.mock('@/components/GlassTabBar', () => 'GlassTabBar');
 jest.mock('@/components/HeaderGradientOverlay', () => 'HeaderGradientOverlay');
 
 jest.mock('@/components/listItems/SocialItem', () => {
@@ -245,6 +253,7 @@ describe('Home image viewer integration', () => {
     mockSocialItemProps.length = 0;
     mockOpenImages.mockReset();
     mockApiCall.mockReset();
+    mockHideTabBar.mockReset();
     mockSetTabBarTranslateY.mockReset();
     mockResetTabBar.mockReset();
     mockNavigationObject.setOptions.mockReset();
@@ -470,15 +479,14 @@ describe('Home image viewer integration', () => {
       await Promise.resolve();
     });
 
-    const expectedPrayPaddingBottom =
-      (Platform.OS === 'ios' ? spacing.x60 : spacing.x48) / 2;
-    const legacyTabBarPaddingBottom = (getHeight(7) + spacing.x16) / 2;
+    const expectedPrayPaddingBottom = Platform.OS === 'ios' ? spacing.x32 : spacing.x48;
 
     expect(
       renderer!.root
         .findAllByType('Text')
         .some((node) => node.props.children === 'Share a Prayer 🙏')
     ).toBe(true);
+    const sharePrayerText = renderer!.root.findByProps({ children: 'Share a Prayer 🙏' });
     expect(
       renderer!.root.find(
         (node) =>
@@ -487,10 +495,15 @@ describe('Home image viewer integration', () => {
           node.props?.style?.paddingBottom === expectedPrayPaddingBottom
       )
     ).toBeTruthy();
-    expect(expectedPrayPaddingBottom).toBeLessThan(legacyTabBarPaddingBottom);
+    expect(sharePrayerText.parent?.props?.style).toEqual(
+      expect.objectContaining({
+        bottom: 0,
+        minHeight: expectedPrayPaddingBottom,
+      })
+    );
   });
 
-  it('pushes the root tab bar fully offscreen while the Pray feed is active', async () => {
+  it('renders the Prayer subtab glass bar on the Home Pray feed and switches prayer scenes', async () => {
     let renderer: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
@@ -518,11 +531,193 @@ describe('Home image viewer integration', () => {
       await Promise.resolve();
     });
 
-    expect(mockSetTabBarTranslateY).toHaveBeenCalledWith(getHeight(7));
+    const glassTabBar = renderer!.root.findByType('GlassTabBar');
+    expect(glassTabBar.props.tabs).toEqual([
+      { key: 'Wall', label: 'Wall' },
+      { key: 'Testimonies', label: 'Testimonies' },
+      { key: 'Saved', label: 'Saved' },
+      { key: 'MyPrayers', label: 'My Prayers' },
+    ]);
+    expect(renderer!.root.findByType('PrayerWallComponent')).toBeTruthy();
+    expect(renderer!.root.findByProps({ testID: 'home-prayer-subtab-rail' })).toBeTruthy();
+    expect(renderer!.root.findByProps({ testID: 'home-prayer-scene-container' })).toBeTruthy();
+
+    await act(async () => {
+      glassTabBar.props.onTabChange(1);
+    });
+
+    expect(renderer!.root.findByType('PrayerWallTestimoniesComponent')).toBeTruthy();
+
+    await act(async () => {
+      glassTabBar.props.onTabChange(2);
+    });
+
+    expect(renderer!.root.findByType('PrayerWallSavedPrayersComponent')).toBeTruthy();
+
+    await act(async () => {
+      glassTabBar.props.onTabChange(3);
+    });
+
+    expect(renderer!.root.findByType('PrayerWallMyPrayersComponent')).toBeTruthy();
+  });
+
+  it('hides the Home Pray subtab rail only while a prayer list is actively scrolling', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+    let nowTick = 1_000;
+    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+      nowTick += 250;
+      return nowTick;
+    });
+
+    try {
+      await act(async () => {
+        renderer = TestRenderer.create(
+          <Home
+            navigation={
+              {
+                setParams: jest.fn(),
+                navigate: jest.fn(),
+                push: jest.fn(),
+                dispatch: jest.fn(),
+              } as any
+            }
+            route={
+              {
+                key: 'home-route',
+                name: 'Home',
+                params: { selectedTab: FeedTypes.Pray },
+              } as any
+            }
+          />
+        );
+
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      const wall = renderer!.root.findByType('PrayerWallComponent');
+
+      expect(
+        renderer!.root.findByProps({ testID: 'home-prayer-subtab-rail' }).props.pointerEvents
+      ).toBe('auto');
+
+      await act(async () => {
+        wall.props.onUserScrollStart();
+        wall.props.onScrollOffsetChange(120);
+        wall.props.onScrollOffsetChange(146);
+      });
+
+      expect(
+        renderer!.root.findByProps({ testID: 'home-prayer-subtab-rail' }).props.pointerEvents
+      ).toBe('none');
+
+      await act(async () => {
+        wall.props.onUserScrollEnd();
+      });
+
+      expect(
+        renderer!.root.findByProps({ testID: 'home-prayer-subtab-rail' }).props.pointerEvents
+      ).toBe('none');
+
+      await act(async () => {
+        wall.props.onUserScrollStart();
+        wall.props.onScrollOffsetChange(120);
+      });
+
+      expect(
+        renderer!.root.findByProps({ testID: 'home-prayer-subtab-rail' }).props.pointerEvents
+      ).toBe('auto');
+    } finally {
+      dateNowSpy.mockRestore();
+    }
+  });
+
+  it('hides the root tab bar while the Pray feed is active', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <Home
+          navigation={
+            {
+              setParams: jest.fn(),
+              navigate: jest.fn(),
+              push: jest.fn(),
+              dispatch: jest.fn(),
+            } as any
+          }
+          route={
+            {
+              key: 'home-route',
+              name: 'Home',
+              params: { selectedTab: FeedTypes.Pray },
+            } as any
+          }
+        />
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockHideTabBar).toHaveBeenCalledWith('home');
 
     await act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it('restores the animated root tab bar when switching away from the Pray feed', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+    const navigation = {
+      setParams: jest.fn(),
+      navigate: jest.fn(),
+      push: jest.fn(),
+      dispatch: jest.fn(),
+    };
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <Home
+          navigation={navigation as any}
+          route={
+            {
+              key: 'home-route',
+              name: 'Home',
+              params: { selectedTab: FeedTypes.Pray },
+            } as any
+          }
+        />
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    mockHideTabBar.mockClear();
+    mockResetTabBar.mockClear();
+    mockSetTabBarTranslateY.mockClear();
+
+    await act(async () => {
+      renderer!.update(
+        <Home
+          navigation={navigation as any}
+          route={
+            {
+              key: 'home-route',
+              name: 'Home',
+              params: { selectedTab: FeedTypes.ForYou },
+            } as any
+          }
+        />
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockResetTabBar).toHaveBeenCalledWith('home');
+    expect(mockSetTabBarTranslateY).toHaveBeenCalledWith(expect.anything(), 'home');
   });
 
   it('mirrors the Pray tab into route params immediately when the user taps Pray', async () => {

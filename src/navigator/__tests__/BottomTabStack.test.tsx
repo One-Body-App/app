@@ -2,7 +2,16 @@ import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
 const mockUseTabBarAnimation = jest.fn(() => ({
+  hiddenOwnerId: undefined,
   tabBarTranslateY: 0,
+}));
+const mockUseIsFocused = jest.fn(() => true);
+const mockUseNavigation = jest.fn(() => ({
+  getState: () => ({
+    index: 0,
+    routes: [{ name: 'Main' }],
+  }),
+  addListener: jest.fn(() => jest.fn()),
 }));
 
 jest.mock('@react-native-community/blur', () => ({
@@ -10,6 +19,15 @@ jest.mock('@react-native-community/blur', () => ({
 }));
 
 jest.mock('react-native-linear-gradient', () => 'LinearGradient');
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: jest.fn(() => ({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  })),
+}));
 
 jest.mock('@react-navigation/bottom-tabs', () => {
   const ReactLocal = require('react');
@@ -27,6 +45,8 @@ jest.mock('@react-navigation/bottom-tabs', () => {
 jest.mock('@react-navigation/native', () => ({
   getFocusedRouteNameFromRoute: jest.fn(() => undefined),
   useFocusEffect: jest.fn(),
+  useIsFocused: () => mockUseIsFocused(),
+  useNavigation: () => mockUseNavigation(),
   useTheme: jest.fn(() => ({
     dark: false,
     colors: {
@@ -81,13 +101,10 @@ jest.mock('@/utils/ResponsiveFun', () => ({
   getHeight: jest.fn(() => 56),
 }));
 
-import { AnimatedTabBar } from '../BottomTabStack';
+import BottomTabStack, { AnimatedTabBar } from '../BottomTabStack';
 import { shouldHideActiveTabBarWrapper } from '../activeTabBarVisibility';
 
-const buildProps = (
-  tabBarStyle?: Record<string, unknown>,
-  parentRouteName: string = 'Main'
-) =>
+const buildProps = (tabBarStyle?: Record<string, unknown>) =>
   ({
     state: {
       index: 0,
@@ -101,12 +118,7 @@ const buildProps = (
       },
     },
     navigation: {
-      getParent: () => ({
-        getState: () => ({
-          index: 0,
-          routes: [{ name: parentRouteName }],
-        }),
-      }),
+      getParent: () => undefined,
     },
     insets: {
       top: 0,
@@ -119,6 +131,80 @@ const buildProps = (
 describe('BottomTabStack', () => {
   beforeEach(() => {
     mockUseTabBarAnimation.mockClear();
+    mockUseIsFocused.mockReset();
+    mockUseNavigation.mockReset();
+    mockUseIsFocused.mockReturnValue(true);
+    mockUseNavigation.mockReturnValue({
+      getState: () => ({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      }),
+      addListener: jest.fn(() => jest.fn()),
+    });
+    mockUseTabBarAnimation.mockImplementation(() => ({
+      hiddenOwnerId: undefined,
+      tabBarTranslateY: 0,
+    }));
+  });
+
+  it('supplies the bottom tab bar when the main drawer screen is focused', () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<BottomTabStack />);
+    });
+
+    const navigator = renderer!.root.findByType('Navigator');
+
+    expect(navigator.props.tabBar(buildProps({ height: 84 }))).toBeTruthy();
+  });
+
+  it('supplies no bottom tab bar when the main drawer screen is unfocused', () => {
+    mockUseIsFocused.mockReturnValue(false);
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<BottomTabStack />);
+    });
+
+    const navigator = renderer!.root.findByType('Navigator');
+
+    expect(navigator.props.tabBar(buildProps({ height: 84 }))).toBeNull();
+  });
+
+  it('supplies no bottom tab bar when the active drawer route is not Main', () => {
+    mockUseNavigation.mockReturnValue({
+      getState: () => ({
+        index: 0,
+        routes: [{ name: 'Connections' }],
+      }),
+      addListener: jest.fn(() => jest.fn()),
+    });
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<BottomTabStack />);
+    });
+
+    const navigator = renderer!.root.findByType('Navigator');
+
+    expect(navigator.props.tabBar(buildProps({ height: 84 }))).toBeNull();
+  });
+
+  it('supplies no bottom tab bar when the shared tab bar is explicitly hidden', () => {
+    mockUseTabBarAnimation.mockImplementation(() => ({
+      hiddenOwnerId: 'prayer-wall',
+      tabBarTranslateY: 0,
+    }));
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<BottomTabStack />);
+    });
+
+    const navigator = renderer!.root.findByType('Navigator');
+
+    expect(navigator.props.tabBar(buildProps({ height: 84 }))).toBeNull();
   });
 
   it('detects a hidden active tab-bar descriptor', () => {
@@ -140,16 +226,6 @@ describe('BottomTabStack', () => {
       renderer = TestRenderer.create(
         <AnimatedTabBar {...buildProps({ display: 'none', height: 0 })} />
       );
-    });
-
-    expect(renderer!.toJSON()).toBeNull();
-  });
-
-  it('does not render the bottom tab bar when the parent drawer route is PrayerWall', () => {
-    let renderer: TestRenderer.ReactTestRenderer;
-
-    act(() => {
-      renderer = TestRenderer.create(<AnimatedTabBar {...buildProps({ height: 84 }, 'PrayerWall')} />);
     });
 
     expect(renderer!.toJSON()).toBeNull();

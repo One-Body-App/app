@@ -51,6 +51,7 @@ type PrayerWallComponentProps = {
   onEditPost?: (postId: string) => void;
   onScrollOffsetChange?: (offsetY: number) => void;
   onUserScrollStart?: () => void;
+  onUserScrollEnd?: () => void;
   refreshSignal?: number;
 };
 
@@ -59,6 +60,7 @@ function PrayerWallComponent({
   onEditPost,
   onScrollOffsetChange,
   onUserScrollStart,
+  onUserScrollEnd,
   refreshSignal,
 }: PrayerWallComponentProps) {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
@@ -74,6 +76,8 @@ function PrayerWallComponent({
   const requestSequenceRef = useRef(0);
   const hasSeenRefreshSignalRef = useRef(false);
   const loadMoreLockRef = useRef(false);
+  const isUserDragActiveRef = useRef(false);
+  const isMomentumScrollingRef = useRef(false);
   const pageRef = useRef(page);
   const tokenRef = useRef(token);
   tokenRef.current = token;
@@ -300,7 +304,30 @@ function PrayerWallComponent({
         viewabilityConfig={viewabilityConfig}
         scrollEnabled={isScrollEnable}
         onScrollBeginDrag={() => {
+          isUserDragActiveRef.current = true;
+          isMomentumScrollingRef.current = false;
           onUserScrollStart?.();
+        }}
+        onScrollEndDrag={() => {
+          if (isUserDragActiveRef.current && !isMomentumScrollingRef.current) {
+            isUserDragActiveRef.current = false;
+            onUserScrollEnd?.();
+          }
+        }}
+        onMomentumScrollBegin={() => {
+          if (!isUserDragActiveRef.current) {
+            return;
+          }
+          isMomentumScrollingRef.current = true;
+        }}
+        onMomentumScrollEnd={() => {
+          if (!isUserDragActiveRef.current) {
+            isMomentumScrollingRef.current = false;
+            return;
+          }
+          isUserDragActiveRef.current = false;
+          isMomentumScrollingRef.current = false;
+          onUserScrollEnd?.();
         }}
         onScroll={(event) => {
           onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);

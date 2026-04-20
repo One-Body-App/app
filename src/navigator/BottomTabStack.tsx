@@ -4,7 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
-import React, { useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   BottomTabBar,
@@ -12,7 +12,13 @@ import {
   createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { getFocusedRouteNameFromRoute, useFocusEffect, useTheme } from '@react-navigation/native';
+import {
+  getFocusedRouteNameFromRoute,
+  useFocusEffect,
+  useIsFocused,
+  useNavigation,
+  useTheme,
+} from '@react-navigation/native';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
@@ -233,23 +239,49 @@ function PostTabPlaceholder() {
   return null;
 }
 
-function isHiddenByParentDrawerRoute(navigation: BottomTabBarProps['navigation']) {
-  const parentState = navigation.getParent?.()?.getState?.();
-  const parentRoute =
-    parentState && Array.isArray(parentState.routes)
-      ? parentState.routes[parentState.index ?? 0]
-      : undefined;
+function getActiveRouteNameFromNavigationState(
+  navigation: Pick<BottomTabBarProps['navigation'], 'getState'> | undefined
+) {
+  const state = navigation?.getState?.();
+  const activeRoute =
+    state && Array.isArray(state.routes) ? state.routes[state.index ?? 0] : undefined;
 
-  return Boolean(parentRoute?.name && parentRoute.name !== 'Main');
+  return typeof activeRoute?.name === 'string' ? activeRoute.name : undefined;
+}
+
+function useIsMainDrawerRouteActive() {
+  const navigation = useNavigation<any>();
+  const [isMainDrawerRouteActive, setIsMainDrawerRouteActive] = useState(
+    () => getActiveRouteNameFromNavigationState(navigation) === 'Main'
+  );
+
+  useEffect(() => {
+    const syncDrawerRoute = () => {
+      setIsMainDrawerRouteActive(getActiveRouteNameFromNavigationState(navigation) === 'Main');
+    };
+
+    syncDrawerRoute();
+
+    const unsubscribeState = navigation.addListener?.('state', syncDrawerRoute);
+    const unsubscribeFocus = navigation.addListener?.('focus', syncDrawerRoute);
+    const unsubscribeBlur = navigation.addListener?.('blur', syncDrawerRoute);
+
+    return () => {
+      if (typeof unsubscribeState === 'function') unsubscribeState();
+      if (typeof unsubscribeFocus === 'function') unsubscribeFocus();
+      if (typeof unsubscribeBlur === 'function') unsubscribeBlur();
+    };
+  }, [navigation]);
+
+  return isMainDrawerRouteActive;
 }
 
 export function AnimatedTabBar(props: BottomTabBarProps) {
   const tabBarAnimation = useTabBarAnimation();
   const { state, descriptors, navigation, insets } = props;
   const shouldHideWrapper = shouldHideActiveTabBarWrapper({ state, descriptors });
-  const shouldHideForParentRoute = isHiddenByParentDrawerRoute(navigation);
 
-  if (shouldHideWrapper || shouldHideForParentRoute) {
+  if (shouldHideWrapper) {
     return null;
   }
 
@@ -418,9 +450,17 @@ ChatTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
 };
 
-function BottomStack() {
+type BottomStackProps = {
+  isDrawerFocused?: boolean;
+};
+
+function BottomStackNavigator({ isDrawerFocused = true }: BottomStackProps) {
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarAnimation = useTabBarAnimation();
+  const isMainDrawerRouteActive = useIsMainDrawerRouteActive();
+  const shouldRenderSharedTabBar =
+    isDrawerFocused && isMainDrawerRouteActive && !tabBarAnimation?.hiddenOwnerId;
   const tabBarTotalHeight = getHeight(7) + insets.bottom;
   const baseVisibleTabBarStyle = {
     height: tabBarTotalHeight,
@@ -467,7 +507,7 @@ function BottomStack() {
   return (
     <RootTabTransitionProvider>
       <Tab.Navigator
-        tabBar={TabBarWrapper}
+        tabBar={(props) => (shouldRenderSharedTabBar ? <TabBarWrapper {...props} /> : null)}
         sceneContainerStyle={{ backgroundColor: colors.background }}
         screenOptions={{
           headerStatusBarHeight: 0,
@@ -621,4 +661,11 @@ function BottomStack() {
     </RootTabTransitionProvider>
   );
 }
+
+function BottomStack() {
+  const isDrawerFocused = useIsFocused();
+
+  return <BottomStackNavigator isDrawerFocused={isDrawerFocused} />;
+}
+
 export default BottomStack;

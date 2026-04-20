@@ -76,6 +76,10 @@ import LogoWhite from '@/assets/icons/logo_white.svg';
 import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
 import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import WallComponent from '@/components/prayerWallComponent';
+import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
+import PrayerWallMyPrayersComponent from '@/components/prayerWallMyPrayersComponent';
+import PrayerWallTestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
+import GlassTabBar from '@/components/GlassTabBar';
 import HeaderGradientOverlay from '@/components/HeaderGradientOverlay';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
@@ -131,6 +135,8 @@ const BRAND = {
   accentDark: '#12d2d9',
   primaryBase: '#41899f',
 };
+
+const HOME_TAB_BAR_OWNER = 'home';
 // --- TYPES ---
 type FeedPost = (ArticleType | SocialPost) & {
   type?: 'social' | 'posts' | 'watch';
@@ -538,6 +544,8 @@ type PrayerWallTabsProps = {
   wallRefreshSignal: number;
 };
 
+type HomePrayerTabKey = 'Wall' | 'Testimonies' | 'Saved' | 'MyPrayers';
+
 function PrayerWallTabs({
   topInset,
   bottomInset,
@@ -547,12 +555,115 @@ function PrayerWallTabs({
   wallRefreshSignal,
 }: PrayerWallTabsProps) {
   const isIOS = Platform.OS === 'ios';
-  const { dark } = useTheme();
+  const { dark, colors } = useTheme();
+  const [activeTab, setActiveTab] = useState<HomePrayerTabKey>('Wall');
+  const [areSubtabsVisible, setAreSubtabsVisible] = useState(true);
+  const areSubtabsVisibleRef = useRef(true);
+  const prayerSubtabsVisibility = useRef(new Animated.Value(1)).current;
+  const lastPrayerScrollY = useRef(0);
+  const lastPrayerSubtabToggleAt = useRef(0);
+  const prayerScrollAccumulator = useRef(0);
+  const hasInitializedPrayerScroll = useRef(false);
+  const hasPrayerUserScrollGesture = useRef(false);
   const [localWallRefreshSignal, setLocalWallRefreshSignal] = useState(0);
   const previousWallRefreshSignalRef = useRef<number | undefined>(wallRefreshSignal);
+  const prayerTabs = useMemo(
+    () =>
+      [
+        { key: 'Wall', label: 'Wall' },
+        { key: 'Testimonies', label: 'Testimonies' },
+        { key: 'Saved', label: 'Saved' },
+        { key: 'MyPrayers', label: 'My Prayers' },
+      ] as const,
+    []
+  );
   const refreshWallFeed = useCallback(() => {
     setLocalWallRefreshSignal((previous) => previous + 1);
   }, []);
+  const setSubtabsVisibility = useCallback(
+    (visible: boolean) => {
+      if (areSubtabsVisibleRef.current === visible) {
+        return;
+      }
+
+      areSubtabsVisibleRef.current = visible;
+      setAreSubtabsVisible(visible);
+      Animated.timing(prayerSubtabsVisibility, {
+        toValue: visible ? 1 : 0,
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    },
+    [prayerSubtabsVisibility]
+  );
+  const resetPrayerScrollState = useCallback(() => {
+    hasInitializedPrayerScroll.current = false;
+    hasPrayerUserScrollGesture.current = false;
+    lastPrayerScrollY.current = 0;
+    lastPrayerSubtabToggleAt.current = 0;
+    prayerScrollAccumulator.current = 0;
+    setSubtabsVisibility(true);
+  }, [setSubtabsVisibility]);
+  const handlePrayerScrollStart = useCallback(() => {
+    hasPrayerUserScrollGesture.current = true;
+  }, []);
+  const handlePrayerScrollEnd = useCallback(() => {
+    hasPrayerUserScrollGesture.current = false;
+  }, []);
+  const handlePrayerScrollOffsetChange = useCallback(
+    (offsetY: number) => {
+      const now = Date.now();
+      const nextY = Math.max(0, offsetY);
+      const rawDelta = nextY - lastPrayerScrollY.current;
+      const scrollThreshold = 6;
+      const toggleDistance = 22;
+      const toggleCooldownMs = 180;
+      const delta = rawDelta;
+
+      if (!hasPrayerUserScrollGesture.current) {
+        lastPrayerScrollY.current = nextY;
+        return;
+      }
+
+      if (!hasInitializedPrayerScroll.current) {
+        hasInitializedPrayerScroll.current = true;
+        lastPrayerScrollY.current = nextY;
+        return;
+      }
+
+      if (Math.abs(rawDelta) <= scrollThreshold) {
+        lastPrayerScrollY.current = nextY;
+        return;
+      }
+
+      if (now - lastPrayerSubtabToggleAt.current < toggleCooldownMs) {
+        lastPrayerScrollY.current = nextY;
+        return;
+      }
+
+      if (Math.sign(prayerScrollAccumulator.current) !== Math.sign(delta)) {
+        prayerScrollAccumulator.current = 0;
+      }
+      prayerScrollAccumulator.current += delta;
+
+      if (prayerScrollAccumulator.current >= toggleDistance && areSubtabsVisibleRef.current) {
+        setSubtabsVisibility(false);
+        lastPrayerSubtabToggleAt.current = now;
+        prayerScrollAccumulator.current = 0;
+      } else if (
+        prayerScrollAccumulator.current <= -toggleDistance &&
+        !areSubtabsVisibleRef.current
+      ) {
+        setSubtabsVisibility(true);
+        lastPrayerSubtabToggleAt.current = now;
+        prayerScrollAccumulator.current = 0;
+      }
+
+      lastPrayerScrollY.current = nextY;
+    },
+    [setSubtabsVisibility]
+  );
 
   useObservedEffect(() => {
     if (previousWallRefreshSignalRef.current === wallRefreshSignal) {
@@ -561,14 +672,69 @@ function PrayerWallTabs({
     previousWallRefreshSignalRef.current = wallRefreshSignal;
     refreshWallFeed();
   });
+
+  useObservedEffect(() => {
+    resetPrayerScrollState();
+  }, [activeTab, resetPrayerScrollState]);
+
+  const prayerSubtabContainerHeight = prayerSubtabsVisibility.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 70],
+    extrapolate: 'clamp',
+  });
+  const prayerTabBarOpacity = prayerSubtabsVisibility.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  const prayerTabBarTranslateY = prayerSubtabsVisibility.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-20, 0],
+    extrapolate: 'clamp',
+  });
+
+  const activePrayerScene = useMemo(() => {
+    const sceneProps = {
+      onOpenPost,
+      onEditPost,
+      onScrollOffsetChange: handlePrayerScrollOffsetChange,
+      onUserScrollStart: handlePrayerScrollStart,
+      onUserScrollEnd: handlePrayerScrollEnd,
+    };
+
+    switch (activeTab) {
+      case 'Wall':
+        return <WallComponent {...sceneProps} refreshSignal={localWallRefreshSignal} />;
+      case 'Testimonies':
+        return <PrayerWallTestimoniesComponent {...sceneProps} />;
+      case 'Saved':
+        return <PrayerWallSavedPrayersComponent {...sceneProps} />;
+      case 'MyPrayers':
+        return <PrayerWallMyPrayersComponent {...sceneProps} />;
+      default:
+        return null;
+    }
+  }, [
+    activeTab,
+    handlePrayerScrollEnd,
+    handlePrayerScrollOffsetChange,
+    handlePrayerScrollStart,
+    localWallRefreshSignal,
+    onEditPost,
+    onOpenPost,
+  ]);
+
   const shareButtonStyle = isIOS
     ? {
         position: 'absolute' as const,
-        bottom: spacing.x30,
-        alignSelf: 'center' as const,
+        bottom: 0,
+        left: 0,
+        right: 0,
         alignItems: 'center' as const,
-        paddingVertical: 0,
-        backgroundColor: 'transparent',
+        justifyContent: 'center' as const,
+        minHeight: bottomInset,
+        backgroundColor: colors.background,
+        zIndex: 4,
       }
     : {
         position: 'absolute' as const,
@@ -581,13 +747,38 @@ function PrayerWallTabs({
       };
 
   return (
-    <View style={{ flex: 1, paddingTop: topInset }}>
-      <View style={{ flex: 1, paddingBottom: bottomInset / 2 }}>
-        <WallComponent
-          refreshSignal={localWallRefreshSignal}
-          onOpenPost={onOpenPost}
-          onEditPost={onEditPost}
-        />
+    <View style={{ flex: 1 }}>
+      <View style={{ height: topInset, backgroundColor: colors.background }} />
+      <Animated.View
+        style={{
+          backgroundColor: colors.background,
+          height: prayerSubtabContainerHeight,
+          overflow: 'hidden',
+          zIndex: 5,
+          elevation: 5,
+        }}
+      >
+        <View style={{ paddingHorizontal: spacing.x5, paddingTop: spacing.x8 }}>
+          <Animated.View
+            testID="home-prayer-subtab-rail"
+            pointerEvents={areSubtabsVisible ? 'auto' : 'none'}
+            style={{
+              opacity: prayerTabBarOpacity,
+              transform: [{ translateY: prayerTabBarTranslateY }],
+            }}
+          >
+            <GlassTabBar
+              tabs={prayerTabs.map((tab) => ({ key: tab.key, label: tab.label }))}
+              activeIndex={prayerTabs.findIndex((tab) => tab.key === activeTab)}
+              onTabChange={(nextIndex) => {
+                setActiveTab(prayerTabs[nextIndex]?.key ?? 'Wall');
+              }}
+            />
+          </Animated.View>
+        </View>
+      </Animated.View>
+      <View testID="home-prayer-scene-container" style={{ flex: 1, paddingBottom: bottomInset }}>
+        {activePrayerScene}
       </View>
       <TouchableOpacity onPress={onNewPrayerPress} style={shareButtonStyle}>
         <StyledText
@@ -3026,16 +3217,17 @@ function Home({ navigation, route }: Props) {
     () => Animated.multiply(footerTranslateYBase, Animated.subtract(1, footerVisibility)),
     [footerTranslateYBase, footerVisibility]
   );
-  const syncRootTabBarVisibility = useCallback(
+  const applyHomeTabBarState = useCallback(
     (feedType: FeedTypes) => {
       if (feedType === FeedTypes.Pray) {
-        tabBarAnimationRef.current?.setTabBarTranslateY(footerHeight);
+        tabBarAnimationRef.current?.hideTabBar(HOME_TAB_BAR_OWNER);
         return;
       }
 
-      tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
+      tabBarAnimationRef.current?.resetTabBar(HOME_TAB_BAR_OWNER);
+      tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY, HOME_TAB_BAR_OWNER);
     },
-    [footerHeight, footerTranslateY]
+    [footerTranslateY]
   );
 
   const VISIBILITY_DURATION = 180;
@@ -3426,25 +3618,20 @@ function Home({ navigation, route }: Props) {
       headerVisibility.setValue(1);
       footerVisibility.setValue(1);
       scrollY.setValue(0);
-      tabBarAnimationRef.current?.setTabBarTranslateY(0);
-
-      const frameId = requestAnimationFrame(() => {
-        syncRootTabBarVisibility(feedTypeRef.current);
-      });
+      applyHomeTabBarState(feedTypeRef.current);
 
       return () => {
-        cancelAnimationFrame(frameId);
-        tabBarAnimationRef.current?.resetTabBar();
+        tabBarAnimationRef.current?.resetTabBar(HOME_TAB_BAR_OWNER);
       };
-    }, [footerVisibility, headerVisibility, scrollY, syncRootTabBarVisibility])
+    }, [applyHomeTabBarState, footerVisibility, headerVisibility, scrollY])
   );
 
   useObservedEffect(() => {
     if (!isScreenFocused) {
       return;
     }
-    syncRootTabBarVisibility(feedOptions.type);
-  }, [feedOptions.type, isScreenFocused, syncRootTabBarVisibility]);
+    applyHomeTabBarState(feedOptions.type);
+  }, [applyHomeTabBarState, feedOptions.type, isScreenFocused]);
 
   const handleFeedRefresh = useCallback(() => {
     if (feedOptions.type === FeedTypes.Pray || isRefreshing) {
@@ -3504,7 +3691,7 @@ function Home({ navigation, route }: Props) {
   }, [feedData.length, feedOptions.type, isEndOfList, isLoading, isLoadingMore, isRefreshing]);
 
   const prayFeedBottomInset = useMemo(
-    () => insets.bottom + (Platform.OS === 'ios' ? spacing.x60 : spacing.x48),
+    () => insets.bottom + (Platform.OS === 'ios' ? spacing.x32 : spacing.x48),
     [insets.bottom]
   );
 

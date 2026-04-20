@@ -61,6 +61,7 @@ import AccountType from '../screens/accountType'; // Adjust path
 import ConfirmLogin from '../screens/login/ConfirmLogin'; // Adjust path
 
 import DrawerNav from './DrawerStack';
+import PrayerWallStack from './PrayerWallStack';
 import NewPost from '../screens/post/NewPost'; // Adjust path
 import BlogComposer from '../screens/blogs/BlogComposer';
 import BlogDashboard from '../screens/blogs/BlogDashboard';
@@ -1143,20 +1144,16 @@ function AppContent() {
         routes: [
           {
             name: 'MainRoot',
+          },
+          {
+            name: 'PrayerWall',
             state: {
               routes: [
                 {
-                  name: 'PrayerWall',
-                  state: {
-                    routes: [
-                      {
-                        name: 'Single',
-                        params: {
-                          postId,
-                          ...(commentId ? { threadRootCommentId: commentId } : undefined),
-                        },
-                      },
-                    ],
+                  name: 'Single',
+                  params: {
+                    postId,
+                    ...(commentId ? { threadRootCommentId: commentId } : undefined),
                   },
                 },
               ],
@@ -1516,6 +1513,14 @@ function AppContent() {
                 name="MainRoot"
                 component={DrawerNav}
                 options={{ headerShown: false }}
+              />
+              <MainStack.Screen
+                name="PrayerWall"
+                component={PrayerWallStack}
+                options={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                }}
               />
               <MainStack.Screen
                 name="SinglePost"

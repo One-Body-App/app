@@ -769,6 +769,7 @@ describe('videoUploadQueue', () => {
     const storage = createMemoryStorage();
     const log = jest.fn();
     const videoTrimModule = jest.requireMock('react-native-video-trim');
+    const moderationModule = jest.requireMock('@/src/services/moderation/clientModeration');
     videoTrimModule.extractEditedFrames.mockResolvedValue(['/tmp/frame-1.jpg', '/tmp/frame-2.jpg']);
     const queue = createVideoUploadQueue({
       storage,
@@ -785,6 +786,18 @@ describe('videoUploadQueue', () => {
     await queue.waitForIdle();
 
     expect(videoTrimModule.extractEditedFrames).toHaveBeenCalledTimes(1);
+    expect(videoTrimModule.extractEditedFrames).toHaveBeenCalledWith(
+      baseRecipe.sourceUri,
+      expect.objectContaining({
+        outputWidth: 180,
+        outputHeight: 320,
+        frameCount: 3,
+      })
+    );
+    expect(moderationModule.callBackendFallbackModeration).toHaveBeenCalledWith({
+      type: 'video',
+      content: ['data:image/jpeg;base64,frame', 'data:image/jpeg;base64,frame'],
+    });
     expect(videoTrimModule.exportEditedVideo).toHaveBeenCalledTimes(1);
     expect(queue.getItems()).toEqual([
       expect.objectContaining({
@@ -1985,6 +1998,68 @@ describe('videoUploadQueue', () => {
     expect(exportVideo).not.toHaveBeenCalled();
     expect(uploadVideo).not.toHaveBeenCalled();
     expect(createWatchPost).not.toHaveBeenCalled();
+  });
+
+  it('retries fallback moderation with a smaller payload after a 413 response', async () => {
+    const storage = createMemoryStorage();
+    const videoTrimModule = jest.requireMock('react-native-video-trim');
+    const moderationModule = jest.requireMock('@/src/services/moderation/clientModeration');
+    const tooLargeError = Object.assign(new Error('Request Entity Too Large'), { status: 413 });
+
+    videoTrimModule.extractEditedFrames
+      .mockResolvedValueOnce(['/tmp/frame-1.jpg', '/tmp/frame-2.jpg', '/tmp/frame-3.jpg'])
+      .mockResolvedValueOnce(['/tmp/frame-retry.jpg']);
+    moderationModule.callBackendFallbackModeration
+      .mockRejectedValueOnce(tooLargeError)
+      .mockResolvedValueOnce({
+        finalAction: 'allow',
+        provider: 'openai',
+        flagged: false,
+        model: 'omni-moderation-latest',
+        results: [],
+        matchedCategories: [],
+      });
+
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      uploadVideo: jest.fn(async () => createUploadedResult('mux_upload_retry_after_413')),
+      createWatchPost: jest.fn(async () => undefined),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe, { startImmediately: false });
+    await queue.start();
+    await queue.waitForIdle();
+
+    expect(videoTrimModule.extractEditedFrames).toHaveBeenCalledTimes(2);
+    expect(videoTrimModule.extractEditedFrames).toHaveBeenNthCalledWith(
+      1,
+      baseRecipe.sourceUri,
+      expect.objectContaining({
+        outputWidth: 180,
+        outputHeight: 320,
+        frameCount: 3,
+      })
+    );
+    expect(videoTrimModule.extractEditedFrames).toHaveBeenNthCalledWith(
+      2,
+      baseRecipe.sourceUri,
+      expect.objectContaining({
+        outputWidth: 90,
+        outputHeight: 160,
+        frameCount: 1,
+      })
+    );
+    expect(moderationModule.callBackendFallbackModeration).toHaveBeenCalledTimes(2);
+    expect(queue.getItems()).toEqual([
+      expect.objectContaining({
+        status: 'complete',
+        moderationDecision: 'safe' as const,
+      }),
+    ]);
   });
 
   it('stops locally when moderation throws before server calls', async () => {

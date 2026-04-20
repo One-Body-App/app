@@ -20,13 +20,11 @@ import OnboardingStack from './OnboardingStack';
 import { RootState } from '../redux/reducers/rootReducer';
 import { Colors } from '../styles';
 
-import Prayers from '@/assets/svg/prayers.svg';
 import ZoeIcon from '@/assets/svg/zoeicon.svg';
 import Connections from '@/src/screens/main/connections';
 import SettingsStack from './SettingsStack';
 import MainTabStack from './BottomTabStack';
 import DrawerContent from './DrawerContent';
-import PrayerWallStack from './PrayerWallStack';
 import Saved from '../screens/main/saved';
 import ZoeChat from '../screens/main/zoeChat';
 import mainPageOptions from './global';
@@ -109,7 +107,9 @@ function DrawerNav() {
     return (
       <TabBarAnimationProvider>
         <DrawerStack.Navigator
+          detachInactiveScreens
           backBehavior="history"
+          sceneContainerStyle={{ backgroundColor: colors.background }}
           screenOptions={({ navigation }) => {
             return {
               drawerType,
@@ -216,20 +216,6 @@ function DrawerNav() {
           />
 
           <DrawerStack.Screen
-            name="PrayerWall"
-            component={PrayerWallStack}
-            options={() => {
-              return {
-                title: 'Prayer Wall',
-                drawerItemStyle: { display: 'none', height: 0 },
-                drawerIcon: ({ color, size }) => {
-                  return <Prayers width={size} height={size} color={color} />;
-                },
-              };
-            }}
-          />
-
-          <DrawerStack.Screen
             name="Settings"
             component={SettingsStack}
             options={() => {
@@ -260,7 +246,9 @@ function DrawerNav() {
   return (
     <TabBarAnimationProvider>
       <DrawerStack.Navigator
+        detachInactiveScreens
         backBehavior="history"
+        sceneContainerStyle={{ backgroundColor: colors.background }}
         screenOptions={{
           drawerType,
           swipeEnabled: false,
@@ -292,13 +280,6 @@ function DrawerNav() {
         />
         <DrawerStack.Screen
           name="Connections"
-          component={DrawerPlaceholderScreen}
-          options={{
-            drawerItemStyle: { display: 'none', height: 0 },
-          }}
-        />
-        <DrawerStack.Screen
-          name="PrayerWall"
           component={DrawerPlaceholderScreen}
           options={{
             drawerItemStyle: { display: 'none', height: 0 },

@@ -34,12 +34,10 @@ jest.mock('@/src/screens/main/connections', () => 'Connections');
 jest.mock('./SettingsStack', () => 'SettingsStack');
 jest.mock('./BottomTabStack', () => 'MainTabStack');
 jest.mock('./DrawerContent', () => 'DrawerContent');
-jest.mock('./PrayerWallStack', () => 'PrayerWallStack');
 jest.mock('../screens/main/saved', () => 'Saved');
 jest.mock('../screens/main/zoeChat', () => 'ZoeChat');
 jest.mock('./global', () => jest.fn(() => ({ headerLeft: undefined })));
 jest.mock('@/assets/icons/home2.svg', () => 'Home2Icon');
-jest.mock('@/assets/svg/prayers.svg', () => 'PrayersIcon');
 jest.mock('@/assets/svg/zoeicon.svg', () => 'ZoeIcon');
 jest.mock('iconsax-react-native', () => ({
   Profile2User: () => null,

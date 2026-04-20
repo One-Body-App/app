@@ -26,12 +26,16 @@ type PrayerWallSavedPrayersProps = {
   onOpenPost?: (postId: string) => void;
   onEditPost?: (postId: string) => void;
   onScrollOffsetChange?: (offsetY: number) => void;
+  onUserScrollStart?: () => void;
+  onUserScrollEnd?: () => void;
 };
 
 function PrayerWallSavedPrayersComponent({
   onOpenPost,
   onEditPost,
   onScrollOffsetChange,
+  onUserScrollStart,
+  onUserScrollEnd,
 }: PrayerWallSavedPrayersProps) {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -40,6 +44,8 @@ function PrayerWallSavedPrayersComponent({
   const [page, setPage] = useState(1);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const [isEndOfList, setIsEndOfList] = useState(false);
+  const isUserDragActiveRef = useRef(false);
+  const isMomentumScrollingRef = useRef(false);
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const [savedPosts, setSavedPosts] = useState<PrayerPost[]>([]);
@@ -244,6 +250,32 @@ function PrayerWallSavedPrayersComponent({
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         scrollEnabled={isScrollEnable}
+        onScrollBeginDrag={() => {
+          isUserDragActiveRef.current = true;
+          isMomentumScrollingRef.current = false;
+          onUserScrollStart?.();
+        }}
+        onScrollEndDrag={() => {
+          if (isUserDragActiveRef.current && !isMomentumScrollingRef.current) {
+            isUserDragActiveRef.current = false;
+            onUserScrollEnd?.();
+          }
+        }}
+        onMomentumScrollBegin={() => {
+          if (!isUserDragActiveRef.current) {
+            return;
+          }
+          isMomentumScrollingRef.current = true;
+        }}
+        onMomentumScrollEnd={() => {
+          if (!isUserDragActiveRef.current) {
+            isMomentumScrollingRef.current = false;
+            return;
+          }
+          isUserDragActiveRef.current = false;
+          isMomentumScrollingRef.current = false;
+          onUserScrollEnd?.();
+        }}
         onScroll={(event) => {
           onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);
         }}

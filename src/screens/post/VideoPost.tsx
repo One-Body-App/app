@@ -1087,6 +1087,20 @@ export default function VideoPost({ navigation, route }: Props) {
           />
         ) : null}
 
+        {pendingAutoTrimUri ? (
+          <PendingTrimLauncher
+            key={pendingAutoTrimUri}
+            pendingUri={pendingAutoTrimUri}
+            delayMs={Platform.OS === 'ios' ? 300 : 150}
+            onLaunch={(queuedUri) => {
+              setPendingAutoTrimUri((currentValue) =>
+                currentValue === queuedUri ? null : currentValue
+              );
+              openTrimEditor(queuedUri);
+            }}
+          />
+        ) : null}
+
         <View style={styles.trimGateContainer}>
           <ActivityIndicator size="large" color={palette.primary} />
         </View>

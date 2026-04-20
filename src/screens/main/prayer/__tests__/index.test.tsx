@@ -2,20 +2,6 @@ import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 import { Animated } from 'react-native';
 
-jest.mock('react-native-tab-view', () => {
-  const ReactLocal = require('react');
-
-  return {
-    TabView: ({ navigationState, renderScene, renderTabBar }: any) =>
-      ReactLocal.createElement(
-        ReactLocal.Fragment,
-        null,
-        renderTabBar ? renderTabBar({ navigationState }) : null,
-        renderScene({ route: navigationState.routes[navigationState.index] })
-      ),
-  };
-});
-
 jest.mock('@react-navigation/native', () => ({
   useFocusEffect: jest.fn((effect: () => void | (() => void)) => {
     const ReactLocal = require('react');
@@ -28,10 +14,6 @@ jest.mock('@react-navigation/native', () => ({
       text: '#111111',
     },
   })),
-}));
-
-jest.mock('@react-navigation/elements', () => ({
-  useHeaderHeight: jest.fn(() => 96),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -127,6 +109,7 @@ describe('Prayer hub', () => {
     });
 
     expect(renderer!.root.findByType('GlassTabBar')).toBeTruthy();
+    expect(renderer!.root.findByProps({ testID: 'prayer-scene-container' })).toBeTruthy();
     expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
       'auto'
     );
@@ -134,15 +117,21 @@ describe('Prayer hub', () => {
     const wall = renderer!.root.findByType('PrayerWallComponent');
 
     act(() => {
-      wall.props.onScrollOffsetChange(120);
+      wall.props.onScrollOffsetChange?.(120);
     });
 
     expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
       'auto'
     );
-    expect(
-      renderer!.root.findByProps({ testID: 'prayer-subtab-restore-rail' }).props.pointerEvents
-    ).toBe('none');
+
+    expect(renderer!.root.findByProps({ testID: 'prayer-share-cta' }).props.style).toEqual(
+      expect.objectContaining({
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#ffffff',
+      })
+    );
   });
 
   it('hides and restores the rail only from Wall scrolling, and keeps non-Wall tabs visible', () => {
@@ -155,23 +144,44 @@ describe('Prayer hub', () => {
     const wall = renderer!.root.findByType('PrayerWallComponent');
 
     act(() => {
+      wall.props.onScrollOffsetChange?.(120);
+    });
+
+    expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
+      'auto'
+    );
+
+    act(() => {
+      wall.props.onMomentumScrollBegin?.();
+    });
+
+    expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
+      'auto'
+    );
+
+    act(() => {
+      wall.props.onMomentumScrollEnd?.();
+    });
+
+    expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
+      'auto'
+    );
+
+    act(() => {
       wall.props.onUserScrollStart();
-    });
-
-    act(() => {
-      wall.props.onScrollOffsetChange(120);
-    });
-
-    act(() => {
-      wall.props.onScrollOffsetChange(80);
     });
 
     expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
       'none'
     );
-    expect(
-      renderer!.root.findByProps({ testID: 'prayer-subtab-restore-rail' }).props.pointerEvents
-    ).toBe('auto');
+
+    act(() => {
+      wall.props.onUserScrollEnd();
+    });
+
+    expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
+      'auto'
+    );
 
     const glassTabBar = renderer!.root.findByType('GlassTabBar');
 
@@ -182,11 +192,23 @@ describe('Prayer hub', () => {
     expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
       'auto'
     );
-    expect(
-      renderer!.root.findByProps({ testID: 'prayer-subtab-restore-rail' }).props.pointerEvents
-    ).toBe('none');
 
     const testimonies = renderer!.root.findByType('PrayerWallTestimoniesComponent');
-    expect(testimonies.props.onScrollOffsetChange).toBeUndefined();
+
+    act(() => {
+      testimonies.props.onUserScrollStart();
+    });
+
+    expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
+      'none'
+    );
+
+    act(() => {
+      testimonies.props.onUserScrollEnd();
+    });
+
+    expect(renderer!.root.findByProps({ testID: 'prayer-subtab-rail' }).props.pointerEvents).toBe(
+      'auto'
+    );
   });
 });

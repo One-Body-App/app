@@ -56,6 +56,7 @@ import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionCo
 import { useTabBarAnimation } from '@/src/navigator/TabBarAnimationContext';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
+const CONNECT_PORTAL_TAB_BAR_OWNER = 'connect-portal';
 
 function ListItemSeparator() {
   return <View style={{ height: spacing.x13 }} />;
@@ -163,13 +164,16 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
 
   useFocusEffect(
     useCallback(() => {
-      tabBarAnimationRef.current?.setTabBarTranslateY(0);
+      tabBarAnimationRef.current?.setTabBarTranslateY(0, CONNECT_PORTAL_TAB_BAR_OWNER);
       const frameId = requestAnimationFrame(() => {
-        tabBarAnimationRef.current?.setTabBarTranslateY(tabBarScrollTranslate);
+        tabBarAnimationRef.current?.setTabBarTranslateY(
+          tabBarScrollTranslate,
+          CONNECT_PORTAL_TAB_BAR_OWNER
+        );
       });
       return () => {
         cancelAnimationFrame(frameId);
-        tabBarAnimationRef.current?.resetTabBar();
+        tabBarAnimationRef.current?.resetTabBar(CONNECT_PORTAL_TAB_BAR_OWNER);
       };
     }, [tabBarScrollTranslate])
   );

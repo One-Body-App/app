@@ -426,7 +426,24 @@ const buildNativeStartupFailureMessage = (record?: NativeMuxDirectUploadRecord |
   return 'Native Mux upload stalled before its first callback.';
 };
 
-const VIDEO_MODERATION_SAMPLE_FRAME_COUNT = 5;
+const VIDEO_MODERATION_SAMPLE_FRAME_COUNT = 3;
+const VIDEO_MODERATION_SAMPLE_MAX_DIMENSION = 320;
+const VIDEO_MODERATION_RETRY_FRAME_COUNT = 1;
+const VIDEO_MODERATION_RETRY_MAX_DIMENSION = 160;
+
+const resolveModerationFrameSize = (width: number, height: number, maxDimension: number) => {
+  const safeWidth = Number.isFinite(width) && width > 0 ? width : maxDimension;
+  const safeHeight = Number.isFinite(height) && height > 0 ? height : maxDimension;
+  const largestDimension = Math.max(safeWidth, safeHeight, 1);
+  const scale = Math.min(1, maxDimension / largestDimension);
+  const scaledWidth = Math.max(1, Math.round(safeWidth * scale));
+  const scaledHeight = Math.max(1, Math.round(safeHeight * scale));
+
+  return {
+    width: scaledWidth,
+    height: scaledHeight,
+  };
+};
 
 const defaultDependencies: QueueDependencies = {
   storage: AsyncStorage,
@@ -451,57 +468,79 @@ const defaultDependencies: QueueDependencies = {
     }
   },
   moderateVideo: async (recipe) => {
-    const frameUris = await extractEditedFrames(recipe.sourceUri, {
-      startTime: recipe.trimStartMs,
-      endTime: recipe.trimEndMs,
-      cropX: recipe.cropRect.x,
-      cropY: recipe.cropRect.y,
-      cropWidth: recipe.cropRect.width,
-      cropHeight: recipe.cropRect.height,
-      outputWidth: recipe.outputWidth,
-      outputHeight: recipe.outputHeight,
-      frameCount: VIDEO_MODERATION_SAMPLE_FRAME_COUNT,
-    });
+    const moderateWithSample = async (frameCount: number, maxDimension: number) => {
+      const frameSize = resolveModerationFrameSize(
+        recipe.outputWidth,
+        recipe.outputHeight,
+        maxDimension
+      );
+      const frameUris = await extractEditedFrames(recipe.sourceUri, {
+        startTime: recipe.trimStartMs,
+        endTime: recipe.trimEndMs,
+        cropX: recipe.cropRect.x,
+        cropY: recipe.cropRect.y,
+        cropWidth: recipe.cropRect.width,
+        cropHeight: recipe.cropRect.height,
+        outputWidth: frameSize.width,
+        outputHeight: frameSize.height,
+        frameCount,
+      });
 
-    if (frameUris.length < 1) {
-      throw new Error('No video frames available for moderation.');
-    }
+      if (frameUris.length < 1) {
+        throw new Error('No video frames available for moderation.');
+      }
+
+      try {
+        const payload = await Promise.all(frameUris.map((uri) => buildImageDataUri(uri)));
+        const moderation = await callBackendFallbackModeration({
+          type: 'video',
+          content: payload,
+        });
+        const moderationScores = moderation.matchedCategories
+          ? Object.fromEntries(
+              moderation.matchedCategories.map((item) => [item.category, item.score])
+            )
+          : {};
+
+        return {
+          moderationDecision:
+            moderation.finalAction === 'allow'
+              ? 'safe'
+              : moderation.finalAction === 'pending_review'
+                ? 'unsure'
+                : 'blocked',
+          moderationScores,
+          moderationError: moderation.finalAction === 'allow' ? undefined : moderation.finalAction,
+        };
+      } finally {
+        await Promise.all(
+          frameUris.map(async (uri) => {
+            if (!uri || uri.startsWith('content://')) {
+              return;
+            }
+            try {
+              await RNFS.unlink(stripFileScheme(uri));
+            } catch {
+              // ignore temporary frame cleanup failures
+            }
+          })
+        );
+      }
+    };
 
     try {
-      const payload = await Promise.all(frameUris.map((uri) => buildImageDataUri(uri)));
-      const moderation = await callBackendFallbackModeration({
-        type: 'video',
-        content: payload,
-      });
-      const moderationScores = moderation.matchedCategories
-        ? Object.fromEntries(
-            moderation.matchedCategories.map((item) => [item.category, item.score])
-          )
-        : {};
-
-      return {
-        moderationDecision:
-          moderation.finalAction === 'allow'
-            ? 'safe'
-            : moderation.finalAction === 'pending_review'
-              ? 'unsure'
-              : 'blocked',
-        moderationScores,
-        moderationError: moderation.finalAction === 'allow' ? undefined : moderation.finalAction,
-      };
-    } finally {
-      await Promise.all(
-        frameUris.map(async (uri) => {
-          if (!uri || uri.startsWith('content://')) {
-            return;
-          }
-          try {
-            await RNFS.unlink(stripFileScheme(uri));
-          } catch {
-            // ignore temporary frame cleanup failures
-          }
-        })
+      return await moderateWithSample(
+        VIDEO_MODERATION_SAMPLE_FRAME_COUNT,
+        VIDEO_MODERATION_SAMPLE_MAX_DIMENSION
       );
+    } catch (error) {
+      if ((error as { status?: number } | undefined)?.status === 413) {
+        return moderateWithSample(
+          VIDEO_MODERATION_RETRY_FRAME_COUNT,
+          VIDEO_MODERATION_RETRY_MAX_DIMENSION
+        );
+      }
+      throw error;
     }
   },
   exportVideo: async (recipe) => {

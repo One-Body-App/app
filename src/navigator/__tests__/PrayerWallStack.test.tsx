@@ -2,8 +2,10 @@ import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
 const mockSetTabBarTranslateY = jest.fn();
+const mockHideTabBar = jest.fn();
 const mockResetTabBar = jest.fn();
 let latestFocusCleanup: undefined | (() => void);
+const recordedScreens: Array<{ name: string; options: any }> = [];
 
 jest.mock('@react-native-community/blur', () => ({
   BlurView: 'BlurView',
@@ -12,7 +14,10 @@ jest.mock('@react-native-community/blur', () => ({
 jest.mock('@react-navigation/native-stack', () => ({
   createNativeStackNavigator: jest.fn(() => ({
     Navigator: ({ children }: { children?: React.ReactNode }) => children,
-    Screen: () => null,
+    Screen: ({ name, options }: { name: string; options?: any }) => {
+      recordedScreens.push({ name, options });
+      return null;
+    },
   })),
 }));
 
@@ -52,6 +57,7 @@ jest.mock('@/utils/ResponsiveFun', () => ({
 
 jest.mock('../TabBarAnimationContext', () => ({
   useTabBarAnimation: jest.fn(() => ({
+    hideTabBar: mockHideTabBar,
     setTabBarTranslateY: mockSetTabBarTranslateY,
     resetTabBar: mockResetTabBar,
   })),
@@ -69,6 +75,8 @@ import PrayerWallStack from '../PrayerWallStack';
 describe('PrayerWallStack', () => {
   beforeEach(() => {
     latestFocusCleanup = undefined;
+    recordedScreens.length = 0;
+    mockHideTabBar.mockClear();
     mockSetTabBarTranslateY.mockClear();
     mockResetTabBar.mockClear();
   });
@@ -78,12 +86,38 @@ describe('PrayerWallStack', () => {
       TestRenderer.create(<PrayerWallStack />);
     });
 
-    expect(mockSetTabBarTranslateY).toHaveBeenCalledWith(68);
+    expect(mockHideTabBar).toHaveBeenCalledWith('prayer-wall');
+    expect(mockSetTabBarTranslateY).toHaveBeenCalledWith(68, 'prayer-wall');
 
     act(() => {
       latestFocusCleanup?.();
     });
 
-    expect(mockResetTabBar).toHaveBeenCalledTimes(1);
+    expect(mockResetTabBar).toHaveBeenCalledWith('prayer-wall');
+  });
+
+  it('uses a non-transparent header on the index screen so the top rail is not hidden behind it', () => {
+    act(() => {
+      TestRenderer.create(<PrayerWallStack />);
+    });
+
+    const indexScreen = recordedScreens.find((screen) => screen.name === 'index');
+    expect(indexScreen).toBeTruthy();
+
+    const resolvedOptions = indexScreen?.options({
+      navigation: {
+        canGoBack: () => false,
+      },
+    });
+
+    expect(resolvedOptions).toEqual(
+      expect.objectContaining({
+        headerTransparent: false,
+        headerBlurEffect: undefined,
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: '#ffffff' },
+        contentStyle: { backgroundColor: '#ffffff' },
+      })
+    );
   });
 });

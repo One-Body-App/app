@@ -333,7 +333,6 @@ export type MainDrawerParamsList = {
   ZoeAI: undefined;
   Saved: undefined;
   Settings: NavigatorScreenParams<SettingsStackParamsList>;
-  PrayerWall: undefined;
   Help: undefined;
 };
 
@@ -433,6 +432,7 @@ type LoginMfaChallenge = {
 
 export type MainStackParamList = {
   MainRoot?: NavigatorScreenParams<MainDrawerParamsList>;
+  PrayerWall?: NavigatorScreenParams<PrayerWallStackParamsList>;
   Post?: {
     postId?: string;
     repostDraft?: {
