@@ -16,6 +16,8 @@ import {
 import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch, useSelector } from 'react-redux';
+import { useSSO } from '@clerk/expo';
+import { useSignUp } from '@clerk/expo/legacy';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
@@ -58,6 +60,8 @@ import type { MfaChallengeResponse } from '@/services/login';
 import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 import useMountEffect from '@/src/hooks/useMountEffect';
+import { getValidAccessToken } from '@/src/services/authTokens';
+import { syncClerkUserProfile } from '@/src/services/clerkSync';
 import {
   getSocialAuthActionLabel,
   getSocialAuthErrorMessage,
@@ -198,6 +202,8 @@ function SignupForm({ navigation, route }: Props) {
   const { accountType, continuePendingSocialSignup = false } = route.params;
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const { isLoaded: isSignUpLoaded, signUp: clerkSignUp, setActive } = useSignUp();
+  const { startSSOFlow } = useSSO();
   const attemptedPendingSocialSignupRef = useRef(false);
 
   const inputRefs = {
@@ -469,19 +475,58 @@ function SignupForm({ navigation, route }: Props) {
     typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
   const createAccountGlassFill = 'rgba(18, 107, 135, 0.75)';
 
-  const onVerify = () => {
+  const onVerify = async () => {
     const { email, password, name, username } = state;
-    dispatch(
-      signUp.Request({
-        data: {
+    if (!isSignUpLoaded || !clerkSignUp || !setActive) {
+      setIsloading(false);
+      setFormError('Sign up is still loading. Please try again.');
+      return;
+    }
+
+    try {
+      const result = await clerkSignUp.create({
+        emailAddress: email.trim().toLowerCase(),
+        password,
+        unsafeMetadata: {
+          name,
+          username,
+          accountType,
+        },
+      });
+
+      if (result.status === 'complete' && result.createdSessionId) {
+        await setActive({ session: result.createdSessionId });
+        const syncResult = await syncClerkUserProfile({
           email,
           name,
           username,
-          password,
           accountType,
-        },
-      })
-    );
+        });
+        const accessToken = await getValidAccessToken();
+        if (accessToken) {
+          dispatch(setLoginData({ token: accessToken, resetProfile: true }));
+          dispatch(getProfile.Request({ token: accessToken }));
+        }
+        dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
+        setIsloading(false);
+        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+        return;
+      }
+
+      await clerkSignUp.prepareEmailAddressVerification({
+        strategy: 'email_link',
+        redirectUrl: 'onebodyapp://login',
+      });
+      dispatch(signUp.Success({ email, name, username, accountType }));
+    } catch (error: any) {
+      setIsloading(false);
+      const message =
+        error?.errors?.[0]?.longMessage ??
+        error?.errors?.[0]?.message ??
+        error?.message ??
+        'Unable to create account. Please try again.';
+      dispatch(signUp.Failed(message));
+    }
   };
 
   const completeSocialSignup = useCallback(
@@ -590,36 +635,45 @@ function SignupForm({ navigation, route }: Props) {
       const providerLabel = provider === 'google' ? 'Google' : 'Apple';
       setFormError('');
       setFormSuccess('');
+      dispatch(setLoader(true));
+      setSocialLoading(true);
 
       try {
-        const tokenResult =
-          provider === 'google' ? await getGoogleIdToken() : await getAppleIdToken();
+        const { createdSessionId, setActive: activateSsoSession } = await startSSOFlow({
+          strategy: provider === 'google' ? 'oauth_google' : 'oauth_apple',
+          redirectUrl: 'onebodyapp://oauth-native-callback',
+        } as any);
 
-        if (tokenResult.cancelled) {
-          return;
-        }
-
-        if (!tokenResult.idToken) {
+        if (!createdSessionId || !activateSsoSession) {
           setFormError(
             `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
           );
           return;
         }
 
-        await completeSocialSignup({
-          provider,
-          idToken: tokenResult.idToken,
-          nonce: tokenResult.nonce,
-          details: tokenResult.details,
+        await activateSsoSession({ session: createdSessionId });
+        const syncResult = await syncClerkUserProfile({
+          accountType,
         });
+        const accessToken = await getValidAccessToken();
+        await clearPendingAccountType();
+        clearPendingSocialContinuation();
+        if (accessToken) {
+          dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'social' }));
+          dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
+        }
+        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
       } catch (e: any) {
         setFormError(
           e?.message ??
             `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
         );
+      } finally {
+        dispatch(setLoader(false));
+        setSocialLoading(false);
       }
     },
-    [completeSocialSignup, socialLoading]
+    [accountType, dispatch, navigation, socialLoading, startSSOFlow]
   );
 
   useMountEffect(() => () => {

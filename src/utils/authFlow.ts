@@ -109,10 +109,6 @@ export function shouldBeginMandatoryMfaOnboarding(state: MandatoryMfaGateState):
     return false;
   }
 
-  if (state.getProfileData.isProfileCompleted !== true) {
-    return false;
-  }
-
   if (state.getProfileData.mfaConfig?.isMfaActive === true) {
     return false;
   }

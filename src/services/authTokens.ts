@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as Keychain from 'react-native-keychain';
 import { BASE_URL } from './constants';
+import { getClerkSessionToken, signOutClerkSession } from './clerkSession';
 
 const STORAGE_KEYS = {
   accessToken: 'auth.accessToken',
@@ -197,6 +198,11 @@ export async function saveAuthTokens(tokens: AuthTokens): Promise<StoredAuthToke
 
 export async function clearAuthTokens(): Promise<void> {
   inFlightRefresh = null;
+  try {
+    await signOutClerkSession();
+  } catch {
+    // ignore Clerk sign-out failures during local cleanup
+  }
   await clearSecureTokens();
   await clearLegacyTokens();
 }
@@ -242,6 +248,11 @@ export async function refreshAuthTokens(): Promise<StoredAuthTokens | null> {
 }
 
 export async function getValidAccessToken(): Promise<string | null> {
+  const clerkToken = await getClerkSessionToken();
+  if (clerkToken) {
+    return clerkToken;
+  }
+
   const stored = await loadAuthTokens();
   if (!stored) {
     return null;

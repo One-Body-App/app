@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
+import { useSSO } from '@clerk/expo';
+import { useSignIn } from '@clerk/expo/legacy';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Geolocation from '@react-native-community/geolocation';
@@ -26,7 +28,6 @@ import {
   beginPasskeyLogin,
   beginPasskeyRegistration,
   beginTotpSetup,
-  loginWithEmailAndPassword,
   MfaChallengeResponse,
   MfaMethod,
   sendEmailMfaCode,
@@ -37,27 +38,16 @@ import {
   finishPasskeyLogin,
   finishPasskeyRegistration,
 } from '@/services/login';
-import {
-  ensureGoogleSigninConfigured,
-  exchangeSocialToken,
-  getAppleIdToken,
-  getGoogleIdToken,
-} from '@/services/socialAuth';
-import {
-  clearPendingSocialContinuation,
-  savePendingSocialContinuation,
-} from '@/src/services/pendingSocialContinuation';
+import { getSocialAuthActionLabel } from '@/src/utils/socialAuthFlow';
+import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
+import { syncClerkUserProfile } from '@/src/services/clerkSync';
 import resolveInitialMfaMethod from '@/src/utils/mfa';
 import {
   isPasskeyAssociationError,
   isPasskeyCancellationError,
   PASSKEY_ASSOCIATION_FALLBACK_MESSAGE,
 } from '@/src/utils/passkeyErrors';
-import {
-  getSocialAuthActionLabel,
-  getSocialAuthErrorMessage,
-  isSocialSignupRequiredResponse,
-} from '@/src/utils/socialAuthFlow';
+import { getValidAccessToken } from '@/src/services/authTokens';
 
 import Button from '../Button';
 import CustomClipboard, { CustomClipboardHandle } from '../CustomClipboard';
@@ -232,6 +222,8 @@ function LoginComponent({
 }: LoginComponentProps) {
   const dispatch = useDispatch();
   const navigation = useNavigation<Nav>();
+  const { isLoaded: isSignInLoaded, signIn, setActive } = useSignIn();
+  const { startSSOFlow } = useSSO();
   const { dark } = useTheme();
   const styles = useMemo(() => createLoginStyles(dark), [dark]);
   const trackMfaEvent = noop as (eventName: string, params: Record<string, any>) => undefined;
@@ -316,10 +308,6 @@ function LoginComponent({
     submissionInFlightRef.current = false;
     passkeyInFlightRef.current = null;
   }, [clearOnMountKey]);
-
-  useEffect(() => {
-    ensureGoogleSigninConfigured();
-  }, []);
 
   useEffect(() => {
     if (!resolvedInitialMfaChallenge) return;
@@ -1021,25 +1009,29 @@ function LoginComponent({
         setError('Enter your email and password.');
         return;
       }
-      const res = await loginWithEmailAndPassword({ email: form.email, password: form.password });
-
-      if (res.status === 200) {
-        await handleAuthResult(res.response);
-      } else {
-        const apiMessage = (res.response as any)?.message;
-        const loginErrorMessage =
-          typeof apiMessage === 'string'
-            ? apiMessage
-            : 'Unable to sign in. Please check your credentials.';
-        if (loginErrorMessage.toLowerCase().includes('verify your email')) {
-          navigation.navigate('ConfirmLogin', {
-            showConfirmationEmailMessage: true,
-            prefillEmail: form.email,
-          } as any);
-          return;
-        }
-        setError(loginErrorMessage);
+      if (!isSignInLoaded || !signIn || !setActive) {
+        setError('Sign in is still loading. Please try again.');
+        return;
       }
+
+      const result = await signIn.create({
+        identifier: form.email.trim().toLowerCase(),
+        password: form.password,
+        strategy: 'password',
+      });
+
+      if (result.status !== 'complete' || !result.createdSessionId) {
+        setError('Additional verification is required. Please check your email and try again.');
+        return;
+      }
+
+      await setActive({ session: result.createdSessionId });
+      const accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        throw new Error('Unable to start Clerk session.');
+      }
+
+      completeLogin(accessToken);
     } catch (e: any) {
       const fallbackMessage = e?.message ?? 'Sign in failed.';
       if (fallbackMessage.toLowerCase().includes('verify your email')) {
@@ -1063,9 +1055,12 @@ function LoginComponent({
     form.email,
     form.password,
     handleAuthResult,
+    isSignInLoaded,
     mfaChallenge,
     navigation,
     pendingAccessToken,
+    setActive,
+    signIn,
     submitMfa,
   ]);
 
@@ -1079,65 +1074,33 @@ function LoginComponent({
       setSocialLoading(true);
       try {
         await ensureLocationPermission();
-        const tokenResult =
-          provider === 'google' ? await getGoogleIdToken() : await getAppleIdToken();
+        const { createdSessionId, setActive: activateSsoSession } = await startSSOFlow({
+          strategy: provider === 'google' ? 'oauth_google' : 'oauth_apple',
+          redirectUrl: 'onebodyapp://oauth-native-callback',
+        } as any);
 
-        if (tokenResult.cancelled) {
-          return;
-        }
-
-        if (!tokenResult.idToken) {
+        if (!createdSessionId || !activateSsoSession) {
           setError(`Unable to sign in with ${providerLabel}. Please try again.`);
           return;
         }
 
-        const res = await exchangeSocialToken({
-          provider,
-          intent: 'login',
-          idToken: tokenResult.idToken,
-          nonce: tokenResult.nonce,
-          details: tokenResult.details,
-          createIfMissing: false,
-        });
-
-        if (res.status === 200 && isSocialSignupRequiredResponse(res.response)) {
-          savePendingSocialContinuation({
-            intent: 'login',
-            provider,
-            idToken: tokenResult.idToken,
-            nonce: tokenResult.nonce,
-            details: res.response.details ?? tokenResult.details,
-          });
-          navigation.navigate('AccountType', {
-            continuePendingSocialSignup: true,
-          } as any);
-          return;
+        await activateSsoSession({ session: createdSessionId });
+        const accessToken = await getValidAccessToken();
+        if (!accessToken) {
+          throw new Error('Unable to start Clerk session.');
         }
 
-        if (res.status === 200) {
-          clearPendingSocialContinuation();
-          const accessToken = res.response?.tokens?.accessToken;
-          if (!accessToken) {
-            throw new Error('Invalid authentication response');
-          }
-
-          dispatch(
-            setLoginData({
-              token: accessToken,
-              resetProfile: true,
-              authMethod: res.response?.authMethod ?? 'social',
-              bypassMandatoryMfaOnboarding: res.response?.bypassMandatoryMfaOnboarding !== false,
-            })
-          );
-          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-        } else {
-          setError(
-            getSocialAuthErrorMessage(
-              res.response,
-              `Unable to ${getSocialAuthActionLabel('login')} with ${providerLabel}. Please try again.`
-            )
-          );
-        }
+        await syncClerkUserProfile({});
+        clearPendingSocialContinuation();
+        dispatch(
+          setLoginData({
+            token: accessToken,
+            resetProfile: true,
+            authMethod: 'social',
+            bypassMandatoryMfaOnboarding: true,
+          })
+        );
+        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
       } catch (e: any) {
         setError(
           e?.message ??
@@ -1148,7 +1111,7 @@ function LoginComponent({
         setSocialLoading(false);
       }
     },
-    [dispatch, ensureLocationPermission, mfaChallenge, navigation, socialLoading]
+    [dispatch, ensureLocationPermission, mfaChallenge, navigation, socialLoading, startSSOFlow]
   );
 
   const methodButton = (method: MfaMethod, label: string) => {

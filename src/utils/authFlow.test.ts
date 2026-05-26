@@ -168,7 +168,7 @@ describe('authFlow', () => {
     ).toBe(false);
   });
 
-  it('does not begin mandatory MFA onboarding before onboarding completes', () => {
+  it('begins mandatory MFA onboarding after email verification before onboarding completes', () => {
     expect(
       shouldBeginMandatoryMfaOnboarding({
         navigationReady: true,
@@ -181,7 +181,7 @@ describe('authFlow', () => {
           mfaConfig: { isMfaActive: false },
         },
       })
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('does not begin mandatory MFA onboarding before email verification', () => {

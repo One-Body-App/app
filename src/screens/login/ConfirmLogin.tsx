@@ -16,6 +16,7 @@ import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { ApiCall } from '@/src/services/api';
+import { syncClerkUserProfile } from '@/src/services/clerkSync';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
@@ -69,11 +70,14 @@ function ConfirmLogin({ route }: Props) {
     }
   }, [dispatch, resendTargetEmail, token]);
 
-  const refreshProfile = useCallback(() => {
+  const refreshProfile = useCallback(async () => {
     if (token) {
+      await syncClerkUserProfile({
+        email: resendTargetEmail.trim().toLowerCase() || undefined,
+      }).catch(() => undefined);
       dispatch(getProfile.Request({ token }));
     }
-  }, [dispatch, token]);
+  }, [dispatch, resendTargetEmail, token]);
 
   return (
     <UserStepsLayout

@@ -4,8 +4,8 @@ import { useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import GeneralStyle from '../../constants/GeneralStyle';
 import { ApiCall } from '@/src/services/api';
+import GeneralStyle from '../../constants/GeneralStyle';
 import Button from '@/components/Button';
 
 import { MainStackParamList } from '@/src/navigator/types';
@@ -51,23 +51,22 @@ function ForgotPassword({ route }: Props) {
       seterror('');
       dispatch(setLoader(true));
       try {
-        const res = await ApiCall({
+        await ApiCall({
           route: 'auth/forgot-password',
-          params: { email },
           verb: 'patch',
+          params: { email: email.trim().toLowerCase() },
         });
-        if (res?.status === 200) {
-          setEmail('');
-          dispatch(setLoader(false));
-          setShowSuccess(true);
-        } else {
-          dispatch(setLoader(false));
-          seterror(res.response?.message);
-        }
+        setEmail('');
+        dispatch(setLoader(false));
+        setShowSuccess(true);
       } catch (e: any) {
         dispatch(setLoader(false));
-
-        console.log('saga error -- ', e.toString());
+        const message =
+          e?.errors?.[0]?.longMessage ??
+          e?.errors?.[0]?.message ??
+          e?.message ??
+          'Unable to send reset instructions.';
+        seterror(message);
       }
     } else {
       setEmailError(true);
