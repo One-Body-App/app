@@ -1,18 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { ApiCall } from '@/src/services/api';
@@ -180,13 +171,13 @@ function CreatorReview({ navigation, route }: Props) {
       <View style={styles.headerWrap}>
         <View style={styles.header}>
           <View style={styles.headerSide}>
-            <TouchableOpacity
+            <Pressable
               style={styles.headerIconButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text style={styles.headerTitle}>Creator Application</Text>
           <View style={styles.headerSide} />
@@ -206,9 +197,9 @@ function CreatorReview({ navigation, route }: Props) {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Bio</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('InfluencerStepTwo')}>
+              <Pressable onPress={() => navigation.navigate('InfluencerStepTwo')}>
                 <Text style={styles.editButton}>Edit</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <Text style={styles.cardBody}>{data.bio}</Text>
           </View>
@@ -217,11 +208,9 @@ function CreatorReview({ navigation, route }: Props) {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Instagram</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('InfluencerStepThree', { data })}
-              >
+              <Pressable onPress={() => navigation.navigate('InfluencerStepThree', { data })}>
                 <Text style={styles.editButton}>Edit</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             {data.instagramUsername ? (
               <View style={styles.igRow}>
@@ -242,11 +231,9 @@ function CreatorReview({ navigation, route }: Props) {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>RSS Feeds</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('InfluencerStepThree', { data })}
-              >
+              <Pressable onPress={() => navigation.navigate('InfluencerStepThree', { data })}>
                 <Text style={styles.editButton}>Edit</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <View style={styles.rssList}>
               {data.rssFeed1 ? (
@@ -275,9 +262,9 @@ function CreatorReview({ navigation, route }: Props) {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Focus Areas</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('InfluencerStepFour', { data })}>
+              <Pressable onPress={() => navigation.navigate('InfluencerStepFour', { data })}>
                 <Text style={styles.editButton}>Edit</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <View style={styles.pillContainer}>
               {data.topicNames?.length > 0 || data.topics?.length > 0 ? (
@@ -294,11 +281,7 @@ function CreatorReview({ navigation, route }: Props) {
         </View>
 
         {/* Agreement */}
-        <TouchableOpacity
-          style={styles.agreementContainer}
-          activeOpacity={0.8}
-          onPress={() => setAgreed(!agreed)}
-        >
+        <Pressable style={styles.agreementContainer} onPress={() => setAgreed(!agreed)}>
           <MaterialCommunityIcons
             name={agreed ? 'checkbox-marked' : 'checkbox-blank-outline'}
             size={24}
@@ -309,7 +292,7 @@ function CreatorReview({ navigation, route }: Props) {
             I agree to uphold One Body&#39;s{' '}
             <Text style={styles.agreementLink}>Christian values</Text> and community guidelines.
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
 
       <View style={styles.bottomNav}>
@@ -323,10 +306,10 @@ function CreatorReview({ navigation, route }: Props) {
           </View>
         </View>
         <View style={styles.footerActions}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             style={[styles.submitButton, { opacity: agreed && !submitting ? 1 : 0.5 }]}
             onPress={handleSubmit}
             disabled={!agreed || submitting}
@@ -334,7 +317,7 @@ function CreatorReview({ navigation, route }: Props) {
             <Text style={styles.submitButtonText}>
               {submitting ? 'Submitting...' : 'Submit Application'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>

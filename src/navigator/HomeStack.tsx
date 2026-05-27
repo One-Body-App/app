@@ -3,7 +3,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { Platform, TouchableOpacity } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 import Home, { FeedTypes } from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
@@ -82,7 +82,7 @@ function HomeStack() {
           headerLeftContainerStyle: { paddingLeft: spacing.x8 },
           headerRightContainerStyle: { paddingRight: spacing.x8 },
           headerLeft: () => (
-            <TouchableOpacity
+            <Pressable
               onPress={() => navigation.goBack()}
               style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
             >
@@ -91,7 +91,7 @@ function HomeStack() {
                 size={28}
                 color={dark ? colors.text : Colors.primary.brand}
               />
-            </TouchableOpacity>
+            </Pressable>
           ),
         })}
       />

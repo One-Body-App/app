@@ -1,7 +1,7 @@
 import React, { useCallback, useLayoutEffect, useRef, useState, memo, useMemo, JSX } from 'react';
 import {
   View,
-  TouchableOpacity,
+  Pressable,
   FlatList,
   ViewToken,
   RefreshControl,
@@ -780,7 +780,7 @@ function PrayerWallTabs({
       <View testID="home-prayer-scene-container" style={{ flex: 1, paddingBottom: bottomInset }}>
         {activePrayerScene}
       </View>
-      <TouchableOpacity onPress={onNewPrayerPress} style={shareButtonStyle}>
+      <Pressable onPress={onNewPrayerPress} style={shareButtonStyle}>
         <StyledText
           style={{
             color: Colors.primarySapphire.brand,
@@ -789,7 +789,7 @@ function PrayerWallTabs({
         >
           Share a Prayer 🙏
         </StyledText>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
@@ -840,13 +840,13 @@ function StatusInput({
           }
         }}
       />
-      <TouchableOpacity
+      <Pressable
         onPress={onActionPress}
         disabled={isSubmitting}
         style={[styles.promptIcon, { backgroundColor: promptActionBackground }]}
       >
         {promptActionIcon}
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
@@ -917,9 +917,8 @@ function SuggestionsRail({
                 },
               ]}
             >
-              <TouchableOpacity
+              <Pressable
                 onPress={() => onOpenProfile(suggestionId)}
-                activeOpacity={0.9}
                 style={styles.discoveryProfileTouch}
               >
                 <FeedAvatar
@@ -944,8 +943,8 @@ function SuggestionsRail({
                 <StyledText numberOfLines={1} style={styles.discoveryMeta}>
                   @{user.username || 'creator'}
                 </StyledText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 disabled={!suggestionId || isConnecting || isSelected}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 onPress={() => onConnect(suggestionId)}
@@ -955,13 +954,12 @@ function SuggestionsRail({
                 ]}
               >
                 <StyledText style={styles.discoveryConnectButtonText}>{connectLabel}</StyledText>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           );
         })}
-        <TouchableOpacity
+        <Pressable
           onPress={onSeeAll}
-          activeOpacity={0.85}
           style={[
             styles.discoverySeeAllCard,
             {
@@ -971,7 +969,7 @@ function SuggestionsRail({
           ]}
         >
           <StyledText style={styles.discoverySeeAllText}>{'See\nAll'}</StyledText>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -1017,7 +1015,7 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
     <View style={[styles.cardContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}>
       {/* Header */}
       <View style={styles.cardHeader}>
-        <TouchableOpacity style={styles.userInfo} onPress={onPressProfile}>
+        <Pressable style={styles.userInfo} onPress={onPressProfile}>
           <FeedAvatar
             uri={authorAvatar}
             size={40}
@@ -1033,14 +1031,14 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
             </StyledText>
             <StyledText style={[styles.timeAgo, { color: BRAND.gray400 }]}>2 hours ago</StyledText>
           </View>
-        </TouchableOpacity>
-        <TouchableOpacity>
+        </Pressable>
+        <Pressable>
           <More size={20} color={BRAND.gray400} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Main Clickable Content Area */}
-      <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+      <Pressable onPress={onPress}>
         {/* Caption */}
         {contentText ? (
           <StyledText
@@ -1057,33 +1055,33 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
             <Image source={{ uri: mediaUrl }} resizeMode="cover" style={styles.mediaImage} />
           </View>
         )}
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Actions Bar */}
       <View style={[styles.actionsBar, { borderTopColor: dark ? BRAND.gray800 : BRAND.gray100 }]}>
         <View style={styles.actionGroup}>
-          <TouchableOpacity style={styles.actionButton}>
+          <Pressable style={styles.actionButton}>
             <Heart size={24} color={BRAND.gray400} />
             <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
               {likes > 0 ? likes : 'Like'}
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <Pressable style={styles.actionButton}>
             <Message size={24} color={BRAND.gray400} />
             <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
               {comments > 0 ? comments : 'Reply'}
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <Pressable style={styles.actionButton}>
             <Send2 size={24} color={BRAND.gray400} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
-        <TouchableOpacity>
+        <Pressable>
           <ArchiveMinus size={24} color={BRAND.gray400} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
@@ -2285,7 +2283,7 @@ function Home({ navigation, route }: Props) {
             }
 
             return (
-              <TouchableOpacity
+              <Pressable
                 key={value}
                 style={[styles.tabItem, isActive && styles.tabItemSelected]}
                 onPress={() => {
@@ -2320,12 +2318,12 @@ function Home({ navigation, route }: Props) {
                     )}
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             );
           }
 
           return (
-            <TouchableOpacity
+            <Pressable
               key={value}
               style={[styles.tabItem, isActive && styles.tabItemSelected]}
               onPress={() => handleTabChange(value)}
@@ -2347,7 +2345,7 @@ function Home({ navigation, route }: Props) {
                   {label}
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>
@@ -2389,7 +2387,7 @@ function Home({ navigation, route }: Props) {
               justifyContent: 'center',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               onPress={handleOpenDrawer}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2407,7 +2405,7 @@ function Home({ navigation, route }: Props) {
               ) : (
                 <ProfileFill width={32} height={32} color={dark ? '#f6f6f7' : '#126b87'} />
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             style={{
@@ -2416,7 +2414,7 @@ function Home({ navigation, route }: Props) {
               justifyContent: 'center',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               onPress={handleNotifications}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2426,7 +2424,7 @@ function Home({ navigation, route }: Props) {
                 color={dark ? BRAND.gray100 : BRAND.primaryDark}
                 strokeWidth={0.2}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             pointerEvents="box-none"
@@ -2438,7 +2436,7 @@ function Home({ navigation, route }: Props) {
               justifyContent: 'center',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               onPress={handleHeaderLogoPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2456,7 +2454,7 @@ function Home({ navigation, route }: Props) {
                   <Logo style={{ height: 28, width: 28 }} />
                 )}
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
         {renderTabs(tabContainerGlassStyle)}
@@ -2509,7 +2507,7 @@ function Home({ navigation, route }: Props) {
               justifyContent: 'center',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               onPress={handleOpenDrawer}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2527,7 +2525,7 @@ function Home({ navigation, route }: Props) {
               ) : (
                 <ProfileFill width={32} height={32} color={dark ? '#f6f6f7' : '#126b87'} />
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             style={{
@@ -2536,7 +2534,7 @@ function Home({ navigation, route }: Props) {
               justifyContent: 'center',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               onPress={handleNotifications}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2546,7 +2544,7 @@ function Home({ navigation, route }: Props) {
                 color={dark ? BRAND.gray100 : BRAND.primaryDark}
                 strokeWidth={0.2}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             pointerEvents="box-none"
@@ -2558,7 +2556,7 @@ function Home({ navigation, route }: Props) {
               justifyContent: 'center',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               onPress={handleHeaderLogoPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2576,7 +2574,7 @@ function Home({ navigation, route }: Props) {
                   <Logo style={{ height: 28, width: 28 }} />
                 )}
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
         {renderTabs(androidTabContainerStyle)}
@@ -3690,10 +3688,7 @@ function Home({ navigation, route }: Props) {
     }
   }, [feedData.length, feedOptions.type, isEndOfList, isLoading, isLoadingMore, isRefreshing]);
 
-  const prayFeedBottomInset = useMemo(
-    () => insets.bottom + (Platform.OS === 'ios' ? spacing.x32 : spacing.x48),
-    [insets.bottom]
-  );
+  const prayFeedBottomInset = insets.bottom + (Platform.OS === 'ios' ? spacing.x32 : spacing.x48);
 
   const listContentContainerStyle = useMemo(
     () => ({

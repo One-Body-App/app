@@ -4,7 +4,7 @@ import {
   BackHandler,
   RefreshControl,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   View,
   Image,
   Platform,
@@ -19,7 +19,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LottieView from 'lottie-react-native';
-import { noop } from 'lodash';
+import noop from 'lodash/noop';
 import QRCode from 'react-native-qrcode-svg';
 import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
@@ -1126,7 +1126,7 @@ function LoginComponent({
     }
 
     return (
-      <TouchableOpacity
+      <Pressable
         key={method}
         disabled={isDisabled}
         onPress={() => selectMethod(method)}
@@ -1141,7 +1141,7 @@ function LoginComponent({
         }}
       >
         <StyledText style={{ color: labelColor }}>{label}</StyledText>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -1290,20 +1290,19 @@ function LoginComponent({
   useEffect(() => {
     onMfaLaunchScreenChange?.(showMfaLaunchScreen);
 
-    let subscription:
-      | {
-          remove: () => void;
-        }
-      | undefined;
-    if (Platform.OS === 'android' && showMfaLaunchScreen) {
-      subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        handleMfaLaunchBack();
-        return true;
-      });
+    if (Platform.OS !== 'android' || !showMfaLaunchScreen) {
+      return () => {
+        onMfaLaunchScreenChange?.(false);
+      };
     }
 
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleMfaLaunchBack();
+      return true;
+    });
+
     return () => {
-      subscription?.remove();
+      subscription.remove();
       onMfaLaunchScreenChange?.(false);
     };
   }, [handleMfaLaunchBack, onMfaLaunchScreenChange, showMfaLaunchScreen]);
@@ -1337,7 +1336,7 @@ function LoginComponent({
               marginBottom: 8,
             }}
           >
-            <TouchableOpacity
+            <Pressable
               disabled={isSubmitting}
               onPress={handleMfaLaunchBack}
               style={{
@@ -1350,7 +1349,7 @@ function LoginComponent({
               }}
             >
               <Ionicons name="arrow-back" size={26} color="#126B87" />
-            </TouchableOpacity>
+            </Pressable>
             <StyledText
               style={{
                 flex: 1,
@@ -1611,7 +1610,7 @@ function LoginComponent({
                 >
                   {totpSetupCode}
                 </StyledText>
-                <TouchableOpacity
+                <Pressable
                   onPress={handleCopyManualTotpCode}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{
@@ -1624,7 +1623,7 @@ function LoginComponent({
                   }}
                 >
                   <Ionicons name="copy-outline" size={36} color="#126B87" />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           ) : null}
@@ -1661,7 +1660,7 @@ function LoginComponent({
             </View>
           ) : null}
 
-          <TouchableOpacity
+          <Pressable
             disabled={isSubmitting}
             onPress={() => {
               if (backupCodes.length > 0 && pendingAccessToken) {
@@ -1686,10 +1685,10 @@ function LoginComponent({
             >
               {launchPrimaryButtonText}
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
 
           {isPasskeyEnrollmentScreen && mfaChallenge?.availableMethods.includes('totp') ? (
-            <TouchableOpacity
+            <Pressable
               disabled={isSubmitting}
               onPress={() => {
                 selectMethod('totp').catch((e: any) => {
@@ -1708,11 +1707,11 @@ function LoginComponent({
               >
                 Use other MFA options
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
 
           {isTotpEnrollmentScreen && mfaChallenge?.availableMethods.includes('email') ? (
-            <TouchableOpacity
+            <Pressable
               disabled={isSubmitting}
               onPress={() => {
                 handleEmailAsMfaEnrollment().catch((e: any) => {
@@ -1731,7 +1730,7 @@ function LoginComponent({
               >
                 Use email as MFA (less secure)
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
           <CustomClipboard ref={clipboardRef} />
         </ScrollView>
@@ -1763,13 +1762,13 @@ function LoginComponent({
           {!mfaChallenge ? (
             <View style={styles.newAccountRow}>
               <StyledText style={styles.newAccountText}>New to One Body? </StyledText>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   navigation.navigate('AccountType' as any);
                 }}
               >
                 <StyledText style={styles.newAccountLink}>Create an account</StyledText>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : null}
 
@@ -1856,7 +1855,7 @@ function LoginComponent({
               ) : null}
 
               {mfaChallenge.enrollmentRequired && mfaChallenge.availableMethods.includes('totp') ? (
-                <TouchableOpacity
+                <Pressable
                   disabled={isSubmitting}
                   onPress={() => selectMethod(selectedMfaMethod === 'totp' ? 'passkey' : 'totp')}
                 >
@@ -1865,7 +1864,7 @@ function LoginComponent({
                       ? 'Use passkey instead (recommended).'
                       : 'Prefer an authenticator app? Use TOTP instead.'}
                   </StyledText>
-                </TouchableOpacity>
+                </Pressable>
               ) : null}
 
               {mfaChallenge.enrollmentRequired ? (
@@ -1929,34 +1928,34 @@ function LoginComponent({
               </View>
 
               <View style={styles.socialIconsRow}>
-                <TouchableOpacity
+                <Pressable
                   style={styles.socialBtn}
                   disabled={socialLoading}
                   onPress={() => handleSocialLogin('google')}
                   accessibilityLabel="Continue with Google"
                 >
                   <Image source={googleIcon} style={styles.socialIcon} />
-                </TouchableOpacity>
+                </Pressable>
 
                 {Platform.OS === 'ios' ? (
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.socialBtn}
                     disabled={socialLoading}
                     onPress={() => handleSocialLogin('apple')}
                     accessibilityLabel="Continue with Apple"
                   >
                     <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFFF' : '#212121'} />
-                  </TouchableOpacity>
+                  </Pressable>
                 ) : null}
               </View>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   navigation.navigate('ForgotPassword' as any, { email: form.email } as any);
                 }}
               >
                 <StyledText style={styles.forgotPasswordText}>Forgot Password?</StyledText>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : null}
         </View>

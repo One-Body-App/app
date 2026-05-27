@@ -1,14 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CommonActions, useFocusEffect, useTheme } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Platform, StatusBar, Pressable, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import LottieView from 'lottie-react-native';
 import { useSelector } from 'react-redux';
@@ -134,12 +128,12 @@ function ReportStatus({ navigation, route }: Props) {
             paddingBottom: spacing.x8,
           }}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={closeFlow}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
           >
             <MaterialCommunityIcons name="close" size={30} color={titleColor} />
-          </TouchableOpacity>
+          </Pressable>
           <StyledText style={[header.h2, { color: titleColor }]}>Report Status</StyledText>
           <View style={{ width: 44 }} />
         </View>
@@ -305,7 +299,7 @@ function ReportStatus({ navigation, route }: Props) {
             paddingBottom: spacing.x24,
           }}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={closeFlow}
             style={{
               height: 58,
@@ -319,9 +313,9 @@ function ReportStatus({ navigation, route }: Props) {
             <StyledText style={[body.x2, { color: '#ffffff', fontWeight: '700', fontSize: 18 }]}>
               Done
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             onPress={blockUser}
             disabled={isBlocking}
             style={{
@@ -347,9 +341,9 @@ function ReportStatus({ navigation, route }: Props) {
             <StyledText style={[body.x2, { color: titleColor, fontWeight: '700', fontSize: 18 }]}>
               Block User
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => {
               OpenURLButton(COMMUNITY_GUIDELINES_URL);
             }}
@@ -358,7 +352,7 @@ function ReportStatus({ navigation, route }: Props) {
             <StyledText style={[body.x2, { color: primary, fontWeight: '700' }]}>
               Learn more about our Community Guidelines
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>

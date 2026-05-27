@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ScrollView, TouchableOpacity, View, ViewStyle, TextStyle } from 'react-native';
+import { ScrollView, Pressable, View, ViewStyle, TextStyle } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -157,7 +157,7 @@ export default function StyledSelect({
                 {modalTitle}
               </StyledText>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   // setModalVisible(false);
                   setModalVisible(false);
@@ -168,7 +168,7 @@ export default function StyledSelect({
                   size={18}
                   color={dark ? colors.text : Colors.primary.brand}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
             {!hideSearch ? (
               <View style={{ flex: 1 }}>
@@ -215,14 +215,14 @@ export default function StyledSelect({
               ) : null}
               {searchedItems.map((item, index) => {
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       onChange(item.value);
 
                       setModalVisible(false);
                     }}
                     // style={styles.listItem2}
-                    key={index}
+                    key={item.value}
                     style={{
                       padding: spacing.x16,
                       flexDirection: 'row',
@@ -245,7 +245,7 @@ export default function StyledSelect({
                     {selectedItem == item.value ? (
                       <MaterialCommunityIcons name="check" size={15} color={Colors.neutral[200]} />
                     ) : null}
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>

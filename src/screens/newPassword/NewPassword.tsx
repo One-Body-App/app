@@ -87,7 +87,7 @@ function NewPassword({ oobCode }: Props) {
     }
   };
 
-  const PasswordUpdate = async () => {
+  const handlePasswordUpdate = async () => {
     const { passwordC, passwordN } = state;
 
     const passwordErrorC = await validator('passwordC', passwordC);
@@ -164,7 +164,7 @@ function NewPassword({ oobCode }: Props) {
   return (
     <View style={{ flex: 1, marginHorizontal: spacing.x16 }}>
       <View style={{ marginVertical: spacing.x16 }}>
-        <StyledText style={[Typography.header.h1]}>Reset your password?</StyledText>
+        <StyledText style={Typography.header.h1}>Reset your password?</StyledText>
 
         <StyledText
           style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
@@ -277,7 +277,7 @@ function NewPassword({ oobCode }: Props) {
                 setState({ ...state, passwordErrorC: validationError })
               )
             }
-            onSubmitEditing={() => PasswordUpdate()}
+            onSubmitEditing={() => handlePasswordUpdate()}
             onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
             blurOnSubmit={false}
           />
@@ -302,7 +302,7 @@ function NewPassword({ oobCode }: Props) {
             },
           ]}
           onPress={() => {
-            PasswordUpdate();
+            handlePasswordUpdate();
           }}
           btnTextStyle={{ color: '#FFF' }}
           disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}
@@ -394,7 +394,7 @@ function NewPassword({ oobCode }: Props) {
     //           setState({ ...state, passwordErrorC: error })
     //         )
     //       }
-    //       onSubmitEditing={() => PasswordUpdate()}
+    //       onSubmitEditing={() => handlePasswordUpdate()}
     //       onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
     //       blurOnSubmit={false}
     //     />
@@ -403,7 +403,7 @@ function NewPassword({ oobCode }: Props) {
     //   <Button
     //     text={'CHANGE PASSWORD'}
     //     onPress={() => {
-    //       PasswordUpdate();
+    //       handlePasswordUpdate();
     //     }}
     //     btnStyle={{ marginHorizontal: 30 }}
     //   />

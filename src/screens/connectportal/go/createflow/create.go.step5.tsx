@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import type { ConnectPortalEventDraft, TicketTier } from '@/src/services/connectPortal';
@@ -191,7 +191,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
         </View>
       ))}
 
-      <TouchableOpacity
+      <Pressable
         style={[
           styles.addButton,
           {
@@ -204,7 +204,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
         <Text style={[styles.addButtonText, { color: palette.accent }]}>
           Add another ticket option
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </CreateFlowLayout>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { TextInput, TouchableOpacity, View } from 'react-native';
+import { TextInput, Pressable, View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
@@ -13,7 +13,8 @@ import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
+import MapBox from '@/components/MapBox';
+import { MapBoxTypes, type MapSuggestion } from '@/components/MapBoxTypes';
 import StyledTextInput from '@/components/styled/TextInput';
 import Button from '@/components/Button';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -205,7 +206,7 @@ function OnboardingOrganizationInfo({ navigation, route }: Props) {
           />
 
           {/* No location checkbox */}
-          <TouchableOpacity
+          <Pressable
             style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x16 }}
             onPress={() => {
               setNoPhysicalLocation((prev) => !prev);
@@ -232,7 +233,7 @@ function OnboardingOrganizationInfo({ navigation, route }: Props) {
             <StyledText style={[Typography.body.x1, { color: Colors.neutral[200] }]}>
               We do not have a physical location
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Phone Number */}

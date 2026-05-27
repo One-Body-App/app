@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal, useColorScheme } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { BRAND_COLORS } from '../shared';
 
@@ -36,9 +36,9 @@ export default function ServeJobPageApplySuccess({
           ]}
         >
           {/* Close Button */}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Pressable style={styles.closeButton} onPress={onClose}>
             <MaterialIcons name="chevron-left" size={32} color={theme.text} />
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Success Graphic (Pure RN implementation of the CSS art) */}
           <View style={styles.graphicContainer}>
@@ -62,9 +62,9 @@ export default function ServeJobPageApplySuccess({
           </Text>
 
           {/* CTA Button */}
-          <TouchableOpacity style={styles.primaryButton} onPress={onReturn}>
+          <Pressable style={styles.primaryButton} onPress={onReturn}>
             <Text style={styles.primaryButtonText}>Return to Opportunities</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </Modal>

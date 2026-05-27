@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Pressable, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -58,7 +58,7 @@ function AddIntrestsModel(props: any) {
               {authState?.getProfileData?.interests &&
                 authState?.getProfileData?.interests?.length > 0 &&
                 authState?.getProfileData?.interests?.map((item: any) => (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       if (selectedIntrest.includes(item?._id)) {
                         setSelectedIntrest(selectedIntrest.filter((item2) => item2 !== item?._id));
@@ -83,7 +83,7 @@ function AddIntrestsModel(props: any) {
                     >
                       {item?.name}
                     </StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
             </View>
           </ScrollView>

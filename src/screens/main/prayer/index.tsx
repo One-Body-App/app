@@ -1,14 +1,6 @@
 import React from 'react';
-import {
-  Animated,
-  Easing,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Animated, Easing, Platform, StyleSheet, Pressable, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
@@ -201,7 +193,7 @@ function Prayer({ navigation }: Props) {
         >
           {renderScene(activeRoute)}
         </View>
-        <TouchableOpacity
+        <Pressable
           testID="prayer-share-cta"
           onPress={() => {
             navigation.navigate('Prayer');
@@ -216,7 +208,7 @@ function Prayer({ navigation }: Props) {
           >
             Share a Prayer 🙏
           </StyledText>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

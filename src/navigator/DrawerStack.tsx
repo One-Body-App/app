@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   Platform,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -63,7 +63,7 @@ export function DrawerPlaceholderScreen() {
             fontWeight: '600',
           }}
         >
-          Loading your account...
+          Loading your account&hellip;
         </Text>
       </View>
       <View style={{ marginTop: 8, alignItems: 'center' }}>
@@ -196,7 +196,7 @@ function DrawerNav() {
                 headerShown: true,
                 title: 'My Connections',
                 headerLeft: () => (
-                  <TouchableOpacity
+                  <Pressable
                     style={{ marginHorizontal: 11, padding: 4 }}
                     onPress={() => navigation.goBack()}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -206,7 +206,7 @@ function DrawerNav() {
                       size={28}
                       color={dark ? colors.text : Colors.primary.brand}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 ),
                 drawerIcon: ({ color, size }) => {
                   return <Profile2User size={size} color={color} />;

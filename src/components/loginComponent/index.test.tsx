@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Image, InteractionManager, Platform, Text, TouchableOpacity } from 'react-native';
+import { Image, InteractionManager, Platform, Text, Pressable } from 'react-native';
 import type { MfaChallengeResponse } from '@/services/login';
 import { PASSKEY_ASSOCIATION_FALLBACK_MESSAGE } from '@/src/utils/passkeyErrors';
 import LoginComponent from './index';
@@ -186,7 +186,7 @@ const getRenderedText = (renderer: TestRenderer.ReactTestRenderer) =>
     .join(' ');
 
 const findTouchableByLabel = (renderer: TestRenderer.ReactTestRenderer, label: string) => {
-  return renderer.root.findAllByType(TouchableOpacity).find((node) => {
+  return renderer.root.findAllByType(Pressable).find((node) => {
     const text = node
       .findAllByType(Text)
       .map((textNode) => flattenText(textNode.props.children))
@@ -437,7 +437,7 @@ describe('LoginComponent passkey fallback', () => {
     });
     mountedRenderers.push(renderer!);
 
-    const googleButton = renderer!.root.findAllByType(TouchableOpacity).find((node) => {
+    const googleButton = renderer!.root.findAllByType(Pressable).find((node) => {
       return node.findAllByType(Image).length > 0;
     });
 
@@ -489,7 +489,7 @@ describe('LoginComponent passkey fallback', () => {
     });
     mountedRenderers.push(renderer!);
 
-    const appleButton = renderer!.root.findAllByType(TouchableOpacity).find((node) => {
+    const appleButton = renderer!.root.findAllByType(Pressable).find((node) => {
       return node.props.accessibilityLabel === 'Continue with Apple';
     });
 

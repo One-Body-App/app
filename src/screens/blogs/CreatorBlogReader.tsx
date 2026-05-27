@@ -1,12 +1,5 @@
 import React, { useLayoutEffect, useMemo, useState } from 'react';
-import {
-  Image,
-  ScrollView,
-  Share,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Image, ScrollView, Share, Pressable, useWindowDimensions, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import RenderHtml from 'react-native-render-html';
@@ -45,7 +38,7 @@ function ActionChip({
   const { colors } = useTheme();
 
   return (
-    <TouchableOpacity
+    <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
@@ -75,7 +68,7 @@ function ActionChip({
       >
         {label}
       </StyledText>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 

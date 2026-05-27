@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Pressable, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -63,7 +63,7 @@ function MyProfile({ navigation, route }: Props) {
           },
         ]}
       >
-        <TouchableOpacity
+        <Pressable
           accessibilityLabel="Go to Home"
           onPress={() =>
             navigation.getParent()?.navigate('HomeTab', {
@@ -77,7 +77,7 @@ function MyProfile({ navigation, route }: Props) {
             size={30}
             color={dark ? colors.text : Colors.primary.brand}
           />
-        </TouchableOpacity>
+        </Pressable>
 
         <View style={styles.topBarTitleWrap}>
           <StyledText
@@ -87,7 +87,7 @@ function MyProfile({ navigation, route }: Props) {
           </StyledText>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           accessibilityLabel="Open profile settings"
           onPress={() => setShowSettings(true)}
           style={styles.topBarAction}
@@ -97,7 +97,7 @@ function MyProfile({ navigation, route }: Props) {
             size={25}
             color={dark ? colors.text : Colors.primary.brand}
           />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={styles.profileWrap}>

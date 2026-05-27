@@ -1,12 +1,12 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 import { Children, ReactElement, ReactNode, cloneElement, isValidElement, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   useWindowDimensions,
   View,
   TextStyle,
@@ -223,7 +223,7 @@ function OnboardingStepsLayout({
                 >
                   Why are we asking this?
                 </StyledText>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => {
                     // setModalVisible(false);
                     setShowModal(false);
@@ -235,7 +235,7 @@ function OnboardingStepsLayout({
                     size={24}
                     color={dark ? Colors.primarySapphire[400] : Colors.primary.brand}
                   />
-                </TouchableOpacity>
+                </Pressable>
               </View>
               {reasonContent}
             </ScrollView>

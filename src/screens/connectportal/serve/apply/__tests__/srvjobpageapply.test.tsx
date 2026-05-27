@@ -1,7 +1,8 @@
 /* eslint-disable global-require */
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import ServeJobPageApply, { MAX_RESUME_BYTES, normalizeResumeSelection } from '../srvjobpageapply';
+import ServeJobPageApply from '../srvjobpageapply';
+import { MAX_RESUME_BYTES, normalizeResumeSelection } from '../srvjobpageapply.utils';
 
 const mockUseSelector = jest.fn();
 const mockUseConnectPortalData = jest.fn();

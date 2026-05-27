@@ -58,7 +58,7 @@ function PasswordChange({ navigation, route }: Props) {
 
   const passwordStrength = Object.values(passwordTracker).filter((value) => value).length;
 
-  const PasswordUpdate = async () => {
+  const handlePasswordUpdate = async () => {
     try {
       const { passwordC, passwordN } = state;
       const passwordErrorC = await validator('passwordC', passwordC);
@@ -224,7 +224,7 @@ function PasswordChange({ navigation, route }: Props) {
                 setState({ ...state, passwordErrorC: error })
               )
             }
-            onSubmitEditing={() => PasswordUpdate()}
+            onSubmitEditing={() => handlePasswordUpdate()}
             onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
             blurOnSubmit={false}
           />
@@ -250,7 +250,7 @@ function PasswordChange({ navigation, route }: Props) {
             },
           ]}
           onPress={() => {
-            PasswordUpdate();
+            handlePasswordUpdate();
           }}
           btnTextStyle={{ color: '#FFF' }}
           disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}

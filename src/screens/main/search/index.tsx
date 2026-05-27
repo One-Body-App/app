@@ -4,7 +4,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -141,7 +141,7 @@ function Search() {
   //     <View style={styles.tabBar}>
   //       {props.navigationState.routes.map((route, i) => {
   //         return (
-  //           <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
+  //           <Pressable style={styles.tabItem} onPress={() => setIndex(i)}>
   //             <Animated.Text
   //               style={
   //                 props?.navigationState?.index == i
@@ -161,7 +161,7 @@ function Search() {
   //             ) : (
   //               <View style={styles.propview2} />
   //             )}
-  //           </TouchableOpacity>
+  //           </Pressable>
   //         );
   //       })}
   //     </View>
@@ -268,7 +268,7 @@ function Search() {
           paddingVertical: spacing.x10,
         }}
       >
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
             setInput(item.item);
           }}
@@ -294,14 +294,14 @@ function Search() {
             )}
           </View>
           <StyledText>{item.item}</StyledText>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           onPress={() => {
             setRecentSearches(recentSearches.filter((search) => search.item !== item.item));
           }}
         >
           <Ionicons name="close-outline" size={20} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     ),
     [recentSearches]
@@ -379,7 +379,7 @@ function Search() {
                   alignItems: 'center',
                 }}
               >
-                <TouchableOpacity
+                <Pressable
                   onPress={() => {
                     if (searchType !== 'users') setSearchType('users');
                   }}
@@ -403,10 +403,10 @@ function Search() {
                       Accounts
                     </StyledText>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               </View>
               <View style={{ flex: 1, alignItems: 'center' }}>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => {
                     if (searchType !== 'posts') setSearchType('posts');
                   }}
@@ -430,7 +430,7 @@ function Search() {
                       Posts
                     </StyledText>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
 

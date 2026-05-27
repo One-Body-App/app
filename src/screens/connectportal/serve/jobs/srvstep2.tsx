@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -304,9 +303,8 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Opportunity Type</Text>
-          <TouchableOpacity
+          <Pressable
             testID="opportunity-type-trigger"
-            activeOpacity={0.85}
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
@@ -333,7 +331,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.row}>
@@ -358,8 +356,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
 
           <View style={styles.fieldHalf}>
             <Text style={[styles.label, { color: palette.textPrimary }]}>Frequency</Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
+            <Pressable
               style={[
                 styles.inputButton,
                 { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
@@ -391,7 +388,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
                 size={20}
                 color={palette.inputPlaceholder}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -404,10 +401,9 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
             {APPLICATION_METHOD_OPTIONS.map((option) => {
               const selected = applicationMethods.includes(option.value);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.value}
                   testID={`application-method-${option.value}`}
-                  activeOpacity={0.88}
                   style={[
                     styles.methodCard,
                     {
@@ -430,7 +426,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
                     size={22}
                     color={selected ? '#126b87' : palette.inputPlaceholder}
                   />
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -464,8 +460,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Hiring Status</Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
@@ -485,7 +480,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </CreateFlowLayout>
 
@@ -518,7 +513,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
               <Text style={[styles.optionSheetTitle, { color: palette.textPrimary }]}>
                 {pickerState.title}
               </Text>
-              <TouchableOpacity
+              <Pressable
                 testID="option-sheet-close"
                 onPress={closePicker}
                 style={[
@@ -527,7 +522,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
                 ]}
               >
                 <MaterialCommunityIcons name="close" size={20} color={palette.textPrimary} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <ScrollView
@@ -539,10 +534,9 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
               {pickerState.options.map((option) => {
                 const selected = option.value === pickerState.selectedValue;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={`${pickerState.title}-${option.value}`}
                     testID={`option-sheet-item-${option.value}`}
-                    activeOpacity={0.85}
                     style={[
                       styles.optionSheetButton,
                       {
@@ -565,7 +559,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
                     {selected ? (
                       <MaterialCommunityIcons name="check" size={18} color={palette.accent} />
                     ) : null}
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>

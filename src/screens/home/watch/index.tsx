@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Animated,
   Image,
-  TouchableOpacity,
 } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -566,7 +565,7 @@ function Watch({ navigation, route }: any) {
         setViewHeight(height);
       }}
     >
-      <TouchableOpacity
+      <Pressable
         onPress={() => {
           if (navigation.canGoBack()) {
             navigation.goBack();
@@ -583,7 +582,7 @@ function Watch({ navigation, route }: any) {
         }}
       >
         <MaterialIcons name="chevron-left" size={40} color="#FFFFFF" />
-      </TouchableOpacity>
+      </Pressable>
       {shouldShowEmptyState ? (
         <View style={styles.feedStateContainer}>
           <MaterialIcons name="videocam-off" size={56} color="rgba(255,255,255,0.25)" />

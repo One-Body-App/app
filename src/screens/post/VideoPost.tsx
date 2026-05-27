@@ -6,12 +6,11 @@ import {
   KeyboardAvoidingView,
   LayoutChangeEvent,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
   type EventSubscription,
 } from 'react-native';
@@ -20,7 +19,7 @@ import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import RNFS from 'react-native-fs';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from 'react-native-toast-notifications';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import {
@@ -175,7 +174,7 @@ function ActionButton({
   labelColor?: string;
 }) {
   return (
-    <TouchableOpacity style={styles.actionButton} onPress={onPress} disabled={disabled}>
+    <Pressable style={styles.actionButton} onPress={onPress} disabled={disabled}>
       <View
         style={[
           styles.actionIconWrapper,
@@ -191,7 +190,7 @@ function ActionButton({
       <Text style={[styles.actionLabel, { color: labelColor ?? palette.textSecondary }]}>
         {label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -1132,14 +1131,14 @@ export default function VideoPost({ navigation, route }: Props) {
       ) : null}
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.iconButton}>
+        <Pressable onPress={handleBackPress} style={styles.iconButton}>
           <MaterialIcons name="close" size={28} color={palette.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
 
         <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>Edit Video</Text>
 
         {isCropStep ? (
-          <TouchableOpacity
+          <Pressable
             style={[
               styles.doneButton,
               {
@@ -1155,7 +1154,7 @@ export default function VideoPost({ navigation, route }: Props) {
             ) : (
               <Text style={[styles.doneText, { color: palette.textPrimary }]}>Done</Text>
             )}
-          </TouchableOpacity>
+          </Pressable>
         ) : (
           <View style={styles.headerRightSpacer} />
         )}
@@ -1211,12 +1210,11 @@ export default function VideoPost({ navigation, route }: Props) {
                             },
                       ]}
                     />
-                    <TouchableOpacity
+                    <Pressable
                       style={[
                         styles.playOverlay,
                         { backgroundColor: isPlaying ? 'transparent' : palette.overlay },
                       ]}
-                      activeOpacity={0.85}
                       onPress={handleTogglePlayback}
                     >
                       {!isPlaying ? (
@@ -1224,7 +1222,7 @@ export default function VideoPost({ navigation, route }: Props) {
                           <MaterialIcons name="play-arrow" size={40} color={palette.textPrimary} />
                         </View>
                       ) : null}
-                    </TouchableOpacity>
+                    </Pressable>
                     <View style={styles.gridLineVertical} />
                     <View style={[styles.gridLineVertical, { left: '66.66%' }]} />
                     <View style={styles.gridLineHorizontal} />
@@ -1296,7 +1294,7 @@ export default function VideoPost({ navigation, route }: Props) {
                   <Text style={[styles.emptyVideoText, { color: palette.textSecondary }]}>
                     Select or record a video to continue
                   </Text>
-                  <TouchableOpacity
+                  <Pressable
                     style={[styles.sourcePickerButton, { backgroundColor: palette.primary }]}
                     onPress={handleChooseVideoSource}
                     disabled={isPreparingVideo}
@@ -1308,7 +1306,7 @@ export default function VideoPost({ navigation, route }: Props) {
                         Select Video
                       </Text>
                     )}
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               )}
             </View>
@@ -1329,13 +1327,13 @@ export default function VideoPost({ navigation, route }: Props) {
                   : 'This clip is longer than 60 seconds. Trim it before posting.'}
               </Text>
               {isCropStep ? (
-                <TouchableOpacity
+                <Pressable
                   style={[styles.trimActionButton, { backgroundColor: palette.warning }]}
                   onPress={handleTrimPress}
                   disabled={!hasVideo}
                 >
                   <Text style={styles.trimActionButtonText}>Trim Video</Text>
-                </TouchableOpacity>
+                </Pressable>
               ) : null}
             </View>
           ) : null}
@@ -1345,7 +1343,7 @@ export default function VideoPost({ navigation, route }: Props) {
               {RATIO_OPTIONS.map((ratioId) => {
                 const selected = ratioId === selectedRatio;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={ratioId}
                     style={[
                       styles.ratioPill,
@@ -1368,7 +1366,7 @@ export default function VideoPost({ navigation, route }: Props) {
                     >
                       {ratioId}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -1458,7 +1456,7 @@ export default function VideoPost({ navigation, route }: Props) {
                 ) : null}
               </View>
 
-              <TouchableOpacity
+              <Pressable
                 style={[
                   styles.confirmCropButton,
                   {
@@ -1474,7 +1472,7 @@ export default function VideoPost({ navigation, route }: Props) {
                 ) : (
                   <Text style={styles.confirmCropText}>Post</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             </>
           )}
         </View>

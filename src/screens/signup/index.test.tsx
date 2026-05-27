@@ -38,7 +38,7 @@ jest.mock('@invertase/react-native-apple-authentication', () => {
   const mockReactNative = jest.requireActual('react-native');
 
   const MockAppleButton = (props: any) =>
-    mockReact.createElement(mockReactNative.TouchableOpacity, {
+    mockReact.createElement(mockReactNative.Pressable, {
       ...props,
       testID: props.testID ?? 'mock-apple-button',
     });
@@ -121,7 +121,7 @@ jest.mock('@/components/Button', () => {
   const mockReact = jest.requireActual('react');
   const mockReactNative = jest.requireActual('react-native');
   return function MockButton({ text, onPress }: any) {
-    return mockReact.createElement(mockReactNative.TouchableOpacity, { onPress }, text);
+    return mockReact.createElement(mockReactNative.Pressable, { onPress }, text);
   };
 });
 

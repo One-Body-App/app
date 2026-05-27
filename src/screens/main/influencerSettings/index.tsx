@@ -1,13 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import {
-  Animated,
-  Linking,
-  ScrollView,
-  Switch,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Linking, ScrollView, Switch, TextInput, Pressable, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -320,14 +312,14 @@ function InfluencerSettingsForm({
       );
     } else {
       sourceFooter = (
-        <TouchableOpacity style={styles.addSourceBtn} onPress={addSource} activeOpacity={0.75}>
+        <Pressable style={styles.addSourceBtn} onPress={addSource}>
           <View style={styles.addSourceCircle}>
             <StyledText style={styles.addSourcePlus}>+</StyledText>
           </View>
           <StyledText style={styles.addSourceLabel}>
             Add Content Source ({sources.length}/{MAX_SOURCES})
           </StyledText>
-        </TouchableOpacity>
+        </Pressable>
       );
     }
   }
@@ -407,10 +399,9 @@ function InfluencerSettingsForm({
                 {BADGES.map((badge) => {
                   const isSelected = selectedBadges.includes(badge);
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={badge}
                       onPress={() => toggleBadge(badge)}
-                      activeOpacity={0.75}
                       style={[
                         styles.badgeChip,
                         isSelected && styles.badgeChipSelected,
@@ -422,7 +413,7 @@ function InfluencerSettingsForm({
                       >
                         {badge}
                       </StyledText>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -467,13 +458,12 @@ function InfluencerSettingsForm({
                       />
                     </View>
                     {!isPinned ? (
-                      <TouchableOpacity
+                      <Pressable
                         style={[styles.sourceDeleteBtn, { backgroundColor: colors.card }]}
                         onPress={() => removeSource(src.id)}
-                        activeOpacity={0.7}
                       >
                         <StyledText style={styles.sourceDeleteText}>x</StyledText>
-                      </TouchableOpacity>
+                      </Pressable>
                     ) : null}
                   </View>
                 </View>
@@ -538,16 +528,15 @@ function InfluencerSettingsForm({
         style={[styles.saveBar, { backgroundColor: colors.background }]}
         pointerEvents="box-none"
       >
-        <TouchableOpacity
+        <Pressable
           style={[styles.saveBtn, (isSaving || isLocked) && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={isSaving || isLocked}
-          activeOpacity={0.8}
         >
           <StyledText style={styles.saveBtnText}>
             {isSaving ? 'Saving...' : 'Save Settings'}
           </StyledText>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* ── Toast ──────────────────────────────────────────────── */}
@@ -584,13 +573,12 @@ function InfluencerSettings() {
           <StyledText style={styles.claimBody}>
             Verify your identity to take ownership of this Creator profile and unlock full access.
           </StyledText>
-          <TouchableOpacity
+          <Pressable
             style={styles.claimBtn}
             onPress={() => Linking.openURL('onebody://verification')}
-            activeOpacity={0.8}
           >
             <StyledText style={styles.claimBtnText}>Claim This Account</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );
@@ -606,9 +594,8 @@ function InfluencerSettings() {
         status={status}
         userToken={userToken}
       />
-      <TouchableOpacity
+      <Pressable
         onPress={() => navigation.navigate('CreatorBlogDashboard' as never)}
-        activeOpacity={0.82}
         style={{
           position: 'absolute',
           right: spacing.x24,
@@ -622,7 +609,7 @@ function InfluencerSettings() {
         <StyledText style={{ color: '#FFFFFF', fontFamily: 'Rubik-Medium', fontSize: 13 }}>
           Manage Blogs
         </StyledText>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }

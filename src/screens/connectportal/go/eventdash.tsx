@@ -2,13 +2,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   Platform,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -381,7 +381,7 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
           </View>
 
           <View style={styles.quickActions}>
-            <TouchableOpacity
+            <Pressable
               style={[styles.actionCard, styles.actionCardPrimary]}
               onPress={async () => {
                 const draft = await createConnectPortalDraft();
@@ -390,9 +390,9 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
             >
               <Text style={styles.actionPrimaryTitle}>New Event</Text>
               <Text style={styles.actionPrimaryBody}>Start the seven-step event flow.</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               style={styles.actionCard}
               onPress={() => navigation.navigate('ConnectGoMyEvents')}
             >
@@ -400,9 +400,9 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
               <Text style={styles.actionSecondaryBody}>
                 Drafts, active events, and event history.
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               style={styles.actionCard}
               onPress={() => navigation.navigate('ConnectGoMyEvents', { initialFilter: 'Draft' })}
             >
@@ -410,9 +410,9 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
               <Text style={styles.actionSecondaryBody}>
                 {draftEvents.length} saved draft{draftEvents.length === 1 ? '' : 's'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               style={styles.actionCard}
               disabled={!featuredEvent}
               onPress={() => {
@@ -425,14 +425,14 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
               <Text style={styles.actionSecondaryBody}>
                 {featuredEvent ? 'Open the featured event report.' : 'No event selected yet.'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Active Events</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('ConnectGoMyEvents')}>
+            <Pressable onPress={() => navigation.navigate('ConnectGoMyEvents')}>
               <Text style={styles.sectionLink}>View all</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {activeEvents.slice(0, 3).map((eventRecord) => {
@@ -455,22 +455,22 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
                 </View>
 
                 <View style={styles.eventActions}>
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.eventActionPrimary}
                     onPress={() =>
                       navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
                     }
                   >
                     <Text style={styles.eventActionPrimaryText}>Manage Event</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </Pressable>
+                  <Pressable
                     style={styles.eventActionSecondary}
                     onPress={() =>
                       navigation.navigate('ConnectGoEventAnalytics', { eventId: eventRecord.id })
                     }
                   >
                     <Text style={styles.eventActionSecondaryText}>Analytics</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               </View>
             );

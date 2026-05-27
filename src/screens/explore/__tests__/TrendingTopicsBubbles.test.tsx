@@ -1,14 +1,15 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 
-import TrendingTopicsBubbles, {
+import TrendingTopicsBubbles from '../TrendingTopicsBubbles';
+import {
   getTopicMetrics,
   getTopicScale,
   getTopicTier,
   mapTrendingTopicResponse,
   TAP_ANIMATION_DURATION_MS,
   TRENDING_TOPICS_MOCK_DATA,
-} from '../TrendingTopicsBubbles';
+} from '../TrendingTopicsBubbles.utils';
 
 describe('TrendingTopicsBubbles', () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, View, ScrollView, Pressable } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/components/Header';
@@ -11,9 +11,9 @@ function PrivacyPolicy({ navigation }: { navigation: any }) {
       <Header
         title="Privacy Policy"
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back-outline" size={20} />
-          </TouchableOpacity>
+          </Pressable>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
       />

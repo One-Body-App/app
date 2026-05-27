@@ -6,11 +6,11 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
-  SafeAreaView,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -155,10 +155,10 @@ export default function ServeJobPage({ navigation, route }: Props) {
 
         {/* Action Buttons */}
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+          <Pressable style={styles.applyButton} onPress={handleApply}>
             <Text style={styles.applyButtonText}>Apply</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             style={[styles.saveButton, { backgroundColor: palette.inputBg }]}
             onPress={() => setIsSaved((current) => !current)}
           >
@@ -166,14 +166,14 @@ export default function ServeJobPage({ navigation, route }: Props) {
             <Text style={[styles.saveButtonText, { color: palette.text }]}>
               {isSaved ? 'Saved' : 'Save'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Details Section */}
         <DetailCard title="Posted by">
-          <TouchableOpacity>
+          <Pressable>
             <Text style={styles.linkText}>{job.organizationName}</Text>
-          </TouchableOpacity>
+          </Pressable>
           <Text style={[styles.subText, { color: palette.subText }]}>{job.denomination}</Text>
         </DetailCard>
 
@@ -228,13 +228,10 @@ export default function ServeJobPage({ navigation, route }: Props) {
 
         {hasExternalLinkMethod ? (
           <DetailCard title="Application URL">
-            <TouchableOpacity
-              style={styles.urlRow}
-              onPress={() => handleOpenLink(job.applicationUrl)}
-            >
+            <Pressable style={styles.urlRow} onPress={() => handleOpenLink(job.applicationUrl)}>
               <Text style={styles.linkIcon}>🔗</Text>
               <Text style={styles.linkText}>{job.applicationUrl}</Text>
-            </TouchableOpacity>
+            </Pressable>
           </DetailCard>
         ) : null}
 

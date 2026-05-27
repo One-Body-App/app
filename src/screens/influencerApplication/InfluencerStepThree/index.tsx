@@ -1,18 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Platform, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomModal from '@/src/components/CustomModal';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { FeedTypes } from '@/src/screens/home';
@@ -358,22 +350,22 @@ function CreatorStepThree({ navigation, route }: Props) {
       <View style={styles.headerWrap}>
         <View style={styles.header}>
           <View style={styles.headerSide}>
-            <TouchableOpacity
+            <Pressable
               style={styles.headerIconButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text style={styles.headerTitle}>Creator Application</Text>
           <View style={[styles.headerSide, styles.headerActionContainer]}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => setShowQuitModal(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={styles.headerActionText}>Quit</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -570,13 +562,13 @@ function CreatorStepThree({ navigation, route }: Props) {
               )}
             </View>
           ) : (
-            <TouchableOpacity
+            <Pressable
               style={styles.addAdditionalLinkButton}
               onPress={() => setShowAdditionalLink(true)}
             >
               <MaterialCommunityIcons name="plus-circle-outline" size={18} color={palette.accent} />
               <Text style={styles.addAdditionalLinkText}>Add another social link</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
 
@@ -613,12 +605,12 @@ function CreatorStepThree({ navigation, route }: Props) {
           </View>
         </View>
         <View style={styles.footerActions}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.continueButton} onPress={onNext}>
+          </Pressable>
+          <Pressable style={styles.continueButton} onPress={onNext}>
             <Text style={styles.continueButtonText}>Continue</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -635,16 +627,16 @@ function CreatorStepThree({ navigation, route }: Props) {
           </Text>
 
           <View style={styles.quitModalActions}>
-            <TouchableOpacity
+            <Pressable
               style={styles.quitModalSecondaryButton}
               onPress={() => setShowQuitModal(false)}
             >
               <Text style={styles.quitModalSecondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity style={styles.quitModalPrimaryButton} onPress={handleQuit}>
+            <Pressable style={styles.quitModalPrimaryButton} onPress={handleQuit}>
               <Text style={styles.quitModalPrimaryButtonText}>Quit</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </CustomModal>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, FlatList, TouchableOpacity } from 'react-native';
+import { Text, View, FlatList, Pressable } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import AntDesign from '@react-native-vector-icons/ant-design';
 import { useSelector } from 'react-redux';
@@ -23,9 +23,9 @@ function Faqs({ navigation }: { navigation: any }) {
       <Header
         title="FAQs"
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={20} />
-          </TouchableOpacity>
+          </Pressable>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
       />
@@ -46,7 +46,7 @@ function Faqs({ navigation }: { navigation: any }) {
                 borderRadius: 10,
               }}
             >
-              <TouchableOpacity
+              <Pressable
                 onPress={() =>
                   selectedIndex == index ? setSelectedIndex(null) : setSelectedIndex(index)
                 }
@@ -74,7 +74,7 @@ function Faqs({ navigation }: { navigation: any }) {
                 ) : (
                   <AntDesign name="down" color={Colors.primarySapphire[500]} size={15} />
                 )}
-              </TouchableOpacity>
+              </Pressable>
               {selectedIndex == index ? (
                 <View
                   style={{

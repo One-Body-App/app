@@ -1,14 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Image,
-  Share,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Image, Share, Platform, Pressable, StyleSheet, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import FastImage from 'react-native-fast-image';
@@ -174,20 +165,19 @@ const InlineReactionBar = React.forwardRef<
       ]}
     >
       {REACTION_BAR_ITEMS.map((reaction) => (
-        <TouchableOpacity
+        <Pressable
           key={reaction.id}
           onPress={() => {
             onReactionSelect(reaction);
             dismissReactions();
           }}
-          activeOpacity={0.8}
           style={{ marginHorizontal: REACTION_BAR_HORIZONTAL_MARGIN }}
         >
           <Image
             source={{ uri: reaction.iconUrl }}
             style={{ width: REACTION_BAR_ICON_SIZE, height: REACTION_BAR_ICON_SIZE }}
           />
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </Animated.View>
   );
@@ -689,20 +679,19 @@ function WatchOverlay({
             },
           ]}
         >
-          <TouchableOpacity activeOpacity={0.85} onPress={onProfilePress} style={styles.avatarWrap}>
+          <Pressable onPress={onProfilePress} style={styles.avatarWrap}>
             <FastImage source={{ uri: profileImage }} style={styles.avatar} resizeMode="cover" />
             {shouldShowFollowBadge ? (
               <View style={styles.followBadge}>
                 <MaterialIcons name="add" size={16} color="#032f3c" />
               </View>
             ) : null}
-          </TouchableOpacity>
+          </Pressable>
 
           <View style={styles.reactionRailSlot}>
-            <TouchableOpacity
+            <Pressable
               onLongPress={showReactionBar}
               delayLongPress={180}
-              activeOpacity={0.85}
               onPress={async () => {
                 if (isReactionUpdatingRef.current) {
                   return;
@@ -730,7 +719,7 @@ function WatchOverlay({
                   />
                 )}
               </Animated.View>
-            </TouchableOpacity>
+            </Pressable>
             {totalReactionCount > 0 ? (
               <Pressable onPress={() => openReactionsModal('all')}>
                 <StyledText style={styles.actionCount}>
@@ -751,24 +740,16 @@ function WatchOverlay({
             ) : null}
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={onCommentsPress}
-            style={styles.actionRailItem}
-          >
+          <Pressable onPress={onCommentsPress} style={styles.actionRailItem}>
             <View style={styles.actionPill}>
               <MaterialIcons name="chat-bubble-outline" size={32} color="#ffffff" />
             </View>
             {commentCount > 0 ? (
               <StyledText style={styles.actionCount}>{formatCompactCount(commentCount)}</StyledText>
             ) : null}
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={openRepostSheet}
-            style={styles.actionRailItem}
-          >
+          <Pressable onPress={openRepostSheet} style={styles.actionRailItem}>
             <View style={styles.actionPill}>
               <RepeatIcon width={30} height={30} color="#ffffff" />
             </View>
@@ -777,9 +758,9 @@ function WatchOverlay({
                 {formatCompactCount(displayRepostCount)}
               </StyledText>
             ) : null}
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity activeOpacity={0.85} onPress={toggleSave} style={styles.actionRailItem}>
+          <Pressable onPress={toggleSave} style={styles.actionRailItem}>
             <View style={styles.actionPill}>
               <MaterialIcons
                 name={isSaved ? 'bookmark' : 'bookmark-border'}
@@ -787,17 +768,13 @@ function WatchOverlay({
                 color="#ffffff"
               />
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => setShowOptions(true)}
-            style={styles.actionRailItem}
-          >
+          <Pressable onPress={() => setShowOptions(true)} style={styles.actionRailItem}>
             <View style={[styles.actionPill, styles.morePill]}>
               <FontAwesomeIcon icon={faEllipsis} color="#ffffff" size={22} />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {shouldShowCaption ? (
@@ -810,11 +787,7 @@ function WatchOverlay({
               },
             ]}
           >
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={onProfilePress}
-              style={styles.handleRow}
-            >
+            <Pressable onPress={onProfilePress} style={styles.handleRow}>
               <StyledText style={styles.handleText}>{handle}</StyledText>
               {item.userData?.isApprovedInfluencer ? (
                 <MaterialCommunityIcons
@@ -824,7 +797,7 @@ function WatchOverlay({
                   style={{ marginLeft: spacing.x8 }}
                 />
               ) : null}
-            </TouchableOpacity>
+            </Pressable>
 
             <ParsedText
               text={item.content.trim()}
@@ -880,7 +853,7 @@ function WatchOverlay({
           <View style={styles.sheetGrabber} />
         </View>
         <View style={styles.sheetContent}>
-          <TouchableOpacity
+          <Pressable
             disabled={isReposting}
             onPress={repostNow}
             style={[styles.sheetRow, isReposting ? { opacity: 0.6 } : null]}
@@ -894,8 +867,8 @@ function WatchOverlay({
                 Instantly share this post to your feed
               </StyledText>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             disabled={isReposting}
             onPress={openQuoteComposer}
             style={[styles.sheetRow, isReposting ? { opacity: 0.6 } : null]}
@@ -909,8 +882,8 @@ function WatchOverlay({
                 Add your own thoughts before sharing
               </StyledText>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={sharePost} style={styles.sheetRow}>
+          </Pressable>
+          <Pressable onPress={sharePost} style={styles.sheetRow}>
             <View style={styles.sheetIcon}>
               <MaterialCommunityIcons name="share-variant-outline" size={24} color="#126b87" />
             </View>
@@ -920,14 +893,14 @@ function WatchOverlay({
                 Send this watch post outside the app
               </StyledText>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             disabled={isReposting}
             onPress={() => setShowRepostSheet(false)}
             style={styles.cancelButton}
           >
             <StyledText style={styles.cancelButtonText}>Cancel</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </CustomModal>
 

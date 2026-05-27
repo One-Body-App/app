@@ -1,13 +1,13 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -259,7 +259,7 @@ function SinglePost({ navigation, route }: Props) {
             backgroundColor={colors.background}
           />
           <View style={singleStyles.header}>
-            <TouchableOpacity
+            <Pressable
               onPress={handleBackPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={singleStyles.backButton}
@@ -269,7 +269,7 @@ function SinglePost({ navigation, route }: Props) {
                 size={28}
                 color={dark ? colors.text : Colors.primary.brand}
               />
-            </TouchableOpacity>
+            </Pressable>
             <Text style={[singleStyles.headerTitle, { color: colors.text }]}>Comment</Text>
           </View>
         </>

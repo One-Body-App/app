@@ -2,7 +2,7 @@ import React, { useState, SetStateAction, Dispatch, ReactElement, useEffect } fr
 import {
   FlatList,
   Platform,
-  TouchableOpacity,
+  Pressable,
   View,
   PermissionsAndroid,
   ActivityIndicator,
@@ -21,18 +21,7 @@ import StyledTextInput from './styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import CustomModal from './CustomModal';
 import { MAPBOX_PUBLIC_TOKEN } from '@/services/constants';
-
-export enum MapBoxTypes {
-  country = 'country',
-  region = 'region',
-  postcode = 'postcode',
-  district = 'district',
-  place = 'place',
-  locality = 'locality',
-  neighborhood = 'neighborhood',
-  address = 'address',
-  poi = 'poi',
-}
+import { MapBoxTypes, type MapSuggestion } from './MapBoxTypes';
 
 type MapBoxProps = {
   location: MapSuggestion | null;
@@ -45,19 +34,6 @@ type MapBoxProps = {
   countries?: string[];
   modalTitle: ReactElement;
   inline?: boolean;
-};
-
-export type MapSuggestion = {
-  bbox: number[];
-  center: number[];
-  geometry: { type: string; coordinates: number[] };
-  id: string;
-  place_name: string;
-  place_type: string[];
-  properties: { wikidata: string; short_code: string };
-  relevance: 1;
-  text: string;
-  type: string;
 };
 
 let timer: NodeJS.Timeout | null = null;
@@ -235,14 +211,14 @@ function MapBox({
           {loading ? (
             <ActivityIndicator animating size="small" color={colors.text} />
           ) : (
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 setLoading(true);
                 getlocationPermison();
               }}
             >
               <Gps size={20} color={Colors.primarySapphire.brand} />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       }
@@ -267,7 +243,7 @@ function MapBox({
       }
       renderItem={({ item }) => {
         return (
-          <TouchableOpacity
+          <Pressable
             onPress={() => {
               if (setLongitude) setLongitude(item?.center[0]);
               if (setLatitude) setLatitude(item?.center[1]);
@@ -284,7 +260,7 @@ function MapBox({
                 {item.place_name}
               </StyledText>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         );
       }}
     />
@@ -311,14 +287,14 @@ function MapBox({
           >
             {modalTitle}
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 // setModalVisible(false);
                 onclose();
               }}
             >
               <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : null}
         {searchInput}

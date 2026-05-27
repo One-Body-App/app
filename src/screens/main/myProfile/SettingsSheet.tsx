@@ -1,6 +1,6 @@
 import { Edit, Setting2, ProfileAdd, Star1, UserRemove, LogoutCurve } from 'iconsax-react-native';
 import React, { useState } from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Pressable, ScrollView } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import Rate, { AndroidMarket } from 'react-native-rate';
 import Feather from '@react-native-vector-icons/feather';
@@ -75,14 +75,14 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
           backgroundColor: colors.background,
         }}
       >
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
             setShowModal(false);
           }}
           style={{ alignSelf: 'flex-end' }}
         >
           <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
-        </TouchableOpacity>
+        </Pressable>
         <View
           style={{
             paddingHorizontal: spacing.x16,

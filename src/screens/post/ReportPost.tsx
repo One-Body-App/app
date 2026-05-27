@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
@@ -5,11 +6,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -205,12 +205,12 @@ function ReportPost({ navigation, route }: Props) {
             paddingBottom: spacing.x16,
           }}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={() => navigation.goBack()}
             style={{ width: 40, height: 40, justifyContent: 'center' }}
           >
             <MaterialCommunityIcons name="chevron-left" size={30} color={titleColor} />
-          </TouchableOpacity>
+          </Pressable>
           <StyledText style={[header.h2, { color: titleColor }]}>Report Post</StyledText>
           <View style={{ width: 40 }} />
         </View>
@@ -258,7 +258,7 @@ function ReportPost({ navigation, route }: Props) {
                     paddingHorizontal: spacing.x5,
                   };
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.key}
                   onPress={() => setSelectedOptionKey(option.key)}
                   style={{
@@ -291,7 +291,7 @@ function ReportPost({ navigation, route }: Props) {
                   ) : (
                     <MaterialCommunityIcons name="chevron-right" size={24} color="#9ca3af" />
                   )}
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -343,7 +343,7 @@ function ReportPost({ navigation, route }: Props) {
             backgroundColor: surfaceColor,
           }}
         >
-          <TouchableOpacity
+          <Pressable
             disabled={!canSubmit}
             onPress={submitReport}
             style={{
@@ -369,7 +369,7 @@ function ReportPost({ navigation, route }: Props) {
             >
               {isSubmitting ? 'Submitting...' : 'Submit Report'}
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -1,13 +1,14 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import VideoProcessingRuntime, {
+import VideoProcessingRuntime from '../VideoProcessingRuntime';
+import {
   collectPendingVideoUploadToastEvents,
   getPendingVideoUploadToastEvent,
   shouldAutoResumePendingVideoUploads,
   shouldStartPendingVideoUploadsOnRuntime,
   shouldResumePendingVideoUploadsOnLifecycle,
   VIDEO_UPLOAD_RESUME_DELAY_MS,
-} from '../VideoProcessingRuntime';
+} from '../VideoProcessingRuntime.utils';
 import type { PendingVideoUpload } from '@/src/services/videoProcessing/types';
 
 jest.mock('@/src/services/videoProcessing/videoUploadQueue', () => ({

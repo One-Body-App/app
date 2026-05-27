@@ -8,7 +8,7 @@ import {
   Platform,
   TextInput as RNTextInput,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
@@ -682,7 +682,7 @@ function WatchComments({
           <Text style={watchStyles.headerCount}>{commentCount}</Text>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           style={watchStyles.closeButton}
           onPress={() => {
             onClose();
@@ -690,7 +690,7 @@ function WatchComments({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <MaterialCommunityIcons name="close" size={28} color={COLORS.slate100} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <BottomSheetFlatList
@@ -731,7 +731,7 @@ function WatchComments({
         {editingCommentId ? (
           <View style={watchStyles.replyingBanner}>
             <Text style={watchStyles.replyingText}>Editing comment</Text>
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 stopEditing();
               }}
@@ -741,7 +741,7 @@ function WatchComments({
                 size={16}
                 color={COLORS.primary}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : null}
 
@@ -783,7 +783,7 @@ function WatchComments({
             />
           </View>
 
-          <TouchableOpacity
+          <Pressable
             disabled={!canPost}
             onPress={() => {
               submitComment().catch(() => undefined);
@@ -791,12 +791,12 @@ function WatchComments({
             style={[watchStyles.postButton, !canPost ? watchStyles.postButtonDisabled : undefined]}
           >
             <Text style={watchStyles.postButtonText}>{editingCommentId ? 'Save' : 'Post'}</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={watchStyles.emojiRow}>
           {QUICK_EMOJIS.map((emoji) => (
-            <TouchableOpacity
+            <Pressable
               key={emoji}
               onPress={() => {
                 mentionComposer.setText((previous) =>
@@ -805,7 +805,7 @@ function WatchComments({
               }}
             >
               <Text style={watchStyles.emoji}>{emoji}</Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
       </View>

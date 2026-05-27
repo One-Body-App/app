@@ -5,14 +5,14 @@ import {
   FlatList,
   Linking,
   Platform,
-  SafeAreaView,
   Share,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import RNFS from 'react-native-fs';
@@ -29,6 +29,7 @@ import type {
   ConnectServeJobRecord,
 } from '@/src/services/connectPortal/types';
 import { BRAND_COLORS, ServeHeader, useServePalette } from '../shared';
+import { buildApplicationsCsv, buildApplicationsCsvFileName } from './srvapplications.utils';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeApplications'>;
 
@@ -42,18 +43,6 @@ type ApplicantCardTheme = {
   resumeBg: string;
   resumeText: string;
 };
-
-const CSV_HEADERS = [
-  'Name',
-  'Email',
-  'Phone',
-  'Location',
-  'Submitted At',
-  'Resume File Name',
-  'Resume URL',
-  'Consent Accepted',
-  'Testimony',
-];
 
 const LIGHT_SCREEN_COLORS = {
   background: BRAND_COLORS.grays[100],
@@ -80,50 +69,6 @@ const LIGHT_SCREEN_COLORS = {
   iconColor: BRAND_COLORS.primaryDark,
   resumeBg: '#E9F5F7',
   resumeText: BRAND_COLORS.primaryDark,
-};
-
-const escapeCsvValue = (value: string) => `"${value.replace(/"/g, '""')}"`;
-
-const normalizeCsvValue = (value: string | boolean) => {
-  if (typeof value === 'boolean') {
-    return escapeCsvValue(value ? 'Yes' : 'No');
-  }
-
-  return escapeCsvValue(value);
-};
-
-export const buildApplicationsCsv = (applications: ConnectServeJobApplicationRecord[]) =>
-  [
-    CSV_HEADERS.map(escapeCsvValue).join(','),
-    ...applications.map((application) =>
-      [
-        normalizeCsvValue(application.name),
-        normalizeCsvValue(application.email),
-        normalizeCsvValue(application.phone),
-        normalizeCsvValue(application.location),
-        normalizeCsvValue(
-          application.createdAt
-            ? formatConnectPortalDate(String(application.createdAt).slice(0, 10))
-            : 'Recently submitted'
-        ),
-        normalizeCsvValue(application.resumeFileName),
-        normalizeCsvValue(application.resumeFileUrl),
-        normalizeCsvValue(application.consentAccepted),
-        normalizeCsvValue(application.testimony),
-      ].join(',')
-    ),
-  ].join('\n');
-
-export const slugifyJobTitle = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'serve-opportunity';
-
-export const buildApplicationsCsvFileName = (jobTitle: string, now = new Date()) => {
-  const isoDate = now.toISOString().slice(0, 10);
-  return `applications-${slugifyJobTitle(jobTitle)}-${isoDate}.csv`;
 };
 
 const getApplicantInitials = (name: string) => {
@@ -214,7 +159,7 @@ function ApplicantCard({
       </View>
 
       {applicant.resumeFileUrl ? (
-        <TouchableOpacity
+        <Pressable
           accessibilityRole="button"
           accessibilityLabel={`View resume for ${applicant.name}`}
           onPress={onResumePress}
@@ -225,7 +170,7 @@ function ApplicantCard({
           <Text style={[styles.resumeButtonText, { color: theme.resumeText }]} numberOfLines={1}>
             {applicant.resumeFileName ? `View Resume: ${applicant.resumeFileName}` : 'View Resume'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -503,7 +448,7 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
             />
           </View>
 
-          <TouchableOpacity
+          <Pressable
             accessibilityLabel="Export applicants as CSV"
             accessibilityRole="button"
             disabled={!canExport}
@@ -530,7 +475,7 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
             >
               {exporting ? 'Exporting' : 'Export CSV'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );

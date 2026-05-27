@@ -3,14 +3,14 @@ import {
   Alert,
   Platform,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -98,7 +98,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
         <View style={[styles.header, { backgroundColor: palette.screenBackground }]}>
           {Platform.OS === 'android' ? (
             <>
-              <TouchableOpacity
+              <Pressable
                 style={styles.headerBackButton}
                 onPress={() => {
                   if (navigation.canGoBack()) {
@@ -109,14 +109,14 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                 }}
               >
                 <MaterialIcons name="chevron-left" size={32} color={GO_EVENT_ACCENT} />
-              </TouchableOpacity>
+              </Pressable>
               <View style={styles.headerAndroidTitleWrap}>
                 <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>My Events</Text>
                 <Text style={[styles.headerSubtitle, { color: palette.textSecondary }]}>
                   Drafts, active events, and event history
                 </Text>
               </View>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.addButton, { backgroundColor: GO_EVENT_ACCENT }]}
                 onPress={async () => {
                   const draft = await createConnectPortalDraft();
@@ -124,11 +124,11 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                 }}
               >
                 <Text style={[styles.addButtonText, { color: primaryBtnTextColor }]}>+</Text>
-              </TouchableOpacity>
+              </Pressable>
             </>
           ) : (
             <>
-              <TouchableOpacity
+              <Pressable
                 style={styles.headerBackButton}
                 onPress={() => {
                   if (navigation.canGoBack()) {
@@ -139,14 +139,14 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                 }}
               >
                 <MaterialIcons name="chevron-left" size={32} color={GO_EVENT_ACCENT} />
-              </TouchableOpacity>
+              </Pressable>
               <View style={styles.headerCenter}>
                 <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>My Events</Text>
                 <Text style={[styles.headerSubtitle, { color: palette.textSecondary }]}>
                   Drafts, active events, and event history
                 </Text>
               </View>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.addButton, { backgroundColor: GO_EVENT_ACCENT }]}
                 onPress={async () => {
                   const draft = await createConnectPortalDraft();
@@ -154,7 +154,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                 }}
               >
                 <Text style={[styles.addButtonText, { color: primaryBtnTextColor }]}>+</Text>
-              </TouchableOpacity>
+              </Pressable>
             </>
           )}
         </View>
@@ -190,7 +190,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
           {FILTERS.map((filterName) => {
             const isActive = activeFilter === filterName;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={filterName}
                 style={[
                   styles.filterChip,
@@ -209,7 +209,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                 >
                   {filterName}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -265,7 +265,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                 <View style={styles.actionRow}>
                   {isDraft ? (
                     <>
-                      <TouchableOpacity
+                      <Pressable
                         style={[
                           styles.actionButton,
                           styles.primaryButton,
@@ -281,8 +281,8 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                         <Text style={[styles.primaryButtonText, { color: primaryBtnTextColor }]}>
                           Resume Draft
                         </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </Pressable>
+                      <Pressable
                         style={[
                           styles.actionButton,
                           styles.secondaryButton,
@@ -306,11 +306,11 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                         <Text style={[styles.secondaryButtonText, { color: palette.textPrimary }]}>
                           Delete
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </>
                   ) : (
                     <>
-                      <TouchableOpacity
+                      <Pressable
                         style={[
                           styles.actionButton,
                           styles.primaryButton,
@@ -335,8 +335,8 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                         <Text style={[styles.primaryButtonText, { color: primaryBtnTextColor }]}>
                           Manage
                         </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </Pressable>
+                      <Pressable
                         style={[
                           styles.actionButton,
                           styles.secondaryButton,
@@ -351,7 +351,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                         <Text style={[styles.secondaryButtonText, { color: palette.textPrimary }]}>
                           Analytics
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </>
                   )}
                 </View>

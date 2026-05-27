@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { getConnectPortalEventById } from '@/src/services/connectPortal';
@@ -43,9 +36,9 @@ function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
         <View style={styles.header}>
           {Platform.OS === 'android' ? (
             <>
-              <TouchableOpacity onPress={() => navigation.navigate('ConnectGoEventDash')}>
+              <Pressable onPress={() => navigation.navigate('ConnectGoEventDash')}>
                 <Text style={[styles.headerButton, { color: palette.accent }]}>Close</Text>
-              </TouchableOpacity>
+              </Pressable>
               <View style={styles.headerTitleAndroidWrap}>
                 <Text
                   style={[
@@ -60,9 +53,9 @@ function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
             </>
           ) : (
             <>
-              <TouchableOpacity onPress={() => navigation.navigate('ConnectGoEventDash')}>
+              <Pressable onPress={() => navigation.navigate('ConnectGoEventDash')}>
                 <Text style={[styles.headerButton, { color: palette.accent }]}>Close</Text>
-              </TouchableOpacity>
+              </Pressable>
               <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>Success</Text>
               <View style={styles.headerSpacer} />
             </>
@@ -99,16 +92,16 @@ function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
             </Text>
           </View>
 
-          <TouchableOpacity
+          <Pressable
             style={[styles.primaryButton, { backgroundColor: palette.primaryBtnBg }]}
             onPress={() => navigation.navigate('ConnectGoEventDash')}
           >
             <Text style={[styles.primaryButtonText, { color: palette.primaryBtnText }]}>
               Go to Event Dashboard
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             style={[
               styles.secondaryButton,
               {
@@ -123,7 +116,7 @@ function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
             <Text style={[styles.secondaryButtonText, { color: palette.secondaryBtnText }]}>
               View Event
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </ScrollView>
       </View>
     </SafeAreaView>

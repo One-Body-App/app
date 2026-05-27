@@ -1,4 +1,4 @@
-import { getKeyboardAvoidanceOffset } from '../CustomModal';
+import { getKeyboardAvoidanceOffset } from '../CustomModal.utils';
 
 describe('getKeyboardAvoidanceOffset', () => {
   it('returns zero when keyboard avoidance is disabled', () => {

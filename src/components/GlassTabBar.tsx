@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Pressable, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
@@ -600,10 +600,9 @@ export default function GlassTabBar({
             });
 
             return (
-              <TouchableOpacity
+              <Pressable
                 key={getTabKey(tab, index)}
                 onPress={() => handleTabPress(index)}
-                activeOpacity={0.9}
                 style={styles.tabButton}
                 onLayout={(event) => {
                   const { x, width } = event.nativeEvent.layout;
@@ -676,7 +675,7 @@ export default function GlassTabBar({
                     </Animated.View>
                   </View>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </View>

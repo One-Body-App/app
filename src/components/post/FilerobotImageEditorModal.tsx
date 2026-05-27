@@ -1,13 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Modal, Platform, StyleSheet, Pressable, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import RNFS from 'react-native-fs';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
@@ -1454,19 +1447,19 @@ function FilerobotImageEditorModal({
       <SafeAreaView style={[styles.screen, { backgroundColor: 'transparent' }]}>
         <BrandPaletteBackground />
         <View style={styles.header}>
-          <TouchableOpacity onPress={onCancel} style={styles.headerIconButton}>
+          <Pressable onPress={onCancel} style={styles.headerIconButton}>
             <MaterialCommunityIcons name="close" size={24} color={brandText} />
-          </TouchableOpacity>
+          </Pressable>
           <StyledText style={[styles.headerTitle, { color: brandText }]}>Edit Photo</StyledText>
           <View style={styles.headerActions}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => triggerEditorAction('undo')}
               style={styles.secondaryActionButton}
               disabled={!editorReady || isSaving}
             >
               <StyledText style={styles.secondaryActionText}>Undo</StyledText>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={() => triggerEditorAction('save')}
               style={styles.primaryActionButton}
               disabled={!editorReady || isSaving}
@@ -1474,7 +1467,7 @@ function FilerobotImageEditorModal({
               <StyledText style={styles.primaryActionText}>
                 {isSaving ? 'Saving...' : 'Save'}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -1483,9 +1476,9 @@ function FilerobotImageEditorModal({
             <View style={styles.alertCard}>
               <StyledText style={styles.alertTitle}>{alertTitle}</StyledText>
               <StyledText style={styles.alertBody}>{errorMessage}</StyledText>
-              <TouchableOpacity onPress={onCancel} style={styles.alertButton}>
+              <Pressable onPress={onCancel} style={styles.alertButton}>
                 <StyledText style={styles.alertButtonText}>Choose Another Image</StyledText>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : null}
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
-  TouchableOpacity,
+  Pressable,
   Animated,
   Easing,
   InteractionManager,
@@ -283,14 +283,13 @@ function AccountType({ navigation, route }: Props) {
                 <View style={[StyleSheet.absoluteFillObject, glassOverlayStyle]} />
               </View>
             ) : null}
-            <TouchableOpacity
+            <Pressable
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 flex: 1,
                 paddingHorizontal: 10,
               }}
-              activeOpacity={0.9}
               onPress={() => animateSelection(AccountTypeType.individual)}
             >
               <View
@@ -353,7 +352,7 @@ function AccountType({ navigation, route }: Props) {
                   <View style={GeneralStyle.radioButtonIcon} />
                 ) : null}
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </Animated.View>
 
           <Animated.View
@@ -381,14 +380,13 @@ function AccountType({ navigation, route }: Props) {
                 <View style={[StyleSheet.absoluteFillObject, glassOverlayStyle]} />
               </View>
             ) : null}
-            <TouchableOpacity
+            <Pressable
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 flex: 1,
                 paddingHorizontal: 10,
               }}
-              activeOpacity={0.9}
               onPress={() => animateSelection(AccountTypeType.organization)}
             >
               <View
@@ -454,7 +452,7 @@ function AccountType({ navigation, route }: Props) {
                   <View style={GeneralStyle.radioButtonIcon} />
                 ) : null}
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </Animated.View>
         </View>
         <Animated.View
@@ -467,7 +465,7 @@ function AccountType({ navigation, route }: Props) {
             fadeUp(footerAnim, 10),
           ]}
         >
-          <TouchableOpacity
+          <Pressable
             style={[
               button.primary,
               {
@@ -507,8 +505,8 @@ function AccountType({ navigation, route }: Props) {
               </>
             ) : null}
             <StyledText style={{ color: '#FFF' }}>Continue</StyledText>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             style={{ flexDirection: 'row', alignSelf: 'center' }}
             onPress={async () => {
               if (continuePendingSocialSignup) {
@@ -519,7 +517,7 @@ function AccountType({ navigation, route }: Props) {
           >
             <StyledText style={{ color: primaryTextColor }}>Already have an account? </StyledText>
             <StyledText style={{ color: Colors.primarySapphire.brand }}>Sign in</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
       </View>
     </UserStepsLayout>

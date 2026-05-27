@@ -1,5 +1,6 @@
 import { ReactElement } from 'react';
-import { Platform, RefreshControlProps, SafeAreaView, View, ViewStyle } from 'react-native';
+import { Platform, RefreshControlProps, View, ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';

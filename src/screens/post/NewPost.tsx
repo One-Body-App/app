@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackScreenProps } from '@react-navigation/stack';
 import React, { useCallback, useRef, useState } from 'react';
 import {
@@ -7,10 +8,9 @@ import {
   KeyboardAvoidingView,
   Image,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -30,7 +30,7 @@ import {
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
 import EmojiPicker, { EmojiType } from 'rn-emoji-keyboard';
-import { isArray } from 'lodash';
+import isArray from 'lodash/isArray';
 import { useToast } from 'react-native-toast-notifications';
 import RNFS from 'react-native-fs';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -38,7 +38,8 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
 import GifIcon from '@/components/GifIcon';
-import MapBox, { MapSuggestion } from '@/components/MapBox';
+import MapBox from '@/components/MapBox';
+import type { MapSuggestion } from '@/components/MapBoxTypes';
 import { sanitizeComposerText } from '@/components/composer/composerText';
 import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
 import StyledText from '@/components/styled/Text';
@@ -972,7 +973,7 @@ function NewPost({ navigation, route }: Props) {
               marginBottom: spacing.x20,
             }}
           >
-            <TouchableOpacity
+            <Pressable
               style={{ padding: spacing.x5 }}
               onPress={() => {
                 if (navigation.canGoBack()) {
@@ -983,7 +984,7 @@ function NewPost({ navigation, route }: Props) {
               }}
             >
               <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
+            </Pressable>
             <StyledText
               style={{
                 ...fontSize.x6,
@@ -1221,7 +1222,7 @@ function NewPost({ navigation, route }: Props) {
                       const imageKey = `${image.uri}-${image.fileName ?? ''}-${image.fileSize ?? ''}`;
                       return (
                         <View key={imageKey} style={{ padding: 10 }}>
-                          <TouchableOpacity
+                          <Pressable
                             style={{
                               backgroundColor: Colors.primarySapphire.brand,
                               borderRadius: borderRadius.max,
@@ -1246,7 +1247,7 @@ function NewPost({ navigation, route }: Props) {
                             }}
                           >
                             <CloseCircle size="30" color="#fff" />
-                          </TouchableOpacity>
+                          </Pressable>
                           <View
                             style={{
                               height: 80,
@@ -1276,7 +1277,7 @@ function NewPost({ navigation, route }: Props) {
                     imagesObject?.map((image, index) => {
                       return (
                         <View key={image} style={{ padding: 10 }}>
-                          <TouchableOpacity
+                          <Pressable
                             style={{
                               backgroundColor: Colors.primarySapphire.brand,
                               borderRadius: borderRadius.max,
@@ -1296,7 +1297,7 @@ function NewPost({ navigation, route }: Props) {
                             }}
                           >
                             <CloseCircle size="30" color="#fff" />
-                          </TouchableOpacity>
+                          </Pressable>
                           <View
                             style={{
                               height: 80,
@@ -1331,7 +1332,7 @@ function NewPost({ navigation, route }: Props) {
                         overflow: 'hidden',
                       }}
                     >
-                      <TouchableOpacity
+                      <Pressable
                         style={{
                           backgroundColor: Colors.primarySapphire.brand,
                           borderRadius: borderRadius.max,
@@ -1347,7 +1348,7 @@ function NewPost({ navigation, route }: Props) {
                         }}
                       >
                         <CloseCircle size="30" color="#fff" />
-                      </TouchableOpacity>
+                      </Pressable>
                       <GiphyMediaView
                         media={mediaGif}
                         resizeMode="contain"
@@ -1373,7 +1374,7 @@ function NewPost({ navigation, route }: Props) {
                         justifyContent: 'center',
                       }}
                     >
-                      <TouchableOpacity
+                      <Pressable
                         style={{
                           backgroundColor: Colors.primarySapphire.brand,
                           borderRadius: borderRadius.max,
@@ -1387,7 +1388,7 @@ function NewPost({ navigation, route }: Props) {
                         onPress={() => removeAttachment(attachment.id)}
                       >
                         <CloseCircle size="30" color="#fff" />
-                      </TouchableOpacity>
+                      </Pressable>
                       <MaterialCommunityIcons
                         name={
                           attachment.type === 'document' ? 'file-document-outline' : 'link-variant'
@@ -1446,7 +1447,7 @@ function NewPost({ navigation, route }: Props) {
                     columnGap: spacing.x32,
                   }}
                 >
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       if (Platform.OS === 'ios') {
                         ActionSheetIOS.showActionSheetWithOptions(
@@ -1487,8 +1488,8 @@ function NewPost({ navigation, route }: Props) {
                       size={ACTION_BAR_ICON_SIZE}
                       color={Colors.primary.brand}
                     />
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </Pressable>
+                  <Pressable
                     onPress={async () => {
                       navigation.navigate('VideoPost', { openCameraOnMount: true });
                     }}
@@ -1498,8 +1499,8 @@ function NewPost({ navigation, route }: Props) {
                       size={ACTION_BAR_ICON_SIZE}
                       color={Colors.primary.brand}
                     />
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </Pressable>
+                  <Pressable
                     onPress={() => {
                       if (!ensureGiphyInitialized()) {
                         return;
@@ -1512,8 +1513,8 @@ function NewPost({ navigation, route }: Props) {
                     }}
                   >
                     <GifIcon size={ACTION_BAR_ICON_SIZE} color={Colors.primary.brand} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </Pressable>
+                  <Pressable
                     onPress={() => {
                       setLocationSelector(true);
                     }}
@@ -1523,9 +1524,9 @@ function NewPost({ navigation, route }: Props) {
                       size={ACTION_BAR_ICON_SIZE}
                       color={location ? Colors.primary.brand : Colors.neutral[300]}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                   {canOpenBlogComposer ? (
-                    <TouchableOpacity
+                    <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Open writer composer"
                       onPress={openBlogComposer}
@@ -1535,7 +1536,7 @@ function NewPost({ navigation, route }: Props) {
                         size={ACTION_BAR_ICON_SIZE}
                         color={Colors.primary.brand}
                       />
-                    </TouchableOpacity>
+                    </Pressable>
                   ) : null}
                 </View>
               </View>

@@ -14,7 +14,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
   type ViewToken,
 } from 'react-native';
@@ -82,11 +82,12 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
 import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
 import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
-import TrendingTopicsBubbles, {
+import TrendingTopicsBubbles from './TrendingTopicsBubbles';
+import {
   mapTrendingTopicResponse,
   TRENDING_TOPICS_MOCK_DATA,
   type TrendingTopicBubbleItem,
-} from './TrendingTopicsBubbles';
+} from './TrendingTopicsBubbles.utils';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'Explore'>,
@@ -1391,8 +1392,7 @@ function Explore({ navigation, route }: Props) {
 
       if (result.kind === 'watch') {
         return (
-          <TouchableOpacity
-            activeOpacity={0.88}
+          <Pressable
             onPress={() => handleOpenWatchPost(result.item)}
             style={[
               styles.watchCard,
@@ -1427,13 +1427,12 @@ function Explore({ navigation, route }: Props) {
                 {result.item.content}
               </StyledText>
             ) : null}
-          </TouchableOpacity>
+          </Pressable>
         );
       }
 
       return (
-        <TouchableOpacity
-          activeOpacity={0.9}
+        <Pressable
           onPress={() => handleOpenConnectPortal(result.item.connectTab)}
           style={[
             styles.connectSearchCard,
@@ -1464,7 +1463,7 @@ function Explore({ navigation, route }: Props) {
           <StyledText style={{ color: Colors.primarySapphire.brand, fontWeight: '700' }}>
             {result.item.searchKind === 'serve' ? 'Serve' : 'Go'}
           </StyledText>
-        </TouchableOpacity>
+        </Pressable>
       );
     },
     [
@@ -1553,9 +1552,8 @@ function Explore({ navigation, route }: Props) {
         const itemId = String(item.postId ?? item.id ?? '');
         const thumbnail = getMuxThumbnail(item.playBackId, item.mediaUrl);
         return (
-          <TouchableOpacity
+          <Pressable
             key={itemId}
-            activeOpacity={0.88}
             onPress={() => handleOpenWatchPost(item)}
             style={styles.trendingCard}
           >
@@ -1585,7 +1583,7 @@ function Explore({ navigation, route }: Props) {
                 {item.reactions?.length ?? 0}
               </StyledText>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </ScrollView>
@@ -1628,7 +1626,7 @@ function Explore({ navigation, route }: Props) {
                 <StyledText style={styles.featuredBadge}>{featuredVoice.badge}</StyledText>
               ) : null}
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.featuredFollowBtn}
               onPress={() => {
                 setNewCreatorsItems((prev) =>
@@ -1643,7 +1641,7 @@ function Explore({ navigation, route }: Props) {
               <StyledText style={styles.featuredFollowText}>
                 {featuredVoice.isFollowing ? 'Connected' : 'Connect'}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       ) : null}
@@ -1654,13 +1652,13 @@ function Explore({ navigation, route }: Props) {
           <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
             Trending
           </StyledText>
-          <TouchableOpacity
+          <Pressable
             onPress={() => {
               if (trendingVideos.length > 0) handleOpenWatchPost(trendingVideos[0]);
             }}
           >
             <StyledText style={styles.sectionActionText}>See All</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
         {isTrendingLoading && (
           <ActivityIndicator
@@ -1702,13 +1700,12 @@ function Explore({ navigation, route }: Props) {
             decelerationRate="fast"
           >
             {newCreatorsItems.map((creator) => (
-              <TouchableOpacity
+              <Pressable
                 key={creator.id}
                 style={[
                   styles.creatorCard,
                   { borderColor: surfaceBorderColor, backgroundColor: surfaceCardColor },
                 ]}
-                activeOpacity={0.9}
               >
                 <View style={styles.creatorAvatarFrame}>
                   <FastImage
@@ -1728,8 +1725,7 @@ function Explore({ navigation, route }: Props) {
                 >
                   {creator.name}
                 </StyledText>
-                <TouchableOpacity
-                  activeOpacity={0.9}
+                <Pressable
                   onPress={() => {
                     setNewCreatorsItems((previous) =>
                       previous.map((item) =>
@@ -1750,8 +1746,8 @@ function Explore({ navigation, route }: Props) {
                   >
                     {creator.isFollowing ? 'Connected' : 'Connect'}
                   </StyledText>
-                </TouchableOpacity>
-              </TouchableOpacity>
+                </Pressable>
+              </Pressable>
             ))}
           </ScrollView>
         )}
@@ -1806,9 +1802,9 @@ function Explore({ navigation, route }: Props) {
           <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
             Serve Opportunities
           </StyledText>
-          <TouchableOpacity onPress={() => handleOpenConnectPortal('Serve' as ConnectTab)}>
+          <Pressable onPress={() => handleOpenConnectPortal('Serve' as ConnectTab)}>
             <StyledText style={styles.sectionActionText}>See All</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
         {isServeLoading && (
           <ActivityIndicator
@@ -1823,9 +1819,8 @@ function Explore({ navigation, route }: Props) {
             contentContainerStyle={styles.horizontalContent}
           >
             {serveOpportunityItems.map((item) => (
-              <TouchableOpacity
+              <Pressable
                 key={item.id}
-                activeOpacity={0.88}
                 style={[
                   styles.serveCardHorizontal,
                   { borderColor: surfaceBorderColor, backgroundColor: surfaceCardColor },
@@ -1877,7 +1872,7 @@ function Explore({ navigation, route }: Props) {
                   color={secondaryTextColor}
                   style={{ alignSelf: 'center' }}
                 />
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </ScrollView>
         )}
@@ -1894,9 +1889,9 @@ function Explore({ navigation, route }: Props) {
           <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
             Go! Events
           </StyledText>
-          <TouchableOpacity onPress={() => handleOpenConnectPortal('Go!' as ConnectTab)}>
+          <Pressable onPress={() => handleOpenConnectPortal('Go!' as ConnectTab)}>
             <StyledText style={styles.sectionActionText}>See All</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
         {isEventsLoading && (
           <ActivityIndicator
@@ -1915,9 +1910,8 @@ function Explore({ navigation, route }: Props) {
               {goEvents.slice(0, 4).map((event: any) => {
                 const imageUri = event.heroImageUri ?? event.photoUri ?? '';
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={event._id ?? event.id}
-                    activeOpacity={0.9}
                     style={styles.goEventCard}
                     onPress={() => {
                       navigation.push(
@@ -1942,7 +1936,7 @@ function Explore({ navigation, route }: Props) {
                         </StyledText>
                       </View>
                     </ImageBackground>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>
@@ -1953,7 +1947,7 @@ function Explore({ navigation, route }: Props) {
                 const hoursUntil = differenceInHours(eventStart, new Date());
                 const isImminent = hoursUntil >= 0 && hoursUntil < 72;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={`list-${event._id ?? event.id}`}
                     style={styles.goEventRow}
                     onPress={() => {
@@ -1988,7 +1982,7 @@ function Explore({ navigation, route }: Props) {
                       size={20}
                       color={secondaryTextColor}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -2058,7 +2052,7 @@ function Explore({ navigation, route }: Props) {
 
         <View style={styles.headerRow}>
           <View style={styles.headerSideSlot}>
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               onPress={handleOpenDrawer}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2068,7 +2062,7 @@ function Explore({ navigation, route }: Props) {
               ) : (
                 <ProfileFill width={32} height={32} color={Colors.primarySapphire.brand} />
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View style={styles.headerCenterWrap} pointerEvents="none">
@@ -2098,7 +2092,7 @@ function Explore({ navigation, route }: Props) {
               autoCapitalize="none"
             />
             {searchText.length > 0 ? (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => handleSearchTextChange('')}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={styles.searchClearButton}
@@ -2108,7 +2102,7 @@ function Explore({ navigation, route }: Props) {
                   size={20}
                   color={dark ? Colors.neutral[300] : Colors.neutral[300]}
                 />
-              </TouchableOpacity>
+              </Pressable>
             ) : null}
           </View>
         </View>
@@ -2163,7 +2157,7 @@ function Explore({ navigation, route }: Props) {
                 const inactiveTextColor = dark ? Colors.neutral[300] : Colors.neutral[400];
 
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={chip.id}
                     onPress={() => setActiveFilter(chip.id)}
                     style={[
@@ -2182,7 +2176,7 @@ function Explore({ navigation, route }: Props) {
                     >
                       {chip.label}
                     </StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>

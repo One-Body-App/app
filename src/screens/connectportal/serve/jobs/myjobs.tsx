@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -45,7 +46,7 @@ function FilterSection({
           const isActive = option === selected;
           const activeTextColor = palette.isDark ? BRAND_COLORS.black : BRAND_COLORS.white;
           return (
-            <TouchableOpacity
+            <Pressable
               key={option}
               style={[
                 filterStyles.pill,
@@ -63,7 +64,7 @@ function FilterSection({
               >
                 {option}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>
@@ -112,16 +113,15 @@ function MyJobCard({
   }
 
   return (
-    <TouchableOpacity
+    <Pressable
       style={[styles.card, { backgroundColor: palette.cardBg, borderColor: palette.borderColor }]}
-      activeOpacity={0.85}
       onPress={onPress}
     >
       <View style={styles.cardHeader}>
         <Text style={[styles.jobTitle, { color: palette.text }]}>{title}</Text>
-        <TouchableOpacity onPress={onOptionsPress} style={styles.optionsButton}>
+        <Pressable onPress={onOptionsPress} style={styles.optionsButton}>
           <MaterialIcons name="more-vert" size={20} color={palette.subText} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={styles.metaRow}>
@@ -157,7 +157,7 @@ function MyJobCard({
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -186,7 +186,9 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
   );
 
   const categories = useMemo(() => {
-    const unique = Array.from(new Set(allMyJobs.map((job) => job.sector).filter(Boolean)));
+    const unique = Array.from(
+      new Set(allMyJobs.flatMap((job) => (job.sector ? [job.sector] : [])))
+    );
     return ['All', ...unique];
   }, [allMyJobs]);
 
@@ -251,29 +253,29 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
           navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
         }}
         rightAccessory={
-          <TouchableOpacity
+          <Pressable
             accessibilityRole="button"
             accessibilityLabel="Create opportunity"
             onPress={handlePostJob}
             style={styles.headerActionButton}
           >
             <MaterialIcons name="add" size={22} color={palette.text} />
-          </TouchableOpacity>
+          </Pressable>
         }
       />
       <ServeHubTabs activeTab="Created" navigation={navigation} palette={palette} />
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
+        <Pressable
           style={[styles.postJobButton, { backgroundColor: postJobButtonColor }]}
           onPress={handlePostJob}
         >
           <MaterialIcons name="add-box" size={18} color={ctaTextColor} style={styles.postJobIcon} />
           <Text style={[styles.postJobText, { color: ctaTextColor }]}>Post an Opportunity</Text>
-        </TouchableOpacity>
+        </Pressable>
 
         <View style={styles.actionRow}>
-          <TouchableOpacity
+          <Pressable
             style={[
               styles.filterButton,
               { backgroundColor: palette.inputBg, borderColor: palette.borderColor },
@@ -281,11 +283,11 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
             onPress={() => setFilterVisible(true)}
           >
             <FilterSortIcon width={18} height={18} color={palette.subText} />
-          </TouchableOpacity>
+          </Pressable>
           {hasActiveFilters ? (
-            <TouchableOpacity onPress={handleClearFilters}>
+            <Pressable onPress={handleClearFilters}>
               <Text style={[styles.clearFilterText, { color: palette.accent }]}>Clear filters</Text>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
         </View>
 
@@ -344,12 +346,12 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
 
           <View style={filterStyles.headerRow}>
             <Text style={[filterStyles.headerTitle, { color: palette.text }]}>Filter</Text>
-            <TouchableOpacity
+            <Pressable
               onPress={() => setFilterVisible(false)}
               style={[filterStyles.closeButton, { backgroundColor: modalCloseBg }]}
             >
               <MaterialIcons name="close" size={20} color={palette.subText} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <ScrollView
@@ -381,7 +383,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
           </ScrollView>
 
           <View style={[filterStyles.footer, { borderTopColor: palette.borderColor }]}>
-            <TouchableOpacity
+            <Pressable
               style={[filterStyles.footerButton, { backgroundColor: palette.inputBg }]}
               onPress={() => {
                 handleClearFilters();
@@ -391,15 +393,15 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
               <Text style={[filterStyles.footerButtonText, { color: palette.text }]}>
                 Clear all
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={[filterStyles.footerButton, { backgroundColor: palette.accent }]}
               onPress={() => setFilterVisible(false)}
             >
               <Text style={[filterStyles.footerButtonText, { color: ctaTextColor }]}>
                 Apply filter
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </CustomModal>

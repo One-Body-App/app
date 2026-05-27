@@ -9,7 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
@@ -909,10 +909,9 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
             });
 
             return (
-              <TouchableOpacity
+              <Pressable
                 key={tab}
                 onPress={() => handleTabPress(tab)}
-                activeOpacity={0.9}
                 style={styles.mapTabButton}
                 onLayout={(event) => {
                   const { x, width } = event.nativeEvent.layout;
@@ -972,7 +971,7 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
                     </StyledText>
                   </Animated.View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </View>
@@ -1128,7 +1127,7 @@ export function ConnectRetractableSearchBar({
           ]}
           pointerEvents={expanded ? 'auto' : 'none'}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={collapse}
             style={[
               styles.retractableIconButton,
@@ -1139,7 +1138,7 @@ export function ConnectRetractableSearchBar({
             ]}
           >
             <MaterialIcons name="chevron-right" size={22} color={palette.mapSearchIcon} />
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         <Animated.View
@@ -1175,7 +1174,7 @@ export function ConnectRetractableSearchBar({
         </Animated.View>
 
         <View style={styles.retractableActionRow}>
-          <TouchableOpacity
+          <Pressable
             onPress={handleSearchPress}
             testID="connect-retractable-search-action"
             style={[
@@ -1187,10 +1186,10 @@ export function ConnectRetractableSearchBar({
             ]}
           >
             <MaterialIcons name="search" size={20} color={palette.mapSearchIcon} />
-          </TouchableOpacity>
+          </Pressable>
 
           {onAddPress ? (
-            <TouchableOpacity
+            <Pressable
               onPress={onAddPress}
               testID="connect-retractable-add-action"
               style={[
@@ -1202,11 +1201,11 @@ export function ConnectRetractableSearchBar({
               ]}
             >
               <MaterialIcons name="add" size={22} color={palette.mapSearchIcon} />
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
 
           {viewToggle ? (
-            <TouchableOpacity
+            <Pressable
               onPress={viewToggle.onPress}
               accessibilityLabel={viewToggle.accessibilityLabel}
               testID={viewToggle.testID || 'connect-retractable-view-toggle'}
@@ -1223,11 +1222,11 @@ export function ConnectRetractableSearchBar({
               ) : (
                 <MaterialIcons name="view-list" size={22} color={palette.mapSearchIcon} />
               )}
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
 
           {tertiaryAction ? (
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               accessibilityLabel={tertiaryAction.accessibilityLabel}
               onPress={tertiaryAction.onPress}
@@ -1246,7 +1245,7 @@ export function ConnectRetractableSearchBar({
               {tertiaryAction.icon === 'eventManager' ? (
                 <CalendarEditIcon width={18} height={18} color={palette.mapSearchIcon} />
               ) : null}
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
         </View>
       </Animated.View>
@@ -1274,7 +1273,7 @@ export function ConnectPortalChrome({
 
   if (onAddPress) {
     headerAction = (
-      <TouchableOpacity
+      <Pressable
         accessibilityRole="button"
         accessibilityLabel={addAccessibilityLabel}
         onPress={onAddPress}
@@ -1287,11 +1286,11 @@ export function ConnectPortalChrome({
         ]}
       >
         <MaterialIcons name="add" size={22} color={palette.mapSearchIcon} />
-      </TouchableOpacity>
+      </Pressable>
     );
   } else if ((headerActionIcon || headerActionIconName) && onHeaderActionPress) {
     headerAction = (
-      <TouchableOpacity
+      <Pressable
         accessibilityRole="button"
         accessibilityLabel={headerActionAccessibilityLabel}
         onPress={onHeaderActionPress}
@@ -1317,7 +1316,7 @@ export function ConnectPortalChrome({
           }
           return null;
         })()}
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
@@ -1371,7 +1370,7 @@ export function ConnectPortalChrome({
       ) : null}
 
       <View style={styles.topBar}>
-        <TouchableOpacity
+        <Pressable
           accessibilityRole="button"
           onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
           style={styles.chromeAvatarButton}
@@ -1381,7 +1380,7 @@ export function ConnectPortalChrome({
           ) : (
             <ProfileFill width={32} height={32} color={CONNECT_BRAND.primaryDark} />
           )}
-        </TouchableOpacity>
+        </Pressable>
 
         <View style={styles.titleWrap}>
           <StyledText style={[styles.titleText, { color: palette.textPrimary }]}>
@@ -1435,7 +1434,7 @@ export function ConnectMapSearchRow({
           style={[styles.mapSearchInput, { color: palette.textPrimary }]}
         />
         <View style={[styles.mapSearchDivider, { backgroundColor: palette.mapSearchDivider }]} />
-        <TouchableOpacity
+        <Pressable
           onPress={onOpenSecondaryAction}
           style={[
             styles.mapViewSwitchButton,
@@ -1454,8 +1453,8 @@ export function ConnectMapSearchRow({
               color={palette.mapSearchIcon}
             />
           )}
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           onPress={onSwitchToList}
           style={[
             styles.mapViewSwitchButton,
@@ -1466,7 +1465,7 @@ export function ConnectMapSearchRow({
           ]}
         >
           <MaterialCommunityIcons name="view-list" size={20} color={palette.mapSearchIcon} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
@@ -1476,7 +1475,7 @@ export function ConnectMapAvatarButton({ userAvatarUri }: MapAvatarButtonProps) 
   const navigation = useNavigation<any>();
 
   return (
-    <TouchableOpacity
+    <Pressable
       accessibilityRole="button"
       onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
       style={styles.mapAvatarButton}
@@ -1486,7 +1485,7 @@ export function ConnectMapAvatarButton({ userAvatarUri }: MapAvatarButtonProps) 
       ) : (
         <ProfileFill width={40} height={40} color={CONNECT_BRAND.primaryDark} />
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -1556,9 +1555,8 @@ export function ConnectPlacesQuickChips<T extends string = ConnectPlacesQuickChi
       {resolvedChips.map((chip) => {
         const isActive = chip === selectedChip;
         return (
-          <TouchableOpacity
+          <Pressable
             key={chip}
-            activeOpacity={0.9}
             onPress={() => onSelect(chip)}
             style={[
               styles.quickChip,
@@ -1611,14 +1609,13 @@ export function ConnectPlacesQuickChips<T extends string = ConnectPlacesQuickChi
             >
               {chip}
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
       {actionChip ? (
-        <TouchableOpacity
+        <Pressable
           key={`action-${actionChip.label}`}
           testID={actionChip.testID}
-          activeOpacity={0.9}
           onPress={actionChip.onPress}
           style={[
             styles.quickChip,
@@ -1660,7 +1657,7 @@ export function ConnectPlacesQuickChips<T extends string = ConnectPlacesQuickChi
           >
             {actionChip.label}
           </StyledText>
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
     </ScrollView>
   );
@@ -1693,7 +1690,7 @@ export function ConnectPortalFilterSheet({
         {options.map((option) => {
           const isActive = currentValue === option.value;
           return (
-            <TouchableOpacity
+            <Pressable
               key={`${title}-${option.value}`}
               onPress={() => onChange(isActive ? '' : option.value)}
               style={[
@@ -1716,7 +1713,7 @@ export function ConnectPortalFilterSheet({
               >
                 {option.label}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -1819,22 +1816,22 @@ export function ConnectPortalFilterSheet({
           <StyledText style={[styles.sheetTitle, { color: palette.textPrimary }]}>
             {title}
           </StyledText>
-          <TouchableOpacity onPress={onClose}>
+          <Pressable onPress={onClose}>
             <MaterialCommunityIcons name="close" size={20} color={palette.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {content}
 
         <View style={styles.sheetFooter}>
-          <TouchableOpacity onPress={onReset} style={styles.resetButton}>
+          <Pressable onPress={onReset} style={styles.resetButton}>
             <StyledText style={styles.resetButtonText}>Reset</StyledText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={styles.doneButton}>
+          </Pressable>
+          <Pressable onPress={onClose} style={styles.doneButton}>
             <StyledText style={[styles.doneButtonText, { color: palette.doneButtonText }]}>
               Done
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </CustomModal>
@@ -1870,7 +1867,7 @@ export function ConnectPlacesFilterSheet({
         {options.map((option) => {
           const isActive = currentValue === option.value;
           return (
-            <TouchableOpacity
+            <Pressable
               key={`${title}-${option.value}`}
               onPress={() => onChange(isActive ? '' : option.value)}
               style={[
@@ -1893,7 +1890,7 @@ export function ConnectPlacesFilterSheet({
               >
                 {option.label}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -1907,9 +1904,9 @@ export function ConnectPlacesFilterSheet({
           <StyledText style={[styles.sheetTitle, { color: palette.textPrimary }]}>
             Places Filters
           </StyledText>
-          <TouchableOpacity onPress={onClose}>
+          <Pressable onPress={onClose}>
             <MaterialCommunityIcons name="close" size={20} color={palette.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {renderOptionGroup('Sort', sortOptions, filters.sort, (value) =>
@@ -1951,14 +1948,14 @@ export function ConnectPlacesFilterSheet({
         </View>
 
         <View style={styles.sheetFooter}>
-          <TouchableOpacity onPress={onReset} style={styles.resetButton}>
+          <Pressable onPress={onReset} style={styles.resetButton}>
             <StyledText style={styles.resetButtonText}>Reset</StyledText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={styles.doneButton}>
+          </Pressable>
+          <Pressable onPress={onClose} style={styles.doneButton}>
             <StyledText style={[styles.doneButtonText, { color: palette.doneButtonText }]}>
               Done
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </CustomModal>
@@ -1974,8 +1971,7 @@ export function ConnectPlaceCard({
 }: PlaceCardProps) {
   const palette = useConnectPalette();
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
+    <Pressable
       onPress={onPress}
       disabled={!onPress}
       style={[
@@ -2001,11 +1997,11 @@ export function ConnectPlaceCard({
             </StyledText>
           </View>
         </View>
-        <TouchableOpacity onPress={onToggleFollow} style={styles.followButton}>
+        <Pressable onPress={onToggleFollow} style={styles.followButton}>
           <StyledText style={styles.followButtonText}>
             {isFollowing ? 'Following' : 'Follow'}
           </StyledText>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <StyledText style={[styles.placeAddress, { color: palette.textPrimary }]}>
@@ -2024,7 +2020,7 @@ export function ConnectPlaceCard({
           </View>
         ))}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -2075,9 +2071,9 @@ export function ConnectMapDetailPanel({
         </View>
 
         {actionLabel && onActionPress ? (
-          <TouchableOpacity onPress={onActionPress} style={styles.mapDetailAction}>
+          <Pressable onPress={onActionPress} style={styles.mapDetailAction}>
             <StyledText style={styles.mapDetailActionText}>{actionLabel}</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         ) : null}
       </View>
 
@@ -2195,7 +2191,7 @@ export function ConnectMapFloatingCard({
 
         <View style={styles.mapPreviewActionsRow}>
           {primaryAction ? (
-            <TouchableOpacity
+            <Pressable
               onPress={primaryAction.onPress}
               style={[
                 styles.mapPreviewAction,
@@ -2211,11 +2207,11 @@ export function ConnectMapFloatingCard({
               >
                 {primaryAction.label}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
 
           {secondaryAction ? (
-            <TouchableOpacity
+            <Pressable
               onPress={secondaryAction.onPress}
               style={[
                 styles.mapPreviewAction,
@@ -2231,18 +2227,18 @@ export function ConnectMapFloatingCard({
               >
                 {secondaryAction.label}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
         </View>
       </View>
 
       {onDismiss ? (
-        <TouchableOpacity
+        <Pressable
           onPress={onDismiss}
           style={[styles.mapPreviewDismissButton, { backgroundColor: palette.mapPreviewDismissBg }]}
         >
           <MaterialCommunityIcons name="close" size={18} color={palette.mapPreviewMeta} />
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
     </View>
   );

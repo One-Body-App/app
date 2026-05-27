@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, Pressable } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
@@ -61,7 +61,7 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
 
         <View style={{ flex: 4, marginTop: spacing.x32 }}>
           <StyledText>Church Attendance</StyledText>
-          <TouchableOpacity
+          <Pressable
             style={[
               card,
               {
@@ -90,9 +90,9 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
             >
               {churchAttend === 'Weekly' ? <View style={GeneralStyle.radioButtonIcon} /> : null}
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             style={[
               card,
               {
@@ -123,9 +123,9 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
             >
               {churchAttend === 'Bi-Weekly' ? <View style={GeneralStyle.radioButtonIcon} /> : null}
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             style={[
               card,
               {
@@ -160,9 +160,9 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 <View style={GeneralStyle.radioButtonIcon} />
               ) : null}
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             style={[
               card,
               {
@@ -197,7 +197,7 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 <View style={GeneralStyle.radioButtonIcon} />
               ) : null}
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </OnboardingStepsLayout>

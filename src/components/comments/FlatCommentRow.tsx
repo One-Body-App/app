@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Image, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, Text, Pressable, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import FastImage from 'react-native-fast-image';
@@ -153,7 +153,7 @@ function FlatCommentRow({
 
   return (
     <View style={[flatStyles.commentRow, { backgroundColor, borderBottomColor: borderColor }]}>
-      <TouchableOpacity
+      <Pressable
         disabled={!onUserPress || !comment.userData?._id}
         onPress={() => {
           if (onUserPress && comment.userData?._id) {
@@ -162,11 +162,10 @@ function FlatCommentRow({
         }}
       >
         <FastImage source={{ uri: profileImage }} style={flatStyles.avatar} resizeMode="cover" />
-      </TouchableOpacity>
+      </Pressable>
 
       <View style={flatStyles.commentBody}>
-        <TouchableOpacity
-          activeOpacity={onOpenThread ? 0.85 : 1}
+        <Pressable
           disabled={!onOpenThread}
           onPress={() => {
             onOpenThread?.(comment);
@@ -192,7 +191,7 @@ function FlatCommentRow({
             </View>
 
             {isOwnComment && onActionsPress ? (
-              <TouchableOpacity
+              <Pressable
                 onPress={(event) => {
                   event.stopPropagation();
                   onActionsPress(comment);
@@ -204,7 +203,7 @@ function FlatCommentRow({
                   size={18}
                   color={secondaryTextColor}
                 />
-              </TouchableOpacity>
+              </Pressable>
             ) : null}
           </View>
 
@@ -253,11 +252,11 @@ function FlatCommentRow({
               )}
             </View>
           ) : null}
-        </TouchableOpacity>
+        </Pressable>
 
         <View style={flatStyles.actionsRow}>
           <View style={flatStyles.leftActions}>
-            <TouchableOpacity
+            <Pressable
               disabled={isReacting}
               onLongPress={() => {
                 onShowReactionPicker(commentId);
@@ -285,8 +284,8 @@ function FlatCommentRow({
                   {reactionCount}
                 </Text>
               ) : null}
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={flatStyles.commentThreadButton}
               disabled={!onOpenThread}
               onPress={() => {
@@ -299,8 +298,8 @@ function FlatCommentRow({
                   {item.directReplyCount}
                 </Text>
               ) : null}
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={flatStyles.commentThreadButton}
               disabled={isReposting || !onPressRepost}
               onPress={() => {
@@ -313,8 +312,8 @@ function FlatCommentRow({
                   {repostCount}
                 </Text>
               ) : null}
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={flatStyles.commentThreadButton}
               disabled={!onSharePress}
               onPress={() => {
@@ -322,8 +321,8 @@ function FlatCommentRow({
               }}
             >
               <SendIcon width={22} height={22} color={mutedColor} />
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={flatStyles.commentThreadButton}
               disabled={isBookmarking || !onToggleBookmark}
               onPress={() => {
@@ -335,14 +334,14 @@ function FlatCommentRow({
                 size={22}
                 color={isBookmarked ? accentColor : mutedColor}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
         {isReactionPickerVisible ? (
           <View style={flatStyles.reactionPicker}>
             {REACTION_PICKER_ITEMS.map((reactionItem) => (
-              <TouchableOpacity
+              <Pressable
                 key={`${commentId}_${reactionItem.id}`}
                 style={flatStyles.reactionPickerButton}
                 onPress={() => {
@@ -353,7 +352,7 @@ function FlatCommentRow({
                   source={{ uri: reactionItem.iconUrl }}
                   style={flatStyles.reactionPickerIcon}
                 />
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         ) : null}

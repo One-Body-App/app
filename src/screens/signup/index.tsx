@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
-  TouchableOpacity,
+  Pressable,
   Animated,
   Keyboard,
   ActivityIndicator,
@@ -923,7 +923,7 @@ function SignupForm({ navigation, route }: Props) {
           fieldsPopStyle,
         ]}
       >
-        <TouchableOpacity
+        <Pressable
           style={styles.signInRow}
           onPress={async () => {
             if (continuePendingSocialSignup) {
@@ -935,7 +935,7 @@ function SignupForm({ navigation, route }: Props) {
         >
           <StyledText style={{ color: palette.textSecondary }}>Already a member? </StyledText>
           <StyledText style={{ color: palette.primary }}>Sign in here</StyledText>
-        </TouchableOpacity>
+        </Pressable>
 
         <View style={styles.dividerRow}>
           <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
@@ -945,7 +945,7 @@ function SignupForm({ navigation, route }: Props) {
 
         <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
           <View style={styles.socialIconsRow}>
-            <TouchableOpacity
+            <Pressable
               style={[
                 styles.socialBtn,
                 { borderColor: palette.inputBorder, backgroundColor: palette.card },
@@ -954,7 +954,7 @@ function SignupForm({ navigation, route }: Props) {
               onPress={() => handleSocialSignup('google')}
             >
               <Image source={googleIcon} style={styles.socialIcon} />
-            </TouchableOpacity>
+            </Pressable>
 
             {Platform.OS === 'ios' ? (
               <View style={styles.appleSignupButtonContainer}>
@@ -1044,7 +1044,7 @@ function SignupForm({ navigation, route }: Props) {
               }}
             >
               {usernameSuggestions.map((suggestion) => (
-                <TouchableOpacity
+                <Pressable
                   key={suggestion}
                   onPress={() => {
                     changeHandler('username', suggestion);
@@ -1078,10 +1078,10 @@ function SignupForm({ navigation, route }: Props) {
                   >
                     {suggestion}
                   </StyledText>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 navigation.replace('Login');
               }}
@@ -1090,7 +1090,7 @@ function SignupForm({ navigation, route }: Props) {
               <StyledText style={[Typography.subheader.R, { color: Colors.primary.brand }]}>
                 Belong to you? Sign in to access your profile.
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : null}
 

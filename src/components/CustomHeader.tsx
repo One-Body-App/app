@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, Pressable, Platform, StyleSheet } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -46,13 +46,9 @@ export default function CustomHeader({
   const leftElement =
     leftSlot ??
     (showBackButton && canGoBack ? (
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-      >
+      <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
         <MaterialCommunityIcons name="chevron-left" size={iconSize} color={Colors.primary.brand} />
-      </TouchableOpacity>
+      </Pressable>
     ) : null);
   const rightElement = rightSlot ?? null;
 

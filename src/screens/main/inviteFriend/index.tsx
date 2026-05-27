@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, TouchableOpacity, ScrollView, Platform, Share } from 'react-native';
+import { View, Pressable, ScrollView, Platform, Share } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -108,7 +108,7 @@ function InviteFriend() {
               },
             ]}
           >
-            <TouchableOpacity
+            <Pressable
               style={{
                 flex: 1,
                 alignItems: 'center',
@@ -134,8 +134,8 @@ function InviteFriend() {
                 <Link1 color={Colors.neutral[300]} />
               </View>
               <StyledText style={{ textAlign: 'center' }}>Copy invite link</StyledText>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={{
                 flex: 1,
                 alignItems: 'center',
@@ -165,7 +165,7 @@ function InviteFriend() {
                 )}
               </View>
               <StyledText style={{ textAlign: 'center' }}>Share invite link</StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </ScrollView>
       </LinearGradient>

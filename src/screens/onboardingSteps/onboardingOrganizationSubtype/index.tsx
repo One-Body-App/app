@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Pressable, View } from 'react-native';
 
 import { useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -84,11 +84,10 @@ function SubtypeCard({
         },
       ]}
     >
-      <TouchableOpacity
+      <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        activeOpacity={1}
         style={[
           styles.card,
           isSelected ? styles.cardSelected : dark ? styles.cardDark : styles.cardLight,
@@ -116,7 +115,7 @@ function SubtypeCard({
         >
           {isSelected && <View style={styles.radioDot} />}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   );
 }

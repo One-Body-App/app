@@ -2,17 +2,16 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import CustomModal from '@/src/components/CustomModal';
 import { SettingsStackParamsList } from '@/src/navigator/types';
@@ -201,22 +200,22 @@ function CreatorStepFour({ navigation, route }: Props) {
       <View style={styles.headerWrap}>
         <View style={styles.header}>
           <View style={styles.headerSide}>
-            <TouchableOpacity
+            <Pressable
               style={styles.headerIconButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text style={styles.headerTitle}>Creator Application</Text>
           <View style={[styles.headerSide, styles.headerActionContainer]}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => setShowQuitModal(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={styles.headerActionText}>Quit</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -242,7 +241,7 @@ function CreatorStepFour({ navigation, route }: Props) {
               const contentColor = isActive ? palette.primary : palette.muted;
 
               return (
-                <TouchableOpacity
+                <Pressable
                   key={type.id}
                   style={[
                     styles.gridItem,
@@ -260,7 +259,7 @@ function CreatorStepFour({ navigation, route }: Props) {
                     style={styles.gridIcon}
                   />
                   <Text style={[styles.gridText, { color: contentColor }]}>{type.label}</Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -285,9 +284,9 @@ function CreatorStepFour({ navigation, route }: Props) {
           {loadingInterests ? (
             <ActivityIndicator color={palette.accent} style={styles.interestsLoader} />
           ) : interestsError ? (
-            <TouchableOpacity onPress={fetchInterests} style={styles.retryButton}>
+            <Pressable onPress={fetchInterests} style={styles.retryButton}>
               <Text style={styles.retryText}>Could not load topics. Tap to retry.</Text>
-            </TouchableOpacity>
+            </Pressable>
           ) : (
             <View style={styles.tagsContainer}>
               {interests.map((interest) => {
@@ -295,9 +294,8 @@ function CreatorStepFour({ navigation, route }: Props) {
                 const isDisabled = !isActive && selectedTopics.length >= 5;
 
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={interest._id}
-                    activeOpacity={0.7}
                     disabled={isDisabled}
                     style={[
                       styles.tagButton,
@@ -322,7 +320,7 @@ function CreatorStepFour({ navigation, route }: Props) {
                     >
                       {interest.name.toLowerCase()}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -352,12 +350,12 @@ function CreatorStepFour({ navigation, route }: Props) {
           </View>
         </View>
         <View style={styles.footerActions}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.continueButton} onPress={onReview}>
+          </Pressable>
+          <Pressable style={styles.continueButton} onPress={onReview}>
             <Text style={styles.continueButtonText}>Review Application</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -374,16 +372,16 @@ function CreatorStepFour({ navigation, route }: Props) {
           </Text>
 
           <View style={styles.quitModalActions}>
-            <TouchableOpacity
+            <Pressable
               style={styles.quitModalSecondaryButton}
               onPress={() => setShowQuitModal(false)}
             >
               <Text style={styles.quitModalSecondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity style={styles.quitModalPrimaryButton} onPress={handleQuit}>
+            <Pressable style={styles.quitModalPrimaryButton} onPress={handleQuit}>
               <Text style={styles.quitModalPrimaryButtonText}>Quit</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </CustomModal>

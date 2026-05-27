@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, Pressable, View } from 'react-native';
 import SettingsSheet from './SettingsSheet';
 
 const mockDispatch = jest.fn();
@@ -11,7 +11,7 @@ const mockClearAuthTokens = jest.fn();
 
 function mockButton({ text, onPress, leftIcon }: any) {
   return React.createElement(
-    TouchableOpacity,
+    Pressable,
     { onPress },
     React.createElement(View, null, leftIcon),
     React.createElement(Text, null, text)

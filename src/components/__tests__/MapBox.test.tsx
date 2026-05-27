@@ -2,7 +2,8 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 import { Text } from 'react-native';
-import MapBox, { MapBoxTypes } from '../MapBox';
+import MapBox from '../MapBox';
+import { MapBoxTypes } from '../MapBoxTypes';
 
 const mockCustomModal = jest.fn();
 

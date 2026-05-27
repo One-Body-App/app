@@ -6,13 +6,13 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { launchCamera } from 'react-native-image-picker';
@@ -74,7 +74,7 @@ function ToolbarButton({
 }) {
   const { colors } = useTheme();
   return (
-    <TouchableOpacity
+    <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
@@ -105,7 +105,7 @@ function ToolbarButton({
           {label}
         </StyledText>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -612,7 +612,9 @@ export default function BlogComposer({ navigation, route }: Props) {
       ]);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, [hasUnsavedChanges, navigation]);
 
   useLayoutEffect(() => {
@@ -673,7 +675,7 @@ export default function BlogComposer({ navigation, route }: Props) {
           color={Colors.primarySapphire.brand}
         />
         <StyledText style={{ marginTop: spacing.x12, color: Colors.neutral[300] }}>
-          Loading draft...
+          Loading draft&hellip;
         </StyledText>
       </SafeAreaView>
     );
@@ -701,14 +703,14 @@ export default function BlogComposer({ navigation, route }: Props) {
               marginBottom: spacing.x13,
             }}
           >
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close editor"
               onPress={closeComposer}
               style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
             >
               <MaterialCommunityIcons name="close" size={26} color={colors.text} />
-            </TouchableOpacity>
+            </Pressable>
 
             <View
               style={{
@@ -731,7 +733,7 @@ export default function BlogComposer({ navigation, route }: Props) {
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TouchableOpacity
+              <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Save draft"
                 onPress={() => {
@@ -744,15 +746,15 @@ export default function BlogComposer({ navigation, route }: Props) {
                 >
                   Save
                 </StyledText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="More actions"
                 onPress={openMenu}
                 style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
               >
                 <MaterialCommunityIcons name="dots-horizontal" size={22} color={colors.text} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
 
@@ -868,7 +870,7 @@ export default function BlogComposer({ navigation, route }: Props) {
               />
             </View>
 
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               accessibilityLabel="Add cover image"
               onPress={() => handleCoverImage().catch(() => undefined)}
@@ -915,7 +917,7 @@ export default function BlogComposer({ navigation, route }: Props) {
                   </StyledText>
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
             {validationErrors.coverImage ? (
               <StyledText style={{ marginTop: spacing.x8, color: Colors.errorFeedback.background }}>
                 {validationErrors.coverImage}
@@ -935,7 +937,7 @@ export default function BlogComposer({ navigation, route }: Props) {
                 {TAG_OPTIONS.map((tag) => {
                   const active = tags.includes(tag);
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={tag}
                       accessibilityRole="button"
                       accessibilityLabel={`Tag ${tag}`}
@@ -958,7 +960,7 @@ export default function BlogComposer({ navigation, route }: Props) {
                       >
                         {tag}
                       </StyledText>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -1111,7 +1113,7 @@ export default function BlogComposer({ navigation, route }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               accessibilityLabel={publishButtonLabel}
               disabled={publishState === 'invalid' || saveState === 'saving'}
@@ -1135,7 +1137,7 @@ export default function BlogComposer({ navigation, route }: Props) {
               >
                 {publishButtonLabel}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>

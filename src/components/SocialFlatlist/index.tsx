@@ -342,13 +342,13 @@ const SocialFlatlist = forwardRef<
       //   ))}
       //   {hasMore ? (
       //     <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
-      //       <TouchableOpacity
+      //       <Pressable
       //         onPress={async () => {
       //           await getSocialPosts(page + 1);
       //         }}
       //       >
       //         <Text>View More</Text>
-      //       </TouchableOpacity>
+      //       </Pressable>
       //     </View>
       //   ) : null}
       // </>

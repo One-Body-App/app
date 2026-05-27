@@ -17,7 +17,7 @@ import {
   TextInput,
   TextInputProps,
   TextStyle,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
@@ -79,8 +79,7 @@ const SuggestionRow = memo(function SuggestionRow({
   isActive: boolean;
 }) {
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
+    <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: isActive }}
       onPress={() => onPress(item)}
@@ -111,7 +110,7 @@ const SuggestionRow = memo(function SuggestionRow({
           @{item.username}
         </StyledText>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 });
 

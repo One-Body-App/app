@@ -4,7 +4,7 @@ import {
   Image,
   Platform,
   StyleProp,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
@@ -189,20 +189,19 @@ const InlineReactionBar = forwardRef<
       }}
     >
       {REACTION_BAR_ITEMS.map((reaction) => (
-        <TouchableOpacity
+        <Pressable
           key={reaction.id}
           onPress={() => {
             onReactionSelect(reaction);
             dismissReactions();
           }}
-          activeOpacity={0.8}
           style={{ marginHorizontal: REACTION_BAR_HORIZONTAL_MARGIN }}
         >
           <Image
             source={{ uri: reaction.iconUrl }}
             style={{ width: REACTION_BAR_ICON_SIZE, height: REACTION_BAR_ICON_SIZE }}
           />
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </Animated.View>
   );
@@ -485,7 +484,7 @@ function CommentItem({
           }}
         >
           {safeUserData ? (
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 onPress();
               }}
@@ -530,14 +529,14 @@ function CommentItem({
                     {created ? `${timeSince(created)} ago` : ''}
                   </StyledText>
                   {!isEditingComment ? (
-                    <TouchableOpacity
+                    <Pressable
                       onPress={() => {
                         setShowOptions(true);
                       }}
                       style={{ marginLeft: spacing.x8 }}
                     >
                       <FontAwesomeIcon icon={faEllipsisVertical} color={textSecondary} />
-                    </TouchableOpacity>
+                    </Pressable>
                   ) : null}
                 </View>
                 {hasHandle && !isEditingComment ? (
@@ -620,7 +619,7 @@ function CommentItem({
                   </View>
                 ) : null}
               </View>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
           {isEditingComment ? (
             <View
@@ -680,7 +679,7 @@ function CommentItem({
               >
                 {onReactPress ? (
                   <View style={{ position: 'relative' }}>
-                    <TouchableOpacity
+                    <Pressable
                       onLongPress={showReactionBar}
                       onPress={() => {
                         dismissReactionBar();
@@ -693,7 +692,6 @@ function CommentItem({
                         onReactPress(SocialPostReactionType.love);
                       }}
                       delayLongPress={180}
-                      activeOpacity={0.8}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Animated.View style={{ transform: [{ scale: reactionIconScale }] }}>
@@ -710,7 +708,7 @@ function CommentItem({
                           {reactionCount}
                         </StyledText>
                       </View>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -734,7 +732,7 @@ function CommentItem({
                     </StyledText>
                   </View>
                 )}
-                <TouchableOpacity disabled={!onReplyPress} onPress={onReplyPress}>
+                <Pressable disabled={!onReplyPress} onPress={onReplyPress}>
                   <StyledText
                     style={{
                       color: actionColor,
@@ -745,7 +743,7 @@ function CommentItem({
                   >
                     Reply
                   </StyledText>
-                </TouchableOpacity>
+                </Pressable>
                 {onReactPress && isReactionBarVisible ? (
                   <View
                     pointerEvents="box-none"

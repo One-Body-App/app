@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, TouchableOpacity } from 'react-native';
+import { Text, Pressable } from 'react-native';
 import ConfirmLogin from './ConfirmLogin';
 
 const mockReact = React;
@@ -17,7 +17,7 @@ const mockGeneralState = {
 };
 
 function mockButton({ text, onPress }: any) {
-  return React.createElement(TouchableOpacity, { onPress }, React.createElement(Text, null, text));
+  return React.createElement(Pressable, { onPress }, React.createElement(Text, null, text));
 }
 
 jest.mock('react-redux', () => ({

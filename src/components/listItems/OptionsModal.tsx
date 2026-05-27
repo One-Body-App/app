@@ -1,15 +1,7 @@
 import { useNavigation, useTheme } from '@react-navigation/native';
 
 import React, { ReactNode, useRef } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  Dimensions,
-  Platform,
-  Share,
-} from 'react-native';
+import { View, ScrollView, Pressable, Alert, Dimensions, Platform, Share } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -369,8 +361,7 @@ function OptionsModal({
     const helperColor = destructive ? '#ef4444' : sheetSecondaryColor;
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.85}
+      <Pressable
         disabled={disabled}
         onPress={onPress}
         style={{
@@ -414,7 +405,7 @@ function OptionsModal({
             {subtitle}
           </StyledText>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -468,7 +459,7 @@ function OptionsModal({
           }}
         >
           <StyledText style={[header.h2, { color: sheetTitleColor }]}>Post Options</StyledText>
-          <TouchableOpacity
+          <Pressable
             onPress={() => setShow(false)}
             style={{
               width: 32,
@@ -480,7 +471,7 @@ function OptionsModal({
             }}
           >
             <MaterialCommunityIcons name="close" size={20} color={sheetSecondaryColor} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <ScrollView

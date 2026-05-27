@@ -6,7 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -152,7 +152,7 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   function renderBottomAction() {
     if (eventRecord?.status === 'draft') {
       return (
-        <TouchableOpacity
+        <Pressable
           style={styles.bottomButton}
           testID="connect-event-primary-action"
           onPress={() =>
@@ -162,19 +162,18 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
           }
         >
           <Text style={styles.bottomButtonText}>Resume Draft</Text>
-        </TouchableOpacity>
+        </Pressable>
       );
     }
 
     if (isExternalLinkEvent) {
       return (
-        <TouchableOpacity
+        <Pressable
           style={[
             styles.bottomButton,
             styles.bottomButtonPublished,
             !hasExternalLink ? styles.bottomButtonDisabled : null,
           ]}
-          activeOpacity={0.92}
           disabled={!hasExternalLink}
           testID="connect-event-primary-action"
           onPress={async () => {
@@ -190,18 +189,17 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
           }}
         >
           <Text style={[styles.bottomButtonText, styles.bottomButtonTextPublished]}>Go!</Text>
-        </TouchableOpacity>
+        </Pressable>
       );
     }
 
     return (
-      <TouchableOpacity
+      <Pressable
         style={[styles.bottomButton, styles.bottomButtonPublished]}
-        activeOpacity={0.92}
         testID="connect-event-primary-action"
       >
         <Text style={[styles.bottomButtonText, styles.bottomButtonTextPublished]}>Go!</Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
@@ -222,7 +220,7 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
               style={[styles.headerRow, { paddingTop: insets.top + HEADER_TOP_SPACING }]}
               testID="connect-event-header-row"
             >
-              <TouchableOpacity
+              <Pressable
                 style={styles.headerButton}
                 onPress={() => navigation.goBack()}
                 testID="connect-event-back-button"
@@ -230,7 +228,7 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
                 accessibilityLabel="Go back"
               >
                 <Ionicons name="chevron-back" size={22} color="#032f3c" />
-              </TouchableOpacity>
+              </Pressable>
               <View style={styles.headerButtonSpacer} />
             </View>
           </ImageBackground>

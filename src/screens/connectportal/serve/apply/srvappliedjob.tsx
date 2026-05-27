@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  Linking,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Linking } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { ServeHeader, useServePalette, BRAND_COLORS, getServeJobById } from '../shared';
@@ -101,9 +94,9 @@ export default function ServeAppliedJobPage({ navigation, route }: Props) {
 
         {/* Details Section */}
         <DetailCard title="Posted by" theme={palette}>
-          <TouchableOpacity>
+          <Pressable>
             <Text style={styles.linkText}>{job.organization}</Text>
-          </TouchableOpacity>
+          </Pressable>
         </DetailCard>
 
         <DetailCard title="Status" theme={palette}>
@@ -139,13 +132,10 @@ export default function ServeAppliedJobPage({ navigation, route }: Props) {
         </DetailCard>
 
         <DetailCard title="Application URL" theme={palette}>
-          <TouchableOpacity
-            style={styles.urlRow}
-            onPress={() => handleOpenLink(job.applicationUrl)}
-          >
+          <Pressable style={styles.urlRow} onPress={() => handleOpenLink(job.applicationUrl)}>
             <Text style={styles.linkIcon}>🔗</Text>
             <Text style={styles.linkText}>{job.applicationUrl}</Text>
-          </TouchableOpacity>
+          </Pressable>
         </DetailCard>
 
         <View style={styles.bottomSpacer} />

@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Platform,
-  Text,
-  View,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import { Platform, Text, View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 
@@ -42,13 +35,13 @@ function InfluencerStepOne({ navigation }: Props) {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <Pressable
           style={styles.closeButton}
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <MaterialCommunityIcons name="chevron-left" size={32} color={OBPalette.primary.dark} />
-        </TouchableOpacity>
+        </Pressable>
         {Platform.OS === 'ios' ? (
           <Text style={styles.headerTitle}>Creator Application</Text>
         ) : (
@@ -108,12 +101,12 @@ function InfluencerStepOne({ navigation }: Props) {
 
       {/* Footer / Start Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
+        <Pressable
           style={styles.startButton}
           onPress={() => navigation.navigate('InfluencerStepTwo', {})}
         >
           <Text style={styles.startButtonText}>Start</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

@@ -1,14 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import {
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Share,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import Icon from '@react-native-vector-icons/material-design-icons';
@@ -116,12 +108,11 @@ function ProfileHeader({
   }, [authState?.getBadgesData]);
 
   const displayedBadges = useMemo(() => {
-    return persistedBadgeIds
-      .map((badgeId) => {
-        const fromProfile = (profileData.badgesData ?? []).find((badge) => badge._id === badgeId);
-        return fromProfile ?? badgeMap.get(badgeId);
-      })
-      .filter(Boolean) as Badge[];
+    return persistedBadgeIds.flatMap((badgeId) => {
+      const fromProfile = (profileData.badgesData ?? []).find((badge) => badge._id === badgeId);
+      const badge = fromProfile ?? badgeMap.get(badgeId);
+      return badge ? [badge] : [];
+    });
   }, [badgeMap, persistedBadgeIds, profileData.badgesData]);
   const isAddOnlyBadgeRail = isOwnProfile && displayedBadges.length === 0;
   const useCompactAddOnlyBadge = isSelfVariant && isAddOnlyBadgeRail;
@@ -179,7 +170,9 @@ function ProfileHeader({
     while (navigator) {
       const routeNames = navigator.getState?.()?.routeNames ?? [];
 
-      if (routeNames.includes('Messages')) {
+      const routeNameSet = new Set(routeNames);
+
+      if (routeNameSet.has('Messages')) {
         navigator.navigate('Messages', {
           screen: 'ChatDetail',
           params: chatParams,
@@ -187,7 +180,7 @@ function ProfileHeader({
         return;
       }
 
-      if (routeNames.includes('Main')) {
+      if (routeNameSet.has('Main')) {
         navigator.navigate('Main', {
           screen: 'Messages',
           params: {
@@ -198,7 +191,7 @@ function ProfileHeader({
         return;
       }
 
-      if (routeNames.includes('MainRoot')) {
+      if (routeNameSet.has('MainRoot')) {
         navigator.navigate('MainRoot', {
           screen: 'Main',
           params: {
@@ -259,20 +252,20 @@ function ProfileHeader({
           )}
 
           {showSelfProfileMediaControls ? (
-            <TouchableOpacity
+            <Pressable
               accessibilityLabel="Edit cover image"
               onPress={() => openEditProfile('header')}
               style={styles.coverEditButton}
               testID="profile-cover-edit-button"
             >
               <Icon name="pencil-outline" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
         </View>
 
         {(displayedBadges.length > 0 || isOwnProfile) &&
           (isOwnProfile ? (
-            <TouchableOpacity
+            <Pressable
               onPress={openBadgeModal}
               style={[
                 styles.badgeRail,
@@ -294,7 +287,7 @@ function ProfileHeader({
                     ))
                 : null}
               {badgeTrailingContent}
-            </TouchableOpacity>
+            </Pressable>
           ) : (
             <View style={[styles.badgeRail, isSelfVariant ? styles.selfBadgeRail : null]}>
               {displayedBadges.slice(0, 3).map((badge) => (
@@ -314,9 +307,8 @@ function ProfileHeader({
           <View style={styles.selfHeroRow}>
             <View style={styles.selfHero}>
               {showSelfProfileMediaControls ? (
-                <TouchableOpacity
+                <Pressable
                   accessibilityLabel="Edit profile photo"
-                  activeOpacity={0.85}
                   onPress={() => openEditProfile('photo')}
                   style={styles.avatarEditButton}
                   testID="profile-avatar-edit-button"
@@ -337,7 +329,7 @@ function ProfileHeader({
                       <Icon name="pencil-outline" size={16} color="#FFFFFF" />
                     </View>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ) : (
                 <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
                   {profileData.profileImage ? (
@@ -356,21 +348,21 @@ function ProfileHeader({
             </View>
 
             <View style={styles.selfActionRow}>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => openEditProfile()}
                 style={[styles.secondaryAction, styles.selfActionButton]}
               >
                 <StyledText style={styles.secondaryActionText}>Edit Profile</StyledText>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   handleShareProfile().catch(() => undefined);
                 }}
                 style={[styles.primaryAction, styles.selfActionButton]}
               >
                 <StyledText style={styles.primaryActionText}>Share Profile</StyledText>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         ) : (
@@ -416,12 +408,12 @@ function ProfileHeader({
 
             <View style={styles.actionRow}>
               {isOwnProfile ? (
-                <TouchableOpacity onPress={() => openEditProfile()} style={styles.ownProfileAction}>
+                <Pressable onPress={() => openEditProfile()} style={styles.ownProfileAction}>
                   <StyledText style={styles.primaryActionText}>Edit Profile</StyledText>
-                </TouchableOpacity>
+                </Pressable>
               ) : (
                 <>
-                  <TouchableOpacity
+                  <Pressable
                     style={[
                       styles.secondaryAction,
                       profileData.allowDirectMessages === false && styles.disabledAction,
@@ -430,8 +422,8 @@ function ProfileHeader({
                     disabled={profileData.allowDirectMessages === false}
                   >
                     <StyledText style={styles.secondaryActionText}>Message</StyledText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </Pressable>
+                  <Pressable
                     style={[styles.primaryAction, isConnected ? styles.connectedAction : null]}
                     onPress={() => {
                       if (isConnected) {
@@ -444,7 +436,7 @@ function ProfileHeader({
                     <StyledText style={styles.primaryActionText}>
                       {isConnected ? 'Connected' : 'Connect'}
                     </StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 </>
               )}
             </View>
@@ -523,10 +515,10 @@ function ProfileHeader({
           ) : null}
 
           {profileData.website ? (
-            <TouchableOpacity style={styles.metaRow} onPress={handleWebsitePress}>
+            <Pressable style={styles.metaRow} onPress={handleWebsitePress}>
               <Link21 size={18} color={Colors.neutral.brand} />
               <StyledText style={styles.websiteText}>{profileData.website}</StyledText>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
 
           <View style={styles.statsRow}>
@@ -562,7 +554,7 @@ function ProfileHeader({
                   const isSelected = selectedBadgeIds.includes(badge._id);
 
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={badge._id}
                       onPress={() => handleToggleBadge(badge._id)}
                       style={styles.badgeSelectionItem}
@@ -578,12 +570,12 @@ function ProfileHeader({
                         </View>
                       ) : null}
                       <StyledText style={styles.badgeSelectionLabel}>{badge.title}</StyledText>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>
             </ScrollView>
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 dispatch(setUserBadges.Request({ token, badges: selectedBadgeIds }));
                 setRequestModal(false);
@@ -591,7 +583,7 @@ function ProfileHeader({
               style={styles.badgeDoneButton}
             >
               <StyledText style={styles.badgeDoneButtonText}>Done</StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </SafeAreaView>
         </View>
       </CustomModal>

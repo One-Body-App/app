@@ -1,6 +1,6 @@
 /* eslint-disable global-require */
 import React, { useCallback } from 'react';
-import { FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Text, Pressable, View } from 'react-native';
 import Entypo from '@react-native-vector-icons/entypo';
 import AntDesign from '@react-native-vector-icons/ant-design';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
@@ -143,11 +143,11 @@ function SearchContainComponent() {
         <View style={styles.topicRow}>
           {item.items.map((topic) => (
             <View key={topic.id} style={styles.topicRowItem}>
-              <TouchableOpacity onPress={() => console.log('selected')} style={styles.listItem}>
+              <Pressable onPress={() => console.log('selected')} style={styles.listItem}>
                 <Text numberOfLines={1} style={{ color: '#757575', maxWidth: getWidth(23) }}>
                   {topic.name}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ))}
         </View>

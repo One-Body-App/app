@@ -1,4 +1,4 @@
-import { TouchableOpacity, View, Text } from 'react-native';
+import { Pressable, View, Text } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { CommentListFilter } from './commentListUtils';
 import flatStyles from './flatStyles';
@@ -26,7 +26,7 @@ function CommentFilterTabs({
 
   return (
     <View style={[flatStyles.filterBar, { backgroundColor, borderBottomColor: borderColor }]}>
-      <TouchableOpacity
+      <Pressable
         style={flatStyles.filterDropdownButton}
         onPress={() => {
           onChange(nextValue);
@@ -38,7 +38,7 @@ function CommentFilterTabs({
           {label}
         </Text>
         <MaterialIcons name="keyboard-arrow-down" size={18} color={chevronColor} />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }

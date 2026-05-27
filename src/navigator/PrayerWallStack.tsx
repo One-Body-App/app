@@ -147,7 +147,7 @@ function PrayerWall() {
             // headerLeft: (props) => {
             //   const { dark, colors } = useTheme();
             //   return (
-            //     <TouchableOpacity
+            //     <Pressable
             //       onPress={() => {
             //         if (props.canGoBack) {
             //           navigation.pop();
@@ -159,7 +159,7 @@ function PrayerWall() {
             //         size={18}
             //         color={dark ? colors.text : Colors.primary.brand}
             //       />
-            //     </TouchableOpacity>
+            //     </Pressable>
             //   );
             // },
           };

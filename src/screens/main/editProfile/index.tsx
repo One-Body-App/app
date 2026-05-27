@@ -7,7 +7,7 @@ import {
   ScrollView,
   Switch,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import {
@@ -46,7 +46,8 @@ import {
   Tag,
 } from '@/utils/types';
 
-import MapBox, { MapSuggestion } from '@/components/MapBox';
+import MapBox from '@/components/MapBox';
+import type { MapSuggestion } from '@/components/MapBoxTypes';
 import { spacing } from '@/src/styles/spacing';
 
 import { Colors, Typography } from '@/src/styles';
@@ -232,7 +233,7 @@ function EditProfile({ navigation, route }: Props) {
   //   navigation.setOptions({
   //     headerRight: () => (
   //       <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-  //         <TouchableOpacity
+  //         <Pressable
   //           style={{ marginRight: spacing.x16 }}
   //           onPress={() => {
   //             Share.share({
@@ -250,8 +251,8 @@ function EditProfile({ navigation, route }: Props) {
   //           ) : (
   //             <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
   //           )}
-  //         </TouchableOpacity>
-  //         <TouchableOpacity
+  //         </Pressable>
+  //         <Pressable
   //           onPress={() => {
   //             setShowSettings(true);
   //           }}
@@ -261,7 +262,7 @@ function EditProfile({ navigation, route }: Props) {
   //             color={Colors.primary.brand}
   //             strokeWidth={0.2}
   //           />
-  //         </TouchableOpacity>
+  //         </Pressable>
   //       </View>
   //     ),
   //   });
@@ -672,13 +673,13 @@ function EditProfile({ navigation, route }: Props) {
             borderBottomColor: colors.border,
           }}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={() => navigation.goBack()}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <MaterialCommunityIcons name="chevron-left" size={30} color={Colors.primary.brand} />
-          </TouchableOpacity>
+          </Pressable>
           <StyledText style={[Typography.header.h3, { marginLeft: spacing.x8 }]}>
             Edit Profile
           </StyledText>
@@ -723,12 +724,12 @@ function EditProfile({ navigation, route }: Props) {
                 width: 42,
               }}
             >
-              <TouchableOpacity
+              <Pressable
                 onPress={() => showImageSourceOptions('header')}
                 testID="edit-profile-header-image-button"
               >
                 <GalleryEdit size={22} color={Colors.neutral[200]} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View
@@ -738,7 +739,7 @@ function EditProfile({ navigation, route }: Props) {
                 marginLeft: spacing.x24,
               }}
             >
-              <TouchableOpacity
+              <Pressable
                 onPress={() => showImageSourceOptions('photo')}
                 style={styles.imageContainer}
                 testID="edit-profile-avatar-image-button"
@@ -803,7 +804,7 @@ function EditProfile({ navigation, route }: Props) {
                     </StyledText>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -1020,7 +1021,7 @@ function EditProfile({ navigation, route }: Props) {
                     paddingTop: spacing.x10,
                   }}
                 >
-                  <StyledText style={[{ color: Colors.neutral.brand }]}>
+                  <StyledText style={{ color: Colors.neutral.brand }}>
                     Make your location public
                   </StyledText>
 
@@ -1183,7 +1184,7 @@ function EditProfile({ navigation, route }: Props) {
                     ) : null}
                     {searchInterest.map((item) => {
                       return (
-                        <TouchableOpacity
+                        <Pressable
                           key={item?._id ?? item?.name}
                           onPress={() =>
                             selectedInterest.includes(item?._id)
@@ -1214,7 +1215,7 @@ function EditProfile({ navigation, route }: Props) {
                           >
                             {item?.name}
                           </StyledText>
-                        </TouchableOpacity>
+                        </Pressable>
                       );
                     })}
                   </ScrollView>

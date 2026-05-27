@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Image, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import { View, Image, Pressable, FlatList, RefreshControl } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
@@ -142,8 +142,7 @@ function OnboardingInfluencers({ route }: Props) {
       const isSelected = influencerId ? selectedInfluencers.includes(influencerId) : false;
 
       return (
-        <TouchableOpacity
-          activeOpacity={0.6}
+        <Pressable
           onPress={() => {
             if (!influencerId) return;
             if (selectedInfluencers.includes(influencerId)) {
@@ -203,7 +202,7 @@ function OnboardingInfluencers({ route }: Props) {
                 item?.profile?.typeOfOrganization?.name}
             </StyledText>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       );
     },
     [getInfluencerId, selectedInfluencers]

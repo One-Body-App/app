@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { InteractionManager, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { InteractionManager, Share, StyleSheet, Pressable, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
@@ -28,17 +28,17 @@ import { getProfileDisplayName } from '@/components/profile/profileUtils';
 
 function HeaderBackButton({ onPress, color }: { onPress: () => void; color: string }) {
   return (
-    <TouchableOpacity onPress={onPress} style={{ marginLeft: spacing.x10, padding: spacing.x5 }}>
+    <Pressable onPress={onPress} style={{ marginLeft: spacing.x10, padding: spacing.x5 }}>
       <Ionicons name="chevron-back" size={30} color={color} />
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 function HeaderMenuButton({ onPress, color }: { onPress: () => void; color: string }) {
   return (
-    <TouchableOpacity onPress={onPress} style={{ marginRight: spacing.x10, padding: spacing.x5 }}>
+    <Pressable onPress={onPress} style={{ marginRight: spacing.x10, padding: spacing.x5 }}>
       <Ionicons name="ellipsis-vertical" size={22} color={color} />
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -241,7 +241,7 @@ function UserProfile({ navigation, route }: Props) {
 
       <CustomModal modalVisible={showActions} onclose={() => setShowActions(false)}>
         <View style={[styles.actionSheet, { backgroundColor: colors.background }]}>
-          <TouchableOpacity
+          <Pressable
             style={styles.actionSheetButton}
             onPress={async () => {
               setShowActions(false);
@@ -252,7 +252,7 @@ function UserProfile({ navigation, route }: Props) {
             }}
           >
             <StyledText style={styles.actionSheetText}>Share Profile</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </CustomModal>
     </View>

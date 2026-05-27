@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Pressable, ScrollView } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
@@ -176,7 +176,7 @@ function OnboardingInterests({ navigation, route }: Props) {
               ) : null}
               {searchInterest.map((item) => {
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={item?._id}
                     onPress={() =>
                       selectedInterest.includes(item?._id)
@@ -213,7 +213,7 @@ function OnboardingInterests({ navigation, route }: Props) {
                     >
                       {item?.name}
                     </StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>

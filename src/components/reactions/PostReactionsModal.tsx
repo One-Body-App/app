@@ -7,7 +7,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
@@ -507,7 +507,7 @@ function PostReactionsModal({
             </View>
           </View>
 
-          <TouchableOpacity
+          <Pressable
             disabled={isDisabled}
             onPress={() => {
               if (!isCurrentUser) {
@@ -530,7 +530,7 @@ function PostReactionsModal({
             >
               {isConnecting ? '...' : connectLabel}
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       );
     },
@@ -571,7 +571,7 @@ function PostReactionsModal({
         <StyledText style={[styles.headerTitle, { color: dark ? Colors.main.white : '#032f3c' }]}>
           Reactions
         </StyledText>
-        <TouchableOpacity
+        <Pressable
           onPress={onClose}
           style={[
             styles.closeButton,
@@ -579,7 +579,7 @@ function PostReactionsModal({
           ]}
         >
           <Icon name="close" size={20} color={dark ? Colors.main.white : '#126b87'} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View
@@ -595,7 +595,7 @@ function PostReactionsModal({
             const tabCount = Number(totals[tab.id] ?? 0);
 
             return (
-              <TouchableOpacity
+              <Pressable
                 key={tab.id}
                 onPress={() => setActiveTab(tab.id)}
                 style={[
@@ -619,7 +619,7 @@ function PostReactionsModal({
                 <View style={[styles.tabCountBadge, { backgroundColor: 'rgba(18,107,135,0.12)' }]}>
                   <StyledText style={styles.tabCountText}>{tabCount}</StyledText>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput, Pressable, View } from 'react-native';
 import TestRenderer, { act } from 'react-test-renderer';
 import TicketingTypeScreen from '../create.go.step4';
 
@@ -13,9 +13,9 @@ jest.mock('../shared', () => ({
       <mockReactNative.View>
         <mockReactNative.Text>{title}</mockReactNative.Text>
         {children}
-        <mockReactNative.TouchableOpacity onPress={onNext} disabled={nextDisabled}>
+        <mockReactNative.Pressable onPress={onNext} disabled={nextDisabled}>
           <mockReactNative.Text>Next</mockReactNative.Text>
-        </mockReactNative.TouchableOpacity>
+        </mockReactNative.Pressable>
       </mockReactNative.View>
     );
   },
@@ -123,7 +123,7 @@ describe('TicketingTypeScreen', () => {
       );
     });
 
-    const touchables = renderer!.root.findAllByType(TouchableOpacity);
+    const touchables = renderer!.root.findAllByType(Pressable);
     const externalOption = touchables.find((node) =>
       flattenText(node.props.children).includes('External Link')
     );
@@ -138,7 +138,7 @@ describe('TicketingTypeScreen', () => {
     });
 
     const nextButton = renderer!.root
-      .findAllByType(TouchableOpacity)
+      .findAllByType(Pressable)
       .find((node) => flattenText(node.props.children) === 'Next');
 
     await act(async () => {

@@ -134,11 +134,12 @@ jest.mock('../../styled/Text', () => {
   };
 });
 
-import CameraComponent, {
+import CameraComponent from '../Camera';
+import {
   getDefaultRecorderCaptureSettings,
   isNoRecordingInProgressError,
   shouldAllowCameraFlip,
-} from '../Camera';
+} from '../Camera.utils';
 
 describe('CameraComponent', () => {
   beforeEach(() => {

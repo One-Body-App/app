@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { Text, View, TextInput, Pressable } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -92,7 +92,7 @@ function PrayerSocials({ item, color }: PrayerSocialsProps) {
   return (
     <View style={{ flexDirection: 'row' }}>
       {item?.post?.prayerType === 'exhortation' ? null : (
-        <TouchableOpacity
+        <Pressable
           style={{
             justifyContent: 'center',
             width: '28%',
@@ -110,9 +110,9 @@ function PrayerSocials({ item, color }: PrayerSocialsProps) {
           <Text style={checkLike(item, 'praying') ? { color } : { color: '#4F6D77' }}>
             {checkLike(item, 'praying') ? 'Praying' : 'Pray'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
-      <TouchableOpacity
+      <Pressable
         onPress={() => {
           const itm = item;
 
@@ -131,8 +131,8 @@ function PrayerSocials({ item, color }: PrayerSocialsProps) {
         <Text style={checkLike(item, 'rejoice') ? { color } : { color: '#4F6D77' }}>
           {checkLike(item, 'rejoice') ? 'Rejoiced' : 'Rejoice'}
         </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
+      </Pressable>
+      <Pressable
         style={{
           justifyContent: 'center',
           alignItems: 'center',
@@ -148,7 +148,7 @@ function PrayerSocials({ item, color }: PrayerSocialsProps) {
         <Text style={checkLike(item, 'loves') ? { color } : { color: '#4F6D77' }}>
           {checkLike(item, 'loves') ? 'Loved' : 'Love'}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }

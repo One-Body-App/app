@@ -6,7 +6,7 @@ import {
   Platform,
   StyleProp,
   TextLayoutEventData,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
@@ -463,7 +463,7 @@ function PrayerItem({
               >
                 <View style={{ flexGrow: 1 }} />
                 <StyledText style={[header.h3, { flexGrow: 1 }]}>Answered Prayer</StyledText>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => {
                     // setModalVisible(false);
                     setShowModal(false);
@@ -480,7 +480,7 @@ function PrayerItem({
                     size={18}
                     color={Colors.primary.brand}
                   />
-                </TouchableOpacity>
+                </Pressable>
               </View>
               <StyledText style={[fontSize.x3, { marginTop: spacing.x16 }]}>
                 Share what the Lord has done!

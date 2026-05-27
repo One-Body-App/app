@@ -2,8 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
-  SafeAreaView,
+  Pressable,
   StyleSheet,
   useColorScheme,
   Platform,
@@ -12,6 +11,7 @@ import {
   Easing,
   type LayoutChangeEvent,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -189,12 +189,12 @@ function CreatorSubmitSuccess({ navigation }: Props) {
         ]}
       >
         <View style={styles.headerSideSlot}>
-          <TouchableOpacity
+          <Pressable
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <MaterialCommunityIcons name="chevron-left" size={32} color={colors.textMain} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
         {Platform.OS === 'ios' ? (
           <View style={styles.headerCenterWrap} pointerEvents="none">
@@ -357,14 +357,13 @@ function CreatorSubmitSuccess({ navigation }: Props) {
           { backgroundColor: colors.background, borderTopColor: colors.surfaceBorder },
         ]}
       >
-        <TouchableOpacity
+        <Pressable
           style={[styles.returnButton, { backgroundColor: colors.primary }]}
-          activeOpacity={0.8}
           onPress={onReturnHome}
         >
           <Text style={[styles.returnButtonText, { color: '#FFFFFF' }]}>Go Home</Text>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

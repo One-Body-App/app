@@ -11,7 +11,7 @@ import {
   RefreshControl,
   Share,
   StyleProp,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
@@ -421,7 +421,7 @@ function CommentThread({
                 gap: spacing.x16,
               }}
             >
-              <TouchableOpacity
+              <Pressable
                 disabled={reactingCommentId === rootCommentId || !rootCommentId}
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
@@ -443,8 +443,8 @@ function CommentThread({
                     {rootReactionCount}
                   </StyledText>
                 ) : null}
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 disabled
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => undefined}
@@ -461,8 +461,8 @@ function CommentThread({
                     {rootReplyCount}
                   </StyledText>
                 ) : null}
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 disabled={repostingCommentId === rootCommentId || !rootCommentId}
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
@@ -480,8 +480,8 @@ function CommentThread({
                     {rootRepostCount}
                   </StyledText>
                 ) : null}
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 disabled={bookmarkingCommentId === rootCommentId || !rootCommentId}
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
@@ -496,7 +496,7 @@ function CommentThread({
                   size={22}
                   color={rootBookmarkedByMe ? accentColor : secondaryTextColor}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

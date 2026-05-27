@@ -4,7 +4,7 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -369,8 +369,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
               >
                 {sectionTitle}
               </StyledText>
-              <TouchableOpacity
-                activeOpacity={0.8}
+              <Pressable
                 onPress={openFilterSheet}
                 style={[
                   styles.filterIconButton,
@@ -381,7 +380,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                 ]}
               >
                 <FilterSortIcon width={20} height={20} color={palette.activeText} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           }
           renderItem={({ item }) => {
@@ -399,7 +398,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
             if (activeTab === 'Go!') {
               const eventRecord = item as (typeof eventRecords)[number];
               return (
-                <TouchableOpacity
+                <Pressable
                   style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
                   onPress={() => {
                     trackConnectPortalEventTelemetry(eventRecord.id, 'detail_open', {
@@ -433,15 +432,14 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                       ))}
                     </View>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               );
             }
 
             const serveItem = item as (typeof serveItems)[number];
             return (
-              <TouchableOpacity
+              <Pressable
                 style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
-                activeOpacity={0.85}
                 onPress={() => navigation.navigate('ConnectServeJobView', { jobId: serveItem.id })}
               >
                 <MaterialIcons name="volunteer-activism" size={28} color={palette.activeText} />
@@ -467,7 +465,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                     ))}
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             );
           }}
           ItemSeparatorComponent={ListItemSeparator}

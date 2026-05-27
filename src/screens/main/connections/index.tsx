@@ -3,16 +3,16 @@ import {
   Alert,
   View,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useDispatch, useSelector } from 'react-redux';
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
@@ -391,7 +391,7 @@ function Connected({ navigation }: Props) {
               const roleName = getProfileRoleLabel(item);
 
               return (
-                <TouchableOpacity
+                <Pressable
                   onPress={() => {
                     navigation.navigate('Main', {
                       screen: 'ExploreTab',
@@ -436,7 +436,7 @@ function Connected({ navigation }: Props) {
 
                     {filter === 'connected' ? (
                       <View style={styles.actionWrapper}>
-                        <TouchableOpacity
+                        <Pressable
                           style={[
                             styles.removeButtonPill,
                             { backgroundColor: themedStyles.removeButtonBg },
@@ -451,11 +451,11 @@ function Connected({ navigation }: Props) {
                           >
                             Remove
                           </StyledText>
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     ) : null}
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               );
             }}
             scrollIndicatorInsets={{ right: 1 }}
@@ -495,13 +495,13 @@ function Connected({ navigation }: Props) {
                   My Interests
                 </StyledText>
               </View>
-              <TouchableOpacity onPress={() => setShowInterestModal(false)}>
+              <Pressable onPress={() => setShowInterestModal(false)}>
                 <MaterialCommunityIcons
                   name="window-close"
                   size={24}
                   color={OBPalette.grays[500]}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View style={styles.flex1}>
@@ -513,7 +513,7 @@ function Connected({ navigation }: Props) {
                 {interests.map((item) => {
                   const isSelected = selectedInterest.some((i) => i._id === item?._id);
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={item?._id ?? item?.name}
                       onPress={() => {
                         if (isSelected) removeInterests(item);
@@ -536,7 +536,7 @@ function Connected({ navigation }: Props) {
                       >
                         {item?.name}
                       </StyledText>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </ScrollView>

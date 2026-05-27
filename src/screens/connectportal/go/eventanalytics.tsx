@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -139,9 +140,9 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
       <View style={styles.container}>
         <View style={styles.header}>
           <View>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Pressable onPress={() => navigation.goBack()}>
               <Text style={styles.backText}>Back</Text>
-            </TouchableOpacity>
+            </Pressable>
             <Text style={styles.headerTitle}>{headerTitle}</Text>
             <Text style={styles.headerSubtitle}>{headerSubtitle}</Text>
           </View>

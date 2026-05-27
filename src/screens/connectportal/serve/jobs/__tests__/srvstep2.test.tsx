@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Alert, Platform, Text, TouchableOpacity } from 'react-native';
+import { Alert, Platform, Text, Pressable } from 'react-native';
 import ServeCreateJobStep2 from '../srvstep2';
 
 const mockCreateFlowLayout = jest.fn();
@@ -20,7 +20,7 @@ jest.mock('@/src/services/connectPortal/provider', () => ({
 }));
 
 jest.mock('@/src/hooks/useMountEffect', () => {
-  const ReactLocal = require('react');
+  const ReactLocal = jest.requireActual('react');
   return (callback: () => void | (() => void)) => {
     ReactLocal.useEffect(() => callback(), []);
   };
@@ -231,7 +231,7 @@ describe('ServeCreateJobStep2', () => {
     const urlInput = testRenderer.root.findByProps({ testID: 'application-url-input' });
     expect(urlInput.props.value).toBe('https://example.com/apply');
 
-    const buttons = testRenderer.root.findAllByType(TouchableOpacity);
+    const buttons = testRenderer.root.findAllByType(Pressable);
     expect(buttons.some((button) => button.props.testID === 'application-method-in_app')).toBe(
       true
     );

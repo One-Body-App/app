@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -39,9 +32,8 @@ function SavedJobCard({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <Pressable
       style={[styles.card, { backgroundColor: palette.cardBg, borderColor: palette.borderColor }]}
-      activeOpacity={0.85}
       onPress={onPress}
     >
       <View style={styles.cardHeader}>
@@ -79,7 +71,7 @@ function SavedJobCard({
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -137,14 +129,14 @@ export default function ServeSavedScreen({ navigation }: Props) {
             />
           </View>
 
-          <TouchableOpacity
+          <Pressable
             style={[
               styles.filterButton,
               { backgroundColor: palette.inputBg, borderColor: palette.borderColor },
             ]}
           >
             <FilterSortIcon width={18} height={18} color={palette.subText} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.listContainer}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, Pressable, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTheme } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
@@ -223,13 +223,13 @@ export function ServeHeader({
   return (
     <View style={styles.header}>
       <View style={styles.headerSideSlot}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <Pressable style={styles.backButton} onPress={onBack}>
           <MaterialIcons
             name="chevron-left"
             size={32}
             color={titleColor || BRAND_COLORS.primaryDark}
           />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       {Platform.OS === 'ios' ? (
         <View style={styles.headerCenterWrap} pointerEvents="none">
@@ -280,7 +280,7 @@ export function ServeHubTabs({
           const isActive = tab.label === activeTab;
 
           return (
-            <TouchableOpacity
+            <Pressable
               key={tab.label}
               style={[styles.tab, isActive ? { borderBottomColor: palette.text } : null]}
               onPress={() => {
@@ -297,7 +297,7 @@ export function ServeHubTabs({
               >
                 {tab.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>

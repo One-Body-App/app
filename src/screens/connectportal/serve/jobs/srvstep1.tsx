@@ -7,13 +7,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import CustomModal from '@/src/components/CustomModal';
-import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
+import MapBox from '@/components/MapBox';
+import { MapBoxTypes, type MapSuggestion } from '@/components/MapBoxTypes';
 import type { Coordinate } from '@/src/screens/connectportal/data';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -87,7 +88,7 @@ function RolePickerSheet({
 
         <View style={[styles.roleSheetHeader, { borderBottomColor: palette.inputBorder }]}>
           <Text style={[styles.roleSheetTitle, { color: palette.textPrimary }]}>Role</Text>
-          <TouchableOpacity
+          <Pressable
             testID="role-sheet-close"
             onPress={onClose}
             style={[
@@ -96,7 +97,7 @@ function RolePickerSheet({
             ]}
           >
             <MaterialCommunityIcons name="close" size={20} color={palette.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View
@@ -133,10 +134,9 @@ function RolePickerSheet({
               const isSelected = option.value === selectedValue;
 
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.value}
                   testID={`role-option-${option.value}`}
-                  activeOpacity={0.85}
                   style={[
                     styles.roleOptionButton,
                     {
@@ -156,7 +156,7 @@ function RolePickerSheet({
                   {isSelected ? (
                     <MaterialCommunityIcons name="check" size={18} color={palette.accent} />
                   ) : null}
-                </TouchableOpacity>
+                </Pressable>
               );
             })
           ) : (
@@ -481,8 +481,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Visibility</Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
@@ -501,14 +500,13 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Role</Text>
-          <TouchableOpacity
+          <Pressable
             testID="role-picker-trigger"
-            activeOpacity={0.85}
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
@@ -523,7 +521,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {isOtherRoleSelected ? (
@@ -597,8 +595,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Location</Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
@@ -619,7 +616,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
           {address.trim() && !coordinate ? (
             <Text style={[styles.helperText, { color: palette.textSecondary }]}>
               Select the location from search results to pin the opportunity on the map.

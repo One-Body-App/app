@@ -9,7 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { useTheme } from '@react-navigation/native';
@@ -1185,12 +1185,12 @@ function SkiaImageEditorModal({
       <View style={[styles.screen, { backgroundColor: 'transparent' }]}>
         <BrandPaletteBackground />
         <View style={styles.header}>
-          <TouchableOpacity onPress={maybeCancel} style={styles.headerAction}>
+          <Pressable onPress={maybeCancel} style={styles.headerAction}>
             <MaterialCommunityIcons name="close" size={30} color={textColor} />
-          </TouchableOpacity>
+          </Pressable>
           <StyledText style={[styles.headerTitle, { color: textColor }]}>Edit Photo</StyledText>
           <View style={styles.headerRight}>
-            <TouchableOpacity
+            <Pressable
               onPress={undo}
               style={styles.undoButton}
               disabled={undoStackRef.current.length === 0 || isSaving || isUploading}
@@ -1206,8 +1206,8 @@ function SkiaImageEditorModal({
               >
                 Undo
               </StyledText>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={redo}
               style={styles.undoButton}
               disabled={redoStackRef.current.length === 0 || isSaving || isUploading}
@@ -1223,8 +1223,8 @@ function SkiaImageEditorModal({
               >
                 Redo
               </StyledText>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={saveEditedImage}
               disabled={isSaving || isUploading || !!errorMessage}
               style={[styles.doneButton, { opacity: errorMessage ? 0.6 : 1 }]}
@@ -1234,7 +1234,7 @@ function SkiaImageEditorModal({
               ) : (
                 <StyledText style={styles.doneLabel}>Done</StyledText>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -1243,9 +1243,9 @@ function SkiaImageEditorModal({
             <View style={styles.errorCard}>
               <StyledText style={styles.errorTitle}>Unable to Load</StyledText>
               <StyledText style={styles.errorMessage}>{errorMessage}</StyledText>
-              <TouchableOpacity style={styles.errorButton} onPress={onCancel}>
+              <Pressable style={styles.errorButton} onPress={onCancel}>
                 <StyledText style={styles.errorButtonLabel}>Choose Another Image</StyledText>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : (
             <GestureDetector gesture={gesture}>
@@ -1386,7 +1386,7 @@ function SkiaImageEditorModal({
               contentContainerStyle={styles.trayContent}
             >
               {FILTER_IDS.map((id) => (
-                <TouchableOpacity
+                <Pressable
                   key={id}
                   onPress={() => commitAndSet(() => setFilter(id))}
                   style={styles.previewItem}
@@ -1420,7 +1420,7 @@ function SkiaImageEditorModal({
                   >
                     {filterLabel(id)}
                   </StyledText>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           ) : null}
@@ -1432,7 +1432,7 @@ function SkiaImageEditorModal({
               contentContainerStyle={styles.trayContent}
             >
               {ratioOptions.map((option) => (
-                <TouchableOpacity
+                <Pressable
                   key={option.id}
                   onPress={() => commitAndSet(() => setRatio(option.id))}
                   style={[styles.ratioPill, ratio === option.id ? styles.ratioPillActive : null]}
@@ -1445,7 +1445,7 @@ function SkiaImageEditorModal({
                   >
                     {option.label}
                   </StyledText>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           ) : null}
@@ -1464,7 +1464,7 @@ function SkiaImageEditorModal({
                   ['vivid', 'Vivid'],
                 ] as [AdjustPresetId, string][]
               ).map(([id, label]) => (
-                <TouchableOpacity
+                <Pressable
                   key={id}
                   onPress={() => commitAndSet(() => setAdjust(id))}
                   style={[styles.ratioPill, adjust === id ? styles.ratioPillActive : null]}
@@ -1474,7 +1474,7 @@ function SkiaImageEditorModal({
                   >
                     {label}
                   </StyledText>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           ) : null}
@@ -1492,10 +1492,10 @@ function SkiaImageEditorModal({
                     { color: textColor, backgroundColor: dark ? '#222' : '#e8ecef' },
                   ]}
                 />
-                <TouchableOpacity style={styles.actionButton} onPress={addTextOverlay}>
+                <Pressable style={styles.actionButton} onPress={addTextOverlay}>
                   <StyledText style={styles.actionButtonLabel}>Add</StyledText>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Pressable>
+                <Pressable
                   style={[
                     styles.actionButton,
                     textOverlays.length === 0 ? styles.actionButtonDisabled : null,
@@ -1510,7 +1510,7 @@ function SkiaImageEditorModal({
                   }
                 >
                   <StyledText style={styles.actionButtonLabel}>Remove</StyledText>
-                </TouchableOpacity>
+                </Pressable>
               </View>
               <ScrollView
                 horizontal
@@ -1518,7 +1518,7 @@ function SkiaImageEditorModal({
                 contentContainerStyle={styles.colorRow}
               >
                 {textColorOptions.map((color) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={color}
                     onPress={() => {
                       if (textOverlays.length === 0) {
@@ -1548,17 +1548,17 @@ function SkiaImageEditorModal({
                 contentContainerStyle={styles.trayContent}
               >
                 {stickerOptions.map((item) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={item.id}
                     style={styles.stickerChip}
                     onPress={() => addStickerOverlay(item.glyph)}
                   >
                     <StyledText style={styles.stickerGlyph}>{item.glyph}</StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </ScrollView>
               <View style={styles.rowCenter}>
-                <TouchableOpacity
+                <Pressable
                   style={[
                     styles.actionButton,
                     stickerOverlays.length === 0 ? styles.actionButtonDisabled : null,
@@ -1573,7 +1573,7 @@ function SkiaImageEditorModal({
                   }
                 >
                   <StyledText style={styles.actionButtonLabel}>Remove Last</StyledText>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           ) : null}
@@ -1586,7 +1586,7 @@ function SkiaImageEditorModal({
                 contentContainerStyle={styles.colorRow}
               >
                 {drawColorOptions.map((color) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={color}
                     onPress={() => setDrawColor(color)}
                     style={[
@@ -1599,7 +1599,7 @@ function SkiaImageEditorModal({
               </ScrollView>
               <View style={styles.textRow}>
                 {drawWidthOptions.map((size) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={size}
                     onPress={() => setDrawWidth(size)}
                     style={[styles.sizePill, drawWidth === size ? styles.sizePillActive : null]}
@@ -1612,9 +1612,9 @@ function SkiaImageEditorModal({
                     >
                       {size}px
                     </StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
-                <TouchableOpacity
+                <Pressable
                   style={[
                     styles.actionButton,
                     drawStrokes.length === 0 ? styles.actionButtonDisabled : null,
@@ -1623,7 +1623,7 @@ function SkiaImageEditorModal({
                   onPress={() => commitAndSet(() => setDrawStrokes([]))}
                 >
                   <StyledText style={styles.actionButtonLabel}>Clear</StyledText>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           ) : null}
@@ -1642,7 +1642,7 @@ function SkiaImageEditorModal({
           ).map(([id, icon]) => {
             const active = tool === id;
             return (
-              <TouchableOpacity key={id} style={styles.navItem} onPress={() => setTool(id)}>
+              <Pressable key={id} style={styles.navItem} onPress={() => setTool(id)}>
                 <MaterialCommunityIcons
                   name={icon as any}
                   size={24}
@@ -1653,7 +1653,7 @@ function SkiaImageEditorModal({
                 >
                   {id}
                 </StyledText>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </View>

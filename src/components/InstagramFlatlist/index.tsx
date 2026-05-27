@@ -17,10 +17,7 @@ import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPoli
 import { spacing } from '@/src/styles/spacing';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 
-function InstagramFlatlist({
-  currentUser,
-  setScrollPosition,
-}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) {
+function InstagramFlatlist({ currentUser }: SceneRendererProps & { currentUser: User }) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [page, setPage] = useState<number>(1);
   const [instagramPosts, setInstagramPosts] = useState<any>([]);
@@ -116,9 +113,6 @@ function InstagramFlatlist({
             />
           )}
           keyExtractor={(item) => item.id}
-          onScroll={(e) => {
-            if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
-          }}
           refreshControl={
             <RefreshControl
               enabled

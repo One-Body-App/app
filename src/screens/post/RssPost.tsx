@@ -1,6 +1,7 @@
 import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
+import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';

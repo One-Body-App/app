@@ -1,19 +1,18 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TextInput as TextInputNative,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomModal from '@/src/components/CustomModal';
 import { FeedTypes } from '@/src/screens/home';
 import { Colors } from '@/src/styles';
@@ -229,22 +228,22 @@ function InfluencerStepTwo({ navigation }: Props) {
       <View style={styles.headerWrap}>
         <View style={styles.header}>
           <View style={styles.headerSide}>
-            <TouchableOpacity
+            <Pressable
               style={styles.headerIconButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text style={styles.headerTitle}>Creator Application</Text>
           <View style={[styles.headerSide, styles.headerActionContainer]}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => setShowQuitModal(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={styles.headerActionText}>Quit</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -390,12 +389,12 @@ function InfluencerStepTwo({ navigation }: Props) {
           </View>
         </View>
         <View style={styles.footerActions}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.continueButton} onPress={onNext}>
+          </Pressable>
+          <Pressable style={styles.continueButton} onPress={onNext}>
             <Text style={styles.continueButtonText}>Continue</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -412,16 +411,16 @@ function InfluencerStepTwo({ navigation }: Props) {
           </Text>
 
           <View style={styles.quitModalActions}>
-            <TouchableOpacity
+            <Pressable
               style={styles.quitModalSecondaryButton}
               onPress={() => setShowQuitModal(false)}
             >
               <Text style={styles.quitModalSecondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity style={styles.quitModalPrimaryButton} onPress={handleQuit}>
+            <Pressable style={styles.quitModalPrimaryButton} onPress={handleQuit}>
               <Text style={styles.quitModalPrimaryButtonText}>Quit</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </CustomModal>

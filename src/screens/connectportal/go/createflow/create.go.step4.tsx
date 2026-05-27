@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import type { ConnectPortalTicketType } from '@/src/services/connectPortal';
@@ -107,7 +107,7 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
         {(['free', 'external'] as ConnectPortalTicketType[]).map((option) => {
           const isActive = ticketType === option;
           return (
-            <TouchableOpacity
+            <Pressable
               key={option}
               style={[
                 styles.toggleCard,
@@ -133,7 +133,7 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
                   ? "Use One Body's free RSVP setup so attendees can register directly in the app."
                   : 'Send attendees straight to your website, Eventbrite, or preferred registration platform.'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>

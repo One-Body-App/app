@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
@@ -575,7 +574,7 @@ function ChatListScreen({ navigation }: Props) {
         {filters.map((filter) => {
           const isActive = selectedFilter === filter.value;
           return (
-            <TouchableOpacity
+            <Pressable
               key={filter.value}
               style={[styles.filterItem, isActive && styles.filterItemSelected]}
               onPress={() => setSelectedFilter(filter.value)}
@@ -592,7 +591,7 @@ function ChatListScreen({ navigation }: Props) {
                   {filter.label}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>

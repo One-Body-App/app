@@ -1,15 +1,7 @@
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { isObject } from 'lodash';
+import isObject from 'lodash/isObject';
 import React, { useState } from 'react';
-import {
-  Dimensions,
-  Image,
-  StyleProp,
-  TextStyle,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { Dimensions, Image, StyleProp, TextStyle, Pressable, View, ViewStyle } from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 import Entypo from '@react-native-vector-icons/entypo';
 import { decode } from 'html-entities';
@@ -102,7 +94,7 @@ function UserItem({ item }: { item: User }) {
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={() => {
         // if (item?.link) OpenURLButton(item?.link);
         // if (onPress) onPress(item);
@@ -155,13 +147,13 @@ function UserItem({ item }: { item: User }) {
               paddingHorizontal: spacing.x5,
             }}
           >
-            <StyledText numberOfLines={2} style={[{ color: colors.text }]}>
+            <StyledText numberOfLines={2} style={{ color: colors.text }}>
               {item.name}
             </StyledText>
             {item?.profile?.whatIDo?.name ||
             item.profile?.typeOfOrganization?.organizationType ||
             item.profile?.typeOfOrganization?.name ? (
-              <StyledText numberOfLines={1} style={[{ color: Colors.neutral[500] }]}>
+              <StyledText numberOfLines={1} style={{ color: Colors.neutral[500] }}>
                 {item?.profile.whatIDo?.name ??
                   item.profile.typeOfOrganization?.organizationType ??
                   item.profile.typeOfOrganization?.name}
@@ -221,12 +213,12 @@ function UserItem({ item }: { item: User }) {
           />
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 export default UserItem;
 
-// <TouchableOpacity
+// <Pressable
 //   onPress={() => {
 //     OpenURLButton(item?.link);
 //   }}
@@ -243,4 +235,4 @@ export default UserItem;
 
 //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
 //   </View>
-// </TouchableOpacity>
+// </Pressable>

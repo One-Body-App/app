@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Modal,
   TextInput,
   KeyboardAvoidingView,
@@ -46,7 +46,7 @@ function RadioOption({
   theme: { radioBorder: string; text: string };
 }) {
   return (
-    <TouchableOpacity style={styles.radioContainer} onPress={onSelect} activeOpacity={0.7}>
+    <Pressable style={styles.radioContainer} onPress={onSelect}>
       <View
         style={[
           styles.radioOuterCircle,
@@ -56,7 +56,7 @@ function RadioOption({
         {isSelected && <View style={styles.radioInnerCircle} />}
       </View>
       <Text style={[styles.radioLabel, { color: theme.text }]}>{label}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -105,15 +105,15 @@ export default function ServeReportOpportunity({ isVisible, onClose, onSubmit }:
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.overlay}
       >
-        <TouchableOpacity style={styles.overlayTouchable} activeOpacity={1} onPress={onClose}>
+        <Pressable style={styles.overlayTouchable} onPress={onClose}>
           <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
             {/* Prevent touch events inside the modal from closing it */}
-            <TouchableOpacity activeOpacity={1}>
+            <Pressable>
               {/* Header */}
               <View style={styles.headerRow}>
-                <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <Pressable style={styles.closeButton} onPress={onClose}>
                   <MaterialIcons name="chevron-left" size={32} color={theme.text} />
-                </TouchableOpacity>
+                </Pressable>
                 <Text style={[styles.title, { color: theme.text }]}>Report Opportunity</Text>
                 <View style={styles.headerSpacer} />
               </View>
@@ -164,13 +164,13 @@ export default function ServeReportOpportunity({ isVisible, onClose, onSubmit }:
                 </View>
 
                 {/* Submit Button */}
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                <Pressable style={styles.submitButton} onPress={handleSubmit}>
                   <Text style={styles.submitButtonText}>Submit</Text>
-                </TouchableOpacity>
+                </Pressable>
               </ScrollView>
-            </TouchableOpacity>
+            </Pressable>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </KeyboardAvoidingView>
     </Modal>
   );

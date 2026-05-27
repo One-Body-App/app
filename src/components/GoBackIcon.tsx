@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, ViewStyle } from 'react-native';
+import { Pressable, ViewStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/ionicons';
 
@@ -21,7 +21,7 @@ function GoBackIcon({
     return null;
   }
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={() => {
         if (goBack) {
           goBack();
@@ -36,7 +36,7 @@ function GoBackIcon({
       hitSlop={8}
     >
       <Icon name="chevron-back" size={size} color={color} />
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 

@@ -1,12 +1,12 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -14,12 +14,12 @@ import { ArrowDown2 } from 'iconsax-react-native';
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { serialize } from 'object-to-formdata';
 import FastImage from 'react-native-fast-image';
-import { isEmpty } from 'lodash';
+import isEmpty from 'lodash/isEmpty';
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
-import { MapSuggestion } from '@/components/MapBox';
+import type { MapSuggestion } from '@/components/MapBoxTypes';
 import { sanitizeComposerText } from '@/components/composer/composerText';
 import StyledText from '@/components/styled/Text';
 import StyledTextInput from '@/components/styled/TextInput';
@@ -291,7 +291,7 @@ function NewPrayer({ navigation, route }: Props) {
           <View>
             <View style={{ marginBottom: spacing.x20 }}>
               <View style={{ flexDirection: 'row', columnGap: spacing.x16 }}>
-                <TouchableOpacity
+                <Pressable
                   style={{
                     flex: 1,
                     alignItems: 'center',
@@ -332,7 +332,7 @@ function NewPrayer({ navigation, route }: Props) {
                       style={{ marginLeft: spacing.x10 }}
                     />
                   </View>
-                </TouchableOpacity>
+                </Pressable>
 
                 <StyledSelect
                   wrapperStyle={{ flex: 1 }}

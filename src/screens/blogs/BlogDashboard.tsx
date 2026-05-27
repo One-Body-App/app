@@ -4,7 +4,7 @@ import {
   RefreshControl,
   ScrollView,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useTheme } from '@react-navigation/native';
@@ -140,19 +140,19 @@ function ArticleRow({
         </StyledText>
         <View style={{ flexDirection: 'row', gap: spacing.x10 }}>
           {item.status === 'published' ? (
-            <TouchableOpacity onPress={onRead}>
+            <Pressable onPress={onRead}>
               <StyledText
                 style={{ color: Colors.primarySapphire.brand, fontFamily: 'Rubik-Medium' }}
               >
                 Read
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           ) : null}
-          <TouchableOpacity onPress={onEdit}>
+          <Pressable onPress={onEdit}>
             <StyledText style={{ color: Colors.primarySapphire.brand, fontFamily: 'Rubik-Medium' }}>
               Edit
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </View>
@@ -278,7 +278,7 @@ export default function BlogDashboard() {
       }
     >
       <View style={{ marginBottom: spacing.x12 }}>
-        <TouchableOpacity
+        <Pressable
           onPress={() => navigation.goBack()}
           style={{
             width: 40,
@@ -290,7 +290,7 @@ export default function BlogDashboard() {
           }}
         >
           <MaterialCommunityIcons name="chevron-left" size={24} color={colors.text} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -300,7 +300,7 @@ export default function BlogDashboard() {
             Manage your drafts, published articles, and analytics.
           </StyledText>
         </View>
-        <TouchableOpacity
+        <Pressable
           onPress={() => navigation.navigate('BlogComposer')}
           style={{
             width: 48,
@@ -312,7 +312,7 @@ export default function BlogDashboard() {
           }}
         >
           <MaterialCommunityIcons name="pencil-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View
@@ -358,7 +358,7 @@ export default function BlogDashboard() {
         {FILTERS.map((value) => {
           const active = value === filter;
           return (
-            <TouchableOpacity
+            <Pressable
               key={value}
               onPress={() => setFilter(value)}
               style={{
@@ -379,11 +379,11 @@ export default function BlogDashboard() {
               >
                 {value}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => setSort(nextSort)}
           style={{
             marginLeft: 'auto',
@@ -397,7 +397,7 @@ export default function BlogDashboard() {
           <StyledText style={{ color: Colors.primarySapphire.brand, fontFamily: 'Rubik-Medium' }}>
             Sort: {SORT_LABELS[sort]}
           </StyledText>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={{ marginTop: spacing.x20 }}>{articleListContent}</View>

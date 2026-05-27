@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
@@ -62,13 +63,9 @@ function OnboardingIntro({ navigation }: Props) {
         </Text>
 
         {/* 3. Call to Action */}
-        <TouchableOpacity
-          style={[styles.button, dark && styles.buttonDark]}
-          onPress={handleGetStarted}
-          activeOpacity={0.8}
-        >
+        <Pressable style={[styles.button, dark && styles.buttonDark]} onPress={handleGetStarted}>
           <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

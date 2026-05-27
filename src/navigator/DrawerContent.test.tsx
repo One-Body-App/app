@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, Pressable, View } from 'react-native';
 import DrawerContent from './DrawerContent';
 
 const mockUseSelector = jest.fn();
@@ -9,7 +9,7 @@ const mockDrawerItems: string[] = [];
 
 function mockButton({ text, onPress, leftIcon }: any) {
   return React.createElement(
-    TouchableOpacity,
+    Pressable,
     { onPress },
     React.createElement(View, null, leftIcon),
     React.createElement(Text, null, text)

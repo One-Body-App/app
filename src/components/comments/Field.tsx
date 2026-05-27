@@ -3,7 +3,7 @@ import {
   Alert,
   TextInput as RNTextInput,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
   ScrollView,
   Platform,
@@ -433,9 +433,9 @@ function CommentField({
               {replyingToLabel}
             </StyledText>
             {onCancelReply ? (
-              <TouchableOpacity onPress={onCancelReply}>
+              <Pressable onPress={onCancelReply}>
                 <CloseCircle color={primary} size={18} />
-              </TouchableOpacity>
+              </Pressable>
             ) : null}
           </View>
         ) : null}
@@ -459,7 +459,7 @@ function CommentField({
                   }}
                 >
                   {canUseImages ? (
-                    <TouchableOpacity
+                    <Pressable
                       onPress={chooseImageSource}
                       disabled={isActionBlocked}
                       style={{ opacity: isActionBlocked ? 0.5 : 1 }}
@@ -469,10 +469,10 @@ function CommentField({
                         size={20}
                         color={textSecondary}
                       />
-                    </TouchableOpacity>
+                    </Pressable>
                   ) : null}
                   {canUseGiphy ? (
-                    <TouchableOpacity
+                    <Pressable
                       onPress={() => {
                         if (isActionBlocked) {
                           return;
@@ -489,7 +489,7 @@ function CommentField({
                       }}
                     >
                       <GifIcon size={20} color={textSecondary} />
-                    </TouchableOpacity>
+                    </Pressable>
                   ) : null}
                 </View>
               }
@@ -538,7 +538,7 @@ function CommentField({
           </View>
           {isEditingComment ? (
             <View style={{ flexDirection: 'row', gap: spacing.x8 }}>
-              <TouchableOpacity
+              <Pressable
                 disabled={isActionBlocked}
                 onPress={() => {
                   submitComment(content).catch(() => undefined);
@@ -546,17 +546,17 @@ function CommentField({
                 style={{ opacity: isActionBlocked ? 0.5 : 1 }}
               >
                 <TickCircle color={primary} size={22} />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 onPress={() => {
                   if (setEditingComment) setEditingComment(false);
                 }}
               >
                 <CloseCircle color={primary} size={22} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : (
-            <TouchableOpacity
+            <Pressable
               disabled={isActionBlocked}
               onPress={() => {
                 submitComment(content).catch(() => undefined);
@@ -566,7 +566,7 @@ function CommentField({
               <StyledText style={{ color: primary, fontWeight: '700', fontSize: 14 }}>
                 Post
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       </View>
@@ -587,7 +587,7 @@ function CommentField({
                 borderRadius: MEDIA_RADIUS,
               }}
             >
-              <TouchableOpacity
+              <Pressable
                 style={{
                   backgroundColor: Colors.primarySapphire.brand,
                   borderRadius: borderRadius.max,
@@ -605,7 +605,7 @@ function CommentField({
                 }}
               >
                 <CloseCircle size={28} color="#fff" />
-              </TouchableOpacity>
+              </Pressable>
               <View
                 style={{
                   width: 100,
@@ -643,7 +643,7 @@ function CommentField({
               overflow: 'hidden',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               style={{
                 backgroundColor: Colors.primarySapphire.brand,
                 borderRadius: borderRadius.max,
@@ -659,7 +659,7 @@ function CommentField({
               }}
             >
               <CloseCircle size={30} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
             {Platform.OS === 'android' && gifPreviewUrl ? (
               <FastImage
                 source={{ uri: gifPreviewUrl }}

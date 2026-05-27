@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, FlatList, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { CreateFlowColors } from './shared';
 
@@ -49,7 +49,7 @@ export default function EventTypeDropdown({
 
   return (
     <View>
-      <TouchableOpacity
+      <Pressable
         style={[
           styles.trigger,
           {
@@ -57,7 +57,6 @@ export default function EventTypeDropdown({
             borderColor: hasError ? errorColor || palette.accent : palette.inputBorder,
           },
         ]}
-        activeOpacity={0.7}
         onPress={() => setModalVisible(true)}
       >
         <Text
@@ -72,7 +71,7 @@ export default function EventTypeDropdown({
           {selectedLabel || placeholder}
         </Text>
         <MaterialIcons name="keyboard-arrow-down" size={22} color={palette.inputPlaceholder} />
-      </TouchableOpacity>
+      </Pressable>
 
       {isOther && (
         <TextInput
@@ -97,11 +96,7 @@ export default function EventTypeDropdown({
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={() => setModalVisible(false)}
-        >
+        <Pressable style={styles.overlay} onPress={() => setModalVisible(false)}>
           <View
             style={[
               styles.dropdown,
@@ -113,9 +108,9 @@ export default function EventTypeDropdown({
           >
             <View style={styles.dropdownHeader}>
               <Text style={[styles.dropdownTitle, { color: palette.textPrimary }]}>Event Type</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Pressable onPress={() => setModalVisible(false)}>
                 <MaterialIcons name="close" size={20} color={palette.textSecondary} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <FlatList
               data={allOptions}
@@ -123,7 +118,7 @@ export default function EventTypeDropdown({
               renderItem={({ item }) => {
                 const isSelected = item.value === selectedValue;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     style={[
                       styles.option,
                       {
@@ -146,12 +141,12 @@ export default function EventTypeDropdown({
                       {item.label}
                     </Text>
                     {isSelected && <MaterialIcons name="check" size={18} color={palette.accent} />}
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               }}
             />
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
     </View>
   );

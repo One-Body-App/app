@@ -9,7 +9,8 @@ import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import MapBox, { MapSuggestion } from '@/components/MapBox';
+import MapBox from '@/components/MapBox';
+import type { MapSuggestion } from '@/components/MapBoxTypes';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
 

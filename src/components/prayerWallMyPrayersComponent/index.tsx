@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
+import { FlatList, View, RefreshControl, Pressable } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 
@@ -316,7 +316,7 @@ function PrayerWallMyPrayersComponent({
           };
 
           return (
-            <TouchableOpacity onPress={openPost}>
+            <Pressable onPress={openPost}>
               <PrayerItem
                 editPost={editPost}
                 removePost={removePost}
@@ -327,7 +327,7 @@ function PrayerWallMyPrayersComponent({
                 onCommentsPress={openPost}
                 limitContentLines
               />
-            </TouchableOpacity>
+            </Pressable>
           );
         }}
       />

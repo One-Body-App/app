@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-  useColorScheme,
-} from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable, ScrollView, useColorScheme } from 'react-native';
 
 // One Body Brand Color Palette
 const BRAND_COLORS = {
@@ -84,7 +76,7 @@ export default function ServeJobAnalytics({
 
   return (
     <Modal animationType="slide" transparent visible={isVisible} onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+      <Pressable style={styles.overlay} onPress={onClose}>
         <View style={[styles.bottomSheet, { backgroundColor: theme.background }]}>
           {/* Handle Bar for dragging (visual only in this mock) */}
           <View style={[styles.handleBar, { backgroundColor: theme.handleBar }]} />
@@ -123,7 +115,7 @@ export default function ServeJobAnalytics({
             <View style={styles.bottomSpacer} />
           </ScrollView>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Modal>
   );
 }

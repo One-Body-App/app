@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Pressable, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -17,7 +18,7 @@ function ConnectPortalPlaceholderScreen({ navigation, route }: Props): React.JSX
   return (
     <SafeAreaView style={[styles.safeArea, dark ? styles.safeAreaDark : null]}>
       <View style={styles.container}>
-        <TouchableOpacity
+        <Pressable
           onPress={() => navigation.goBack()}
           style={[styles.backButton, dark ? styles.backButtonDark : null]}
           accessibilityRole="button"
@@ -27,7 +28,7 @@ function ConnectPortalPlaceholderScreen({ navigation, route }: Props): React.JSX
             size={24}
             color={dark ? Colors.primarySapphire[700] : Colors.primary.brand}
           />
-        </TouchableOpacity>
+        </Pressable>
 
         <View style={styles.content}>
           <StyledText style={[styles.eyebrow, dark ? styles.textDarkMuted : null]}>

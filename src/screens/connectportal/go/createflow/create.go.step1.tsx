@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -302,7 +302,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
 
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: palette.textPrimary }]}>Event Photo</Text>
-        <TouchableOpacity
+        <Pressable
           style={[
             styles.photoCard,
             {
@@ -311,7 +311,6 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
               borderStyle: heroImageUri ? 'solid' : 'dashed',
             },
           ]}
-          activeOpacity={0.85}
           onPress={showImageOptions}
         >
           {heroImageUri ? (
@@ -321,7 +320,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
                 style={styles.photoPreview}
                 resizeMode="cover"
               />
-              <TouchableOpacity
+              <Pressable
                 style={[styles.photoChangeBtn, { backgroundColor: palette.primaryBtnBg }]}
                 onPress={showImageOptions}
               >
@@ -329,7 +328,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
                 <Text style={[styles.photoChangeBtnText, { color: palette.primaryBtnText }]}>
                   Change
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : (
             <View style={styles.photoPlaceholder}>
@@ -342,7 +341,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
               </Text>
             </View>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </CreateFlowLayout>
   );

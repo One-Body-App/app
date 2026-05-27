@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, TextInput, Pressable, View } from 'react-native';
 import DatePicker from 'react-native-date-picker';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { format, isValid, parse, parseISO } from 'date-fns';
 import type { StackScreenProps } from '@react-navigation/stack';
-import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
+import MapBox from '@/components/MapBox';
+import { MapBoxTypes, type MapSuggestion } from '@/components/MapBoxTypes';
 import type { Coordinate } from '@/src/screens/connectportal/data';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
@@ -336,8 +337,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
       <View style={styles.row}>
         <View style={styles.fieldHalf}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Start Date</Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             style={[
               styles.inputButton,
               {
@@ -360,17 +360,13 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.fieldHalf}>
           <View style={styles.labelRow}>
             <Text style={[styles.label, { color: palette.textPrimary }]}>End Date</Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={toggleSingleDayEvent}
-              style={styles.checkboxRow}
-            >
+            <Pressable onPress={toggleSingleDayEvent} style={styles.checkboxRow}>
               <MaterialCommunityIcons
                 name={isSingleDayEvent ? 'checkbox-marked' : 'checkbox-blank-outline'}
                 size={20}
@@ -379,10 +375,9 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               <Text style={[styles.checkboxLabel, { color: palette.textSecondary }]}>
                 1 day event
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             disabled={isSingleDayEvent}
             style={[
               styles.inputButton,
@@ -401,15 +396,14 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               size={20}
               color={isSingleDayEvent ? palette.textMuted : palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
       <View style={styles.row}>
         <View style={styles.fieldHalf}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Start Time</Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             style={[
               styles.inputButton,
               {
@@ -432,13 +426,12 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.fieldHalf}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>End Time</Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             style={[
               styles.inputButton,
               {
@@ -461,7 +454,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               size={20}
               color={palette.inputPlaceholder}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -529,8 +522,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
 
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: palette.textPrimary }]}>Address</Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
+            <Pressable
               style={[
                 styles.inputButton,
                 {
@@ -554,7 +546,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
                 size={20}
                 color={palette.inputPlaceholder}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </>
       )}
@@ -603,9 +595,8 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               ).map((option) => {
                 const isSelected = recurrenceFrequency === option.value;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={option.value}
-                    activeOpacity={0.85}
                     style={[
                       styles.frequencyChip,
                       {
@@ -623,7 +614,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
                     >
                       {option.label}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -640,9 +631,8 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               ).map((option) => {
                 const isSelected = recurrenceEndType === option.value;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={option.value}
-                    activeOpacity={0.85}
                     style={[
                       styles.endConditionOption,
                       {
@@ -674,7 +664,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
                     >
                       {option.label}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -683,8 +673,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
           {recurrenceEndType === 'on_date' && (
             <View style={styles.fieldGroup}>
               <Text style={[styles.label, { color: palette.textPrimary }]}>End Date</Text>
-              <TouchableOpacity
-                activeOpacity={0.85}
+              <Pressable
                 style={[
                   styles.inputButton,
                   {
@@ -709,7 +698,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
                   size={20}
                   color={palette.inputPlaceholder}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           )}
 

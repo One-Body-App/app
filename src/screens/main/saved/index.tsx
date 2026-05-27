@@ -2,14 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   FlatList,
-  SafeAreaView,
   ScrollView,
   useWindowDimensions,
   Image,
   Platform,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
@@ -166,8 +166,10 @@ function Saved({ navigation }: Props) {
     const unsubscribe = navigation.addListener('focus', () => {
       dispatch(getProfile.Request({ token, pullSavedData: true }));
     });
-    return unsubscribe;
-  }, [navigation]);
+    return () => {
+      unsubscribe();
+    };
+  }, [dispatch, navigation, token]);
 
   useEffect(() => {
     if (token) {
@@ -251,7 +253,7 @@ function Saved({ navigation }: Props) {
           showsHorizontalScrollIndicator={false}
         >
           {([ContentType.All, ContentType.RSS, ContentType.Social] as ContentType[]).map((type) => (
-            <TouchableOpacity
+            <Pressable
               key={type}
               style={[
                 screenStyles.filterChip,
@@ -265,7 +267,6 @@ function Saved({ navigation }: Props) {
               onPress={() => {
                 if (filter !== type) setFilter(type);
               }}
-              activeOpacity={0.75}
             >
               <StyledText
                 style={[
@@ -276,7 +277,7 @@ function Saved({ navigation }: Props) {
               >
                 {type}
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
       )}

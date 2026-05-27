@@ -13,7 +13,7 @@ import {
   Platform,
   Share,
   StyleProp,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
@@ -310,20 +310,19 @@ const InlineReactionBar = forwardRef<
       }}
     >
       {REACTION_BAR_ITEMS.map((reaction) => (
-        <TouchableOpacity
+        <Pressable
           key={reaction.id}
           onPress={() => {
             onReactionSelect(reaction);
             dismissReactions();
           }}
-          activeOpacity={0.8}
           style={{ marginHorizontal: REACTION_BAR_HORIZONTAL_MARGIN }}
         >
           <Image
             source={{ uri: reaction.iconUrl }}
             style={{ width: REACTION_BAR_ICON_SIZE, height: REACTION_BAR_ICON_SIZE }}
           />
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </Animated.View>
   );
@@ -396,10 +395,10 @@ function BaseItem({
 
   const formatLocationLabel = (locationName?: string) => {
     if (!locationName) return '';
-    const parts = locationName
-      .split(',')
-      .map((part) => part.trim())
-      .filter(Boolean);
+    const parts = locationName.split(',').flatMap((part) => {
+      const trimmedPart = part.trim();
+      return trimmedPart ? [trimmedPart] : [];
+    });
     if (!parts.length) return '';
     const last = parts[parts.length - 1].toLowerCase();
     const isUs = ['united states', 'us', 'usa', 'u.s.', 'u.s.a.'].includes(last);
@@ -978,11 +977,10 @@ function BaseItem({
               gap: spacing.x13,
             }}
           >
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 onPress();
               }}
-              activeOpacity={0.85}
             >
               {userData.profileIcon && !hasResolvedAvatarImage ? (
                 <View
@@ -1017,10 +1015,10 @@ function BaseItem({
                   fallbackIconColor="#126b87"
                 />
               )}
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={{ position: 'relative', alignItems: 'center' }}>
-              <TouchableOpacity
+              <Pressable
                 onLongPress={showReactionBar}
                 onPress={() => {
                   if (isReactionUpdatingRef.current) {
@@ -1037,7 +1035,6 @@ function BaseItem({
                   reactPost(SocialPostReactionType.love);
                 }}
                 delayLongPress={180}
-                activeOpacity={0.8}
                 style={{
                   width: 46,
                   height: 46,
@@ -1061,7 +1058,7 @@ function BaseItem({
                     />
                   )}
                 </Animated.View>
-              </TouchableOpacity>
+              </Pressable>
               {isReactionBarVisible ? (
                 <View
                   pointerEvents="box-none"
@@ -1084,7 +1081,7 @@ function BaseItem({
                 </View>
               ) : null}
               {totalReactionCount > 0 ? (
-                <TouchableOpacity
+                <Pressable
                   disabled={!canViewReactions}
                   onPress={() => openReactionsModal('all')}
                   style={{ marginTop: spacing.x5 }}
@@ -1093,11 +1090,11 @@ function BaseItem({
                   <StyledText style={{ color: '#f6f6f7', ...fontSize.x1, fontWeight: '700' }}>
                     {totalReactionCount}
                   </StyledText>
-                </TouchableOpacity>
+                </Pressable>
               ) : null}
             </View>
 
-            <TouchableOpacity
+            <Pressable
               disabled={!onCommentsPress}
               onPress={() => {
                 if (onCommentsPress) {
@@ -1133,9 +1130,9 @@ function BaseItem({
                   {displayCommentCount}
                 </StyledText>
               ) : null}
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               disabled={!canRepost || isReposting}
               onPress={openRepostSheet}
               style={{ alignItems: 'center', opacity: !canRepost || isReposting ? 0.6 : 1 }}
@@ -1157,9 +1154,9 @@ function BaseItem({
                   {displayRepostCount}
                 </StyledText>
               ) : null}
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 if (isThisPostSaved) {
                   const removePromise = postData.id
@@ -1209,9 +1206,9 @@ function BaseItem({
                   color="#f6f6f7"
                 />
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 setShowOptions(true);
               }}
@@ -1229,7 +1226,7 @@ function BaseItem({
               >
                 <FontAwesomeIcon icon={faEllipsis} color="#f6f6f7" />
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View
@@ -1239,11 +1236,10 @@ function BaseItem({
               paddingBottom: spacing.x24,
             }}
           >
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 onPress();
               }}
-              activeOpacity={0.85}
               style={{ flexDirection: 'row', alignItems: 'center' }}
             >
               <StyledText
@@ -1265,7 +1261,7 @@ function BaseItem({
                   • {timeSince(created)} ago
                 </StyledText>
               ) : null}
-            </TouchableOpacity>
+            </Pressable>
             {children ? <View style={{ marginTop: spacing.x8 }}>{children}</View> : null}
           </View>
         </View>
@@ -1307,7 +1303,7 @@ function BaseItem({
             />
           </View>
           <View style={{ paddingHorizontal: spacing.x20, paddingVertical: spacing.x16 }}>
-            <TouchableOpacity
+            <Pressable
               disabled={isReposting}
               onPress={repostNow}
               style={{
@@ -1337,8 +1333,8 @@ function BaseItem({
                   Instantly share this post to your feed
                 </StyledText>
               </View>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               disabled={isReposting}
               onPress={openQuoteComposer}
               style={{
@@ -1368,8 +1364,8 @@ function BaseItem({
                   Add your own thoughts before sharing
                 </StyledText>
               </View>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               disabled={isReposting}
               onPress={() => setShowRepostSheet(false)}
               style={{
@@ -1384,7 +1380,7 @@ function BaseItem({
               >
                 Cancel
               </StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </CustomModal>
         <PostReactionsModal
@@ -1421,7 +1417,7 @@ function BaseItem({
               marginBottom: spacing.x13,
             }}
           >
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 onPress();
               }}
@@ -1578,8 +1574,8 @@ function BaseItem({
                   </View>
                 ) : null}
               </View>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={() => {
                 setShowOptions(true);
               }}
@@ -1589,7 +1585,7 @@ function BaseItem({
                 icon={faEllipsisVertical}
                 color={transparency ? Colors.neutral[600] : secondaryTextColor}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : null}
 
@@ -1616,7 +1612,7 @@ function BaseItem({
           >
             <View style={{ position: 'relative' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity
+                <Pressable
                   onLongPress={showReactionBar}
                   onPress={() => {
                     if (isReactionUpdatingRef.current) {
@@ -1633,7 +1629,6 @@ function BaseItem({
                     reactPost(SocialPostReactionType.love);
                   }}
                   delayLongPress={180}
-                  activeOpacity={0.8}
                   hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                 >
                   <Animated.View style={{ transform: [{ scale: mainReactionScale }] }}>
@@ -1650,9 +1645,9 @@ function BaseItem({
                       />
                     )}
                   </Animated.View>
-                </TouchableOpacity>
+                </Pressable>
                 {totalReactionCount > 0 ? (
-                  <TouchableOpacity
+                  <Pressable
                     disabled={!canViewReactions}
                     onPress={() => openReactionsModal('all')}
                     style={{ marginLeft: spacing.x5, paddingHorizontal: spacing.x2 }}
@@ -1666,7 +1661,7 @@ function BaseItem({
                     >
                       {totalReactionCount}
                     </StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 ) : null}
               </View>
               {isReactionBarVisible ? (
@@ -1692,7 +1687,7 @@ function BaseItem({
               ) : null}
             </View>
 
-            <TouchableOpacity
+            <Pressable
               disabled={!onCommentsPress}
               onPress={() => {
                 if (onCommentsPress) {
@@ -1716,10 +1711,10 @@ function BaseItem({
                   {displayCommentCount}
                 </StyledText>
               ) : null}
-            </TouchableOpacity>
+            </Pressable>
 
             {canRepost ? (
-              <TouchableOpacity
+              <Pressable
                 disabled={isReposting}
                 onPress={openRepostSheet}
                 style={{
@@ -1740,19 +1735,16 @@ function BaseItem({
                     {displayRepostCount}
                   </StyledText>
                 ) : null}
-              </TouchableOpacity>
+              </Pressable>
             ) : null}
 
-            <TouchableOpacity
-              onPress={sharePost}
-              style={{ flexDirection: 'row', alignItems: 'center' }}
-            >
+            <Pressable onPress={sharePost} style={{ flexDirection: 'row', alignItems: 'center' }}>
               <SendIcon width={22} height={22} color={shareIconColor} />
-            </TouchableOpacity>
+            </Pressable>
 
             {actionBarRightAccessory ?? null}
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 if (isThisPostSaved) {
                   const removePromise = postData.id
@@ -1790,12 +1782,12 @@ function BaseItem({
                 size={22}
                 color={secondaryTextColor}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
         {postData.externalLink ? (
-          <TouchableOpacity
+          <Pressable
             onPress={() => {
               if (postData.externalLink) OpenURLButton(postData.externalLink);
             }}
@@ -1812,7 +1804,7 @@ function BaseItem({
             </View>
 
             <StyledText style={{ color: brandColors.primaryDark }}>View Post</StyledText>
-          </TouchableOpacity>
+          </Pressable>
         ) : null}
       </View>
       <OptionsModal
@@ -1853,7 +1845,7 @@ function BaseItem({
           />
         </View>
         <View style={{ paddingHorizontal: spacing.x20, paddingVertical: spacing.x16 }}>
-          <TouchableOpacity
+          <Pressable
             disabled={isReposting}
             onPress={repostNow}
             style={{
@@ -1883,8 +1875,8 @@ function BaseItem({
                 Instantly share this post to your feed
               </StyledText>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             disabled={isReposting}
             onPress={openQuoteComposer}
             style={{
@@ -1914,8 +1906,8 @@ function BaseItem({
                 Add your own thoughts before sharing
               </StyledText>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             disabled={isReposting}
             onPress={() => setShowRepostSheet(false)}
             style={{
@@ -1930,7 +1922,7 @@ function BaseItem({
             >
               Cancel
             </StyledText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </CustomModal>
       <PostReactionsModal

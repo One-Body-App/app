@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, TouchableOpacity, ScrollView, Switch, ActivityIndicator } from 'react-native';
+import { View, Pressable, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
@@ -301,7 +301,7 @@ function Settings({ navigation }: Props) {
                 </StyledText>
               </View>
               {userData?.tokenResult.signInProvider === 'password' ? (
-                <TouchableOpacity
+                <Pressable
                   onPress={() =>
                     navigation.navigate('ConfirmLogin', {
                       toScreen: 'EmailChange',
@@ -335,10 +335,10 @@ function Settings({ navigation }: Props) {
                       Change to a new email
                     </StyledText>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ) : null}
               {userData?.tokenResult.signInProvider === 'password' ? (
-                <TouchableOpacity
+                <Pressable
                   onPress={
                     () => {
                       navigation.navigate('ConfirmLogin', {
@@ -375,7 +375,7 @@ function Settings({ navigation }: Props) {
                       Change your password
                     </StyledText>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ) : null}
             </View>
           ) : null}
@@ -488,7 +488,7 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => navigation.navigate('PrivacySettings')}
               style={{ flexDirection: 'row' }}
             >
@@ -513,7 +513,7 @@ function Settings({ navigation }: Props) {
                   Control who can tag and interact with you
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             style={[
@@ -534,7 +534,7 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 navigation.navigate(
                   creatorMenuState === 'settings' ? 'InfluencerSettings' : 'InfluencerStepOne'
@@ -567,7 +567,7 @@ function Settings({ navigation }: Props) {
                   {creatorMenuDescription}
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             style={[
@@ -588,7 +588,7 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => navigation.navigate('RemoveAccount')}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -610,7 +610,7 @@ function Settings({ navigation }: Props) {
                   Remove Account
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             style={[
@@ -631,7 +631,7 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => OpenURLButton('https://onebodyapp.com')}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -656,9 +656,9 @@ function Settings({ navigation }: Props) {
                   Who we are
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -683,9 +683,9 @@ function Settings({ navigation }: Props) {
                   How we collect and use data
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -710,9 +710,9 @@ function Settings({ navigation }: Props) {
                   Terms of using One Body
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            {/* <TouchableOpacity
+            {/* <Pressable
               onPress={() =>
                 navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
               }
@@ -739,9 +739,9 @@ function Settings({ navigation }: Props) {
                   Ensure your safety on One Body
                 </StyledText>
               </View>
-            </TouchableOpacity> */}
+            </Pressable> */}
 
-            <TouchableOpacity onPress={() => {}} style={{ flexDirection: 'row' }}>
+            <Pressable onPress={() => {}} style={{ flexDirection: 'row' }}>
               <View
                 style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
               >
@@ -763,7 +763,7 @@ function Settings({ navigation }: Props) {
                   {appVersion}
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </ScrollView>

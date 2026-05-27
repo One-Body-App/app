@@ -11,7 +11,8 @@
     "test": "jest",
     "lint": "eslint --fix . --ext .js,.jsx,.ts,.tsx",
     "version": "node scripts/generate-changelog.js && git add CHANGELOG.md",
-    "postinstall": "patch-package && husky install"
+    "postinstall": "patch-package && husky install",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@clerk/expo": "^3.2.16",
@@ -216,6 +217,7 @@
     "path": "^0.12.7",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^3.0.0",
+    "react-doctor": "^0.2.9",
     "react-native-clean-project": "^4.0.3",
     "react-native-config": "^1.5.1",
     "react-native-svg-transformer": "^1.2.0",

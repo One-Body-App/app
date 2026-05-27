@@ -1,4 +1,4 @@
-import { buildSlideHeights, clampAspectRatio } from '../ImageSlider';
+import { buildSlideHeights, clampAspectRatio } from '../ImageSlider.utils';
 import { ImageForSlider } from '../types';
 
 const MIN_RATIO = 9 / 16;

@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
   Modal,
+  Pressable,
   View,
   StyleSheet,
   Dimensions,
-  TouchableWithoutFeedback,
   Platform,
   StyleProp,
   ViewStyle,
@@ -20,37 +20,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import BottomSheetEntranceGlow from './BottomSheetEntranceGlow';
+import { getKeyboardAvoidanceOffset } from './CustomModal.utils';
 
 const screenHeight = Dimensions.get('window').height;
-
-export const getKeyboardAvoidanceOffset = ({
-  avoidKeyboard,
-  modalVisible,
-  keyboardHeight,
-  sheetHeight,
-  viewportHeight = screenHeight,
-}: {
-  avoidKeyboard: boolean;
-  modalVisible: boolean;
-  keyboardHeight: number;
-  sheetHeight: number;
-  viewportHeight?: number;
-}) => {
-  if (!avoidKeyboard || !modalVisible) {
-    return 0;
-  }
-
-  const safeHeight = Math.max(0, keyboardHeight);
-  if (safeHeight === 0) {
-    return 0;
-  }
-
-  if (sheetHeight <= 0) {
-    return safeHeight;
-  }
-
-  return Math.min(safeHeight, Math.max(0, viewportHeight - sheetHeight));
-};
 
 export default function CustomModal({
   modalVisible,
@@ -105,6 +77,7 @@ export default function CustomModal({
         modalVisible,
         keyboardHeight: height,
         sheetHeight,
+        viewportHeight: screenHeight,
       }),
     [avoidKeyboard, modalVisible, sheetHeight]
   );
@@ -166,11 +139,11 @@ export default function CustomModal({
 
   return (
     <Modal visible={modalVisible} animationType="fade" transparent onRequestClose={onclose}>
-      <TouchableWithoutFeedback onPress={onclose}>
-        <View style={styles.backdrop}>
+      <Pressable style={styles.backdrop} onPress={onclose}>
+        <View pointerEvents="none" style={styles.backdrop}>
           <View style={styles.backdropScrim} />
         </View>
-      </TouchableWithoutFeedback>
+      </Pressable>
 
       <View style={styles.wrapper} pointerEvents="box-none">
         {enableEntranceGlow ? (

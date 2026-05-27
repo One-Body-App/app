@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, Pressable, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import FastImage from 'react-native-fast-image';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
@@ -67,8 +67,7 @@ function WatchCommentRow({
         />
 
         {previewReply ? (
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             onPress={() => {
               onReply(comment);
             }}
@@ -80,12 +79,11 @@ function WatchCommentRow({
             <Text numberOfLines={2} style={styles.replyPreviewText}>
               {previewReply.content}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ) : null}
 
         <View style={styles.commentActionsRow}>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             disabled={isReacting}
             onPress={() => {
               onToggleReaction(commentId, Boolean(myReaction));
@@ -102,17 +100,16 @@ function WatchCommentRow({
             >
               {reactionCount}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             onPress={() => {
               onReply(comment);
             }}
             style={styles.replyButton}
           >
             <Text style={styles.replyButtonText}>Reply</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </>
@@ -120,8 +117,7 @@ function WatchCommentRow({
 
   if (onLongPress) {
     return (
-      <TouchableOpacity
-        activeOpacity={0.92}
+      <Pressable
         delayLongPress={220}
         onLongPress={() => {
           onLongPress(comment);
@@ -129,7 +125,7 @@ function WatchCommentRow({
         style={styles.commentRow}
       >
         {content}
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 

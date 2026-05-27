@@ -3,7 +3,7 @@ import {
   DrawerContentScrollView,
   DrawerItem,
 } from '@react-navigation/drawer';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Pressable, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,7 +60,7 @@ export default function DrawerContent({
     >
       <View style={styles.drawerContent}>
         <View>
-          <TouchableOpacity
+          <Pressable
             onPress={() => {
               navigation.navigate('Main', {
                 screen: 'MyProfileTab',
@@ -135,7 +135,7 @@ export default function DrawerContent({
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
+          </Pressable>
           <DrawerItem
             label="Home"
             focused={focusedRoute.name === 'Main'}

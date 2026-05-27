@@ -1,7 +1,7 @@
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { isObject } from 'lodash';
+import isObject from 'lodash/isObject';
 import React, { useLayoutEffect, useState } from 'react';
-import { StyleProp, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { StyleProp, TextStyle, Pressable, View, ViewStyle } from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 
 import { decode } from 'html-entities';
@@ -152,7 +152,7 @@ function ArticleItem({
       onCommentsPress={handleCommentsPress}
       onTelemetryEvent={onTelemetryEvent}
     >
-      <TouchableOpacity
+      <Pressable
         onPress={() => {
           onTelemetryEvent?.('post_open', {
             postType: 'rss',
@@ -253,7 +253,7 @@ function ArticleItem({
               ) : null}
             </View>
             {/* <View style={{ flex: 0, justifyContent: 'center' }}>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   showModal(item);
                 }}
@@ -264,17 +264,17 @@ function ArticleItem({
                   size={iconSize ?? 25}
                   color={'#70747D'}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View> */}
           </View>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </BaseItem>
   );
 }
 export default React.memo(ArticleItem, areArticleItemPropsEqual);
 
-// <TouchableOpacity
+// <Pressable
 //   onPress={() => {
 //     OpenURLButton(itemData?.link);
 //   }}
@@ -291,4 +291,4 @@ export default React.memo(ArticleItem, areArticleItemPropsEqual);
 
 //     <Text style={styles.blogposthour}>{timeSince(itemData?.created)} ago</Text>
 //   </View>
-// </TouchableOpacity>
+// </Pressable>

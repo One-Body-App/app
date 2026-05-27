@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  SafeAreaView,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Brand Colors
 const COLORS = {
@@ -31,9 +24,9 @@ function FilterPill({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={[styles.pill, isActive && styles.pillActive]} onPress={onPress}>
+    <Pressable style={[styles.pill, isActive && styles.pillActive]} onPress={onPress}>
       <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{label}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -42,10 +35,10 @@ function DropdownField({ label, placeholder }: { label: string; placeholder: str
   return (
     <View style={styles.inputGroup}>
       <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity style={styles.inputBox}>
+      <Pressable style={styles.inputBox}>
         <Text style={styles.inputText}>{placeholder}</Text>
         <Text style={styles.chevron}>▼</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
@@ -68,13 +61,13 @@ export default function ServeFiltersScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
+        <Pressable>
           <Text style={styles.closeIcon}>✕</Text>
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Filter</Text>
-        <TouchableOpacity onPress={handleClearAll}>
+        <Pressable onPress={handleClearAll}>
           <Text style={styles.clearText}>Clear all</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -187,9 +180,9 @@ export default function ServeFiltersScreen() {
 
       {/* Sticky Footer Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.applyButton}>
+        <Pressable style={styles.applyButton}>
           <Text style={styles.applyButtonText}>Apply filter</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

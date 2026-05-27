@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, View, TextInput, Pressable, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Toast from 'react-native-simple-toast';
@@ -22,7 +22,7 @@ function PrayerInputHome({ color }: { color: string }) {
   const [prayer, setPrayer] = useState('');
   const [error, seterror] = React.useState<string | null>();
 
-  const ValidatePrayer = () => {
+  const validatePrayer = () => {
     if (prayer != null && payerType != null) {
       if (prayer.length <= 150 && prayer !== '') {
         seterror(null);
@@ -173,15 +173,15 @@ function PrayerInputHome({ color }: { color: string }) {
           }}
         />
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
-            ValidatePrayer();
+            validatePrayer();
           }}
           style={styles.Button}
         >
           <Send height={getHeight(2)} width={getWidth(10)} />
           {/* <Ionicons name="send" size={20} color="#032F3C" /> */}
-        </TouchableOpacity>
+        </Pressable>
       </View>
       {prayer !== '' && error == null ? (
         <StyledText

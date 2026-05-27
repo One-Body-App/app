@@ -90,12 +90,16 @@ export default function ProfileAvatarOverlay({ imageUri, animation }: Props) {
   }));
 
   const rImageStyle = useAnimatedStyle(() => ({
-    left: imageXCoord.value,
-    top: imageYCoord.value,
-    width: imageSize.value,
-    height: imageSize.value,
     opacity: isOpen.value,
-    transform: [{ scale: imageScale.value }],
+    transform: [
+      {
+        translateX: imageXCoord.value - expandedSize / 2 + (imageSize.value * imageScale.value) / 2,
+      },
+      {
+        translateY: imageYCoord.value - expandedSize / 2 + (imageSize.value * imageScale.value) / 2,
+      },
+      { scale: (imageSize.value / expandedSize) * imageScale.value },
+    ],
   }));
 
   // iOS: animate blur intensity via animatedProps (avoids full component re-render)
@@ -134,7 +138,10 @@ export default function ProfileAvatarOverlay({ imageUri, animation }: Props) {
           <Icon name="close" size={22} color="#FFFFFF" />
         </Animated.View>
 
-        <AnimatedPressable style={[styles.avatarImage, rImageStyle]} onPress={close}>
+        <AnimatedPressable
+          style={[styles.avatarImage, { width: expandedSize, height: expandedSize }, rImageStyle]}
+          onPress={close}
+        >
           {imageUri ? (
             <FastImage
               source={{ uri: imageUri }}

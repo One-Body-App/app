@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Animated, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Pressable, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTheme } from '@react-navigation/native';
@@ -286,10 +286,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [initialCameraTarget, setInitialCameraTarget] = useState<Coordinate>(DEFAULT_CENTER);
   const { keyboardHeight, keyboardVisible } = useConnectKeyboardMetrics();
-  const mapStyleJSON = useMemo(
-    () => (dark ? CONNECT_MAP_STYLE_DARK : CONNECT_MAP_STYLE_LIGHT),
-    [dark]
-  );
+  const mapStyleJSON = dark ? CONNECT_MAP_STYLE_DARK : CONNECT_MAP_STYLE_LIGHT;
 
   useMountEffect(() => {
     if (route.params?.initialTab) {
@@ -622,13 +619,9 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
                 ? item.id === places.selectedPlaceId
                 : item.id === validSelectedItemId;
             const markerContent = (
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => handleMarkerPress(item)}
-                style={styles.markerTapTarget}
-              >
+              <Pressable onPress={() => handleMarkerPress(item)} style={styles.markerTapTarget}>
                 <ConnectMapMarker iconName={getMarkerIcon(item.type)} active={isSelected} />
-              </TouchableOpacity>
+              </Pressable>
             );
 
             if (mapbox.MarkerView) {

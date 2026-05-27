@@ -3,7 +3,7 @@ import {
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
 import React from 'react';
-import { Platform, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 
 import { useTheme } from '@react-navigation/native';
@@ -69,7 +69,7 @@ function SettingsStack() {
           },
           title: 'Settings',
           headerLeft: () => (
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 if (navigation.canGoBack()) {
                   navigation.goBack();
@@ -92,7 +92,7 @@ function SettingsStack() {
                 size={28}
                 color={dark ? colors.text : Colors.primary.brand}
               />
-            </TouchableOpacity>
+            </Pressable>
           ),
           headerRight: () => <View style={{ width: 40, height: 40 }} />,
         })}
@@ -117,7 +117,7 @@ function SettingsStack() {
           headerLeftContainerStyle: { paddingLeft: spacing.x8 },
           headerRightContainerStyle: { paddingRight: spacing.x8 },
           headerLeft: () => (
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 if (navigation.canGoBack()) {
                   navigation.goBack();
@@ -132,7 +132,7 @@ function SettingsStack() {
                 size={28}
                 color={dark ? colors.text : Colors.primary.brand}
               />
-            </TouchableOpacity>
+            </Pressable>
           ),
           headerRight: () => <View style={{ width: 40, height: 40 }} />,
         })}
@@ -151,7 +151,7 @@ function SettingsStack() {
           headerLeftContainerStyle: { paddingLeft: spacing.x8 },
           headerRightContainerStyle: { paddingRight: spacing.x8 },
           headerLeft: () => (
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 if (navigation.canGoBack()) {
                   navigation.goBack();
@@ -166,7 +166,7 @@ function SettingsStack() {
                 size={28}
                 color={dark ? colors.text : Colors.primary.brand}
               />
-            </TouchableOpacity>
+            </Pressable>
           ),
           headerRight: () => <View style={{ width: 40, height: 40 }} />,
         })}
@@ -190,7 +190,7 @@ function SettingsStack() {
           headerLeftContainerStyle: { paddingLeft: spacing.x8 },
           headerRightContainerStyle: { paddingRight: spacing.x8 },
           headerLeft: () => (
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 if (navigation.canGoBack()) {
                   navigation.goBack();
@@ -205,7 +205,7 @@ function SettingsStack() {
                 size={28}
                 color={dark ? colors.text : Colors.primary.brand}
               />
-            </TouchableOpacity>
+            </Pressable>
           ),
           headerRight: () => <View style={{ width: 40, height: 40 }} />,
         })}

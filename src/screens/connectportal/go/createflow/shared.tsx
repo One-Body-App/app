@@ -3,13 +3,13 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { ReactNode } from 'react';
 import { useTheme } from '@react-navigation/native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -150,13 +150,13 @@ export function CreateFlowLayout({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={[styles.header, { backgroundColor: palette.screenBg }]}>
-          <TouchableOpacity
+          <Pressable
             style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
             onPress={onBack}
             disabled={!onBack}
           >
             <MaterialIcons name="chevron-left" size={28} color={palette.accent} />
-          </TouchableOpacity>
+          </Pressable>
           <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>{title}</Text>
           <View style={styles.headerSpacer} />
         </View>
@@ -204,7 +204,7 @@ export function CreateFlowLayout({
 
               <View style={styles.footerButtonRow}>
                 {saveLabel && onSave ? (
-                  <TouchableOpacity
+                  <Pressable
                     style={[
                       styles.secondaryButton,
                       {
@@ -217,9 +217,9 @@ export function CreateFlowLayout({
                     <Text style={[styles.secondaryButtonText, { color: palette.secondaryBtnText }]}>
                       {saveLabel}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ) : (
-                  <TouchableOpacity
+                  <Pressable
                     style={[
                       styles.secondaryButton,
                       {
@@ -234,9 +234,9 @@ export function CreateFlowLayout({
                     <Text style={[styles.secondaryButtonText, { color: palette.secondaryBtnText }]}>
                       {backLabel}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
-                <TouchableOpacity
+                <Pressable
                   style={[
                     styles.primaryButton,
                     { backgroundColor: palette.primaryBtnBg },
@@ -248,7 +248,7 @@ export function CreateFlowLayout({
                   <Text style={[styles.primaryButtonText, { color: palette.primaryBtnText }]}>
                     {nextLabel}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </>

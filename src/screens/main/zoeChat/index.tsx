@@ -5,7 +5,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { CommonActions, useFocusEffect, useIsFocused, useTheme } from '@react-navigation/native';
@@ -170,7 +170,7 @@ function ZoeChat({ navigation }: Props) {
         ]}
       >
         <View style={styles.headerRow}>
-          <TouchableOpacity
+          <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back to Home"
             onPress={handleBackPress}
@@ -181,7 +181,7 @@ function ZoeChat({ navigation }: Props) {
               size={20}
               color={dark ? colors.text : Colors.primary.brand}
             />
-          </TouchableOpacity>
+          </Pressable>
 
           {Platform.OS === 'ios' ? (
             <StyledText style={[styles.headerTitle, { color: colors.text }]}>ZoeAI</StyledText>

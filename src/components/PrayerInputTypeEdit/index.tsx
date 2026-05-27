@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { Text, View, TextInput, Pressable } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import PropTypes from 'prop-types';
@@ -35,7 +35,7 @@ function PrayerInputTypeEdit({
   const [prayer, setPrayer] = useState(pray);
   const [error, setError] = React.useState<string | null>(null);
 
-  const ValidatePrayer = () => {
+  const validatePrayer = () => {
     if (prayer != null && payerType != null) {
       if (prayer.length <= 150) {
         setError(null);
@@ -122,14 +122,14 @@ function PrayerInputTypeEdit({
           style={{ ...styles.TextInput, color }}
         />
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
-            ValidatePrayer();
+            validatePrayer();
           }}
           style={styles.Button}
         >
           <Ionicons name="send" size={20} color="#126B87" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       {prayer != null && error == null ? (
         <Text style={{ color, paddingLeft: getWidth(5) }}>{prayer.length}/150 Characters left</Text>

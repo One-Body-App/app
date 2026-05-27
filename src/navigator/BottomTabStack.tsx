@@ -16,7 +16,7 @@ import {
   getFocusedRouteNameFromRoute,
   useFocusEffect,
   useIsFocused,
-  useNavigation,
+  useNavigationState,
   useTheme,
 } from '@react-navigation/native';
 import HomeStack from './HomeStack';
@@ -239,10 +239,10 @@ function PostTabPlaceholder() {
   return null;
 }
 
-function getActiveRouteNameFromNavigationState(
-  navigation: Pick<BottomTabBarProps['navigation'], 'getState'> | undefined
-) {
-  const state = navigation?.getState?.();
+function getActiveRouteNameFromNavigationState(state: {
+  index?: number;
+  routes?: { name?: unknown }[];
+}) {
   const activeRoute =
     state && Array.isArray(state.routes) ? state.routes[state.index ?? 0] : undefined;
 
@@ -250,30 +250,7 @@ function getActiveRouteNameFromNavigationState(
 }
 
 function useIsMainDrawerRouteActive() {
-  const navigation = useNavigation<any>();
-  const [isMainDrawerRouteActive, setIsMainDrawerRouteActive] = useState(
-    () => getActiveRouteNameFromNavigationState(navigation) === 'Main'
-  );
-
-  useEffect(() => {
-    const syncDrawerRoute = () => {
-      setIsMainDrawerRouteActive(getActiveRouteNameFromNavigationState(navigation) === 'Main');
-    };
-
-    syncDrawerRoute();
-
-    const unsubscribeState = navigation.addListener?.('state', syncDrawerRoute);
-    const unsubscribeFocus = navigation.addListener?.('focus', syncDrawerRoute);
-    const unsubscribeBlur = navigation.addListener?.('blur', syncDrawerRoute);
-
-    return () => {
-      if (typeof unsubscribeState === 'function') unsubscribeState();
-      if (typeof unsubscribeFocus === 'function') unsubscribeFocus();
-      if (typeof unsubscribeBlur === 'function') unsubscribeBlur();
-    };
-  }, [navigation]);
-
-  return isMainDrawerRouteActive;
+  return useNavigationState((state) => getActiveRouteNameFromNavigationState(state) === 'Main');
 }
 
 export function AnimatedTabBar(props: BottomTabBarProps) {

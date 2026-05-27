@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, Pressable, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
@@ -267,7 +267,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
             </View>
 
             <View style={styles.organizerRow}>
-              <TouchableOpacity
+              <Pressable
                 style={[
                   styles.organizerButton,
                   { backgroundColor: palette.inputBg, borderColor: palette.border },
@@ -278,8 +278,8 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
                 <StyledText style={[styles.organizerButtonText, { color: palette.textPrimary }]}>
                   Event Dashboard
                 </StyledText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[
                   styles.organizerButton,
                   { backgroundColor: palette.inputBg, borderColor: palette.border },
@@ -290,7 +290,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
                 <StyledText style={[styles.organizerButtonText, { color: palette.textPrimary }]}>
                   My Events
                 </StyledText>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <ConnectPlacesQuickChips
@@ -353,8 +353,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
             </View>
 
             {featuredEvent ? (
-              <TouchableOpacity
-                activeOpacity={0.94}
+              <Pressable
                 style={styles.featuredWrap}
                 onPress={() => handleEventPress(featuredEvent.id, 'connect_go_landing_featured')}
               >
@@ -424,7 +423,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
                     </View>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ) : (
               <View
                 style={[
@@ -452,7 +451,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
                 </StyledText>
               </View>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => go.setFilterSheetOpen(true)}
                 style={[
                   styles.filterIconButton,
@@ -463,13 +462,12 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
                 ]}
               >
                 <FilterSortIcon width={20} height={20} color={palette.activeText} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         }
         renderItem={({ item: eventRecord }) => (
-          <TouchableOpacity
-            activeOpacity={0.92}
+          <Pressable
             style={[
               styles.eventCard,
               { backgroundColor: palette.inputBg, borderColor: palette.border },
@@ -513,7 +511,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
               </View>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               style={[
                 styles.eventAction,
                 { borderColor: palette.activeText, backgroundColor: 'transparent' },
@@ -523,8 +521,8 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
               <StyledText style={[styles.eventActionText, { color: palette.activeText }]}>
                 Details
               </StyledText>
-            </TouchableOpacity>
-          </TouchableOpacity>
+            </Pressable>
+          </Pressable>
         )}
         ItemSeparatorComponent={EventItemSeparator}
         ListEmptyComponent={

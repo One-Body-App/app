@@ -2,7 +2,7 @@ import {
   AppState,
   View,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Image,
   ActivityIndicator,
   Platform,
@@ -40,12 +40,18 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 import useObservedEffect from '@/src/hooks/useObservedEffect';
 import type { SelectedVideoSource } from '@/src/services/videoProcessing/types';
 import StyledText from '../styled/Text';
+import {
+  getDefaultRecorderCaptureSettings,
+  isNoRecordingInProgressError,
+  isRecordingCanceledError,
+  shouldAllowCameraFlip,
+  type BitratePreset,
+  type CodecPreset,
+} from './Camera.utils';
 
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
 const FPS_PRESETS = [24, 30, 60] as const;
-const BITRATE_PRESETS = ['low', 'normal', 'high'] as const;
-const CODEC_PRESETS = ['h264', 'h265'] as const;
 const RECORDER_RATIO_OPTIONS = ['1:1', '4:3', '16:9', '9:16'] as const;
 const FILTER_PRESETS = [
   { id: 'None', overlay: 'transparent' },
@@ -58,8 +64,6 @@ const CAMERA_SESSION_RELEASE_DELAY_MS = Platform.OS === 'ios' ? 180 : 60;
 const IOS_RECORDING_STOP_SETTLE_MS = 400;
 
 type FpsPreset = (typeof FPS_PRESETS)[number];
-type BitratePreset = (typeof BITRATE_PRESETS)[number];
-type CodecPreset = (typeof CODEC_PRESETS)[number];
 type RecorderRatio = (typeof RECORDER_RATIO_OPTIONS)[number];
 
 type Props = {
@@ -67,87 +71,9 @@ type Props = {
   onClose?: () => void;
 };
 
-export const getDefaultRecorderCaptureSettings = (platformOS: string) => ({
-  videoBitRate: (platformOS === 'ios' ? 'normal' : 'high') as BitratePreset,
-  videoCodec: (platformOS === 'ios' ? 'h264' : 'h265') as CodecPreset,
-});
-
-export const shouldAllowCameraFlip = ({
-  isRecording,
-  isTearingDown,
-  hasTargetDevice,
-}: {
-  isRecording: boolean;
-  isTearingDown: boolean;
-  hasTargetDevice: boolean;
-}) => !isRecording && !isTearingDown && hasTargetDevice;
-
 const DEFAULT_RECORDER_CAPTURE_SETTINGS = getDefaultRecorderCaptureSettings(Platform.OS);
 const DEFAULT_RECORDER_VIDEO_BIT_RATE = DEFAULT_RECORDER_CAPTURE_SETTINGS.videoBitRate;
 const DEFAULT_RECORDER_VIDEO_CODEC = DEFAULT_RECORDER_CAPTURE_SETTINGS.videoCodec;
-
-const isRecordingCanceledError = (error: unknown) => {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-
-  const { code } = error as { code?: unknown };
-  return code === 'capture/recording-canceled' || code === 'capture/recording-cancelled';
-};
-
-const collectCameraErrorSignals = (
-  error: unknown,
-  seen = new Set<unknown>(),
-  depth = 0
-): string[] => {
-  if (!error || depth > 3 || seen.has(error)) {
-    return [];
-  }
-
-  if (typeof error === 'string') {
-    return [error];
-  }
-
-  if (error instanceof Error) {
-    seen.add(error);
-    return [
-      error.message,
-      ...collectCameraErrorSignals((error as Error & { cause?: unknown }).cause, seen, depth + 1),
-    ].filter(Boolean);
-  }
-
-  if (typeof error !== 'object') {
-    return [];
-  }
-
-  seen.add(error);
-  const candidate = error as Record<string, unknown>;
-  const directValues = [
-    candidate.code,
-    candidate.message,
-    candidate.description,
-    candidate.localizedDescription,
-    candidate.NSLocalizedDescription,
-    candidate.NSLocalizedFailureReason,
-  ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
-
-  return [
-    ...directValues,
-    ...collectCameraErrorSignals(candidate.cause, seen, depth + 1),
-    ...collectCameraErrorSignals(candidate.userInfo, seen, depth + 1),
-    ...collectCameraErrorSignals(candidate.nativeError, seen, depth + 1),
-  ];
-};
-
-export const isNoRecordingInProgressError = (error: unknown) => {
-  const normalizedSignals = collectCameraErrorSignals(error).map((value) => value.toLowerCase());
-  return normalizedSignals.some(
-    (value) =>
-      value === 'capture/no-recording-in-progress' ||
-      value.includes('no active video recording in progress') ||
-      value.includes('no recording in progress')
-  );
-};
 
 const getDeviceDefaultExposure = (device?: CameraDevice) =>
   device ? Math.max(device.minExposure, Math.min(device.maxExposure, 0)) : 0;
@@ -355,11 +281,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     cameraViewportSize.width > cameraViewportSize.height;
   const isLandscapeMode = isLandscapeViewport;
   const isWideLandscapeCapture = selectedRatio === '16:9' && isLandscapeViewport;
-  const landscapeUtilityTop = useMemo(() => topInset + spacing.x60, [topInset]);
-  const landscapeRatioBottom = useMemo(
-    () => landscapeBottomInset + spacing.x10,
-    [landscapeBottomInset]
-  );
+  const landscapeUtilityTop = topInset + spacing.x60;
+  const landscapeRatioBottom = landscapeBottomInset + spacing.x10;
   const landscapeCaptureTop = useMemo(() => {
     const captureStackHeight = 224;
     const minimumTop = landscapeUtilityTop + spacing.x12;
@@ -374,10 +297,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
 
     return Math.min(Math.max(centeredTop, minimumTop), maxTop);
   }, [cameraViewportSize.height, isLandscapeMode, landscapeBottomInset, landscapeUtilityTop]);
-  const landscapeSettingsTop = useMemo(
-    () => landscapeUtilityTop + spacing.x8,
-    [landscapeUtilityTop]
-  );
+  const landscapeSettingsTop = landscapeUtilityTop + spacing.x8;
   const previewFrameSize = useMemo(() => {
     if (
       isWideLandscapeCapture ||
@@ -858,9 +778,9 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     return (
       <View style={videoPostStyles.noCam}>
         <StyledText>Camera and microphone permissions are required.</StyledText>
-        <TouchableOpacity style={videoPostStyles.permissionButton} onPress={requestPermissions}>
+        <Pressable style={videoPostStyles.permissionButton} onPress={requestPermissions}>
           <StyledText style={videoPostStyles.permissionButtonText}>Allow Access</StyledText>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }
@@ -870,9 +790,9 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
       <View style={videoPostStyles.noCam}>
         <StyledText>Camera unavailable right now.</StyledText>
         <StyledText>{cameraRuntimeErrorMessage}</StyledText>
-        <TouchableOpacity style={videoPostStyles.permissionButton} onPress={retryCameraSession}>
+        <Pressable style={videoPostStyles.permissionButton} onPress={retryCameraSession}>
           <StyledText style={videoPostStyles.permissionButtonText}>Retry Camera</StyledText>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }
@@ -984,9 +904,9 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
           isLandscapeMode && videoPostStyles.cameraTopRowLandscape,
         ]}
       >
-        <TouchableOpacity style={videoPostStyles.roundIconButton} onPress={handleClose}>
+        <Pressable style={videoPostStyles.roundIconButton} onPress={handleClose}>
           <MaterialIcons name="close" size={22} color="#ffffff" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View
@@ -997,7 +917,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
           { top: isLandscapeMode ? landscapeUtilityTop : topInset },
         ]}
       >
-        <TouchableOpacity
+        <Pressable
           testID="video-recorder-flash-button"
           style={videoPostStyles.roundIconButton}
           onPress={() => setFlashMode((value) => (value === 'on' ? 'off' : 'on'))}
@@ -1008,14 +928,14 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
             size={18}
             color="#fff"
           />
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           style={videoPostStyles.roundIconButton}
           onPress={() => setIsAudioEnabled((value) => !value)}
         >
           <MaterialIcons name={isAudioEnabled ? 'mic' : 'mic-off'} size={18} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           style={[
             videoPostStyles.roundIconButton,
             !format?.supportsVideoHdr && videoPostStyles.roundIconButtonDisabled,
@@ -1024,16 +944,16 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
           disabled={!format?.supportsVideoHdr}
         >
           <MaterialIcons name="hdr-weak" size={18} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={videoPostStyles.roundIconButton} onPress={cycleFilter}>
+        </Pressable>
+        <Pressable style={videoPostStyles.roundIconButton} onPress={cycleFilter}>
           <MaterialIcons name="filter-vintage" size={18} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           style={videoPostStyles.roundIconButton}
           onPress={() => setIsSettingsOpen((value) => !value)}
         >
           <MaterialIcons name="tune" size={18} color="#fff" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {isSettingsOpen ? (
@@ -1049,20 +969,20 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
             <StyledText style={videoPostStyles.cameraSettingsKey}>Ratio</StyledText>
             <StyledText style={videoPostStyles.cameraSettingsValue}>{selectedRatio}</StyledText>
           </View>
-          <TouchableOpacity style={videoPostStyles.cameraSettingsRow} onPress={cycleFps}>
+          <Pressable style={videoPostStyles.cameraSettingsRow} onPress={cycleFps}>
             <StyledText style={videoPostStyles.cameraSettingsKey}>FPS</StyledText>
             <StyledText style={videoPostStyles.cameraSettingsValue}>
               {effectiveFps ?? fps}
             </StyledText>
-          </TouchableOpacity>
-          <TouchableOpacity style={videoPostStyles.cameraSettingsRow} onPress={cycleBitRate}>
+          </Pressable>
+          <Pressable style={videoPostStyles.cameraSettingsRow} onPress={cycleBitRate}>
             <StyledText style={videoPostStyles.cameraSettingsKey}>Bitrate</StyledText>
             <StyledText style={videoPostStyles.cameraSettingsValue}>{videoBitRate}</StyledText>
-          </TouchableOpacity>
-          <TouchableOpacity style={videoPostStyles.cameraSettingsRow} onPress={cycleVideoCodec}>
+          </Pressable>
+          <Pressable style={videoPostStyles.cameraSettingsRow} onPress={cycleVideoCodec}>
             <StyledText style={videoPostStyles.cameraSettingsKey}>Codec</StyledText>
             <StyledText style={videoPostStyles.cameraSettingsValue}>{videoCodec}</StyledText>
-          </TouchableOpacity>
+          </Pressable>
           <View style={videoPostStyles.cameraSettingsRow}>
             <StyledText style={videoPostStyles.cameraSettingsKey}>Filter</StyledText>
             <StyledText style={videoPostStyles.cameraSettingsValue}>{selectedFilter.id}</StyledText>
@@ -1087,7 +1007,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
           {RECORDER_RATIO_OPTIONS.map((ratioOption) => {
             const isActive = ratioOption === selectedRatio;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={ratioOption}
                 style={[
                   videoPostStyles.ratioOptionButton,
@@ -1105,14 +1025,14 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                 >
                   {ratioOption}
                 </StyledText>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </View>
         {!isCameraInitialized ? (
           <View style={videoPostStyles.cameraInitializingChip}>
             <StyledText style={videoPostStyles.cameraInitializingText}>
-              Preparing camera...
+              Preparing camera&hellip;
             </StyledText>
           </View>
         ) : null}
@@ -1125,7 +1045,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
         >
           {isLandscapeMode ? (
             <>
-              <TouchableOpacity
+              <Pressable
                 testID="video-recorder-flip-camera-button"
                 style={{ justifyContent: 'center' }}
                 onPress={handleFlipCamera}
@@ -1135,8 +1055,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                   resizeMode={FastImage.resizeMode.contain}
                   source={cameraIos}
                 />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 testID="video-recorder-record-button"
                 style={[
                   videoPostStyles.recordButton,
@@ -1155,11 +1075,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                     },
                   ]}
                 />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ justifyContent: 'center' }}
-                onPress={handleSelectionFromGallery}
-              >
+              </Pressable>
+              <Pressable style={{ justifyContent: 'center' }} onPress={handleSelectionFromGallery}>
                 <View style={videoPostStyles.galleryPreview}>
                   {latestGalleryImg ? (
                     <Image
@@ -1173,14 +1090,11 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                     />
                   )}
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             </>
           ) : (
             <>
-              <TouchableOpacity
-                style={{ justifyContent: 'center' }}
-                onPress={handleSelectionFromGallery}
-              >
+              <Pressable style={{ justifyContent: 'center' }} onPress={handleSelectionFromGallery}>
                 <View style={videoPostStyles.galleryPreview}>
                   {latestGalleryImg ? (
                     <Image
@@ -1194,8 +1108,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                     />
                   )}
                 </View>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 testID="video-recorder-record-button"
                 style={[
                   videoPostStyles.recordButton,
@@ -1214,8 +1128,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                     },
                   ]}
                 />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 testID="video-recorder-flip-camera-button"
                 style={{ justifyContent: 'center' }}
                 onPress={handleFlipCamera}
@@ -1225,7 +1139,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                   resizeMode={FastImage.resizeMode.contain}
                   source={cameraIos}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </>
           )}
         </View>

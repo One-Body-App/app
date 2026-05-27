@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TextInput, Pressable, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import PropTypes from 'prop-types';
 import Toast from 'react-native-simple-toast';
@@ -32,7 +32,7 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
   const [prayer, setPrayer] = useState('');
   const [error, setError] = React.useState<string | null>(null);
 
-  const ValidatePrayer = () => {
+  const validatePrayer = () => {
     if (prayer !== '' && payerType !== null) {
       if (prayer.length <= 150) {
         setError(null);
@@ -231,14 +231,14 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
           }}
         />
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
-            ValidatePrayer();
+            validatePrayer();
           }}
           style={styles.Button}
         >
           <Ionicons name="send" size={20} color="#032F3C" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       {prayer !== '' && error === null ? (
         <StyledText
