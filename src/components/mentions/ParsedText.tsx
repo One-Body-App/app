@@ -65,7 +65,7 @@ function ParsedText({
 
       nodes.push(
         <Text
-          key={`${mentionLabel}_${index}_${matchIndex}`}
+          key={`${mentionLabel}_${normalizedHandle}_${matchIndex}`}
           suppressHighlighting
           onPress={() => {
             if (onMentionPress) {

@@ -17,7 +17,7 @@ def node_require(script)
 install! 'cocoapods', :deterministic_uuids => false
 #use_frameworks! :linkage => :dynamic
 use_modular_headers!
-platform :ios, min_ios_version_supported
+platform :ios, '16.4'
 prepare_react_native_project!
 
 production = ENV["PRODUCTION"] == "1"

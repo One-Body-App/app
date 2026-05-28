@@ -351,9 +351,11 @@ function SignupForm({ navigation, route }: Props) {
     setFormError('');
     setFormSuccess('');
     const { email, password, cPassword, username, name } = state;
-    const emailError = await validator('email', email);
-    const passwordError = await validator('password', password);
-    const cPasswordError = await validator('cPassword', cPassword, { password });
+    const [emailError, passwordError, cPasswordError] = await Promise.all([
+      validator('email', email),
+      validator('password', password),
+      validator('cPassword', cPassword, { password }),
+    ]);
     const usernameError = username ? '' : 'Username is required';
     const nameError = name ? '' : 'Name is required';
 

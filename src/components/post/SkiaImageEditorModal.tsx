@@ -521,7 +521,7 @@ function SkiaImageEditorModal({
   const [tool, setTool] = useState<ToolId>('filters');
   const [filter, setFilter] = useState<FilterId>('original');
   const [adjust, setAdjust] = useState<AdjustPresetId>('none');
-  const [ratio, setRatio] = useState<RatioId>(defaultRatioForContext(usageContext));
+  const [ratio, setRatio] = useState<RatioId>(() => defaultRatioForContext(usageContext));
   const [transform, setTransform] = useState<TransformState>({
     scale: 1,
     translateX: 0,

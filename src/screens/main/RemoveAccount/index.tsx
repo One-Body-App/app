@@ -93,7 +93,7 @@ function RemoveAccount({ navigation }: Props) {
       >
         <ScrollView>
           <View>
-            <StyledText style={[Typography.header.h1]}>You will be missed</StyledText>
+            <StyledText style={Typography.header.h1}>You will be missed</StyledText>
             <View style={{ flexDirection: 'row' }}>
               <StyledText style={[Typography.subheader.R, { color: Colors.neutral[300] }]}>
                 We are sorry to see you go. Deleting your account will erase all of the data we have
@@ -143,7 +143,7 @@ function RemoveAccount({ navigation }: Props) {
 
                   return (
                     <Button
-                      key={index}
+                      key={item.reason}
                       text={item.reason}
                       onPress={() => setReason(item.reason)}
                       leftIcon={leftIcon}
@@ -242,12 +242,10 @@ function RemoveAccount({ navigation }: Props) {
                 navigation.goBack();
               }}
               wrapperViewBtnStyle={{ marginTop: spacing.x10 }}
-              btnStyle={[
-                {
-                  flex: 1,
-                  padding: Spacing.spacing.x10,
-                },
-              ]}
+              btnStyle={{
+                flex: 1,
+                padding: Spacing.spacing.x10,
+              }}
             />
           </View>
         </ScrollView>

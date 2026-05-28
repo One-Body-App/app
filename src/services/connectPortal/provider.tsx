@@ -156,7 +156,14 @@ const toTitleCase = (value: string) =>
     .join(' ');
 
 const uniqueOptions = (values: string[]) =>
-  Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).map((value) => ({
+  Array.from(
+    new Set(
+      values.flatMap((value) => {
+        const trimmedValue = value.trim();
+        return trimmedValue ? [trimmedValue] : [];
+      })
+    )
+  ).map((value) => ({
     label: toTitleCase(value),
     value,
   }));
@@ -198,10 +205,11 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ConnectPortalError>(null);
   const [activeTab, setActiveTab] = useState<ConnectTab>('Places');
-  const [viewModes, setViewModes] =
-    useState<Record<ConnectTab, ConnectViewMode>>(DEFAULT_VIEW_MODES);
-  const [searchByTab, setSearchByTab] = useState<Record<ConnectTab, string>>(DEFAULT_SEARCH);
-  const [placeFilters, setPlaceFilters] = useState<ConnectPlaceFilters>(
+  const [viewModes, setViewModes] = useState<Record<ConnectTab, ConnectViewMode>>(
+    () => DEFAULT_VIEW_MODES
+  );
+  const [searchByTab, setSearchByTab] = useState<Record<ConnectTab, string>>(() => DEFAULT_SEARCH);
+  const [placeFilters, setPlaceFilters] = useState<ConnectPlaceFilters>(() =>
     getDefaultConnectPlaceFilters()
   );
   const [placeRecords, setPlaceRecords] = useState<ConnectPlaceRecord[]>([]);

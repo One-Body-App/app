@@ -9,7 +9,7 @@ import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
 import NotificationSettings from '../screens/main/notificationSettings';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 import { spacing } from '../styles/spacing';
 import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 

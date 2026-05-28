@@ -22,7 +22,7 @@ import InfluencerStepFour from '../screens/influencerApplication/InfluencerStepF
 import CreatorReview from '../screens/influencerApplication/CreatorStepFive/CreatorReview';
 import CreatorSubmitSuccess from '../screens/influencerApplication/SuccessfulSubmit/CreatorSubmitSuccess';
 import NewPassword from '../screens/newPassword/NewPassword';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
 import { spacing } from '../styles/spacing';
 

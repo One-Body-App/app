@@ -1012,7 +1012,7 @@ function SocialItem({
                           numberOfLines={1}
                           style={{
                             color: Colors.neutral[400],
-                            fontSize: 11,
+                            fontSize: 12,
                             letterSpacing: 0.6,
                             fontWeight: '700',
                             textTransform: 'uppercase',
@@ -1140,7 +1140,7 @@ function SocialItem({
                                 numberOfLines={1}
                                 style={{
                                   color: Colors.neutral[400],
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   letterSpacing: 0.6,
                                   fontWeight: '700',
                                   textTransform: 'uppercase',

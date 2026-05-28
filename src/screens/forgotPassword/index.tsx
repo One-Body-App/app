@@ -79,7 +79,7 @@ function ForgotPassword({ route }: Props) {
       <ScrollView style={{ flexGrow: 1 }}>
         <View style={{ marginHorizontal: spacing.x16 }}>
           <View style={{ marginVertical: spacing.x16 }}>
-            <StyledText style={[Typography.header.h1]}>Forgot your password?</StyledText>
+            <StyledText style={Typography.header.h1}>Forgot your password?</StyledText>
 
             <StyledText
               style={[

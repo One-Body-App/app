@@ -5130,17 +5130,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-google-signin/google-signin@npm:^10.0.1":
-  version: 10.1.2
-  resolution: "@react-native-google-signin/google-signin@npm:10.1.2"
+"@react-native-google-signin/google-signin@npm:16.1.2":
+  version: 16.1.2
+  resolution: "@react-native-google-signin/google-signin@npm:16.1.2"
   peerDependencies:
-    expo: ">=47.0.0"
+    expo: ">=52.0.40"
     react: "*"
     react-native: "*"
   peerDependenciesMeta:
     expo:
       optional: true
-  checksum: 10/5be9fdf59290aeef0411a954829c2119ed17a703fb03f5e0789945f31a71513c3f99e99d207c1583ce980031916678cbd368e3d8d4185629aec207d970d0f663
+  checksum: 10/89635fd62d0b823a81727563dd631290d392694965167136c474c779e9380ed1126e1111269302b827c02d89d35a9795feb5091176cdef21fe4b813522e13b84
   languageName: node
   linkType: hard
 
@@ -11069,12 +11069,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-secure-store@npm:^56.0.4":
-  version: 56.0.4
-  resolution: "expo-secure-store@npm:56.0.4"
+"expo-secure-store@npm:~15.0.8":
+  version: 15.0.8
+  resolution: "expo-secure-store@npm:15.0.8"
   peerDependencies:
     expo: "*"
-  checksum: 10/51091874dea93733143ace50ad67ef657b292770c616771cd3cc090012b7214c9919fb72b8e9985017bdd8d1a2815d216bf78120ccb676355f15b2d0594c6499
+  checksum: 10/822af991ed80b32cf0c37f6f37e8fac30c654492d4074e70fb123361fe6ce0297178b6c7e55108670c75485e5062a39cf089fd8aee415467c3e4a6749c69d65d
   languageName: node
   linkType: hard
 
@@ -15394,7 +15394,7 @@ __metadata:
     "@react-native-firebase/auth": "npm:^22.4.0"
     "@react-native-firebase/dynamic-links": "npm:^22.4.0"
     "@react-native-firebase/messaging": "npm:^22.4.0"
-    "@react-native-google-signin/google-signin": "npm:^10.0.1"
+    "@react-native-google-signin/google-signin": "npm:16.1.2"
     "@react-native-picker/picker": "npm:^2.4.10"
     "@react-native-vector-icons/ant-design": "npm:^12.0.1"
     "@react-native-vector-icons/entypo": "npm:^12.0.1"
@@ -15464,9 +15464,10 @@ __metadata:
     eslint-plugin-react: "npm:^7.33.1"
     eslint-plugin-react-hooks: "npm:^4.6.0"
     eslint-plugin-react-native: "npm:^4.0.0"
+    expo: "npm:~54.0.30"
     expo-gl: "npm:~16.0.10"
     expo-modules-core: "npm:^3.0.29"
-    expo-secure-store: "npm:^56.0.4"
+    expo-secure-store: "npm:~15.0.8"
     html-entities: "npm:^2.4.0"
     husky: "npm:^8.0.0"
     iconoir-react-native: "npm:^7.0.0"

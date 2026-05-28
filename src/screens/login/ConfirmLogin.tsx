@@ -168,7 +168,7 @@ function ConfirmLogin({ route }: Props) {
                   color: palette.primary,
                 }}
               >
-                Verifying your email...
+                Verifying your email&hellip;
               </StyledText>
             </View>
           ) : null}

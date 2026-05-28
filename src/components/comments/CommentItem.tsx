@@ -522,7 +522,7 @@ function CommentItem({
                   <StyledText
                     style={{
                       color: textSecondary,
-                      fontSize: 10,
+                      fontSize: 12,
                     }}
                     numberOfLines={1}
                   >
@@ -701,7 +701,7 @@ function CommentItem({
                           style={{
                             marginLeft: spacing.x5,
                             color: actionColor,
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: '700',
                           }}
                         >
@@ -724,7 +724,7 @@ function CommentItem({
                       style={{
                         marginLeft: spacing.x5,
                         color: actionColor,
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: '700',
                       }}
                     >
@@ -736,7 +736,7 @@ function CommentItem({
                   <StyledText
                     style={{
                       color: actionColor,
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: '700',
                       opacity: onReplyPress ? 1 : 0.6,
                     }}

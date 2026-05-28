@@ -160,6 +160,14 @@ const logAndroidGoogleTokenDiagnostics = (idToken: string) => {
   console.warn('[Google Sign-In] Android ID token claims', diagnostics);
 };
 
+const getGoogleSignInData = (response: any) => {
+  if (response?.type === 'success') {
+    return response.data;
+  }
+
+  return response;
+};
+
 const getGoogleWebClientId = () => {
   const rawValue = GOOGLE_LOGIN_CLIENT_ID?.trim() ?? '';
   if (!rawValue) {
@@ -208,7 +216,12 @@ export const getGoogleIdToken = async (): Promise<SocialTokenResult> => {
     }
 
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    const userInfo = await GoogleSignin.signIn();
+    const signInResponse = await GoogleSignin.signIn();
+    if (signInResponse?.type === 'cancelled') {
+      return { cancelled: true };
+    }
+
+    const userInfo = getGoogleSignInData(signInResponse);
     const idToken = userInfo?.idToken ?? undefined;
 
     if (!idToken) {
@@ -331,7 +344,13 @@ export const signOutSocialProviders = async () => {
     }
   }
 
-  const hasGoogleSession = await runBestEffortProviderSignOut(() => GoogleSignin.isSignedIn());
+  const hasGoogleSession = await runBestEffortProviderSignOut(() => {
+    if (typeof (GoogleSignin as any).hasPreviousSignIn === 'function') {
+      return (GoogleSignin as any).hasPreviousSignIn();
+    }
+
+    return (GoogleSignin as any).isSignedIn();
+  });
   if (hasGoogleSession) {
     await runBestEffortProviderSignOut(() => GoogleSignin.revokeAccess());
     await runBestEffortProviderSignOut(() => GoogleSignin.signOut());

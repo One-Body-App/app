@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   FlatList,
   Image,
   Keyboard,
@@ -13,6 +12,7 @@ import {
   StyleSheet,
   Text,
   useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { KeyboardAvoidingView as KeyboardControllerAvoidingView } from 'react-native-keyboard-controller';
@@ -342,6 +342,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const isDark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const routeParams = route.params as MessagesStackParamsList['ChatDetail'] | undefined;
   const isGroupConversation = routeParams?.conversationType === 'group';
   const peerUserId =
@@ -515,11 +516,10 @@ function ChatDetailScreen({ navigation, route }: Props) {
         return;
       }
 
-      anchor.measureInWindow((x, y, width) => {
-        const windowWidth = Dimensions.get('window').width;
+      anchor.measureInWindow((x, y, measuredWidth) => {
         const pickerWidth = Math.min(windowWidth - 24, 336);
         const left = Math.min(
-          Math.max(12, x + width / 2 - pickerWidth / 2),
+          Math.max(12, x + measuredWidth / 2 - pickerWidth / 2),
           Math.max(12, windowWidth - pickerWidth - 12)
         );
         const top = Math.max(insets.top + 8, y - 58);
@@ -531,7 +531,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
         });
       });
     },
-    [insets.top]
+    [insets.top, windowWidth]
   );
 
   const applyReactionUpdate = useCallback(
@@ -552,7 +552,10 @@ function ChatDetailScreen({ navigation, route }: Props) {
   );
 
   const openFullscreenMedia = useCallback((urls: string[], index = 0) => {
-    const normalizedUrls = urls.map((item) => String(item || '').trim()).filter(Boolean);
+    const normalizedUrls = urls.flatMap((item) => {
+      const normalizedUrl = String(item || '').trim();
+      return normalizedUrl ? [normalizedUrl] : [];
+    });
     if (normalizedUrls.length < 1) {
       return;
     }

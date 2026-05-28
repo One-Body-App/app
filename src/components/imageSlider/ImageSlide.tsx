@@ -39,7 +39,6 @@ function ImageSlide({
 
   return (
     <View
-      key={index}
       style={{
         flexGrow: 1,
       }}

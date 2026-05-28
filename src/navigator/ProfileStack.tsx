@@ -6,7 +6,7 @@ import EditProfile from '../screens/main/editProfile';
 
 import MyProfile from '../screens/main/myProfile';
 import { MyProfileStackParamsList } from './types';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 import InviteFriend from '../screens/main/inviteFriend';
 import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 

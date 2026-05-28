@@ -6,9 +6,9 @@ import {
   StyleSheet,
   useColorScheme,
   Platform,
-  Dimensions,
   Animated,
   Easing,
+  useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +26,6 @@ import {
 
 type Props = StackScreenProps<SettingsStackParamsList, 'CreatorSuccess'>;
 
-const { width } = Dimensions.get('window');
 const CONFETTI_COUNT = 90;
 const CONFETTI_EXPLOSION_SPEED = 350;
 const CONFETTI_FALL_SPEED = 2600;
@@ -60,6 +59,7 @@ const getThemeColors = (isDark: boolean) => ({
 function CreatorSubmitSuccess({ navigation }: Props) {
   const isDark = useColorScheme() === 'dark';
   const colors = getThemeColors(isDark);
+  const { width } = useWindowDimensions();
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -243,6 +243,11 @@ function CreatorSubmitSuccess({ navigation }: Props) {
               style={[
                 styles.circleLarge,
                 {
+                  width: width * 1.5,
+                  height: width * 1.5,
+                  borderRadius: width * 0.75,
+                },
+                {
                   borderColor: colors.circleBorder,
                   transform: [{ scale: circleLargeScale }],
                   opacity: circleOpacity,
@@ -253,6 +258,11 @@ function CreatorSubmitSuccess({ navigation }: Props) {
                 style={[
                   styles.circleMedium,
                   {
+                    width,
+                    height: width,
+                    borderRadius: width * 0.5,
+                  },
+                  {
                     borderColor: colors.circleBorder,
                     transform: [{ scale: circleMediumScale }],
                   },
@@ -261,6 +271,11 @@ function CreatorSubmitSuccess({ navigation }: Props) {
                 <Animated.View
                   style={[
                     styles.circleSmall,
+                    {
+                      width: width * 0.5,
+                      height: width * 0.5,
+                      borderRadius: width * 0.25,
+                    },
                     {
                       borderColor: colors.circleBorder,
                       transform: [{ scale: circleSmallScale }],
@@ -430,25 +445,16 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   circleLarge: {
-    width: width * 1.5,
-    height: width * 1.5,
-    borderRadius: width * 0.75,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   circleMedium: {
-    width,
-    height: width,
-    borderRadius: width * 0.5,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   circleSmall: {
-    width: width * 0.5,
-    height: width * 0.5,
-    borderRadius: width * 0.25,
     borderWidth: 1,
   },
   watermarkWrapper: {

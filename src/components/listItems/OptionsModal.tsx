@@ -1,7 +1,15 @@
 import { useNavigation, useTheme } from '@react-navigation/native';
 
 import React, { ReactNode, useRef } from 'react';
-import { View, ScrollView, Pressable, Alert, Dimensions, Platform, Share } from 'react-native';
+import {
+  View,
+  ScrollView,
+  Pressable,
+  Alert,
+  Platform,
+  Share,
+  useWindowDimensions,
+} from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -86,6 +94,7 @@ function OptionsModal({
   const dispatch = useDispatch();
   const toast = useRef<Toast>(null);
   const clipboardRef = useRef<CustomClipboardHandle>(null);
+  const { height: windowHeight } = useWindowDimensions();
   const token = useSelector((state: RootState) => state?.auth?.userToken);
   const user = useSelector((state: RootState) => state?.auth?.getProfileData);
   const loader = useSelector((state: RootState) => Boolean(state?.general?.loader));
@@ -94,7 +103,7 @@ function OptionsModal({
   const sheetTitleColor = dark ? '#ffffff' : '#0e181b';
   const sheetSecondaryColor = dark ? '#8db5c2' : '#4f8596';
   const brandPrimary = '#116a88';
-  const minimumSheetHeight = Math.round(Dimensions.get('window').height * MODAL_HEIGHT_RATIO);
+  const minimumSheetHeight = Math.round(windowHeight * MODAL_HEIGHT_RATIO);
   const sheetHeight =
     typeof height === 'number' && Number.isFinite(height)
       ? Math.max(height, minimumSheetHeight)

@@ -230,7 +230,9 @@ function UploadImage({ navigation, route }: Props) {
   const [activeTool, setActiveTool] = useState<ToolId>('filters');
   const [filter, setFilter] = useState<FilterId>('original');
   const [adjust, setAdjust] = useState<AdjustPresetId>('none');
-  const [ratio, setRatio] = useState<RatioId>(defaultRatioForContext(route.params?.usageContext));
+  const [ratio, setRatio] = useState<RatioId>(() =>
+    defaultRatioForContext(route.params?.usageContext)
+  );
   const [transform, setTransform] = useState<TransformState>({
     scale: 1,
     translateX: 0,

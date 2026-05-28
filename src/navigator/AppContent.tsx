@@ -18,9 +18,9 @@ import {
   useColorScheme,
   Animated,
   Easing,
-  Dimensions,
   Platform,
   Pressable,
+  useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -56,7 +56,7 @@ import { MainStackParamList } from './types'; // Adjust path
 
 import Intro from '../screens/intro'; // Adjust path
 
-import { Colors } from '../styles'; // Adjust path
+import * as Colors from '../styles/colors'; // Adjust path
 import AccountType from '../screens/accountType'; // Adjust path
 import ConfirmLogin from '../screens/login/ConfirmLogin'; // Adjust path
 
@@ -137,7 +137,7 @@ function AppContent() {
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [navigationReady, setNavigationReady] = useState<boolean>(false);
   const [showSplashOverlay, setShowSplashOverlay] = useState(true);
-  const screenHeight = useRef(Dimensions.get('window').height).current;
+  const { height: screenHeight } = useWindowDimensions();
   const firebaseMessaging = getMessaging();
   const navigationRef = useNavigationContainerRef<MainStackParamList>();
   const routeNameRef = useRef<string | undefined>(undefined);

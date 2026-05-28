@@ -6,7 +6,7 @@ import { SearchStackParamsList } from './types';
 import Search from '../screens/main/search';
 import UserProfile from '../screens/main/userProfile';
 import mainPageOptions from './global';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 
 const Stack = createNativeStackNavigator<SearchStackParamsList>();
 

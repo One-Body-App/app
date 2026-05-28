@@ -251,7 +251,9 @@ export default function VideoPost({ navigation, route }: Props) {
   const [previewStageSize, setPreviewStageSize] = useState({ width: 1, height: 1 });
   const [selectedRatio, setSelectedRatio] = useState<VideoRatioId>('9:16');
   const [shouldInferRatioOnLoad, setShouldInferRatioOnLoad] = useState(false);
-  const [transform, setTransform] = useState<VideoTransformState>(createDefaultVideoTransform());
+  const [transform, setTransform] = useState<VideoTransformState>(() =>
+    createDefaultVideoTransform()
+  );
   const [editorMode, setEditorMode] = useState<VideoEditorMode>('crop');
   const [confirmedCropSelection, setConfirmedCropSelection] =
     useState<ConfirmedCropSelection | null>(null);

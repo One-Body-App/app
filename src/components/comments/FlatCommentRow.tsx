@@ -220,7 +220,7 @@ function FlatCommentRow({
           />
 
           {comment.edited ? (
-            <Text style={{ marginTop: 4, color: secondaryTextColor, fontSize: 11 }}>Edited</Text>
+            <Text style={{ marginTop: 4, color: secondaryTextColor, fontSize: 12 }}>Edited</Text>
           ) : null}
 
           {allowMedia && Array.isArray(comment.images) && comment.images.length > 0

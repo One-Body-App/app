@@ -120,9 +120,14 @@ const VideoItem = gestureHandlerRootHOC(
     const videRef = useRef<any>(null);
 
     const onEnd = useCallback(() => {
-      if (!isPaused && playedTimes < 2) {
-        videRef.current?.seek(0);
-        setPlayedTimes(playedTimes + 1);
+      if (!isPaused) {
+        setPlayedTimes((previousPlayedTimes) => {
+          if (previousPlayedTimes >= 2) {
+            return previousPlayedTimes;
+          }
+          videRef.current?.seek(0);
+          return previousPlayedTimes + 1;
+        });
       }
       setProgress(1);
       if (!hasTrackedVideoCompleteRef.current) {
@@ -132,7 +137,7 @@ const VideoItem = gestureHandlerRootHOC(
           completionPct: 100,
         });
       }
-    }, [isPaused, onTelemetryEvent, playedTimes]);
+    }, [isPaused, onTelemetryEvent]);
 
     useEffect(() => {
       if (playedTimes > 2) {

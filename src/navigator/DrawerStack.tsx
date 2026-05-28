@@ -18,7 +18,7 @@ import { HeaderBackButton } from '@react-navigation/elements';
 import { MainDrawerParamsList } from './types';
 import OnboardingStack from './OnboardingStack';
 import { RootState } from '../redux/reducers/rootReducer';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 
 import ZoeIcon from '@/assets/svg/zoeicon.svg';
 import Connections from '@/src/screens/main/connections';

@@ -10,7 +10,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrayerWallStackParamsList } from './types';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 import Prayer from '../screens/main/prayer';
 
 import UserProfile from '../screens/main/userProfile';

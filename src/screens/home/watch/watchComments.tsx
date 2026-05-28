@@ -81,7 +81,7 @@ function WatchComments({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [reactingCommentId, setReactingCommentId] = useState('');
-  const [commentCount, setCommentCount] = useState(Math.max(0, initialCommentCount ?? 0));
+  const [commentCount, setCommentCount] = useState(() => Math.max(0, initialCommentCount ?? 0));
 
   const commentsRef = useRef<CommentPost[]>([]);
   const commentCountRef = useRef(commentCount);

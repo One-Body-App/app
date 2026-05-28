@@ -1003,8 +1003,6 @@ function LoginComponent({
         return;
       }
 
-      await ensureLocationPermission();
-
       if (!form.email || !form.password) {
         setError('Enter your email and password.');
         return;
@@ -1013,6 +1011,8 @@ function LoginComponent({
         setError('Sign in is still loading. Please try again.');
         return;
       }
+
+      await ensureLocationPermission();
 
       const result = await signIn.create({
         identifier: form.email.trim().toLowerCase(),
@@ -1868,7 +1868,7 @@ function LoginComponent({
               ) : null}
 
               {mfaChallenge.enrollmentRequired ? (
-                <StyledText style={{ color: dark ? '#818a94' : '#9ca3af', fontSize: 11 }}>
+                <StyledText style={{ color: dark ? '#818a94' : '#9ca3af', fontSize: 12 }}>
                   Email verification remains available, but passkey is more secure.
                 </StyledText>
               ) : null}

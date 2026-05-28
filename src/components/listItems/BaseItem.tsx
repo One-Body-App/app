@@ -388,7 +388,7 @@ function BaseItem({
     }
     return Math.floor(numericCount);
   };
-  const [displayRepostCount, setDisplayRepostCount] = useState<number>(
+  const [displayRepostCount, setDisplayRepostCount] = useState<number>(() =>
     toSafeCount(postData.repostCount)
   );
   // const [reactions, setReactions] = useState<SocialPostReaction[]>(postData.reactions ?? []);
@@ -1504,10 +1504,10 @@ function BaseItem({
                         backgroundColor: locationPillBackground,
                         borderWidth: borderWidth.hairline,
                         borderColor: locationPillBorder,
-                        minHeight: 14,
+                        minHeight: 18,
                       }}
                     >
-                      <StyledText style={{ color: colors.text, fontSize: 7 }}>
+                      <StyledText style={{ color: colors.text, fontSize: 12, lineHeight: 14 }}>
                         {locationLabel}
                       </StyledText>
                     </View>

@@ -16,7 +16,8 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { Gps } from 'iconsax-react-native';
 import { borderRadius } from '../styles/outlines';
 import StyledText from './styled/Text';
-import { Colors, Typography } from '../styles';
+import * as Colors from '../styles/colors';
+import * as Typography from '../styles/typography';
 import StyledTextInput from './styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import CustomModal from './CustomModal';

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
-  Dimensions,
   Image,
   Platform,
   StyleSheet,
   Text,
   TextInput,
   Pressable,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -34,6 +34,7 @@ const STEP_ONE_RESUME_ERROR =
 
 function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
+  const { width: screenWidth } = useWindowDimensions();
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [publishedEventId, setPublishedEventId] = useState(route.params?.eventId);
   const [loading, setLoading] = useState(true);
@@ -125,7 +126,6 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
     );
   };
 
-  const screenWidth = Dimensions.get('screen').width;
   const cropWidth = screenWidth;
   const cropHeight = 320;
 
@@ -317,7 +317,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
             <View style={styles.photoPreviewWrap}>
               <Image
                 source={{ uri: heroImageUri }}
-                style={styles.photoPreview}
+                style={[styles.photoPreview, { aspectRatio: screenWidth / 320 }]}
                 resizeMode="cover"
               />
               <Pressable
@@ -391,7 +391,6 @@ const styles = StyleSheet.create({
   },
   photoPreview: {
     width: '100%',
-    aspectRatio: Dimensions.get('screen').width / 320,
   },
   photoChangeBtn: {
     position: 'absolute',

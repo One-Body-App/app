@@ -133,10 +133,12 @@ export default function ServeJobPageApply({ navigation, route }: Props) {
       (record) => record.id === route.params.jobId
     ) || null;
 
-  const [name, setName] = useState(String(currentUser?.name || '').trim());
-  const [email, setEmail] = useState(String(currentUser?.email || '').trim());
-  const [phone, setPhone] = useState(String(currentUser?.profile?.contactPhoneNumber || '').trim());
-  const [location, setLocation] = useState(getDefaultLocation(currentUser));
+  const [name, setName] = useState(() => String(currentUser?.name || '').trim());
+  const [email, setEmail] = useState(() => String(currentUser?.email || '').trim());
+  const [phone, setPhone] = useState(() =>
+    String(currentUser?.profile?.contactPhoneNumber || '').trim()
+  );
+  const [location, setLocation] = useState(() => getDefaultLocation(currentUser));
   const [testimony, setTestimony] = useState('');
   const [resumeFile, setResumeFile] = useState<ResumeDraft | null>(null);
   const [resumeError, setResumeError] = useState('');

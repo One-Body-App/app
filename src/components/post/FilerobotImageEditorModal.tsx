@@ -1183,10 +1183,13 @@ function FilerobotImageEditorModal({
         });
       }
 
-      await RNFS.unlink(localPath).catch(() => {});
+      const cleanupLocalFile = () => RNFS.unlink(localPath).catch(() => {});
       if (result.status !== 200) {
+        await cleanupLocalFile();
         throw new Error('Media upload request failed.');
       }
+
+      await cleanupLocalFile();
 
       const uploadedUrl = extractHttpUrl(result.response);
       if (!uploadedUrl) {

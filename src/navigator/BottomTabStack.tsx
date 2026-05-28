@@ -1,7 +1,15 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
-import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Platform,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -41,8 +49,6 @@ import { shouldHideActiveTabBarWrapper } from './activeTabBarVisibility';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-
 function DirectionalTabScene({
   children,
   tabName,
@@ -51,6 +57,7 @@ function DirectionalTabScene({
   tabName: AnimatedRootTabName;
 }) {
   const { colors } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const { latestTransition } = useRootTabTransition() ?? {};
   const translateX = useRef(new Animated.Value(0)).current;
   const runningAnimation = useRef<Animated.CompositeAnimation | null>(null);
@@ -112,7 +119,7 @@ function DirectionalTabScene({
           useNativeDriver: true,
         });
       } else {
-        const initialOffsetMagnitude = SCREEN_WIDTH * 0.12;
+        const initialOffsetMagnitude = screenWidth * 0.12;
         const initialOffset =
           latestTransition.direction === 'left' ? initialOffsetMagnitude : -initialOffsetMagnitude;
         translateX.setValue(initialOffset);
@@ -153,7 +160,7 @@ function DirectionalTabScene({
         runningAnimation.current?.stop();
         runningAnimation.current = null;
       };
-    }, [latestTransition, tabName, translateX, opacity, scale])
+    }, [latestTransition, opacity, scale, screenWidth, tabName, translateX])
   );
 
   if (ROOT_TAB_SCENE_MOTION_MODE === 'off') {
@@ -392,21 +399,21 @@ function ChatTabIcon({ color }: { color: string }) {
           position: 'absolute',
           top: -5,
           right: -8,
-          minWidth: 16,
-          height: 14,
-          borderRadius: 7,
+          minWidth: 18,
+          height: 18,
+          borderRadius: 9,
           backgroundColor: '#12d2d9',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingHorizontal: 3,
+          paddingHorizontal: 4,
         }}
       >
         <Text
           style={{
             color: '#032f3c',
-            fontSize: 8,
+            fontSize: 12,
             fontWeight: 'bold',
-            lineHeight: 14,
+            lineHeight: 16,
           }}
         >
           {badgeLabel}

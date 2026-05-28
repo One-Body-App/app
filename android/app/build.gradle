@@ -136,6 +136,11 @@ android {
         }
     }
 
+    packaging {
+        resources {
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
+    }
 
     signingConfigs {
         debug {
@@ -178,6 +183,8 @@ android {
 }
 
 dependencies {
+    implementation project(':expo')
+
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     // implementation("com.facebook.react:flipper-integration")

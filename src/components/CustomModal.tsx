@@ -5,9 +5,9 @@ import {
   Pressable,
   View,
   StyleSheet,
-  Dimensions,
   Platform,
   StyleProp,
+  useWindowDimensions,
   ViewStyle,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -21,8 +21,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import BottomSheetEntranceGlow from './BottomSheetEntranceGlow';
 import { getKeyboardAvoidanceOffset } from './CustomModal.utils';
-
-const screenHeight = Dimensions.get('window').height;
 
 export default function CustomModal({
   modalVisible,
@@ -47,6 +45,7 @@ export default function CustomModal({
   const [glowPlayKey, setGlowPlayKey] = useState(0);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [sheetHeight, setSheetHeight] = useState(0);
+  const { height: screenHeight } = useWindowDimensions();
 
   const handleClose = useCallback(() => {
     if (onclose) {
@@ -79,7 +78,7 @@ export default function CustomModal({
         sheetHeight,
         viewportHeight: screenHeight,
       }),
-    [avoidKeyboard, modalVisible, sheetHeight]
+    [avoidKeyboard, modalVisible, screenHeight, sheetHeight]
   );
 
   useEffect(() => {

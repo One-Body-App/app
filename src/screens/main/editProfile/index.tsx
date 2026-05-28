@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
-  Dimensions,
   Platform,
   ScrollView,
   Switch,
   TextInput,
   Pressable,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import {
@@ -122,6 +122,7 @@ type EditProfileDTO = {
 
 function EditProfile({ navigation, route }: Props) {
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const { width: screenWidth } = useWindowDimensions();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
 
@@ -344,8 +345,8 @@ function EditProfile({ navigation, route }: Props) {
       try {
         setTimeout(async () => {
           const image = await ImagePicker.openCropper({
-            height: imageType === 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
-            width: imageType === 'header' ? Dimensions.get('screen').width : undefined,
+            height: imageType === 'header' ? (screenWidth * 9) / 16 : undefined,
+            width: imageType === 'header' ? screenWidth : undefined,
             mediaType: 'photo',
             cropperCircleOverlay: imageType === 'photo',
             path: uri,
@@ -372,7 +373,7 @@ function EditProfile({ navigation, route }: Props) {
         devLog(e);
       }
     },
-    [devLog, user?._id]
+    [devLog, screenWidth, user?._id]
   );
 
   const captureImage = useCallback(

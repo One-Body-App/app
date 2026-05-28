@@ -90,8 +90,10 @@ function NewPassword({ oobCode }: Props) {
   const handlePasswordUpdate = async () => {
     const { passwordC, passwordN } = state;
 
-    const passwordErrorC = await validator('passwordC', passwordC);
-    const passwordErrorN = await validator('passwordN', passwordN);
+    const [passwordErrorC, passwordErrorN] = await Promise.all([
+      validator('passwordC', passwordC),
+      validator('passwordN', passwordN),
+    ]);
 
     if (passwordErrorC || passwordErrorN) {
       setState({ ...state, passwordErrorN, passwordErrorC });
