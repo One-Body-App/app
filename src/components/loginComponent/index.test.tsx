@@ -21,6 +21,28 @@ const mockGetGoogleIdToken = jest.fn();
 const mockGetAppleIdToken = jest.fn();
 const mockSavePendingSocialContinuation = jest.fn();
 const mockClearPendingSocialContinuation = jest.fn();
+const mockStartSSOFlow = jest.fn();
+const mockActivateSsoSession = jest.fn();
+const mockSignInCreate = jest.fn();
+const mockSetActive = jest.fn();
+const mockGetValidAccessToken = jest.fn();
+const mockSyncClerkUserProfile = jest.fn();
+
+jest.mock('@clerk/expo', () => ({
+  useSSO: () => ({
+    startSSOFlow: mockStartSSOFlow,
+  }),
+}));
+
+jest.mock('@clerk/expo/legacy', () => ({
+  useSignIn: () => ({
+    isLoaded: true,
+    signIn: {
+      create: mockSignInCreate,
+    },
+    setActive: mockSetActive,
+  }),
+}));
 
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
@@ -78,6 +100,14 @@ jest.mock('@/src/services/pendingSocialContinuation', () => ({
   clearPendingSocialContinuation: (...args: unknown[]) =>
     mockClearPendingSocialContinuation(...args),
   savePendingSocialContinuation: (...args: unknown[]) => mockSavePendingSocialContinuation(...args),
+}));
+
+jest.mock('@/src/services/authTokens', () => ({
+  getValidAccessToken: () => mockGetValidAccessToken(),
+}));
+
+jest.mock('@/src/services/clerkSync', () => ({
+  syncClerkUserProfile: (...args: unknown[]) => mockSyncClerkUserProfile(...args),
 }));
 
 jest.mock('@/src/services/accountTypeStorage', () => ({
@@ -246,6 +276,16 @@ describe('LoginComponent passkey fallback', () => {
         email: 'person@example.com',
         displayName: 'Person Example',
       },
+    });
+    mockActivateSsoSession.mockResolvedValue(undefined);
+    mockStartSSOFlow.mockResolvedValue({
+      createdSessionId: 'clerk-session-id',
+      setActive: mockActivateSsoSession,
+    });
+    mockGetValidAccessToken.mockResolvedValue('social-access-token');
+    mockSyncClerkUserProfile.mockResolvedValue({
+      status: 200,
+      response: {},
     });
   });
 
@@ -417,19 +457,7 @@ describe('LoginComponent passkey fallback', () => {
     });
   });
 
-  it('routes new social users to account type selection instead of auto-creating an account', async () => {
-    mockExchangeSocialToken.mockResolvedValue({
-      status: 200,
-      response: {
-        signupRequired: true,
-        provider: 'google',
-        details: {
-          email: 'person@example.com',
-          displayName: 'Person Example',
-        },
-      },
-    });
-
+  it('starts Google SSO through Clerk and signs in with the created session', async () => {
     let renderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
@@ -448,40 +476,26 @@ describe('LoginComponent passkey fallback', () => {
     });
     await flushPromises();
 
-    expect(mockExchangeSocialToken).toHaveBeenCalledWith(
+    expect(mockStartSSOFlow).toHaveBeenCalledWith({
+      strategy: 'oauth_google',
+      redirectUrl: 'onebodyapp://oauth-native-callback',
+    });
+    expect(mockActivateSsoSession).toHaveBeenCalledWith({ session: 'clerk-session-id' });
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({});
+    expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        provider: 'google',
-        intent: 'login',
-        createIfMissing: false,
+        type: 'SET_LOGIN_DATA',
+        payload: expect.objectContaining({
+          token: 'social-access-token',
+          authMethod: 'social',
+          bypassMandatoryMfaOnboarding: true,
+        }),
       })
     );
-    expect(mockSavePendingSocialContinuation).toHaveBeenCalledWith({
-      intent: 'login',
-      provider: 'google',
-      idToken: 'google-id-token',
-      nonce: undefined,
-      details: {
-        email: 'person@example.com',
-        displayName: 'Person Example',
-      },
-    });
-    expect(mockNavigate).toHaveBeenCalledWith('AccountType', {
-      continuePendingSocialSignup: true,
-    });
+    expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
   });
 
   it('signs social users in directly without routing through the MFA screen', async () => {
-    mockExchangeSocialToken.mockResolvedValue({
-      status: 200,
-      response: {
-        tokens: {
-          accessToken: 'social-access-token',
-        },
-        authMethod: 'social',
-        bypassMandatoryMfaOnboarding: true,
-      },
-    });
-
     let renderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
@@ -500,6 +514,11 @@ describe('LoginComponent passkey fallback', () => {
     });
     await flushPromises();
 
+    expect(mockStartSSOFlow).toHaveBeenCalledWith({
+      strategy: 'oauth_apple',
+      redirectUrl: 'onebodyapp://oauth-native-callback',
+    });
+    expect(mockActivateSsoSession).toHaveBeenCalledWith({ session: 'clerk-session-id' });
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'SET_LOGIN_DATA',

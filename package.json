@@ -15,7 +15,8 @@
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
-    "@clerk/expo": "^3.2.16",
+    "@clerk/expo": "3.3.0",
+    "@clerk/expo-passkeys": "1.1.0",
     "@dreamwalk-os/react-native-image-modal": "^2.2.0",
     "@fortawesome/fontawesome-svg-core": "^6.4.2",
     "@fortawesome/free-brands-svg-icons": "^6.4.2",
@@ -81,9 +82,12 @@
     "date-fns": "^3.2.0",
     "deprecated-react-native-prop-types": "^5.0.0",
     "expo": "~54.0.30",
+    "expo-auth-session": "~7.0.10",
+    "expo-crypto": "~15.0.8",
     "expo-gl": "~16.0.10",
     "expo-modules-core": "^3.0.29",
     "expo-secure-store": "~15.0.8",
+    "expo-web-browser": "~15.0.10",
     "html-entities": "^2.4.0",
     "iconoir-react-native": "^7.0.0",
     "iconsax-react-native": "^0.0.8",

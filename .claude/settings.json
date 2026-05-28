@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Read(//Users/newuser/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/subagent-driven-development/**)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx eslint *)",
+      "Bash(git add *)",
+      "Bash(git -c commit.gpgsign=false commit -m ' *)"
     ]
   }
 }

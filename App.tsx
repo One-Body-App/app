@@ -10,6 +10,7 @@ import { Linking } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
 import Config from 'react-native-config';
 import { ClerkProvider, useAuth, useClerk } from '@clerk/expo';
+import { passkeys } from '@clerk/expo/passkeys';
 import { tokenCache } from '@clerk/expo/token-cache';
 
 import * as Sentry from '@sentry/react-native';
@@ -81,7 +82,11 @@ function App() {
   });
 
   return (
-    <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
+    <ClerkProvider
+      publishableKey={clerkPublishableKey}
+      tokenCache={tokenCache}
+      __experimental_passkeys={passkeys}
+    >
       <Provider store={store}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <KeyboardProvider>

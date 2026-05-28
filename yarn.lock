@@ -2044,12 +2044,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clerk/clerk-js@npm:^6.12.1":
-  version: 6.12.1
-  resolution: "@clerk/clerk-js@npm:6.12.1"
+"@clerk/clerk-js@npm:^6.13.0":
+  version: 6.13.0
+  resolution: "@clerk/clerk-js@npm:6.13.0"
   dependencies:
     "@base-org/account": "npm:2.0.1"
-    "@clerk/shared": "npm:^4.13.1"
+    "@clerk/shared": "npm:^4.14.0"
     "@coinbase/wallet-sdk": "npm:4.3.7"
     "@solana/wallet-adapter-base": "npm:0.9.27"
     "@solana/wallet-adapter-react": "npm:0.15.39"
@@ -2065,23 +2065,36 @@ __metadata:
     core-js: "npm:3.47.0"
     crypto-js: "npm:^4.2.0"
     dequal: "npm:2.0.3"
-  checksum: 10/5830af24088af4bf445df2c99740f192eea4cc5a26bd8b0aa0ac22a19e0cee9cfde3fb4c99fd51d067fa886b2b18609c0d78fa8fe342ba4c241403d77cc4a2ba
+  checksum: 10/78b3597462bfe0263df8a6aa2fd8a8b2adf0dd1ead8ab857bd4a8ad0e3613eb82aa3fedbcb4ee45d387a195600f9ef74ffaeac1c638d33acb6bdc757e385aac0
   languageName: node
   linkType: hard
 
-"@clerk/expo@npm:^3.2.16":
-  version: 3.2.16
-  resolution: "@clerk/expo@npm:3.2.16"
+"@clerk/expo-passkeys@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@clerk/expo-passkeys@npm:1.1.0"
   dependencies:
-    "@clerk/clerk-js": "npm:^6.12.1"
-    "@clerk/react": "npm:^6.7.1"
-    "@clerk/shared": "npm:^4.13.1"
+    "@clerk/shared": "npm:^4.14.0"
+  peerDependencies:
+    expo: ">=53 <57"
+    react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+    react-native: "*"
+  checksum: 10/570c60cab79b34e4c06b20bf18ef8b8e5a857d369cfdc34d161e1f9b47f1dbb9b9162994ba8ad2e275534a7c266ee44805e7713035ea36761df540b96beec102
+  languageName: node
+  linkType: hard
+
+"@clerk/expo@npm:3.3.0":
+  version: 3.3.0
+  resolution: "@clerk/expo@npm:3.3.0"
+  dependencies:
+    "@clerk/clerk-js": "npm:^6.13.0"
+    "@clerk/react": "npm:^6.7.2"
+    "@clerk/shared": "npm:^4.14.0"
     base-64: "npm:^1.0.0"
     react-native-url-polyfill: "npm:2.0.0"
     tslib: "npm:2.8.1"
   peerDependencies:
     "@clerk/expo-passkeys": ">=0.0.6"
-    expo: ">=53 <56"
+    expo: ">=53 <57"
     expo-apple-authentication: ">=7.0.0"
     expo-auth-session: ">=5"
     expo-constants: ">=12"
@@ -2109,26 +2122,26 @@ __metadata:
       optional: true
     expo-web-browser:
       optional: true
-  checksum: 10/9fea5afeb45e75f4fa9233de478d72413599f347e48b239bb1f3388d9d08101a3d6b41afb5f17d1aff45114bf465b8cce08b388930a22206df4af8674bf68665
+  checksum: 10/1141c8afcc032ab51d8ab81e10b58ee83243c5750181650f07c8f44a2d67193db6657a361c6e4d749dcabbaf1dc119f082f79b475e202626aa11d84c9c1a8954
   languageName: node
   linkType: hard
 
-"@clerk/react@npm:^6.7.1":
-  version: 6.7.1
-  resolution: "@clerk/react@npm:6.7.1"
+"@clerk/react@npm:^6.7.2":
+  version: 6.7.2
+  resolution: "@clerk/react@npm:6.7.2"
   dependencies:
-    "@clerk/shared": "npm:^4.13.1"
+    "@clerk/shared": "npm:^4.14.0"
     tslib: "npm:2.8.1"
   peerDependencies:
     react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
     react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-  checksum: 10/465b8cace808bbebc774fbc6c97a84aacd5b15ea04d0302779600e45cbd1d279371488e7f1696859846f1cebd696237af8cf3089c1fe9fa9e2470e39aa43de0c
+  checksum: 10/c9a3772b66e4c5deab1ec351d09b8ab6cff550eee41e133843e05eff756e38e1e4e0b1cf3b98fd839a9ce103f62b962501de3b2244a18cea8611ff2edab00756
   languageName: node
   linkType: hard
 
-"@clerk/shared@npm:^4.13.1":
-  version: 4.13.1
-  resolution: "@clerk/shared@npm:4.13.1"
+"@clerk/shared@npm:^4.14.0":
+  version: 4.14.0
+  resolution: "@clerk/shared@npm:4.14.0"
   dependencies:
     "@tanstack/query-core": "npm:^5.100.6"
     dequal: "npm:2.0.3"
@@ -2143,7 +2156,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10/5ac42c26197ba8d03d50a972db63342c76097680ca198b1cb7c396b2aac85f76e71c568c12abd23559074fe5a00b5397c81d644a18f2f5a03c97166e6b97c215
+  checksum: 10/f5a1fc0959683b2459a54aa6bac3c964b17eb6e382021f7c943b2c4adfbf5051aaf4820fd9601b3393088d54c62320eb1b09a8ee5fbc66c12f91fffa21666cf7
   languageName: node
   linkType: hard
 
@@ -10959,6 +10972,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-application@npm:~7.0.8":
+  version: 7.0.8
+  resolution: "expo-application@npm:7.0.8"
+  peerDependencies:
+    expo: "*"
+  checksum: 10/f341a5374209a5ab39cb2366a62b9f53500a4fd555e3dbaa6cdfcceb38fc7891fe2eede85425584add4a13dcd579b7b30d7c6aa4d94c1324959ed6df2f10473b
+  languageName: node
+  linkType: hard
+
 "expo-asset@npm:~12.0.12":
   version: 12.0.12
   resolution: "expo-asset@npm:12.0.12"
@@ -10973,6 +10995,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-auth-session@npm:~7.0.10":
+  version: 7.0.11
+  resolution: "expo-auth-session@npm:7.0.11"
+  dependencies:
+    expo-application: "npm:~7.0.8"
+    expo-constants: "npm:~18.0.13"
+    expo-crypto: "npm:~15.0.9"
+    expo-linking: "npm:~8.0.12"
+    expo-web-browser: "npm:~15.0.11"
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/811ea638a218690f8fa939d0b53cf3ff1f0b2c8f24a6f6d7b8b8586d12c3f8b10ea898954e168a709a32096356dae325bb4fef0004b4c9f2404d7ec93a16814d
+  languageName: node
+  linkType: hard
+
 "expo-constants@npm:~18.0.12, expo-constants@npm:~18.0.13":
   version: 18.0.13
   resolution: "expo-constants@npm:18.0.13"
@@ -10983,6 +11022,17 @@ __metadata:
     expo: "*"
     react-native: "*"
   checksum: 10/f29c72b6f5798bd37550aafcc89c3f1a630c4910a5b69c1e19d03544f6ebf0cb65adf39db600ccbeb6e60545b2b231d244373ef3139e3c75991b380940065c6b
+  languageName: node
+  linkType: hard
+
+"expo-crypto@npm:~15.0.8, expo-crypto@npm:~15.0.9":
+  version: 15.0.9
+  resolution: "expo-crypto@npm:15.0.9"
+  dependencies:
+    base64-js: "npm:^1.3.0"
+  peerDependencies:
+    expo: "*"
+  checksum: 10/01de6261d7ec431186d365ee5682f305d9aa411ba258ca62b67393961f136c778a95911b0443efe6cdd8b957e17bc03ecdceddc9796eddc399dcf303f4ef1e91
   languageName: node
   linkType: hard
 
@@ -11042,6 +11092,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-linking@npm:~8.0.12":
+  version: 8.0.12
+  resolution: "expo-linking@npm:8.0.12"
+  dependencies:
+    expo-constants: "npm:~18.0.13"
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/e3f7a914955bcd2cf54572d6a6f8d3d13c3e2bc802a5fc2e7d7350fc002995282a91d8097eb7bf06336f8fa1dbfe5d0761a8536252739fa5ec12162de33109f4
+  languageName: node
+  linkType: hard
+
 "expo-modules-autolinking@npm:3.0.24":
   version: 3.0.24
   resolution: "expo-modules-autolinking@npm:3.0.24"
@@ -11082,6 +11145,16 @@ __metadata:
   version: 1.0.5
   resolution: "expo-server@npm:1.0.5"
   checksum: 10/42cda83d5b514061d4142118fa8590ff8b55218b91a7e6ac131ed71ca743301f7aae7fe6954d96671b6251959b08fe8119eb2f18500b4b5e07ea0c127d2d72c7
+  languageName: node
+  linkType: hard
+
+"expo-web-browser@npm:~15.0.10, expo-web-browser@npm:~15.0.11":
+  version: 15.0.11
+  resolution: "expo-web-browser@npm:15.0.11"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10/56472ec29d8c6687e75e686be4af0f278d0d89aad64dcff221ea5897c09eac29ab5358c0a63a27fc7db8261482c23d52dc93116aeecfb0becfd650acb2aa926b
   languageName: node
   linkType: hard
 
@@ -15364,7 +15437,8 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
-    "@clerk/expo": "npm:^3.2.16"
+    "@clerk/expo": "npm:3.3.0"
+    "@clerk/expo-passkeys": "npm:1.1.0"
     "@commitlint/cli": "npm:^20.5.0"
     "@commitlint/config-conventional": "npm:^20.5.0"
     "@dreamwalk-os/react-native-image-modal": "npm:^2.2.0"
@@ -15465,9 +15539,12 @@ __metadata:
     eslint-plugin-react-hooks: "npm:^4.6.0"
     eslint-plugin-react-native: "npm:^4.0.0"
     expo: "npm:~54.0.30"
+    expo-auth-session: "npm:~7.0.10"
+    expo-crypto: "npm:~15.0.8"
     expo-gl: "npm:~16.0.10"
     expo-modules-core: "npm:^3.0.29"
     expo-secure-store: "npm:~15.0.8"
+    expo-web-browser: "npm:~15.0.10"
     html-entities: "npm:^2.4.0"
     husky: "npm:^8.0.0"
     iconoir-react-native: "npm:^7.0.0"

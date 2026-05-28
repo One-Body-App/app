@@ -36,6 +36,8 @@ buildscript {
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.1.20"
         firebaseBomVersion = "33.15.0"
+        androidXCredentialsVersion = "1.3.0"
+        googleIdVersion = "1.1.1"
     }
     repositories {
         maven { url 'https://maven.google.com' } // <--- Ensure this is present
@@ -64,11 +66,29 @@ allprojects {
         google()
         mavenCentral()
     }
-}
 
-configurations.all {
-    resolutionStrategy {
-        force 'com.google.firebase:firebase-iid:21.1.0'
+    configurations.configureEach {
+        resolutionStrategy {
+            force 'com.google.firebase:firebase-iid:21.1.0'
+            force "androidx.credentials:credentials:${rootProject.ext.androidXCredentialsVersion}"
+            force "androidx.credentials:credentials-play-services-auth:${rootProject.ext.androidXCredentialsVersion}"
+            force "com.google.android.libraries.identity.googleid:googleid:${rootProject.ext.googleIdVersion}"
+
+            eachDependency { details ->
+                if (details.requested.group == "androidx.credentials" &&
+                        (details.requested.name == "credentials" ||
+                                details.requested.name == "credentials-play-services-auth")) {
+                    details.useVersion rootProject.ext.androidXCredentialsVersion
+                    details.because "Keep Clerk, Expo passkeys, and react-native-passkey on the same Credential Manager runtime"
+                }
+
+                if (details.requested.group == "com.google.android.libraries.identity.googleid" &&
+                        details.requested.name == "googleid") {
+                    details.useVersion rootProject.ext.googleIdVersion
+                    details.because "Avoid the googleid 1.2.x Credential Manager 1.6.x atomic group on Android"
+                }
+            }
+        }
     }
 }
 
