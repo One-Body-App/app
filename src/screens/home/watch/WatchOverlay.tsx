@@ -98,10 +98,13 @@ const isShareDialogDismissed = (result: unknown) => {
   return typeof action === 'string' && action.toLowerCase().includes('dismiss');
 };
 
-const InlineReactionBar = React.forwardRef<
-  ReactionBarRef,
-  { onDismiss: () => void; onReactionSelect: (reaction: AnimatedReaction) => void }
->(({ onDismiss, onReactionSelect }, ref) => {
+type InlineReactionBarProps = {
+  onDismiss: () => void;
+  onReactionSelect: (reaction: AnimatedReaction) => void;
+  ref?: React.Ref<ReactionBarRef>;
+};
+
+function InlineReactionBar({ onDismiss, onReactionSelect, ref }: InlineReactionBarProps) {
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const [visible, setVisible] = useState(false);
@@ -181,7 +184,7 @@ const InlineReactionBar = React.forwardRef<
       ))}
     </Animated.View>
   );
-});
+}
 
 const mapReactionIdToType = (reactionId: string): SocialPostReactionType => {
   switch (reactionId) {

@@ -304,11 +304,6 @@ function RssPost({ navigation, route }: Props) {
             borderLeftWidth: 0,
             borderBottomColor: Colors.neutral[800],
             borderBottomWidth: borderWidth.thin,
-            shadowColor: 'transparent',
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0,
-            shadowRadius: 0,
-            elevation: 0,
             backgroundColor: 'transparent',
           }}
           blogPostImageStyle={globalStyle.newspostimage}

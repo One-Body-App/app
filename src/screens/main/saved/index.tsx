@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   FlatList,
@@ -138,7 +138,6 @@ function Saved({ navigation }: Props) {
   const dispatch = useDispatch();
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const [filter, setFilter] = useState<ContentType>(ContentType.All);
-  const [savedPosts, setSavedPosts] = useState<SavedPost[]>(user?.savedPost ?? []);
   const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
   const { width } = useWindowDimensions();
   const { imageViewer, openImages } = useSharedImageViewer();
@@ -162,6 +161,24 @@ function Saved({ navigation }: Props) {
     },
   ]);
 
+  const savedPosts = useMemo(() => {
+    const posts = user?.savedPost ?? [];
+    if (filter === ContentType.RSS) {
+      return posts.filter((item) => item.type !== 'social');
+    }
+    if (filter === ContentType.Social) {
+      return posts.filter((item) => item.type === 'social');
+    }
+    return posts;
+  }, [filter, user?.savedPost]);
+
+  const refreshSavedPosts = useCallback(() => {
+    setIsRefreshing(true);
+    if (token) {
+      dispatch(getProfile.Request({ token, pullSavedData: true }));
+    }
+  }, [dispatch, token]);
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       dispatch(getProfile.Request({ token, pullSavedData: true }));
@@ -175,31 +192,7 @@ function Saved({ navigation }: Props) {
     if (token) {
       dispatch(getProfile.Request({ token, pullSavedData: true }));
     }
-  }, [token, isRefreshing]);
-
-  useEffect(() => {
-    if (user?.savedPost && user?.savedPost.length > 0) {
-      if (filter === ContentType.All) setSavedPosts(user.savedPost);
-      if (filter === ContentType.RSS)
-        setSavedPosts(user.savedPost.filter((i) => i.type !== 'social'));
-      if (filter === ContentType.Social)
-        setSavedPosts(user.savedPost.filter((i) => i.type === 'social'));
-    } else {
-      setSavedPosts([]);
-    }
-  }, [filter]);
-
-  useEffect(() => {
-    if (user?.savedPost && user?.savedPost.length > 0) {
-      if (filter === ContentType.All) setSavedPosts(user.savedPost);
-      if (filter === ContentType.RSS)
-        setSavedPosts(user.savedPost.filter((i) => i.type !== 'social'));
-      if (filter === ContentType.Social)
-        setSavedPosts(user.savedPost.filter((i) => i.type === 'social'));
-    } else {
-      setSavedPosts([]);
-    }
-  }, [user?.savedPost]);
+  }, [dispatch, token]);
 
   useEffect(() => {
     setIsRefreshing(false);
@@ -291,7 +284,7 @@ function Saved({ navigation }: Props) {
           contentContainerStyle={screenStyles.gridContainer}
           columnWrapperStyle={screenStyles.gridRow}
           showsVerticalScrollIndicator={false}
-          onRefresh={() => setIsRefreshing(true)}
+          onRefresh={refreshSavedPosts}
           refreshing={isRefreshing}
           ListEmptyComponent={<SavedEmptyState dark={dark} />}
           renderItem={({ item }) => <GridCard item={item} />}
@@ -306,8 +299,8 @@ function Saved({ navigation }: Props) {
         <FlatList
           data={savedPosts}
           viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: spacing.x72 }}
-          onRefresh={() => setIsRefreshing(true)}
+          contentContainerStyle={screenStyles.fullListContainer}
+          onRefresh={refreshSavedPosts}
           keyExtractor={(item, index) => `${item.created}-${item.postId}-${index}`}
           scrollEnabled={isScrollEnable}
           refreshing={isRefreshing}
@@ -413,6 +406,10 @@ const screenStyles = StyleSheet.create({
     color: '#FFFFFF',
   },
   gridContainer: {
+    flexGrow: 1,
+    paddingBottom: spacing.x72,
+  },
+  fullListContainer: {
     flexGrow: 1,
     paddingBottom: spacing.x72,
   },

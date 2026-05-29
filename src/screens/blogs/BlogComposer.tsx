@@ -42,6 +42,10 @@ import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 type Props = StackScreenProps<MainStackParamList, 'BlogComposer'>;
 type BlogComposerIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
+const editorScrollInsets = { top: spacing.x16, bottom: spacing.x24 };
+const editorScrollAndroidPadding =
+  Platform.OS === 'android' ? { paddingTop: spacing.x16, paddingBottom: spacing.x24 } : {};
+
 const TAG_OPTIONS = [
   'Faith',
   'Prayer',
@@ -784,7 +788,9 @@ export default function BlogComposer({ navigation, route }: Props) {
 
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingTop: spacing.x16, paddingBottom: spacing.x24 }}
+            contentContainerStyle={editorScrollAndroidPadding}
+            contentInset={editorScrollInsets}
+            scrollIndicatorInsets={editorScrollInsets}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >

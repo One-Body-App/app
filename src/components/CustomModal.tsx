@@ -42,9 +42,9 @@ export default function CustomModal({
   const translateY = useSharedValue(0);
   const previouslyVisibleRef = useRef(false);
   const hasPlayedEntranceGlowRef = useRef(false);
+  const sheetHeightRef = useRef(0);
   const [glowPlayKey, setGlowPlayKey] = useState(0);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
-  const [sheetHeight, setSheetHeight] = useState(0);
   const { height: screenHeight } = useWindowDimensions();
 
   const handleClose = useCallback(() => {
@@ -75,10 +75,10 @@ export default function CustomModal({
         avoidKeyboard,
         modalVisible,
         keyboardHeight: height,
-        sheetHeight,
+        sheetHeight: sheetHeightRef.current,
         viewportHeight: screenHeight,
       }),
-    [avoidKeyboard, modalVisible, screenHeight, sheetHeight]
+    [avoidKeyboard, modalVisible, screenHeight]
   );
 
   useEffect(() => {
@@ -153,8 +153,8 @@ export default function CustomModal({
             testID="custom-modal-sheet"
             onLayout={(event) => {
               const nextHeight = event.nativeEvent.layout.height;
-              if (nextHeight > 0 && nextHeight !== sheetHeight) {
-                setSheetHeight(nextHeight);
+              if (nextHeight > 0) {
+                sheetHeightRef.current = nextHeight;
               }
             }}
             style={[styles.modalContainer, style, animatedStyle]}

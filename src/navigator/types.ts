@@ -550,6 +550,9 @@ type ConfirmLoginScreen = {
   apiKey?: string;
   lang?: string;
   prefillEmail?: string;
+  signupName?: string;
+  signupUsername?: string;
+  accountType?: AccountType | string | null;
 };
 
 export type HeaderProps = Omit<TextProps, 'style'> & {

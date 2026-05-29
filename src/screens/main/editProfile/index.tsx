@@ -84,6 +84,10 @@ type Props = CompositeScreenProps<
   >
 >;
 
+const interestScrollInsets = { bottom: spacing.x48 };
+const interestScrollAndroidPadding =
+  Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
+
 export type LocationDTO = {
   address: string;
   longitude: number;
@@ -1171,10 +1175,12 @@ function EditProfile({ navigation, route }: Props) {
                   <ScrollView
                     contentContainerStyle={{
                       marginTop: spacing.x24,
-                      paddingBottom: spacing.x48,
+                      ...interestScrollAndroidPadding,
                       flexDirection: searchInterest.length < 1 ? 'column' : 'row',
                       flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
                     }}
+                    contentInset={interestScrollInsets}
+                    scrollIndicatorInsets={interestScrollInsets}
                   >
                     {searchInterest.length < 1 ? (
                       <StyledText

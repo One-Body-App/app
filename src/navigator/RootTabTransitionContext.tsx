@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, use, useCallback, useMemo, useRef, useState } from 'react';
 import {
   AnimatedRootTabName,
   RootTabTransitionPayload,
@@ -72,7 +72,7 @@ export function RootTabTransitionProvider({ children }: RootTabTransitionProvide
 }
 
 export function useRootTabTransition() {
-  return useContext(RootTabTransitionContext);
+  return use(RootTabTransitionContext);
 }
 
 export function useRootTabSwitchReplayToken(tabName: AnimatedRootTabName) {

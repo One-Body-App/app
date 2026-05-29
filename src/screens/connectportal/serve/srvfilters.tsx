@@ -58,19 +58,25 @@ export default function ServeFiltersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable>
-          <Text style={styles.closeIcon}>✕</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Filter</Text>
-        <Pressable onPress={handleClearAll}>
-          <Text style={styles.clearText}>Clear all</Text>
-        </Pressable>
-      </View>
+      <SafeAreaView edges={['top']}>
+        <View style={styles.header}>
+          <Pressable>
+            <Text style={styles.closeIcon}>✕</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>Filter</Text>
+          <Pressable onPress={handleClearAll}>
+            <Text style={styles.clearText}>Clear all</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Location */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Location</Text>
@@ -179,12 +185,14 @@ export default function ServeFiltersScreen() {
       </ScrollView>
 
       {/* Sticky Footer Button */}
-      <View style={styles.footer}>
-        <Pressable style={styles.applyButton}>
-          <Text style={styles.applyButtonText}>Apply filter</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']}>
+        <View style={styles.footer}>
+          <Pressable style={styles.applyButton}>
+            <Text style={styles.applyButtonText}>Apply filter</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 

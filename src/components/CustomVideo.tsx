@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useImperativeHandle } from 'react';
+import React, { useRef, useImperativeHandle } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Video, { OnLoadData, OnProgressData } from 'react-native-video';
 
@@ -18,7 +18,7 @@ type CustomVideoProps = {
 
 type VideoRef = React.ElementRef<typeof Video>;
 
-const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
+function CustomVideo({ ref, ...props }: CustomVideoProps & { ref?: React.Ref<VideoRef> }) {
   const {
     source,
     paused = false,
@@ -56,7 +56,7 @@ const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
       />
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   container: {

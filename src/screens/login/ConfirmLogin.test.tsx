@@ -1,11 +1,17 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, Pressable } from 'react-native';
+import { Text, Pressable, TextInput } from 'react-native';
 import ConfirmLogin from './ConfirmLogin';
 
 const mockReact = React;
 const mockDispatch = jest.fn();
 const mockApiCall: jest.Mock<Promise<any>, [unknown?]> = jest.fn();
+const mockAttemptEmailAddressVerification = jest.fn();
+const mockPrepareEmailAddressVerification = jest.fn();
+const mockSetActive = jest.fn();
+const mockGetValidAccessToken = jest.fn();
+const mockSyncClerkUserProfile = jest.fn();
+const mockNavigationReset = jest.fn();
 const mockNativeText = Text;
 const mockAuthState = {
   userToken: '',
@@ -42,6 +48,17 @@ jest.mock('@react-native-community/geolocation', () => ({
   requestAuthorization: jest.fn(),
 }));
 
+jest.mock('@clerk/expo/legacy', () => ({
+  useSignUp: () => ({
+    isLoaded: true,
+    signUp: {
+      attemptEmailAddressVerification: mockAttemptEmailAddressVerification,
+      prepareEmailAddressVerification: mockPrepareEmailAddressVerification,
+    },
+    setActive: mockSetActive,
+  }),
+}));
+
 jest.mock('@/src/redux/actions/AuthActions', () => ({
   getProfile: {
     Request: jest.fn((params) => ({ type: 'GET_PROFILE_REQUEST', ...params })),
@@ -50,10 +67,19 @@ jest.mock('@/src/redux/actions/AuthActions', () => ({
   sendVerificationEmail: {
     Request: jest.fn((params) => ({ type: 'SEND_VERIFICATION_EMAIL_REQUEST', ...params })),
   },
+  setLoginData: jest.fn((payload) => ({ type: 'SET_LOGIN_DATA', payload })),
 }));
 
 jest.mock('@/src/services/api', () => ({
   ApiCall: (params?: unknown) => mockApiCall(params),
+}));
+
+jest.mock('@/src/services/authTokens', () => ({
+  getValidAccessToken: () => mockGetValidAccessToken(),
+}));
+
+jest.mock('@/src/services/clerkSync', () => ({
+  syncClerkUserProfile: (params?: unknown) => mockSyncClerkUserProfile(params),
 }));
 
 jest.mock('@/src/services/notification/pushNotificationService', () => ({
@@ -79,7 +105,7 @@ const renderScreen = (params: Record<string, any> = {}) =>
   TestRenderer.create(
     <ConfirmLogin
       route={{ key: 'ConfirmLogin', name: 'ConfirmLogin', params } as any}
-      navigation={{} as any}
+      navigation={{ reset: mockNavigationReset } as any}
     />
   );
 
@@ -98,6 +124,17 @@ describe('ConfirmLogin', () => {
     mockAuthState.verifyEmailTokenPending = false;
     mockAuthState.verifyEmailTokenError = null;
     mockGeneralState.accountType = null;
+    mockAttemptEmailAddressVerification.mockResolvedValue({
+      status: 'complete',
+      createdSessionId: 'sess_123',
+    });
+    mockPrepareEmailAddressVerification.mockResolvedValue({});
+    mockSetActive.mockResolvedValue({});
+    mockSyncClerkUserProfile.mockResolvedValue({
+      status: 200,
+      response: { user: { _id: 'user_123' } },
+    });
+    mockGetValidAccessToken.mockResolvedValue('clerk-token');
   });
 
   afterEach(() => {
@@ -168,7 +205,7 @@ describe('ConfirmLogin', () => {
     });
   });
 
-  it('refreshes the profile when the user confirms they already verified', () => {
+  it('refreshes the profile when the user confirms they already verified', async () => {
     mockAuthState.userToken = 'access-token';
 
     let renderer: TestRenderer.ReactTestRenderer;
@@ -183,8 +220,8 @@ describe('ConfirmLogin', () => {
 
     expect(alreadyVerifiedButton).toBeTruthy();
 
-    act(() => {
-      alreadyVerifiedButton!.props.onPress();
+    await act(async () => {
+      await alreadyVerifiedButton!.props.onPress();
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
@@ -206,7 +243,7 @@ describe('ConfirmLogin', () => {
       renderer = renderScreen({ prefillEmail: 'person@example.com' });
     });
 
-    expect(readAllText(renderer!)).toContain('Verifying your email...');
+    expect(readAllText(renderer!)).toContain('Verifying your email');
 
     act(() => {
       renderer!.unmount();
@@ -223,6 +260,85 @@ describe('ConfirmLogin', () => {
     });
 
     expect(readAllText(renderer!)).toContain('Token expired');
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('verifies a Clerk signup code, syncs Mongo, and activates the app session', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'person@example.com',
+        signupName: 'Person Example',
+        signupUsername: 'person',
+        accountType: 'individual',
+      });
+    });
+
+    const codeInput = renderer!.root.findByType(TextInput);
+    act(() => {
+      codeInput.props.onChangeText('123456');
+    });
+
+    const verifyButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Verify code');
+
+    await act(async () => {
+      await verifyButton!.props.onPress();
+    });
+
+    expect(mockAttemptEmailAddressVerification).toHaveBeenCalledWith({ code: '123456' });
+    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_123' });
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({
+      email: 'person@example.com',
+      name: 'Person Example',
+      username: 'person',
+      accountType: 'individual',
+    });
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_LOGIN_DATA',
+      payload: expect.objectContaining({
+        token: 'clerk-token',
+        authMethod: 'password',
+      }),
+    });
+    expect(mockNavigationReset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'MainRoot' }],
+    });
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('resends a Clerk signup verification code without using the legacy endpoint', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'person@example.com',
+      });
+    });
+
+    const resendButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Resend code');
+
+    await act(async () => {
+      await resendButton!.props.onPress();
+    });
+
+    expect(mockPrepareEmailAddressVerification).toHaveBeenCalledWith({
+      strategy: 'email_code',
+    });
+    expect(mockApiCall).not.toHaveBeenCalled();
 
     act(() => {
       renderer!.unmount();

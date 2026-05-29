@@ -92,21 +92,27 @@ export default function ServeSavedScreen({ navigation }: Props) {
   });
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
-      <ServeHeader
-        title="My Serve"
-        titleColor={palette.text}
-        onBack={() => {
-          if (navigation.canGoBack()) {
-            navigation.goBack();
-            return;
-          }
-          navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
-        }}
-      />
-      <ServeHubTabs activeTab="Saved" navigation={navigation} palette={palette} />
+    <View style={[styles.container, { backgroundColor: palette.background }]}>
+      <SafeAreaView edges={['top']}>
+        <ServeHeader
+          title="My Serve"
+          titleColor={palette.text}
+          onBack={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+              return;
+            }
+            navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
+          }}
+        />
+        <ServeHubTabs activeTab="Saved" navigation={navigation} palette={palette} />
+      </SafeAreaView>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.actionRow}>
           <View
             style={[
@@ -163,7 +169,7 @@ export default function ServeSavedScreen({ navigation }: Props) {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

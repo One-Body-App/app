@@ -54,7 +54,7 @@ function Settings({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
   const toast = useToast();
-  const [isLoaded, setIsLoaded] = React.useState(false);
+  const isLoadedRef = React.useRef(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [notificationSwitch, setNotificationSwitch] = React.useState<NotificationSwitchState>({
     pushNotificationsEnabled: false,
@@ -99,10 +99,10 @@ function Settings({ navigation }: Props) {
             tagNotificationsEnabled: res.response?.tagNotificationsEnabled ?? true,
             allowDirectMessages: res.response?.allowDirectMessages ?? true,
           });
-          setIsLoaded(true);
+          isLoadedRef.current = true;
         } catch {
           if (isActive) {
-            setIsLoaded(true);
+            isLoadedRef.current = true;
           }
         }
       };
@@ -260,7 +260,7 @@ function Settings({ navigation }: Props) {
             };
 
             setNotificationSwitch(nextNotificationSwitch);
-            if (!isLoaded || isLoading) {
+            if (!isLoadedRef.current || isLoading) {
               return;
             }
 

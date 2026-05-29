@@ -3,6 +3,7 @@ import {
   Alert,
   View,
   FlatList,
+  ListRenderItem,
   Pressable,
   KeyboardAvoidingView,
   Platform,
@@ -69,6 +70,94 @@ const OBPalette = {
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'Connections'>;
 
+type ThemedConnectionStyles = {
+  headerBorderColor: string;
+  listItemBorderColor: string;
+  userName: string;
+  userRole: string;
+  removeButtonBg: string;
+  removeButtonText: string;
+};
+
+type ConnectionRowProps = {
+  item: User;
+  roleName: string;
+  showRemove: boolean;
+  themedStyles: ThemedConnectionStyles;
+  onOpenUser: (id?: string) => void;
+  onRemove: (id: string, name?: string) => void;
+};
+
+const ConnectionRow = React.memo(function ConnectionRow({
+  item,
+  roleName,
+  showRemove,
+  themedStyles,
+  onOpenUser,
+  onRemove,
+}: ConnectionRowProps) {
+  const handleOpenUser = useCallback(() => {
+    onOpenUser(item?._id);
+  }, [item?._id, onOpenUser]);
+
+  const handleRemove = useCallback(() => {
+    if (item?._id) {
+      onRemove(item._id, item?.name);
+    }
+  }, [item?._id, item?.name, onRemove]);
+
+  return (
+    <Pressable
+      onPress={handleOpenUser}
+      style={[styles.listItem, { borderBottomColor: themedStyles.listItemBorderColor }]}
+    >
+      <View style={styles.listItemContent}>
+        <View style={styles.imageWrapper}>
+          <ImageModal
+            resizeMode="cover"
+            style={[profileImageList as any, styles.profileImage]}
+            source={{
+              uri:
+                item?.profileImage && item?.profileImage !== ''
+                  ? item?.profileImage
+                  : 'https://cdn.onebodyapp.com/user/no-image.png',
+            }}
+          />
+        </View>
+
+        <View style={styles.userInfoWrapper}>
+          <StyledText style={[styles.userName, { color: themedStyles.userName }]} numberOfLines={1}>
+            {item?.name}
+          </StyledText>
+          {roleName ? (
+            <StyledText
+              style={[styles.userRole, { color: themedStyles.userRole }]}
+              numberOfLines={1}
+            >
+              {roleName}
+            </StyledText>
+          ) : null}
+        </View>
+
+        {showRemove ? (
+          <View style={styles.actionWrapper}>
+            <Pressable
+              style={[styles.removeButtonPill, { backgroundColor: themedStyles.removeButtonBg }]}
+              onPress={handleRemove}
+            >
+              <StyledText
+                style={[styles.removeButtonText, { color: themedStyles.removeButtonText }]}
+              >
+                Remove
+              </StyledText>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+});
+
 function Connected({ navigation }: Props) {
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
   const [interests, setInterests] = useState<Interest[]>([]);
@@ -124,33 +213,36 @@ function Connected({ navigation }: Props) {
     }
   };
 
-  const handleUnSubscribe = (id: string, name?: string) => {
-    Alert.alert(
-      'Remove Connection',
-      `Are you sure you want to remove ${name ?? 'this connection'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const res = await ApiCall({
-                route: `user/unsubscribe/${id}`,
-                token,
-                verb: 'patch',
-              });
-              if (res?.status === 200) {
-                setFollowing((prev) => prev.filter((item) => item._id !== id));
+  const handleUnSubscribe = useCallback(
+    (id: string, name?: string) => {
+      Alert.alert(
+        'Remove Connection',
+        `Are you sure you want to remove ${name ?? 'this connection'}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const res = await ApiCall({
+                  route: `user/unsubscribe/${id}`,
+                  token,
+                  verb: 'patch',
+                });
+                if (res?.status === 200) {
+                  setFollowing((prev) => prev.filter((item) => item._id !== id));
+                }
+              } catch (e) {
+                devLog('unsubscribe error -- ', e);
               }
-            } catch (e) {
-              devLog('unsubscribe error -- ', e);
-            }
+            },
           },
-        },
-      ]
-    );
-  };
+        ]
+      );
+    },
+    [devLog, token]
+  );
 
   const getFollowing = useCallback(async () => {
     setIsListLoading(true);
@@ -304,14 +396,44 @@ function Connected({ navigation }: Props) {
   const { colors, dark } = useTheme();
   const isFocused = useIsFocused();
 
-  const themedStyles = {
-    headerBorderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-    listItemBorderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-    userName: dark ? colors.text : OBPalette.grays.black,
-    userRole: dark ? OBPalette.grays[400] : OBPalette.grays[500],
-    removeButtonBg: dark ? OBPalette.grays[800] : OBPalette.grays[100],
-    removeButtonText: dark ? OBPalette.grays[300] : OBPalette.grays[600],
-  };
+  const themedStyles = useMemo(
+    () => ({
+      headerBorderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+      listItemBorderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+      userName: dark ? colors.text : OBPalette.grays.black,
+      userRole: dark ? OBPalette.grays[400] : OBPalette.grays[500],
+      removeButtonBg: dark ? OBPalette.grays[800] : OBPalette.grays[100],
+      removeButtonText: dark ? OBPalette.grays[300] : OBPalette.grays[600],
+    }),
+    [colors.text, dark]
+  );
+
+  const handleOpenUser = useCallback(
+    (id?: string) => {
+      navigation.navigate('Main', {
+        screen: 'ExploreTab',
+        params: {
+          screen: 'UserProfile',
+          params: { id },
+        },
+      });
+    },
+    [navigation]
+  );
+
+  const renderConnectionItem: ListRenderItem<User> = useCallback(
+    ({ item }) => (
+      <ConnectionRow
+        item={item}
+        roleName={getProfileRoleLabel(item)}
+        showRemove={filter === 'connected'}
+        themedStyles={themedStyles}
+        onOpenUser={handleOpenUser}
+        onRemove={handleUnSubscribe}
+      />
+    ),
+    [filter, handleOpenUser, handleUnSubscribe, themedStyles]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -387,77 +509,7 @@ function Connected({ navigation }: Props) {
                 </View>
               ) : null
             }
-            renderItem={({ item }) => {
-              const roleName = getProfileRoleLabel(item);
-
-              return (
-                <Pressable
-                  onPress={() => {
-                    navigation.navigate('Main', {
-                      screen: 'ExploreTab',
-                      params: {
-                        screen: 'UserProfile',
-                        params: { id: item?._id },
-                      },
-                    });
-                  }}
-                  style={[styles.listItem, { borderBottomColor: themedStyles.listItemBorderColor }]}
-                >
-                  <View style={styles.listItemContent}>
-                    <View style={styles.imageWrapper}>
-                      <ImageModal
-                        resizeMode="cover"
-                        style={[profileImageList as any, styles.profileImage]}
-                        source={{
-                          uri:
-                            item?.profileImage && item?.profileImage !== ''
-                              ? item?.profileImage
-                              : 'https://cdn.onebodyapp.com/user/no-image.png',
-                        }}
-                      />
-                    </View>
-
-                    <View style={styles.userInfoWrapper}>
-                      <StyledText
-                        style={[styles.userName, { color: themedStyles.userName }]}
-                        numberOfLines={1}
-                      >
-                        {item?.name}
-                      </StyledText>
-                      {roleName ? (
-                        <StyledText
-                          style={[styles.userRole, { color: themedStyles.userRole }]}
-                          numberOfLines={1}
-                        >
-                          {roleName}
-                        </StyledText>
-                      ) : null}
-                    </View>
-
-                    {filter === 'connected' ? (
-                      <View style={styles.actionWrapper}>
-                        <Pressable
-                          style={[
-                            styles.removeButtonPill,
-                            { backgroundColor: themedStyles.removeButtonBg },
-                          ]}
-                          onPress={() => handleUnSubscribe(item?._id, item?.name)}
-                        >
-                          <StyledText
-                            style={[
-                              styles.removeButtonText,
-                              { color: themedStyles.removeButtonText },
-                            ]}
-                          >
-                            Remove
-                          </StyledText>
-                        </Pressable>
-                      </View>
-                    ) : null}
-                  </View>
-                </Pressable>
-              );
-            }}
+            renderItem={renderConnectionItem}
             scrollIndicatorInsets={{ right: 1 }}
             removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
             initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}

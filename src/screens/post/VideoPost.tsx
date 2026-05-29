@@ -259,7 +259,10 @@ export default function VideoPost({ navigation, route }: Props) {
     useState<ConfirmedCropSelection | null>(null);
   const [pendingAutoTrimUri, setPendingAutoTrimUri] = useState<string | null>(null);
   const [requiresInitialTrim, setRequiresInitialTrim] = useState(false);
-  const [, setIsTrimEditorVisible] = useState(false);
+  const isTrimEditorVisibleRef = useRef(false);
+  const setIsTrimEditorVisible = useCallback((visible: boolean) => {
+    isTrimEditorVisibleRef.current = visible;
+  }, []);
   const mentionComposer = useMentionComposer({
     initialText: '',
     sanitizeText: (value) => sanitizeComposerText(value, 500),

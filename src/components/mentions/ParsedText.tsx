@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { use, useMemo } from 'react';
 import { StyleProp, Text, TextProps, TextStyle } from 'react-native';
 import { NavigationContext, useTheme } from '@react-navigation/native';
 import StyledText from '@/components/styled/Text';
@@ -23,7 +23,7 @@ function ParsedText({
   style,
   ...textProps
 }: ParsedTextProps) {
-  const navigation = useContext(NavigationContext);
+  const navigation = use(NavigationContext);
   const { colors } = useTheme();
 
   const children = useMemo(() => {

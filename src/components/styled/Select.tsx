@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ScrollView, Pressable, View, ViewStyle, TextStyle } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -56,28 +56,18 @@ export default function StyledSelect({
   const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [searchedItems, setSearchedItems] = useState<SelectedItem[]>(
-    hideSearch || showAllWithoutSearch ? items : []
-  );
-  useEffect(() => {
-    setSearchText('');
-
+  const searchedItems = useMemo(() => {
     if (hideSearch || showAllWithoutSearch) {
-      setSearchedItems(items);
+      return items;
     }
-  }, [items, hideSearch, showAllWithoutSearch]);
 
-  useEffect(() => {
-    let values = items;
-    if (searchText != '') {
-      values = items.filter(
-        (item) => item.text.toLowerCase().indexOf(searchText.toLowerCase()) > -1
-      );
-      setSearchedItems(values);
-    } else {
-      setSearchedItems(hideSearch || showAllWithoutSearch ? items : []);
+    const normalizedSearchText = searchText.trim().toLowerCase();
+    if (!normalizedSearchText) {
+      return [];
     }
-  }, [searchText]);
+
+    return items.filter((item) => item.text.toLowerCase().includes(normalizedSearchText));
+  }, [hideSearch, items, searchText, showAllWithoutSearch]);
 
   return (
     <View style={wrapperStyle}>
@@ -112,7 +102,10 @@ export default function StyledSelect({
         ]}
         rightIcon={rightIcon ?? <Ionicons name="chevron-down" color={Colors.neutral[200]} />}
         // btnTextStyle={styles.btnText3}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          setSearchText('');
+          setModalVisible(true);
+        }}
       />
 
       <CustomModal

@@ -5,6 +5,14 @@ import { getValidAccessToken, refreshAuthTokens } from './authTokens';
 
 const shouldPreferManagedSessionToken = (route: string) => !route.startsWith('auth/social-login');
 
+const joinUrl = (base: string, route: string) => {
+  if (!base) {
+    return route;
+  }
+
+  return `${base.replace(/\/+$/, '')}/${route.replace(/^\/+/, '')}`;
+};
+
 export const ApiCall = async <T = any>({
   params,
   route,
@@ -28,7 +36,7 @@ export const ApiCall = async <T = any>({
   timeoutMs?: number;
 }): Promise<{ status: number; response: T }> => {
   let tokenToUse = '';
-  const requestUrl = baseurl ? `${baseurl}/${route}` : `${!external ? `${BASE_URL}/` : ''}${route}`;
+  const requestUrl = external ? route : joinUrl(baseurl ?? BASE_URL, route);
 
   const makeAuthHeader = (value: string) =>
     value ? { Authorization: `Bearer ${value}` } : undefined;

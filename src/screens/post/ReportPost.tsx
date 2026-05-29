@@ -88,6 +88,9 @@ function ReportPost({ navigation, route }: Props) {
   const inputBackground = dark ? '#1a2c32' : '#f6f7f8';
   const inputBorder = dark ? '#273941' : '#e5e7eb';
   const footerSafeInset = spacing.x24 + spacing.x16 + 56 + spacing.x20;
+  const reportScrollInsets = { top: spacing.x8, bottom: footerSafeInset };
+  const reportScrollAndroidPadding =
+    Platform.OS === 'android' ? { paddingTop: spacing.x8, paddingBottom: footerSafeInset } : {};
 
   useFocusEffect(
     useCallback(() => {
@@ -219,9 +222,10 @@ function ReportPost({ navigation, route }: Props) {
           style={{ flex: 1 }}
           contentContainerStyle={{
             paddingHorizontal: spacing.x20,
-            paddingTop: spacing.x8,
-            paddingBottom: footerSafeInset,
+            ...reportScrollAndroidPadding,
           }}
+          contentInset={reportScrollInsets}
+          scrollIndicatorInsets={reportScrollInsets}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           showsVerticalScrollIndicator={false}

@@ -542,15 +542,18 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: screenColors.background }]}>
-      <ServeHeader
-        title="Applications"
-        titleColor={screenColors.text}
-        onBack={() => navigation.navigate('ConnectServeHome')}
-      />
+    <View style={[styles.container, { backgroundColor: screenColors.background }]}>
+      <SafeAreaView edges={['top']}>
+        <ServeHeader
+          title="Applications"
+          titleColor={screenColors.text}
+          onBack={() => navigation.navigate('ConnectServeHome')}
+        />
+      </SafeAreaView>
 
       <FlatList
         contentContainerStyle={styles.listContent}
+        contentInsetAdjustmentBehavior="automatic"
         data={loading ? [] : filteredApplicants}
         initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
         keyExtractor={(item) => item.id}
@@ -570,7 +573,7 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
         updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
         windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

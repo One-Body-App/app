@@ -13,7 +13,7 @@ import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
@@ -112,10 +112,13 @@ const REACTION_BAR_ITEMS: AnimatedReaction[] = [
   { id: 'angry', iconUrl: REACTION_ICON_URLS.angry },
 ];
 
-const InlineReactionBar = forwardRef<
-  ReactionBarRef,
-  { onDismiss: () => void; onReactionSelect: (reaction: AnimatedReaction) => void }
->(({ onDismiss, onReactionSelect }, ref) => {
+type InlineReactionBarProps = {
+  onDismiss: () => void;
+  onReactionSelect: (reaction: AnimatedReaction) => void;
+  ref?: React.Ref<ReactionBarRef>;
+};
+
+function InlineReactionBar({ onDismiss, onReactionSelect, ref }: InlineReactionBarProps) {
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const [visible, setVisible] = useState(false);
@@ -181,11 +184,7 @@ const InlineReactionBar = forwardRef<
         minWidth: REACTION_BAR_WIDTH,
         transform: [{ scale }],
         opacity,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 5,
+        boxShadow: '0 3px 4px rgba(0, 0, 0, 0.2)',
       }}
     >
       {REACTION_BAR_ITEMS.map((reaction) => (
@@ -205,7 +204,7 @@ const InlineReactionBar = forwardRef<
       ))}
     </Animated.View>
   );
-});
+}
 
 const mapReactionIdToType = (reactionId: string): SocialPostReactionType => {
   switch (reactionId) {

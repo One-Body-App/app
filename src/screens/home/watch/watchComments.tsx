@@ -74,8 +74,8 @@ function WatchComments({
   const [comments, setComments] = useState<CommentPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isEndOfList, setIsEndOfList] = useState(false);
-  const [page, setPage] = useState(1);
+  const isEndOfListRef = useRef(false);
+  const pageRef = useRef(1);
 
   const [editingCommentId, setEditingCommentId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -177,7 +177,7 @@ function WatchComments({
           const nextComments = normalizeCommentTreeFallback(result?.response?.content ?? []);
           if (reset || pageToLoad === 1) {
             setComments(nextComments);
-            setIsEndOfList(nextComments.length < 1);
+            isEndOfListRef.current = nextComments.length < 1;
             const loadedCount = countCommentsInTree(nextComments);
             if (loadedCount > commentCountRef.current) {
               setCount(loadedCount);
@@ -186,13 +186,13 @@ function WatchComments({
           }
 
           setComments((previous) => normalizeCommentTreeFallback([...previous, ...nextComments]));
-          setIsEndOfList(nextComments.length < 1);
+          isEndOfListRef.current = nextComments.length < 1;
           return;
         }
 
         if (reset || pageToLoad === 1) {
           setComments([]);
-          setIsEndOfList(true);
+          isEndOfListRef.current = true;
         }
       } catch (_error) {
         if (!isMountedRef.current || requestId !== activeRequestRef.current) {
@@ -210,23 +210,17 @@ function WatchComments({
       return;
     }
 
-    setPage(1);
-    setIsEndOfList(false);
+    pageRef.current = 1;
+    isEndOfListRef.current = false;
     mentionComposer.reset();
     setEditingCommentId('');
     fetchComments(1, true);
   }, [fetchComments, mentionComposer.reset, postId, sheetOpenKey]);
 
-  useEffect(() => {
-    if (page > 1) {
-      fetchComments(page);
-    }
-  }, [fetchComments, page]);
-
   const refreshComments = useCallback(() => {
     setIsRefreshing(true);
-    setIsEndOfList(false);
-    setPage(1);
+    isEndOfListRef.current = false;
+    pageRef.current = 1;
     fetchComments(1, true);
   }, [fetchComments]);
 
@@ -638,10 +632,12 @@ function WatchComments({
   );
 
   const handleEndReached = useCallback(() => {
-    if (!isLoading && !isRefreshing && !isEndOfList) {
-      setPage((previous) => previous + 1);
+    if (!isLoading && !isRefreshing && !isEndOfListRef.current) {
+      const nextPage = pageRef.current + 1;
+      pageRef.current = nextPage;
+      fetchComments(nextPage);
     }
-  }, [isEndOfList, isLoading, isRefreshing]);
+  }, [fetchComments, isLoading, isRefreshing]);
 
   const renderCommentItem = useCallback(
     (info: ListRenderItemInfo<FlatCommentItem>) => {

@@ -37,6 +37,7 @@ import {
   verifyTotpSetup,
   finishPasskeyLogin,
   finishPasskeyRegistration,
+  migrateLegacyPasswordToClerk,
 } from '@/services/login';
 import { getSocialAuthActionLabel } from '@/src/utils/socialAuthFlow';
 import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
@@ -80,7 +81,6 @@ const oneBodyLottieColorFilters = [
 
 type LoginComponentProps = {
   currentUserEmail?: string;
-  clearOnMountKey?: string;
   initialMfaChallenge?: MfaChallengeResponse;
   onMfaLaunchScreenChange?: (isVisible: boolean) => void;
 };
@@ -122,6 +122,32 @@ const sanitizeAnalyticsReason = (value: unknown) => {
     .replace(/^_+|_+$/g, '');
 
   return normalized.slice(0, 72) || 'unknown';
+};
+
+const getClerkErrorMessage = (error: any, fallback = 'Sign in failed.') => {
+  return (
+    error?.errors?.[0]?.longMessage ?? error?.errors?.[0]?.message ?? error?.message ?? fallback
+  );
+};
+
+const getIncompleteClerkSignInMessage = (result: any) => {
+  const status = String(result?.status ?? '');
+  if (status === 'needs_second_factor') {
+    return 'Additional verification is required before signing in.';
+  }
+  if (status === 'needs_first_factor') {
+    return 'Enter the verification code sent to your email to continue.';
+  }
+  if (status === 'needs_identifier') {
+    return 'Enter your email address to continue.';
+  }
+  if (status === 'needs_new_password') {
+    return 'Reset your password to finish signing in.';
+  }
+  if (status === 'needs_factor_one' || status === 'needs_factor_two') {
+    return 'Additional verification is required before signing in.';
+  }
+  return 'Additional verification is required. Please check your email and try again.';
 };
 
 const toBase64FromBase64Url = (value?: string) => {
@@ -216,7 +242,6 @@ const extractTotpSetupCode = (otpauthUri: string) => {
 
 function LoginComponent({
   currentUserEmail,
-  clearOnMountKey,
   initialMfaChallenge,
   onMfaLaunchScreenChange,
 }: LoginComponentProps) {
@@ -227,32 +252,9 @@ function LoginComponent({
   const { dark } = useTheme();
   const styles = useMemo(() => createLoginStyles(dark), [dark]);
   const trackMfaEvent = noop as (eventName: string, params: Record<string, any>) => undefined;
-
-  const [form, setForm] = useState({
-    email: currentUserEmail ?? '',
-    password: '',
-    code: '',
-  });
-  const [hidePass, setHidePass] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [socialLoading, setSocialLoading] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [successText, setSuccessText] = useState<string>('');
-  const [locationPrompted, setLocationPrompted] = useState(false);
-  const [mfaChallenge, setMfaChallenge] = useState<MfaChallengeResponse | null>(null);
-  const [selectedMfaMethod, setSelectedMfaMethod] = useState<MfaMethod>('passkey');
-  const [totpOtpauth, setTotpOtpauth] = useState<string>('');
-  const [backupCodes, setBackupCodes] = useState<string[]>([]);
-  const [pendingAccessToken, setPendingAccessToken] = useState<string>('');
-  const [hasAutoPromptedPasskey, setHasAutoPromptedPasskey] = useState(false);
-  const [isPasskeyAssociationUnavailable, setIsPasskeyAssociationUnavailable] = useState(false);
-  const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
-  const [hasPasskeyHeroLoaded, setHasPasskeyHeroLoaded] = useState(false);
-  const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const clipboardRef = useRef<CustomClipboardHandle>(null);
-  const submissionInFlightRef = useRef(false);
-  const passkeyInFlightRef = useRef<Promise<void> | null>(null);
+  const initialMfaMethod: MfaMethod = initialMfaChallenge
+    ? resolveInitialMfaMethod(initialMfaChallenge)
+    : 'passkey';
   const initialMfaChallengeSignature = [
     initialMfaChallenge?.mfaToken ?? '',
     initialMfaChallenge?.enrollmentRequired ? '1' : '0',
@@ -261,15 +263,35 @@ function LoginComponent({
     initialMfaChallenge?.emailMasked ?? '',
     initialMfaChallenge?.reason ?? '',
   ].join('|');
-  const resolvedInitialMfaChallengeRef = useRef(initialMfaChallenge);
-  const resolvedInitialMfaChallengeSignatureRef = useRef(initialMfaChallengeSignature);
 
-  if (resolvedInitialMfaChallengeSignatureRef.current !== initialMfaChallengeSignature) {
-    resolvedInitialMfaChallengeSignatureRef.current = initialMfaChallengeSignature;
-    resolvedInitialMfaChallengeRef.current = initialMfaChallenge;
-  }
-
-  const resolvedInitialMfaChallenge = resolvedInitialMfaChallengeRef.current;
+  const [form, setForm] = useState(() => ({
+    email: currentUserEmail ?? '',
+    password: '',
+    code: '',
+  }));
+  const [hidePass, setHidePass] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [successText, setSuccessText] = useState<string>('');
+  const [mfaChallenge, setMfaChallenge] = useState<MfaChallengeResponse | null>(
+    () => initialMfaChallenge ?? null
+  );
+  const [selectedMfaMethod, setSelectedMfaMethod] = useState<MfaMethod>(() => initialMfaMethod);
+  const [totpOtpauth, setTotpOtpauth] = useState<string>('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [pendingAccessToken, setPendingAccessToken] = useState<string>('');
+  const [isPasskeyAssociationUnavailable, setIsPasskeyAssociationUnavailable] = useState(false);
+  const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
+  const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const clipboardRef = useRef<CustomClipboardHandle>(null);
+  const locationPromptedRef = useRef(false);
+  const hasAutoPromptedPasskeyRef = useRef(false);
+  const hasPasskeyHeroLoadedRef = useRef(false);
+  const submissionInFlightRef = useRef(false);
+  const passkeyInFlightRef = useRef<Promise<void> | null>(null);
+  const handledInitialMfaChallengeSignatureRef = useRef<string | null>(null);
 
   const logAndroidPasskey = useCallback((event: string, payload?: Record<string, unknown>) => {
     if (__DEV__ && Platform.OS === 'android') {
@@ -279,81 +301,41 @@ function LoginComponent({
 
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
-      setLocationPrompted(val === '1');
+      locationPromptedRef.current = val === '1';
     });
   }, []);
 
   useEffect(() => {
-    if (!clearOnMountKey) return;
-    setForm({
-      email: '',
-      password: '',
-      code: '',
-    });
-    setError('');
-    setSuccessText('');
-    setMfaChallenge(null);
-    setBackupCodes([]);
-    setPendingAccessToken('');
-    setSelectedMfaMethod('passkey');
-    setTotpOtpauth('');
-    setIsPasskeyAssociationUnavailable(false);
-    setHidePass(true);
-    setSocialLoading(false);
-    setHasAutoPromptedPasskey(false);
-    setShowOtherMfaOptions(false);
-    setHasPasskeyHeroLoaded(false);
-    setUseAndroidFallbackHero(false);
-    setIsSubmitting(false);
-    submissionInFlightRef.current = false;
-    passkeyInFlightRef.current = null;
-  }, [clearOnMountKey]);
+    if (!initialMfaChallenge) return;
+    if (handledInitialMfaChallengeSignatureRef.current === initialMfaChallengeSignature) {
+      return;
+    }
+    handledInitialMfaChallengeSignatureRef.current = initialMfaChallengeSignature;
 
-  useEffect(() => {
-    if (!resolvedInitialMfaChallenge) return;
+    const preferredMethod = resolveInitialMfaMethod(initialMfaChallenge);
 
-    const preferredMethod = resolveInitialMfaMethod(resolvedInitialMfaChallenge);
-
-    setMfaChallenge(resolvedInitialMfaChallenge);
-    setSelectedMfaMethod(preferredMethod);
-    setForm((prev) => ({
-      ...prev,
-      email: currentUserEmail ?? prev.email,
-      code: '',
-    }));
-    setError('');
-    setSuccessText('');
-    setTotpOtpauth('');
-    setBackupCodes([]);
-    setPendingAccessToken('');
-    setIsPasskeyAssociationUnavailable(false);
-    setHasAutoPromptedPasskey(false);
-    setShowOtherMfaOptions(false);
-    setHasPasskeyHeroLoaded(false);
-    setUseAndroidFallbackHero(false);
-    setIsSubmitting(false);
+    hasAutoPromptedPasskeyRef.current = false;
+    hasPasskeyHeroLoadedRef.current = false;
     submissionInFlightRef.current = false;
     passkeyInFlightRef.current = null;
     trackMfaEvent('mfa_method_selected', {
       method: preferredMethod,
       source: 'challenge_prefill',
-      enrollment_required: resolvedInitialMfaChallenge.enrollmentRequired,
-      reason: resolvedInitialMfaChallenge.reason,
-      fallback: preferredMethod !== resolvedInitialMfaChallenge.preferredMethod,
+      enrollment_required: initialMfaChallenge.enrollmentRequired,
+      reason: initialMfaChallenge.reason,
+      fallback: preferredMethod !== initialMfaChallenge.preferredMethod,
     });
 
-    if (preferredMethod === 'email' && !resolvedInitialMfaChallenge.enrollmentRequired) {
-      sendEmailMfaCode({ mfaToken: resolvedInitialMfaChallenge.mfaToken })
+    if (preferredMethod === 'email' && !initialMfaChallenge.enrollmentRequired) {
+      sendEmailMfaCode({ mfaToken: initialMfaChallenge.mfaToken })
         .then((res) => {
           if (res.status === 200) {
-            setSuccessText(
-              `A verification code was sent to ${resolvedInitialMfaChallenge.emailMasked}.`
-            );
+            setSuccessText(`A verification code was sent to ${initialMfaChallenge.emailMasked}.`);
           }
         })
         .catch(() => undefined);
     }
-  }, [currentUserEmail, resolvedInitialMfaChallenge, trackMfaEvent]);
+  }, [initialMfaChallenge, initialMfaChallengeSignature, trackMfaEvent]);
 
   useEffect(() => {
     if (!mfaChallenge || selectedMfaMethod !== 'passkey') {
@@ -442,7 +424,7 @@ function LoginComponent({
   );
 
   const ensureLocationPermission = useCallback(async () => {
-    if (locationPrompted) return;
+    if (locationPromptedRef.current) return;
     try {
       let granted = false;
       if (Platform.OS === 'android') {
@@ -471,9 +453,9 @@ function LoginComponent({
       // ignore permission errors; login can proceed
     } finally {
       await AsyncStorage.setItem('location_permission_requested', '1');
-      setLocationPrompted(true);
+      locationPromptedRef.current = true;
     }
-  }, [locationPrompted]);
+  }, []);
 
   const runPasskey = useCallback(async () => {
     if (!mfaChallenge) return;
@@ -686,7 +668,7 @@ function LoginComponent({
   }, [handleAuthResult, logAndroidPasskey, mfaChallenge, requestEmailMfaCode, trackMfaEvent]);
 
   useEffect(() => {
-    setHasAutoPromptedPasskey(false);
+    hasAutoPromptedPasskeyRef.current = false;
     setIsPasskeyAssociationUnavailable(false);
   }, [mfaChallenge?.mfaToken]);
 
@@ -694,9 +676,9 @@ function LoginComponent({
     if (!mfaChallenge) return undefined;
     if (selectedMfaMethod !== 'passkey') return undefined;
     if (isPasskeyAssociationUnavailable) return undefined;
-    if (hasAutoPromptedPasskey) return undefined;
+    if (hasAutoPromptedPasskeyRef.current) return undefined;
 
-    setHasAutoPromptedPasskey(true);
+    hasAutoPromptedPasskeyRef.current = true;
     let isCancelled = false;
 
     const startPasskey = () => {
@@ -722,7 +704,6 @@ function LoginComponent({
     };
   }, [
     logAndroidPasskey,
-    hasAutoPromptedPasskey,
     isPasskeyAssociationUnavailable,
     mfaChallenge,
     runPasskey,
@@ -1014,14 +995,32 @@ function LoginComponent({
 
       await ensureLocationPermission();
 
-      const result = await signIn.create({
-        identifier: form.email.trim().toLowerCase(),
-        password: form.password,
-        strategy: 'password',
-      });
+      const normalizedEmail = form.email.trim().toLowerCase();
+      const attemptClerkPasswordSignIn = () =>
+        signIn.create({
+          identifier: normalizedEmail,
+          password: form.password,
+          strategy: 'password',
+        });
+
+      let result;
+      try {
+        result = await attemptClerkPasswordSignIn();
+      } catch (clerkError: any) {
+        const migration = await migrateLegacyPasswordToClerk({
+          email: normalizedEmail,
+          password: form.password,
+        }).catch(() => undefined);
+
+        if (migration?.status === 200 && migration.response?.migrated) {
+          result = await attemptClerkPasswordSignIn();
+        } else {
+          throw clerkError;
+        }
+      }
 
       if (result.status !== 'complete' || !result.createdSessionId) {
-        setError('Additional verification is required. Please check your email and try again.');
+        setError(getIncompleteClerkSignInMessage(result));
         return;
       }
 
@@ -1033,7 +1032,7 @@ function LoginComponent({
 
       completeLogin(accessToken);
     } catch (e: any) {
-      const fallbackMessage = e?.message ?? 'Sign in failed.';
+      const fallbackMessage = getClerkErrorMessage(e);
       if (fallbackMessage.toLowerCase().includes('verify your email')) {
         navigation.navigate('ConfirmLogin', {
           showConfirmationEmailMessage: true,
@@ -1202,7 +1201,7 @@ function LoginComponent({
     setTotpOtpauth('');
     setBackupCodes([]);
     setPendingAccessToken('');
-    setHasAutoPromptedPasskey(false);
+    hasAutoPromptedPasskeyRef.current = false;
     setIsPasskeyAssociationUnavailable(false);
     setError('');
     setSuccessText('');
@@ -1258,11 +1257,11 @@ function LoginComponent({
     if (
       Platform.OS === 'android' &&
       showMfaLaunchScreen &&
-      !hasPasskeyHeroLoaded &&
+      !hasPasskeyHeroLoadedRef.current &&
       !useAndroidFallbackHero
     ) {
       timeout = setTimeout(() => {
-        if (!hasPasskeyHeroLoaded) {
+        if (!hasPasskeyHeroLoadedRef.current) {
           setUseAndroidFallbackHero(true);
         }
       }, 1800);
@@ -1273,7 +1272,7 @@ function LoginComponent({
         clearTimeout(timeout);
       }
     };
-  }, [hasPasskeyHeroLoaded, showMfaLaunchScreen, useAndroidFallbackHero]);
+  }, [showMfaLaunchScreen, useAndroidFallbackHero]);
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
@@ -1332,7 +1331,7 @@ function LoginComponent({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingTop: 4,
+              paddingTop: 12,
               marginBottom: 8,
             }}
           >
@@ -1376,7 +1375,7 @@ function LoginComponent({
             enableSafeModeAndroid
             cacheComposition={false}
             onAnimationLoaded={() => {
-              setHasPasskeyHeroLoaded(true);
+              hasPasskeyHeroLoadedRef.current = true;
             }}
             onAnimationFailure={(errorMessage) => {
               if (Platform.OS === 'android') {
@@ -1753,7 +1752,7 @@ function LoginComponent({
           />
         }
       >
-        <View style={styles.headerFrame}>
+        <View style={[styles.headerFrame, { marginTop: 28 }]}>
           <StyledText style={styles.welcomeText}>{mfaHeaderText}</StyledText>
           <StyledText style={styles.subHeaderText}>{subHeaderText}</StyledText>
         </View>

@@ -3,6 +3,7 @@ import {
   Animated,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  ListRenderItem,
   StyleSheet,
   Pressable,
   View,
@@ -66,6 +67,108 @@ const getServeJobTags = (job: ConnectServeJobPublished) => [
   'Serve',
   ...(job.hiringStatus === 'open' ? ['Hiring'] : []),
 ];
+
+type ConnectListRowProps = {
+  item: any;
+  activeTab: ConnectTab;
+  palette: ReturnType<typeof useConnectPalette>;
+  places: ReturnType<typeof useConnectPortalData>['places'];
+  onOpenEvent: (eventId: string) => void;
+  onOpenServeJob: (jobId: string) => void;
+};
+
+const ConnectListRow = React.memo(function ConnectListRow({
+  item,
+  activeTab,
+  palette,
+  places,
+  onOpenEvent,
+  onOpenServeJob,
+}: ConnectListRowProps) {
+  const handleTogglePlaceFollow = useCallback(() => {
+    places.toggleFollow(item.id);
+  }, [item.id, places]);
+
+  const handleOpenEvent = useCallback(() => {
+    onOpenEvent(item.id);
+  }, [item.id, onOpenEvent]);
+
+  const handleOpenServeJob = useCallback(() => {
+    onOpenServeJob(item.id);
+  }, [item.id, onOpenServeJob]);
+
+  if (activeTab === 'Places') {
+    return (
+      <ConnectPlaceCard
+        place={item}
+        isFollowing={places.isFollowing(item.id)}
+        onToggleFollow={handleTogglePlaceFollow}
+      />
+    );
+  }
+
+  if (activeTab === 'Go!') {
+    const eventRecord = item;
+    return (
+      <Pressable
+        style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
+        onPress={handleOpenEvent}
+      >
+        <MaterialIcons name="event" size={28} color={palette.activeText} />
+        <View style={styles.genericCardCopy}>
+          <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
+            {eventRecord.title}
+          </StyledText>
+          <StyledText style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}>
+            {`${eventRecord.venueName || eventRecord.address || 'Location TBD'} • ${formatConnectPortalDateTime(eventRecord)}`}
+          </StyledText>
+          <View style={styles.genericTagsRow}>
+            {(eventRecord.tags.length > 0 ? eventRecord.tags : ['Event']).map((tag: string) => (
+              <View
+                key={`${eventRecord.id}-${tag}`}
+                style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
+              >
+                <StyledText style={[styles.genericTagText, { color: palette.activeText }]}>
+                  {tag.toUpperCase()}
+                </StyledText>
+              </View>
+            ))}
+          </View>
+        </View>
+      </Pressable>
+    );
+  }
+
+  const serveItem = item as ConnectServeJobPublished;
+  return (
+    <Pressable
+      style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
+      onPress={handleOpenServeJob}
+    >
+      <MaterialIcons name="volunteer-activism" size={28} color={palette.activeText} />
+      <View style={styles.genericCardCopy}>
+        <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
+          {serveItem.title}
+        </StyledText>
+        <StyledText style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}>
+          {[serveItem.address, serveItem.opportunityType].filter(Boolean).join(' • ')}
+        </StyledText>
+        <View style={styles.genericTagsRow}>
+          {getServeJobTags(serveItem).map((tag) => (
+            <View
+              key={`${serveItem.id}-${tag}`}
+              style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
+            >
+              <StyledText style={[styles.genericTagText, { color: palette.activeText }]}>
+                {tag.toUpperCase()}
+              </StyledText>
+            </View>
+          ))}
+        </View>
+      </View>
+    </Pressable>
+  );
+});
 
 function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   const rootTabReplayToken = useRootTabSwitchReplayToken('ConnectTab');
@@ -304,6 +407,37 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     serve.setFilterSheetOpen(true);
   };
 
+  const handleOpenEvent = useCallback(
+    (eventId: string) => {
+      trackConnectPortalEventTelemetry(eventId, 'detail_open', {
+        source: 'connect_list',
+      }).catch(() => {});
+      navigation.navigate('ConnectGoEventView', { eventId });
+    },
+    [navigation]
+  );
+
+  const handleOpenServeJob = useCallback(
+    (jobId: string) => {
+      navigation.navigate('ConnectServeJobView', { jobId });
+    },
+    [navigation]
+  );
+
+  const renderConnectListItem: ListRenderItem<{ id: string }> = useCallback(
+    ({ item }) => (
+      <ConnectListRow
+        item={item}
+        activeTab={activeTab}
+        palette={palette}
+        places={places}
+        onOpenEvent={handleOpenEvent}
+        onOpenServeJob={handleOpenServeJob}
+      />
+    ),
+    [activeTab, handleOpenEvent, handleOpenServeJob, palette, places]
+  );
+
   const bottomSearchClearance =
     insets.bottom +
     CONNECT_BOTTOM_NAV_BASE_OFFSET +
@@ -383,91 +517,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
               </Pressable>
             </View>
           }
-          renderItem={({ item }) => {
-            if (activeTab === 'Places') {
-              const place = item as (typeof places.visibleRecords)[number];
-              return (
-                <ConnectPlaceCard
-                  place={place}
-                  isFollowing={places.isFollowing(place.id)}
-                  onToggleFollow={() => places.toggleFollow(place.id)}
-                />
-              );
-            }
-
-            if (activeTab === 'Go!') {
-              const eventRecord = item as (typeof eventRecords)[number];
-              return (
-                <Pressable
-                  style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
-                  onPress={() => {
-                    trackConnectPortalEventTelemetry(eventRecord.id, 'detail_open', {
-                      source: 'connect_list',
-                    }).catch(() => {});
-                    navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id });
-                  }}
-                >
-                  <MaterialIcons name="event" size={28} color={palette.activeText} />
-                  <View style={styles.genericCardCopy}>
-                    <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
-                      {eventRecord.title}
-                    </StyledText>
-                    <StyledText
-                      style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}
-                    >
-                      {`${eventRecord.venueName || eventRecord.address || 'Location TBD'} • ${formatConnectPortalDateTime(eventRecord)}`}
-                    </StyledText>
-                    <View style={styles.genericTagsRow}>
-                      {(eventRecord.tags.length > 0 ? eventRecord.tags : ['Event']).map((tag) => (
-                        <View
-                          key={`${eventRecord.id}-${tag}`}
-                          style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
-                        >
-                          <StyledText
-                            style={[styles.genericTagText, { color: palette.activeText }]}
-                          >
-                            {tag.toUpperCase()}
-                          </StyledText>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            }
-
-            const serveItem = item as (typeof serveItems)[number];
-            return (
-              <Pressable
-                style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
-                onPress={() => navigation.navigate('ConnectServeJobView', { jobId: serveItem.id })}
-              >
-                <MaterialIcons name="volunteer-activism" size={28} color={palette.activeText} />
-                <View style={styles.genericCardCopy}>
-                  <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
-                    {serveItem.title}
-                  </StyledText>
-                  <StyledText
-                    style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}
-                  >
-                    {[serveItem.address, serveItem.opportunityType].filter(Boolean).join(' • ')}
-                  </StyledText>
-                  <View style={styles.genericTagsRow}>
-                    {getServeJobTags(serveItem).map((tag) => (
-                      <View
-                        key={`${serveItem.id}-${tag}`}
-                        style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
-                      >
-                        <StyledText style={[styles.genericTagText, { color: palette.activeText }]}>
-                          {tag.toUpperCase()}
-                        </StyledText>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </Pressable>
-            );
-          }}
+          renderItem={renderConnectListItem}
           ItemSeparatorComponent={ListItemSeparator}
           removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
           initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}

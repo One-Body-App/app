@@ -32,27 +32,33 @@ type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepOne'>;
 
 function InfluencerStepOne({ navigation }: Props) {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          style={styles.closeButton}
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={32} color={OBPalette.primary.dark} />
-        </Pressable>
-        {Platform.OS === 'ios' ? (
-          <Text style={styles.headerTitle}>Creator Application</Text>
-        ) : (
-          <View style={styles.headerTitleAndroidWrap}>
+      <SafeAreaView edges={['top']}>
+        <View style={styles.header}>
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialCommunityIcons name="chevron-left" size={32} color={OBPalette.primary.dark} />
+          </Pressable>
+          {Platform.OS === 'ios' ? (
             <Text style={styles.headerTitle}>Creator Application</Text>
-          </View>
-        )}
-        <View style={styles.headerSpacer} />
-      </View>
+          ) : (
+            <View style={styles.headerTitleAndroidWrap}>
+              <Text style={styles.headerTitle}>Creator Application</Text>
+            </View>
+          )}
+          <View style={styles.headerSpacer} />
+        </View>
+      </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        contentInsetAdjustmentBehavior="automatic"
+        bounces={false}
+      >
         {/* Banner with Concentric Circles */}
         <View style={styles.bannerContainer}>
           <View style={styles.circleOuter} />
@@ -100,15 +106,17 @@ function InfluencerStepOne({ navigation }: Props) {
       </ScrollView>
 
       {/* Footer / Start Button */}
-      <View style={styles.footer}>
-        <Pressable
-          style={styles.startButton}
-          onPress={() => navigation.navigate('InfluencerStepTwo', {})}
-        >
-          <Text style={styles.startButtonText}>Start</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']}>
+        <View style={styles.footer}>
+          <Pressable
+            style={styles.startButton}
+            onPress={() => navigation.navigate('InfluencerStepTwo', {})}
+          >
+            <Text style={styles.startButtonText}>Start</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -190,11 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
   },
   contentContainer: {
     paddingHorizontal: 20,

@@ -72,16 +72,9 @@ const styles = StyleSheet.create({
   headview: {
     minHeight: APP_HEADER_ROW_HEIGHT,
     paddingHorizontal: 16,
-    shadowColor: 'rgba(18, 107, 135, 0.25)',
     borderBottomColor: '#e6eaec',
     borderBottomWidth: 1,
-    shadowOffset: {
-      width: 0,
-      height: 20,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 0,
+    boxShadow: '0 20px 5px rgba(18, 107, 135, 0.025)',
     // marginBottom: getHeight("6"),
   },
   row: {

@@ -69,6 +69,9 @@ const ROW_HORIZONTAL_PADDING = 16;
 const ROW_VERTICAL_PADDING = 16;
 const ROW_ICON_GAP = 16;
 const ONEBODY_APP_BASE_URL = 'https://app.onebodyapp.com';
+const optionsScrollInsets = { top: spacing.x8, bottom: spacing.x24 };
+const optionsScrollAndroidPadding =
+  Platform.OS === 'android' ? { paddingTop: spacing.x8, paddingBottom: spacing.x24 } : {};
 
 function OptionsModal({
   show,
@@ -487,9 +490,10 @@ function OptionsModal({
           style={{ flex: 1 }}
           contentContainerStyle={{
             paddingHorizontal: ROW_HORIZONTAL_PADDING,
-            paddingTop: spacing.x8,
-            paddingBottom: spacing.x24,
+            ...optionsScrollAndroidPadding,
           }}
+          contentInset={optionsScrollInsets}
+          scrollIndicatorInsets={optionsScrollInsets}
           showsVerticalScrollIndicator={false}
         >
           {isMine && editPost

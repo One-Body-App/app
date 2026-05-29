@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import Icon from '@react-native-vector-icons/material-design-icons';
@@ -544,11 +543,14 @@ function ProfileHeader({
         style={modalStyles.bottomView}
       >
         <View style={[modalStyles.content, { backgroundColor: colors.background }]}>
-          <SafeAreaView style={{ flex: 1, width: '100%' }}>
+          <View style={{ flex: 1, width: '100%' }}>
             <StyledText style={styles.badgeModalTitle}>
               Select up to 3 badges you would like to display on your profile
             </StyledText>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              contentInsetAdjustmentBehavior="automatic"
+              showsVerticalScrollIndicator={false}
+            >
               <View style={styles.badgeSelectionGrid}>
                 {(authState?.getBadgesData ?? []).map((badge: Badge) => {
                   const isSelected = selectedBadgeIds.includes(badge._id);
@@ -584,7 +586,7 @@ function ProfileHeader({
             >
               <StyledText style={styles.badgeDoneButtonText}>Done</StyledText>
             </Pressable>
-          </SafeAreaView>
+          </View>
         </View>
       </CustomModal>
     </View>

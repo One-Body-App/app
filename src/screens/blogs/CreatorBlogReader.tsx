@@ -1,5 +1,13 @@
 import React, { useLayoutEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, Share, Pressable, useWindowDimensions, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  ScrollView,
+  Share,
+  Pressable,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import RenderHtml from 'react-native-render-html';
@@ -11,6 +19,9 @@ import { spacing } from '@/src/styles/spacing';
 import { creatorBlogService } from '@/src/services/creatorBlogs';
 import { creatorBlogBodyToHtml, stripEditorSyntax } from '@/src/services/creatorBlogs/markdown';
 import type { CreatorBlogRecord } from '@/src/services/creatorBlogs';
+
+const readerScrollInsets = { bottom: spacing.x48 };
+const readerScrollAndroidPadding = Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
 
 const formatDateLabel = (value?: string | null) => {
   if (!value) {
@@ -93,7 +104,9 @@ export default function CreatorBlogReader({ blog }: { blog: CreatorBlogRecord })
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: spacing.x48 }}
+      contentContainerStyle={readerScrollAndroidPadding}
+      contentInset={readerScrollInsets}
+      scrollIndicatorInsets={readerScrollInsets}
       showsVerticalScrollIndicator={false}
     >
       {blog.coverImage ? (

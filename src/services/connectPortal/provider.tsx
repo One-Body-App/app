@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, use, useCallback, useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from '@/src/redux/actions/AuthActions';
@@ -626,7 +626,7 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
 }
 
 export const useConnectPortalData = () => {
-  const context = useContext(ConnectPortalContext);
+  const context = use(ConnectPortalContext);
   if (!context) {
     throw new Error('useConnectPortalData must be used inside ConnectPortalProvider');
   }

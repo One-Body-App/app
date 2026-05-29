@@ -167,24 +167,30 @@ function CreatorReview({ navigation, route }: Props) {
   }, [agreed, userToken, data, dispatch, navigation]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.headerWrap}>
-        <View style={styles.header}>
-          <View style={styles.headerSide}>
-            <Pressable
-              style={styles.headerIconButton}
-              onPress={() => navigation.goBack()}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
-            </Pressable>
+    <View style={styles.safeArea}>
+      <SafeAreaView edges={['top']}>
+        <View style={styles.headerWrap}>
+          <View style={styles.header}>
+            <View style={styles.headerSide}>
+              <Pressable
+                style={styles.headerIconButton}
+                onPress={() => navigation.goBack()}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
+              </Pressable>
+            </View>
+            <Text style={styles.headerTitle}>Creator Application</Text>
+            <View style={styles.headerSide} />
           </View>
-          <Text style={styles.headerTitle}>Creator Application</Text>
-          <View style={styles.headerSide} />
         </View>
-      </View>
+      </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.titleSection}>
           <Text style={styles.mainHeading}>Does everything look right?</Text>
           <Text style={styles.subHeading}>
@@ -320,7 +326,7 @@ function CreatorReview({ navigation, route }: Props) {
           </Pressable>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

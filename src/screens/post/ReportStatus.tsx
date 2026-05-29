@@ -165,11 +165,7 @@ function ReportStatus({ navigation, route }: Props) {
                 backgroundColor: primary,
                 alignItems: 'center',
                 justifyContent: 'center',
-                shadowColor: primary,
-                shadowOpacity: 0.3,
-                shadowOffset: { width: 0, height: 8 },
-                shadowRadius: 12,
-                elevation: 6,
+                boxShadow: '0 8px 12px rgba(18, 107, 135, 0.3)',
                 overflow: 'hidden',
               }}
             >

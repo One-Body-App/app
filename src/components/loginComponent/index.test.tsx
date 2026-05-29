@@ -16,6 +16,7 @@ const mockAuthenticate = jest.fn();
 const mockRegister = jest.fn();
 const mockFinishPasskeyLogin = jest.fn();
 const mockFinishPasskeyRegistration = jest.fn();
+const mockMigrateLegacyPasswordToClerk = jest.fn();
 const mockExchangeSocialToken = jest.fn();
 const mockGetGoogleIdToken = jest.fn();
 const mockGetAppleIdToken = jest.fn();
@@ -81,6 +82,7 @@ jest.mock('@/services/login', () => ({
   beginTotpSetup: jest.fn(),
   finishPasskeyLogin: (params?: unknown) => mockFinishPasskeyLogin(params),
   finishPasskeyRegistration: (params?: unknown) => mockFinishPasskeyRegistration(params),
+  migrateLegacyPasswordToClerk: (params?: unknown) => mockMigrateLegacyPasswordToClerk(params),
   loginWithEmailAndPassword: jest.fn(),
   sendEmailMfaCode: (params?: unknown) => mockSendEmailMfaCode(params),
   verifyBackupCode: jest.fn(),
@@ -281,6 +283,15 @@ describe('LoginComponent passkey fallback', () => {
     mockStartSSOFlow.mockResolvedValue({
       createdSessionId: 'clerk-session-id',
       setActive: mockActivateSsoSession,
+    });
+    mockSignInCreate.mockResolvedValue({
+      status: 'complete',
+      createdSessionId: 'clerk-password-session-id',
+    });
+    mockSetActive.mockResolvedValue(undefined);
+    mockMigrateLegacyPasswordToClerk.mockResolvedValue({
+      status: 401,
+      response: { migrated: false },
     });
     mockGetValidAccessToken.mockResolvedValue('social-access-token');
     mockSyncClerkUserProfile.mockResolvedValue({

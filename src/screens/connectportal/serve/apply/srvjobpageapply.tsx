@@ -266,10 +266,16 @@ export default function ServeJobPageApply({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: SCREEN_COLORS.page }]}>
-      <ServeHeader title="" titleColor={SCREEN_COLORS.ink} onBack={() => navigation.goBack()} />
+    <View style={[styles.container, { backgroundColor: SCREEN_COLORS.page }]}>
+      <SafeAreaView edges={['top']}>
+        <ServeHeader title="" titleColor={SCREEN_COLORS.ink} onBack={() => navigation.goBack()} />
+      </SafeAreaView>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.heroBlock}>
           <Text style={styles.heroTitle}>Step into your calling.</Text>
           <Text style={styles.heroSubtitle}>
@@ -443,7 +449,7 @@ export default function ServeJobPageApply({ navigation, route }: Props) {
           navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

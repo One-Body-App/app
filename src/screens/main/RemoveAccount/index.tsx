@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -30,7 +30,6 @@ function RemoveAccount({ navigation }: Props) {
   const [reason, setReason] = useState<string>('');
   const [comments, setComments] = useState<string>('');
 
-  const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors } = useTheme();
   const dispatch = useDispatch();
@@ -79,11 +78,15 @@ function RemoveAccount({ navigation }: Props) {
     }
   }, [comments, dispatch, reason, toast, token]);
 
-  useEffect(() => {
-    if (loginSuccess) {
+  const handleConfirmLoginResult = useCallback(
+    (loginSuccess: boolean) => {
+      if (!loginSuccess) {
+        return;
+      }
       accountDeactivate();
-    }
-  }, [accountDeactivate, loginSuccess]);
+    },
+    [accountDeactivate]
+  );
 
   return (
     <View style={{ flex: 1, margin: spacing.x24 }}>
@@ -219,10 +222,9 @@ function RemoveAccount({ navigation }: Props) {
             <Button
               text="Remove Account"
               onPress={() => {
-                setLoginSuccess(false);
                 // navigation.navigate('ConfirmLogin', {});
                 navigation.navigate('ConfirmLogin', {
-                  updateParent: setLoginSuccess,
+                  updateParent: handleConfirmLoginResult,
                 });
               }}
               wrapperViewBtnStyle={{ marginTop: spacing.x32 }}

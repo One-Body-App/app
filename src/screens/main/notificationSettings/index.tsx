@@ -34,7 +34,7 @@ function NotificationSettings(_props: Props) {
   const toast = useToast();
   const { colors } = useTheme();
 
-  const [isLoaded, setIsLoaded] = React.useState<boolean>(false);
+  const isLoadedRef = React.useRef(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [notificationSwitch, setNotificationSwitch] = React.useState<NotificationSwitchState>({
     pushNotificationsEnabled: false,
@@ -69,7 +69,7 @@ function NotificationSettings(_props: Props) {
         });
       }
     } finally {
-      setIsLoaded(true);
+      isLoadedRef.current = true;
       toast.hide(toastId);
     }
   }, [colors.background, colors.text, dispatch, toast, token]);
@@ -238,7 +238,7 @@ function NotificationSettings(_props: Props) {
                     };
 
                     setNotificationSwitch(nextNotificationSwitch);
-                    if (!isLoaded || isLoading) {
+                    if (!isLoadedRef.current || isLoading) {
                       return;
                     }
 

@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { View, Pressable, ScrollView } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { View, Pressable, ScrollView, Platform } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,10 +23,13 @@ import { iterestListItem } from '@/src/styles/items';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
 
+const interestListInsets = { bottom: spacing.x48 };
+const interestListAndroidPadding = Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
+
 function OnboardingInterests({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [interest, setInterest] = useState<Interest[]>([]);
+  const interestsRef = useRef<Interest[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
   const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
   const toast = useToast();
@@ -41,8 +44,9 @@ function OnboardingInterests({ navigation, route }: Props) {
       });
 
       if (res?.status === 200) {
-        setInterest(res?.response as Interest[]);
-        setSearchInterest(res?.response as Interest[]);
+        const nextInterests = res?.response as Interest[];
+        interestsRef.current = nextInterests;
+        setSearchInterest(nextInterests);
       } else if (__DEV__) {
         console.log('error', res?.response);
       }
@@ -134,12 +138,12 @@ function OnboardingInterests({ navigation, route }: Props) {
               clearButtonMode="always"
               onChangeText={(text) => {
                 const newSearchInterest = [];
-                for (let i = 0; i < interest.length; i++) {
-                  if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                    newSearchInterest.push(interest[i]);
+                for (let i = 0; i < interestsRef.current.length; i++) {
+                  if (interestsRef.current[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                    newSearchInterest.push(interestsRef.current[i]);
                   }
-                  setSearchInterest(newSearchInterest);
                 }
+                setSearchInterest(newSearchInterest);
               }}
               leftIcon={
                 <View style={{ justifyContent: 'center' }}>
@@ -162,10 +166,12 @@ function OnboardingInterests({ navigation, route }: Props) {
             <ScrollView
               contentContainerStyle={{
                 marginTop: spacing.x24,
-                paddingBottom: spacing.x48,
+                ...interestListAndroidPadding,
                 flexDirection: searchInterest.length < 1 ? 'column' : 'row',
                 flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
               }}
+              contentInset={interestListInsets}
+              scrollIndicatorInsets={interestListInsets}
             >
               {searchInterest.length < 1 ? (
                 <StyledText

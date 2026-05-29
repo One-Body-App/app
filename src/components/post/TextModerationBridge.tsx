@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import useObservedEffect from '@/src/hooks/useObservedEffect';
@@ -36,28 +36,37 @@ type WebViewMessage =
 export default function TextModerationBridge() {
   const webViewRef = useRef<WebView>(null);
   const activeRequestIdRef = useRef<string | null>(null);
-  const [bridgeReady, setBridgeReady] = useState(false);
-  const [pendingRequest, setPendingRequest] = useState<PendingModerationRequest | null>(null);
+  const bridgeReadyRef = useRef(false);
+  const pendingRequestRef = useRef<PendingModerationRequest | null>(null);
 
   const html = useMemo(() => buildTextModerationBridgeHtml(), []);
 
+  const postModerationRequest = useCallback((request: PendingModerationRequest) => {
+    if (!webViewRef.current) {
+      pendingRequestRef.current = request;
+      return;
+    }
+
+    webViewRef.current.postMessage(
+      JSON.stringify({
+        type: 'classify',
+        requestId: request.id,
+        text: request.text,
+      })
+    );
+    activeRequestIdRef.current = request.id;
+  }, []);
+
   const dispatchRequest = useCallback(
     (request: PendingModerationRequest) => {
-      if (!bridgeReady || !webViewRef.current) {
-        setPendingRequest(request);
+      if (!bridgeReadyRef.current) {
+        pendingRequestRef.current = request;
         return;
       }
 
-      webViewRef.current.postMessage(
-        JSON.stringify({
-          type: 'classify',
-          requestId: request.id,
-          text: request.text,
-        })
-      );
-      activeRequestIdRef.current = request.id;
+      postModerationRequest(request);
     },
-    [bridgeReady]
+    [postModerationRequest]
   );
 
   useObservedEffect(() => {
@@ -67,52 +76,44 @@ export default function TextModerationBridge() {
     };
   }, [dispatchRequest]);
 
-  useObservedEffect(() => {
-    if (!bridgeReady || !pendingRequest || !webViewRef.current) {
-      return;
-    }
+  const handleMessage = useCallback(
+    (event: WebViewMessageEvent) => {
+      try {
+        const parsed = JSON.parse(event.nativeEvent.data || '{}') as WebViewMessage;
+        if (parsed.type === 'ready') {
+          bridgeReadyRef.current = true;
+          const pendingRequest = pendingRequestRef.current;
+          pendingRequestRef.current = null;
+          if (pendingRequest) {
+            postModerationRequest(pendingRequest);
+          }
+          return;
+        }
 
-    webViewRef.current.postMessage(
-      JSON.stringify({
-        type: 'classify',
-        requestId: pendingRequest.id,
-        text: pendingRequest.text,
-      })
-    );
-    activeRequestIdRef.current = pendingRequest.id;
-    setPendingRequest(null);
-  }, [bridgeReady, pendingRequest]);
-
-  const handleMessage = useCallback((event: WebViewMessageEvent) => {
-    try {
-      const parsed = JSON.parse(event.nativeEvent.data || '{}') as WebViewMessage;
-      if (parsed.type === 'ready') {
-        setBridgeReady(true);
-        return;
-      }
-
-      if (parsed.type === 'result') {
-        activeRequestIdRef.current = null;
-        resolveTextModerationRequest(parsed.requestId, parsed.payload);
-        return;
-      }
-
-      if (parsed.type === 'error') {
-        const requestId = parsed.requestId || activeRequestIdRef.current;
-        if (requestId) {
+        if (parsed.type === 'result') {
           activeRequestIdRef.current = null;
-          rejectTextModerationRequest(
-            requestId,
-            new Error(parsed.message || 'Text moderation bridge error.')
-          );
+          resolveTextModerationRequest(parsed.requestId, parsed.payload);
+          return;
+        }
+
+        if (parsed.type === 'error') {
+          const requestId = parsed.requestId || activeRequestIdRef.current;
+          if (requestId) {
+            activeRequestIdRef.current = null;
+            rejectTextModerationRequest(
+              requestId,
+              new Error(parsed.message || 'Text moderation bridge error.')
+            );
+          }
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.log('[TextModerationBridge] Invalid message', error);
         }
       }
-    } catch (error) {
-      if (__DEV__) {
-        console.log('[TextModerationBridge] Invalid message', error);
-      }
-    }
-  }, []);
+    },
+    [postModerationRequest]
+  );
 
   return (
     <View pointerEvents="none" style={styles.container}>

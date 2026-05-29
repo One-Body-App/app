@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, View, RefreshControl, Pressable } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
@@ -39,11 +39,9 @@ function PrayerWallSavedPrayersComponent({
 }: PrayerWallSavedPrayersProps) {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoadingRef = useRef(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
-  const [isEndOfList, setIsEndOfList] = useState(false);
   const isUserDragActiveRef = useRef(false);
   const isMomentumScrollingRef = useRef(false);
 
@@ -77,7 +75,7 @@ function PrayerWallSavedPrayersComponent({
         })
       );
     }
-  }, [dispatch, refreshing, token]);
+  }, [dispatch, token]);
 
   useEffect(() => {
     return () => {
@@ -94,7 +92,7 @@ function PrayerWallSavedPrayersComponent({
     if (pageNumber === 1) {
       resetPrayerTelemetryRequest();
     }
-    setIsLoading(true);
+    isLoadingRef.current = true;
 
     try {
       const res = await ApiCall({
@@ -120,20 +118,20 @@ function PrayerWallSavedPrayersComponent({
       } else {
         console.log('error', res?.response);
       }
-      setIsLoading(false);
+      isLoadingRef.current = false;
       setRefreshing(false);
       // setShowRefreshIndicator(false);
     } catch (e: any) {
       console.log(e.toString());
     }
-    setIsLoading(false);
+    isLoadingRef.current = false;
     setRefreshing(false);
     // setShowRefreshIndicator(false);
   };
 
   useEffect(() => {
     // getPrayers(currentPage);
-    getPrayerPosts(page);
+    getPrayerPosts(1);
     // dispatch(
     //   getAllPrayer({
     //     page,
@@ -142,7 +140,7 @@ function PrayerWallSavedPrayersComponent({
     //     setIsLoading: setIsLoading,
     //   })
     // );
-  }, [page]);
+  }, []);
 
   useEffect(() => {
     const removePrayerLocally = ({ type, id }: { type: string; id: string }) => {
@@ -216,6 +214,41 @@ function PrayerWallSavedPrayersComponent({
     navigation.navigate('Prayer', { postId: id });
   };
 
+  const renderPrayerItem = useCallback(
+    ({ item, index }: { item: PrayerPost; index: number }) => {
+      const postId = item.postId ?? item.id;
+      const openPost = () => {
+        if (!postId) return;
+        trackPrayerTelemetry(item, index, 'post_open', {
+          origin: 'prayer_card',
+        });
+        if (onOpenPost) {
+          onOpenPost(postId);
+          return;
+        }
+        navigation.navigate('Single', {
+          postId,
+        });
+      };
+
+      return (
+        <Pressable onPress={openPost}>
+          <PrayerItem
+            editPost={editPost}
+            removePost={removePost}
+            item={item}
+            onTelemetryEvent={(eventType, metadata) => {
+              trackPrayerTelemetry(item, index, eventType as any, metadata);
+            }}
+            onCommentsPress={openPost}
+            limitContentLines
+          />
+        </Pressable>
+      );
+    },
+    [editPost, navigation, onOpenPost, removePost, trackPrayerTelemetry]
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <FlatList
@@ -280,37 +313,7 @@ function PrayerWallSavedPrayersComponent({
           onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);
         }}
         scrollEventThrottle={16}
-        renderItem={({ item, index }) => {
-          const postId = item.postId ?? item.id;
-          const openPost = () => {
-            if (!postId) return;
-            trackPrayerTelemetry(item, index, 'post_open', {
-              origin: 'prayer_card',
-            });
-            if (onOpenPost) {
-              onOpenPost(postId);
-              return;
-            }
-            navigation.navigate('Single', {
-              postId,
-            });
-          };
-
-          return (
-            <Pressable onPress={openPost}>
-              <PrayerItem
-                editPost={editPost}
-                removePost={removePost}
-                item={item}
-                onTelemetryEvent={(eventType, metadata) => {
-                  trackPrayerTelemetry(item, index, eventType as any, metadata);
-                }}
-                onCommentsPress={openPost}
-                limitContentLines
-              />
-            </Pressable>
-          );
-        }}
+        renderItem={renderPrayerItem}
       />
     </View>
   );

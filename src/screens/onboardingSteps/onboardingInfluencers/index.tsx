@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { View, Image, Pressable, FlatList, RefreshControl } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { View, Image, Pressable, FlatList, RefreshControl, Platform } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
@@ -26,6 +26,10 @@ import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPoli
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
+const influencerListInsets = { bottom: spacing.x48 };
+const influencerListAndroidPadding =
+  Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
+
 function EmptyInfluencersList() {
   return (
     <StyledText style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}>
@@ -45,9 +49,9 @@ function OnboardingInfluencers({ route }: Props) {
   const toast = useToast();
   const dispatch = useDispatch();
   const [searchText, setSearchText] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
-  const [loadingMore, setLoadingMore] = useState<boolean>(true);
-  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
+  const pageRef = useRef(1);
+  const loadingMoreRef = useRef(true);
+  const isEndOfListRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const getInfluencerId = useCallback((item?: User) => {
@@ -65,7 +69,7 @@ function OnboardingInfluencers({ route }: Props) {
 
   const getInfluencers = useCallback(
     async (pageNumber: number, term: string = searchText) => {
-      setLoadingMore(true);
+      loadingMoreRef.current = true;
       try {
         const res = await ApiCall({
           route: `user/get-users-to-subscribe/${pageNumber}?term=${term}&itemsPerPage=12`,
@@ -78,23 +82,23 @@ function OnboardingInfluencers({ route }: Props) {
 
           if (pageNumber === 1) {
             setInfluencers(responseData);
-            setIsEndOfList(false);
+            isEndOfListRef.current = false;
           } else {
             if (responseData.length < 1) {
-              setIsEndOfList(true);
+              isEndOfListRef.current = true;
             }
             setInfluencers((prev) => [...prev, ...responseData]);
           }
         } else if (__DEV__) {
           console.log('error', res?.response);
         }
-        setLoadingMore(false);
+        loadingMoreRef.current = false;
         setIsRefreshing(false);
       } catch (e: any) {
         if (__DEV__) {
           console.log('saga error -- ', e.toString());
         }
-        setLoadingMore(false);
+        loadingMoreRef.current = false;
       }
     },
     [searchText, token]
@@ -326,7 +330,7 @@ function OnboardingInfluencers({ route }: Props) {
               clearButtonMode="always"
               onChangeText={(text) => {
                 setSearchText(text);
-                setPage(1);
+                pageRef.current = 1;
                 getInfluencers(1, text);
               }}
               value={searchText}
@@ -357,6 +361,7 @@ function OnboardingInfluencers({ route }: Props) {
                   refreshing={isRefreshing}
                   onRefresh={() => {
                     setIsRefreshing(true);
+                    pageRef.current = 1;
                     // setSearchChannelsToFollow([]);
                     // dispatch(getuserAll({ token: token }));
                     getInfluencers(1);
@@ -367,19 +372,21 @@ function OnboardingInfluencers({ route }: Props) {
                 return getInfluencerKey(item, index);
               }}
               onEndReached={() => {
-                if (!loadingMore && !isRefreshing && !isEndOfList) {
-                  const nextPage = page + 1;
-                  setPage(nextPage);
+                if (!loadingMoreRef.current && !isRefreshing && !isEndOfListRef.current) {
+                  const nextPage = pageRef.current + 1;
+                  pageRef.current = nextPage;
                   getInfluencers(nextPage);
                 }
               }}
               onEndReachedThreshold={0.8}
               contentContainerStyle={{
                 marginTop: spacing.x24,
-                paddingBottom: spacing.x48,
+                ...influencerListAndroidPadding,
                 // flexDirection: influencers.length < 1 ? 'column' : 'row',
                 // flexWrap: influencers.length < 1 ? 'nowrap' : 'wrap',
               }}
+              contentInset={influencerListInsets}
+              scrollIndicatorInsets={influencerListInsets}
               numColumns={3}
               renderItem={renderInfluencerItem}
               ListEmptyComponent={EmptyInfluencersList}

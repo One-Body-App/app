@@ -37,6 +37,10 @@ type Props = {
   buttonTextStyle?: TextStyle;
 };
 
+const onboardingStepsScrollInsets = { bottom: spacing.x16 };
+const onboardingStepsAndroidPadding =
+  Platform.OS === 'android' ? { paddingBottom: spacing.x16 } : {};
+
 const indicatorStyle: ViewStyle = {
   backgroundColor: Colors.secondary.brand,
   height: 8,
@@ -201,7 +205,9 @@ function OnboardingStepsLayout({
           <View style={{ flex: 1 }}>
             <ScrollView
               style={{ flex: 1 }}
-              contentContainerStyle={{ paddingBottom: spacing.x16 }}
+              contentContainerStyle={onboardingStepsAndroidPadding}
+              contentInset={onboardingStepsScrollInsets}
+              scrollIndicatorInsets={onboardingStepsScrollInsets}
               contentInsetAdjustmentBehavior="never"
             >
               <View

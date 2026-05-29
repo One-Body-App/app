@@ -481,11 +481,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#12D2D9',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
+    boxShadow: '0 0 20px rgba(18, 210, 217, 0.4)',
   },
   textContainer: {
     alignItems: 'center',

@@ -1,11 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { TextInput, Pressable, View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { ArrowDown2 } from 'iconsax-react-native';
-import useMountEffect from '@/src/hooks/useMountEffect';
 import { navigateWithinCurrentNavigator } from '@/src/navigator/navigateWithinCurrentNavigator';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
@@ -32,9 +31,13 @@ function OnboardingOrganizationInfo({ navigation, route }: Props) {
   // Location
   const [noPhysicalLocation, setNoPhysicalLocation] = useState(false);
   const [locationData, setLocationData] = useState<MapSuggestion | null>(null);
-  const [longitude, setLongitude] = useState<number | undefined>();
-  const [latitude, setLatitude] = useState<number | undefined>();
-  const [countryCode, setCountryCode] = useState<string | undefined>();
+  const longitudeRef = useRef<number | undefined>();
+  const latitudeRef = useRef<number | undefined>();
+  const countryCode = useMemo(() => {
+    const { locale } = Intl.DateTimeFormat().resolvedOptions();
+    const match = locale.match(/[-_](\w{2})\b/);
+    return match?.[1]?.toLowerCase();
+  }, []);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
 
   // Contact
@@ -45,14 +48,19 @@ function OnboardingOrganizationInfo({ navigation, route }: Props) {
   const inputRefContactEmail = useRef<TextInput>(null);
   const inputRefContactPhoneNumber = useRef<TextInput>(null);
 
-  useMountEffect(() => {
-    const { locale } = Intl.DateTimeFormat().resolvedOptions();
-    const match = locale.match(/[-_](\w{2})\b/);
-    const region = match?.[1]?.toLowerCase();
-    if (region) {
-      setCountryCode(region);
-    }
-  });
+  const setLongitude = useCallback((value: React.SetStateAction<number | undefined>) => {
+    longitudeRef.current =
+      typeof value === 'function'
+        ? (value as (previous: number | undefined) => number | undefined)(longitudeRef.current)
+        : value;
+  }, []);
+
+  const setLatitude = useCallback((value: React.SetStateAction<number | undefined>) => {
+    latitudeRef.current =
+      typeof value === 'function'
+        ? (value as (previous: number | undefined) => number | undefined)(latitudeRef.current)
+        : value;
+  }, []);
 
   const locationValid = locationData !== null;
 
@@ -64,8 +72,8 @@ function OnboardingOrganizationInfo({ navigation, route }: Props) {
       navigateWithinCurrentNavigator(navigation, 'OnboardingInterests', {
         ...route.params,
         organizationName,
-        longitude: longitude ?? 0,
-        latitude: latitude ?? 0,
+        longitude: longitudeRef.current ?? 0,
+        latitude: latitudeRef.current ?? 0,
         address: locationData?.place_name ?? '',
         noPhysicalLocation,
         organizationContactName: contactName,

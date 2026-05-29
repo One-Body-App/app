@@ -62,7 +62,7 @@ import ConfirmLogin from '../screens/login/ConfirmLogin'; // Adjust path
 
 import DrawerNav from './DrawerStack';
 import PrayerWallStack from './PrayerWallStack';
-import NewPost from '../screens/post/NewPost'; // Adjust path
+import Composer from '../screens/post/Composer/Composer';
 import BlogComposer from '../screens/blogs/BlogComposer';
 import BlogDashboard from '../screens/blogs/BlogDashboard';
 import UploadImage from '../screens/post/UploadImage'; // Adjust path
@@ -1560,7 +1560,7 @@ function AppContent() {
               />
               <MainStack.Screen
                 name="Post"
-                component={NewPost}
+                component={Composer}
                 options={({ route }) => ({
                   headerShown: false,
                   animation: 'slide_from_right',

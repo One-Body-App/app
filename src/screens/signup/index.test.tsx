@@ -10,6 +10,12 @@ const mockReset = jest.fn();
 const mockGetAppleIdToken = jest.fn();
 const mockGetGoogleIdToken = jest.fn();
 const mockExchangeSocialToken = jest.fn();
+const mockStartSSOFlow = jest.fn();
+const mockActivateSsoSession = jest.fn();
+const mockSignUpCreate = jest.fn();
+const mockPrepareEmailAddressVerification = jest.fn();
+const mockGetValidAccessToken = jest.fn();
+const mockSyncClerkUserProfile = jest.fn();
 
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
@@ -31,6 +37,22 @@ jest.mock('@react-navigation/native', () => ({
     },
   }),
   useFocusEffect: jest.fn(),
+}));
+
+jest.mock('@clerk/expo', () => ({
+  useSSO: () => ({
+    startSSOFlow: mockStartSSOFlow,
+  }),
+}));
+
+jest.mock('@clerk/expo/legacy', () => ({
+  useSignUp: () => ({
+    isLoaded: true,
+    signUp: {
+      create: mockSignUpCreate,
+      prepareEmailAddressVerification: mockPrepareEmailAddressVerification,
+    },
+  }),
 }));
 
 jest.mock('@invertase/react-native-apple-authentication', () => {
@@ -157,6 +179,14 @@ jest.mock('@/src/services/pendingSocialContinuation', () => ({
   loadPendingSocialContinuation: jest.fn(() => null),
 }));
 
+jest.mock('@/src/services/authTokens', () => ({
+  getValidAccessToken: () => mockGetValidAccessToken(),
+}));
+
+jest.mock('@/src/services/clerkSync', () => ({
+  syncClerkUserProfile: (params?: unknown) => mockSyncClerkUserProfile(params),
+}));
+
 describe('SignupForm social buttons', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -197,13 +227,25 @@ describe('SignupForm social buttons', () => {
         bypassMandatoryMfaOnboarding: true,
       },
     });
+    mockSignUpCreate.mockResolvedValue({ status: 'missing_requirements' });
+    mockPrepareEmailAddressVerification.mockResolvedValue({});
+    mockActivateSsoSession.mockResolvedValue(undefined);
+    mockStartSSOFlow.mockResolvedValue({
+      createdSessionId: 'clerk-session-id',
+      setActive: mockActivateSsoSession,
+    });
+    mockGetValidAccessToken.mockResolvedValue('clerk-access-token');
+    mockSyncClerkUserProfile.mockResolvedValue({
+      status: 200,
+      response: { user: { _id: 'user_123' } },
+    });
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('renders the native Apple signup button on iOS and starts the signup social flow', async () => {
+  it('renders the native Apple signup button on iOS and starts the Clerk signup social flow', async () => {
     let renderer: TestRenderer.ReactTestRenderer;
     const navigation = {
       replace: mockReplace,
@@ -229,21 +271,18 @@ describe('SignupForm social buttons', () => {
       await appleButton.props.onPress();
     });
 
-    expect(mockGetAppleIdToken).toHaveBeenCalled();
-    expect(mockExchangeSocialToken).toHaveBeenCalledWith(
-      expect.objectContaining({
-        provider: 'apple',
-        intent: 'signup',
-        createIfMissing: true,
-      })
-    );
+    expect(mockStartSSOFlow).toHaveBeenCalledWith({
+      strategy: 'oauth_apple',
+      redirectUrl: 'onebodyapp://oauth-native-callback',
+    });
+    expect(mockActivateSsoSession).toHaveBeenCalledWith({ session: 'clerk-session-id' });
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({ accountType: 'individual' });
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'SET_LOGIN_DATA',
         payload: expect.objectContaining({
-          token: 'social-access-token',
+          token: 'clerk-access-token',
           authMethod: 'social',
-          bypassMandatoryMfaOnboarding: true,
         }),
       })
     );

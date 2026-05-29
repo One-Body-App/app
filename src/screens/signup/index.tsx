@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useSSO } from '@clerk/expo';
 import { useSignUp } from '@clerk/expo/legacy';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -29,16 +29,10 @@ import { spacing } from '@/src/styles/spacing';
 import { button } from '@/src/styles/buttons';
 
 // Logic & Types
-import {
-  sendVerificationEmail as sendVerificationEmailAction,
-  getProfile,
-  signUp,
-  setLoginData,
-} from '@/src/redux/actions/AuthActions';
+import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import StyledText from '@/components/styled/Text';
@@ -56,7 +50,6 @@ import {
   clearPendingSocialContinuation,
   loadPendingSocialContinuation,
 } from '@/src/services/pendingSocialContinuation';
-import type { MfaChallengeResponse } from '@/services/login';
 import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -98,112 +91,110 @@ type SignupPalette = {
   errorBorder: string;
 };
 
-const InputField = React.forwardRef(
-  (
-    {
-      label,
-      error,
-      rightIcon,
-      wrapperStyle,
-      inputWrapperStyle,
-      palette,
-      ...props
-    }: {
-      label: string;
-      error?: string;
-      rightIcon?: React.ReactNode;
-      wrapperStyle?: object;
-      inputWrapperStyle?: object;
-      palette: SignupPalette;
-    } & React.ComponentProps<typeof TextInput>,
-    ref: any
-  ) => {
-    const [focused, setFocused] = useState(false);
-    const {
-      value,
-      placeholder,
-      onFocus,
-      onBlur,
-      autoCapitalize,
-      autoCorrect,
-      keyboardType,
-      secureTextEntry,
-      onChangeText,
-      onSubmitEditing,
-      editable,
-      maxLength,
-      multiline,
-      returnKeyType,
-      textContentType,
-      autoComplete,
-      accessibilityLabel,
-      testID,
-      selectionColor,
-    } = props;
-    const hidePlaceholder = focused || !!(value && value.length > 0);
-    let borderColor = palette.inputBorder;
-    if (focused) {
-      borderColor = palette.primary;
-    }
-    if (error) {
-      borderColor = palette.errorBorder;
-    }
+type InputFieldProps = {
+  label: string;
+  error?: string;
+  rightIcon?: React.ReactNode;
+  wrapperStyle?: object;
+  inputWrapperStyle?: object;
+  palette: SignupPalette;
+  ref?: React.Ref<TextInput>;
+} & React.ComponentProps<typeof TextInput>;
 
-    return (
-      <View style={[styles.inputContainer, wrapperStyle]}>
-        {error ? <StyledText style={styles.errorText}>{error}</StyledText> : null}
-        <StyledText style={[styles.inputLabel, { color: palette.textMain }]}>{label}</StyledText>
-        <StyledTextInput
-          ref={ref}
-          value={value}
-          onFocus={(e) => {
-            setFocused(true);
-            onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setFocused(false);
-            onBlur?.(e);
-          }}
-          placeholder={hidePlaceholder ? '' : placeholder}
-          placeholderTextColor={palette.placeholder}
-          inputWrapperStyle={{
-            borderColor,
-            backgroundColor: palette.inputBg,
-            borderRadius: 12,
-            minHeight: 54,
-            ...inputWrapperStyle,
-          }}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={autoCorrect}
-          keyboardType={keyboardType}
-          secureTextEntry={secureTextEntry}
-          onChangeText={onChangeText}
-          onSubmitEditing={onSubmitEditing}
-          editable={editable}
-          maxLength={maxLength}
-          multiline={multiline}
-          returnKeyType={returnKeyType}
-          textContentType={textContentType}
-          autoComplete={autoComplete}
-          accessibilityLabel={accessibilityLabel}
-          testID={testID}
-          selectionColor={selectionColor}
-          rightIcon={rightIcon as any}
-        />
-      </View>
-    );
+function InputField({
+  label,
+  error,
+  rightIcon,
+  wrapperStyle,
+  inputWrapperStyle,
+  palette,
+  ref,
+  ...props
+}: InputFieldProps) {
+  const [focused, setFocused] = useState(false);
+  const {
+    value,
+    placeholder,
+    onFocus,
+    onBlur,
+    autoCapitalize,
+    autoCorrect,
+    keyboardType,
+    secureTextEntry,
+    onChangeText,
+    onSubmitEditing,
+    editable,
+    maxLength,
+    multiline,
+    returnKeyType,
+    textContentType,
+    autoComplete,
+    accessibilityLabel,
+    testID,
+    selectionColor,
+  } = props;
+  const hidePlaceholder = focused || !!(value && value.length > 0);
+  let borderColor = palette.inputBorder;
+  if (focused) {
+    borderColor = palette.primary;
   }
-);
+  if (error) {
+    borderColor = palette.errorBorder;
+  }
+
+  return (
+    <View style={[styles.inputContainer, wrapperStyle]}>
+      {error ? <StyledText style={styles.errorText}>{error}</StyledText> : null}
+      <StyledText style={[styles.inputLabel, { color: palette.textMain }]}>{label}</StyledText>
+      <StyledTextInput
+        ref={ref}
+        value={value}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
+        placeholder={hidePlaceholder ? '' : placeholder}
+        placeholderTextColor={palette.placeholder}
+        inputWrapperStyle={{
+          borderColor,
+          backgroundColor: palette.inputBg,
+          borderRadius: 12,
+          minHeight: 54,
+          ...inputWrapperStyle,
+        }}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        keyboardType={keyboardType}
+        secureTextEntry={secureTextEntry}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSubmitEditing}
+        editable={editable}
+        maxLength={maxLength}
+        multiline={multiline}
+        returnKeyType={returnKeyType}
+        textContentType={textContentType}
+        autoComplete={autoComplete}
+        accessibilityLabel={accessibilityLabel}
+        testID={testID}
+        selectionColor={selectionColor}
+        rightIcon={rightIcon as any}
+      />
+    </View>
+  );
+}
 
 type Props = StackScreenProps<MainStackParamList, 'SignUp'>;
 
 function SignupForm({ navigation, route }: Props) {
   const recaptcha = useRef<RecaptchaRef | null>(null);
   const { accountType, continuePendingSocialSignup = false } = route.params;
-  const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const { isLoaded: isSignUpLoaded, signUp: clerkSignUp, setActive } = useSignUp();
   const { startSSOFlow } = useSSO();
+  const { isLoaded: isSignUpLoaded, signUp: clerkSignUp } = useSignUp();
   const attemptedPendingSocialSignupRef = useRef(false);
 
   const inputRefs = {
@@ -234,7 +225,6 @@ function SignupForm({ navigation, route }: Props) {
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
-  const hasSentVerificationEmailRef = useRef(false);
   const { dark } = useTheme();
 
   const palette: SignupPalette = {
@@ -479,55 +469,51 @@ function SignupForm({ navigation, route }: Props) {
 
   const onVerify = async () => {
     const { email, password, name, username } = state;
-    if (!isSignUpLoaded || !clerkSignUp || !setActive) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = normalizeUsername(username);
+
+    if (!isSignUpLoaded || !clerkSignUp) {
       setIsloading(false);
-      setFormError('Sign up is still loading. Please try again.');
+      setFormError('Authentication is still loading. Please try again.');
       return;
     }
 
     try {
-      const result = await clerkSignUp.create({
-        emailAddress: email.trim().toLowerCase(),
+      await clerkSignUp.create({
+        emailAddress: normalizedEmail,
         password,
         unsafeMetadata: {
           name,
-          username,
+          username: normalizedUsername,
           accountType,
         },
       });
-
-      if (result.status === 'complete' && result.createdSessionId) {
-        await setActive({ session: result.createdSessionId });
-        const syncResult = await syncClerkUserProfile({
-          email,
-          name,
-          username,
-          accountType,
-        });
-        const accessToken = await getValidAccessToken();
-        if (accessToken) {
-          dispatch(setLoginData({ token: accessToken, resetProfile: true }));
-          dispatch(getProfile.Request({ token: accessToken }));
-        }
-        dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
-        setIsloading(false);
-        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-        return;
-      }
-
-      await clerkSignUp.prepareEmailAddressVerification({
-        strategy: 'email_link',
-        redirectUrl: 'onebodyapp://login',
-      });
-      dispatch(signUp.Success({ email, name, username, accountType }));
-    } catch (error: any) {
+      await clerkSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setFormError('');
+      setFormSuccess('Check your inbox for your verification code.');
       setIsloading(false);
-      const message =
+      navigation.replace('ConfirmLogin', {
+        mode: 'clerk-signup-code',
+        showConfirmationEmailMessage: true,
+        prefillEmail: normalizedEmail,
+        signupName: name.trim(),
+        signupUsername: normalizedUsername,
+        accountType,
+      } as any);
+    } catch (error: any) {
+      const clerkMessage =
         error?.errors?.[0]?.longMessage ??
         error?.errors?.[0]?.message ??
         error?.message ??
         'Unable to create account. Please try again.';
-      dispatch(signUp.Failed(message));
+      const lower = clerkMessage.toLowerCase();
+      setFormSuccess('');
+      setFormError(
+        lower.includes('identifier') || lower.includes('email')
+          ? 'Unable to create account. Please try a different email or reset your password.'
+          : clerkMessage
+      );
+      setIsloading(false);
     }
   };
 
@@ -654,11 +640,13 @@ function SignupForm({ navigation, route }: Props) {
         }
 
         await activateSsoSession({ session: createdSessionId });
-        const syncResult = await syncClerkUserProfile({
-          accountType,
-        });
-        const accessToken = await getValidAccessToken();
-        await clearPendingAccountType();
+        const [syncResult, accessToken] = await Promise.all([
+          syncClerkUserProfile({
+            accountType,
+          }),
+          getValidAccessToken(),
+          clearPendingAccountType(),
+        ]);
         clearPendingSocialContinuation();
         if (accessToken) {
           dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'social' }));
@@ -676,93 +664,6 @@ function SignupForm({ navigation, route }: Props) {
       }
     },
     [accountType, dispatch, navigation, socialLoading, startSSOFlow]
-  );
-
-  useMountEffect(() => () => {
-    dispatch(signUp.Reset());
-  });
-
-  useFocusEffect(
-    React.useCallback(() => {
-      if (!authState.signUpSuccess) {
-        return;
-      }
-
-      const handleSignUpSuccess = async () => {
-        const signUpPayload = authState.signUpData as any;
-        if (signUpPayload?.mfaRequired) {
-          setFormError('');
-          setFormSuccess('');
-          setIsloading(false);
-          navigation.replace('Login', {
-            initialMfaChallenge: signUpPayload as MfaChallengeResponse,
-            prefillEmail: state.email,
-          });
-          return;
-        }
-
-        if (!hasSentVerificationEmailRef.current) {
-          hasSentVerificationEmailRef.current = true;
-          dispatch(
-            sendVerificationEmailAction.Request({
-              token: true,
-              data: {},
-              allowFalseSuccess: true,
-            })
-          );
-        }
-
-        setFormError('');
-        setFormSuccess('Welcome to the family! Check your inbox to verify your account.');
-        setIsloading(false);
-
-        navigation.replace('ConfirmLogin', {
-          showConfirmationEmailMessage: true,
-          prefillEmail: state.email,
-        } as any);
-      };
-
-      handleSignUpSuccess();
-    }, [authState.signUpData, authState.signUpSuccess, dispatch, navigation, state.email])
-  );
-
-  useFocusEffect(
-    React.useCallback(() => {
-      if (authState.signUpSuccess === false && authState.error) {
-        const displayError = Array.isArray(authState.error)
-          ? authState.error.join(', ')
-          : (authState.error ?? 'Something went wrong. Please try again.');
-        setFormSuccess('');
-        const lower = displayError.toLowerCase();
-        const isEmailTaken =
-          lower.includes('email already') ||
-          lower.includes('email is already') ||
-          (lower.includes('email') && lower.includes('exists'));
-        setFormError(
-          isEmailTaken
-            ? 'Unable to create account. Please try a different email or reset your password.'
-            : displayError
-        );
-        const isUsernameTaken =
-          lower.includes('username already') ||
-          lower.includes('username is already') ||
-          (lower.includes('username') && lower.includes('exists'));
-        if (isUsernameTaken) {
-          setState((prev) => ({
-            ...prev,
-            usernameError: 'Username is unavailable. Choose a unique name for your profile.',
-          }));
-          setUsernameSuggestions(generateUsernameSuggestions(state.username, state.name));
-        }
-        setIsloading(false);
-      }
-    }, [
-      authState.signUpSuccess,
-      authState.error,
-      generateUsernameSuggestions,
-      state.name,
-      state.username,
-    ])
   );
 
   useMountEffect(() => {
@@ -882,6 +783,7 @@ function SignupForm({ navigation, route }: Props) {
     <UserStepsLayout
       backgroundColor={Colors.neutral[700]}
       showCustomHeaderOnAndroid
+      excludeIosTopSafeArea
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

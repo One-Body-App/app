@@ -170,8 +170,8 @@ function CommentThread({
   const [comments, setComments] = useState<CommentPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [isEndOfList, setIsEndOfList] = useState(false);
+  const pageRef = useRef(1);
+  const isEndOfListRef = useRef(false);
 
   const [editingCommentId, setEditingCommentId] = useState('');
   const [editingSeedText, setEditingSeedText] = useState('');
@@ -607,18 +607,18 @@ function CommentThread({
 
           if (reset || pageToLoad === 1) {
             setComments(nextComments);
-            setIsEndOfList(nextComments.length < 1);
+            isEndOfListRef.current = nextComments.length < 1;
             return;
           }
 
           setComments((previous) => normalizeCommentTreeFallback([...previous, ...nextComments]));
-          setIsEndOfList(nextComments.length < 1);
+          isEndOfListRef.current = nextComments.length < 1;
           return;
         }
 
         if (reset || pageToLoad === 1) {
           setComments([]);
-          setIsEndOfList(true);
+          isEndOfListRef.current = true;
         }
       } catch (_error) {
         if (!isMounted.current || requestId !== activeRequest.current) {
@@ -632,8 +632,8 @@ function CommentThread({
   );
 
   const refreshContent = useCallback(() => {
-    setIsEndOfList(false);
-    setPage(1);
+    isEndOfListRef.current = false;
+    pageRef.current = 1;
     setIsRefreshing(true);
     fetchComments(1, true);
   }, [fetchComments]);
@@ -646,8 +646,8 @@ function CommentThread({
 
   useEffect(() => {
     setComments([]);
-    setPage(1);
-    setIsEndOfList(false);
+    pageRef.current = 1;
+    isEndOfListRef.current = false;
     setSelectedFilter('relevant');
     setReplyingTo(null);
     setEditingCommentId('');
@@ -746,15 +746,6 @@ function CommentThread({
 
     setReplyingTo((previous) => previous ?? drillModeDefaultReplyTarget);
   }, [drillModeDefaultReplyTarget, isThreadDrillMode]);
-
-  useEffect(() => {
-    if (!enablePagination) {
-      return;
-    }
-    if (page > 1) {
-      fetchComments(page);
-    }
-  }, [enablePagination, fetchComments, page]);
 
   useEffect(() => {
     return () => {
@@ -1687,10 +1678,12 @@ function CommentThread({
   }, []);
 
   const handleEndReached = useCallback(() => {
-    if (enablePagination && !isLoading && !isRefreshing && !isEndOfList) {
-      setPage((previous) => previous + 1);
+    if (enablePagination && !isLoading && !isRefreshing && !isEndOfListRef.current) {
+      const nextPage = pageRef.current + 1;
+      pageRef.current = nextPage;
+      fetchComments(nextPage);
     }
-  }, [enablePagination, isEndOfList, isLoading, isRefreshing]);
+  }, [enablePagination, fetchComments, isLoading, isRefreshing]);
 
   const renderCommentItem = useCallback(
     (info: ListRenderItemInfo<FlatCommentItem>) => {

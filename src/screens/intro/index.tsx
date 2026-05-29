@@ -312,7 +312,6 @@ function IntroScreen({ navigation }: Props) {
 
   const sunStyle = {
     backgroundColor: dark ? colors.card : '#fff',
-    shadowColor: Colors.primary.brand,
   };
   const glassBorderColor = dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.35)';
   const glassBackground = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
@@ -555,11 +554,7 @@ function IntroScreen({ navigation }: Props) {
                 <Animated.View
                   style={[
                     {
-                      shadowColor: Colors.primary.brand,
-                      shadowOpacity: 0.125,
-                      shadowOffset: { width: 0, height: 6 },
-                      shadowRadius: 10,
-                      elevation: 4,
+                      boxShadow: '0 6px 10px rgba(18, 107, 135, 0.125)',
                     },
                     buttonWobble(primaryBtnAnim),
                   ]}
@@ -611,11 +606,7 @@ function IntroScreen({ navigation }: Props) {
                 <Animated.View
                   style={[
                     {
-                      shadowColor: Colors.primary.brand,
-                      shadowOpacity: 0.1,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowRadius: 8,
-                      elevation: 3,
+                      boxShadow: '0 4px 8px rgba(18, 107, 135, 0.1)',
                     },
                     buttonWobble(secondaryBtnAnim),
                   ]}
@@ -728,12 +719,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-    // Shadow
-    shadowColor: '#126b87',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    boxShadow: '0 4px 8px rgba(18, 107, 135, 0.15)',
   },
   logoImage: {
     width: 180,

@@ -38,6 +38,7 @@ buildscript {
         firebaseBomVersion = "33.15.0"
         androidXCredentialsVersion = "1.3.0"
         googleIdVersion = "1.1.1"
+        okHttpVersion = "4.12.0"
     }
     repositories {
         maven { url 'https://maven.google.com' } // <--- Ensure this is present
@@ -73,6 +74,9 @@ allprojects {
             force "androidx.credentials:credentials:${rootProject.ext.androidXCredentialsVersion}"
             force "androidx.credentials:credentials-play-services-auth:${rootProject.ext.androidXCredentialsVersion}"
             force "com.google.android.libraries.identity.googleid:googleid:${rootProject.ext.googleIdVersion}"
+            force "com.squareup.okhttp3:okhttp:${rootProject.ext.okHttpVersion}"
+            force "com.squareup.okhttp3:okhttp-urlconnection:${rootProject.ext.okHttpVersion}"
+            force "com.squareup.okhttp3:logging-interceptor:${rootProject.ext.okHttpVersion}"
 
             eachDependency { details ->
                 if (details.requested.group == "androidx.credentials" &&
@@ -86,6 +90,14 @@ allprojects {
                         details.requested.name == "googleid") {
                     details.useVersion rootProject.ext.googleIdVersion
                     details.because "Avoid the googleid 1.2.x Credential Manager 1.6.x atomic group on Android"
+                }
+
+                if (details.requested.group == "com.squareup.okhttp3" &&
+                        (details.requested.name == "okhttp" ||
+                                details.requested.name == "okhttp-urlconnection" ||
+                                details.requested.name == "logging-interceptor")) {
+                    details.useVersion rootProject.ext.okHttpVersion
+                    details.because "Keep Clerk, Expo, and React Native on one OkHttp runtime for Android cookie handling"
                 }
             }
         }

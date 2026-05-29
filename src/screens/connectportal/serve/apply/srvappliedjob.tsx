@@ -42,14 +42,20 @@ export default function ServeAppliedJobPage({ navigation, route }: Props) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
-      <ServeHeader
-        title="Application"
-        titleColor={palette.text}
-        onBack={() => navigation.navigate('ConnectServeApplied')}
-      />
+    <View style={[styles.container, { backgroundColor: palette.background }]}>
+      <SafeAreaView edges={['top']}>
+        <ServeHeader
+          title="Application"
+          titleColor={palette.text}
+          onBack={() => navigation.navigate('ConnectServeApplied')}
+        />
+      </SafeAreaView>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Job Header Info */}
         <View style={styles.jobHeader}>
           <Text style={[styles.jobTitle, { color: palette.text }]}>{job.title}</Text>
@@ -140,7 +146,7 @@ export default function ServeAppliedJobPage({ navigation, route }: Props) {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -203,11 +209,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
   },
   cardTitle: {
     fontSize: 12,

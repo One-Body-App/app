@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { Modal, FlatList, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  Modal,
+  FlatList,
+  ListRenderItem,
+  StyleSheet,
+  Text,
+  TextInput,
+  Pressable,
+  View,
+} from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { CreateFlowColors } from './shared';
 
@@ -22,6 +31,51 @@ type Props = {
   errorColor?: string;
 };
 
+type EventTypeOptionRowProps = {
+  item: DropdownItem;
+  isSelected: boolean;
+  palette: CreateFlowColors;
+  onSelect: (value: string) => void;
+};
+
+const EventTypeOptionRow = React.memo(function EventTypeOptionRow({
+  item,
+  isSelected,
+  palette,
+  onSelect,
+}: EventTypeOptionRowProps) {
+  const handlePress = useCallback(() => {
+    onSelect(item.value);
+  }, [item.value, onSelect]);
+
+  return (
+    <Pressable
+      style={[
+        styles.option,
+        {
+          backgroundColor: isSelected ? palette.cardActiveBg : palette.cardBg,
+          borderColor: isSelected ? palette.cardActiveBorder : 'transparent',
+          borderWidth: isSelected ? 1 : 0,
+        },
+      ]}
+      onPress={handlePress}
+    >
+      <Text
+        style={[
+          styles.optionText,
+          {
+            color: isSelected ? palette.accent : palette.textPrimary,
+            fontWeight: isSelected ? '700' : '400',
+          },
+        ]}
+      >
+        {item.label}
+      </Text>
+      {isSelected && <MaterialIcons name="check" size={18} color={palette.accent} />}
+    </Pressable>
+  );
+});
+
 export default function EventTypeDropdown({
   items,
   selectedValue,
@@ -40,12 +94,30 @@ export default function EventTypeDropdown({
     ? 'Other'
     : items.find((item) => item.value === selectedValue)?.label;
 
-  const allOptions: DropdownItem[] = [...items, { label: 'Other', value: OTHER_VALUE }];
+  const allOptions: DropdownItem[] = useMemo(
+    () => [...items, { label: 'Other', value: OTHER_VALUE }],
+    [items]
+  );
 
-  const handleSelect = (value: string) => {
-    onSelect(value);
-    setModalVisible(false);
-  };
+  const handleSelect = useCallback(
+    (value: string) => {
+      onSelect(value);
+      setModalVisible(false);
+    },
+    [onSelect]
+  );
+
+  const renderOption: ListRenderItem<DropdownItem> = useCallback(
+    ({ item }) => (
+      <EventTypeOptionRow
+        item={item}
+        isSelected={item.value === selectedValue}
+        palette={palette}
+        onSelect={handleSelect}
+      />
+    ),
+    [handleSelect, palette, selectedValue]
+  );
 
   return (
     <View>
@@ -115,35 +187,7 @@ export default function EventTypeDropdown({
             <FlatList
               data={allOptions}
               keyExtractor={(item) => item.value}
-              renderItem={({ item }) => {
-                const isSelected = item.value === selectedValue;
-                return (
-                  <Pressable
-                    style={[
-                      styles.option,
-                      {
-                        backgroundColor: isSelected ? palette.cardActiveBg : palette.cardBg,
-                        borderColor: isSelected ? palette.cardActiveBorder : 'transparent',
-                        borderWidth: isSelected ? 1 : 0,
-                      },
-                    ]}
-                    onPress={() => handleSelect(item.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        {
-                          color: isSelected ? palette.accent : palette.textPrimary,
-                          fontWeight: isSelected ? '700' : '400',
-                        },
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                    {isSelected && <MaterialIcons name="check" size={18} color={palette.accent} />}
-                  </Pressable>
-                );
-              }}
+              renderItem={renderOption}
             />
           </View>
         </Pressable>

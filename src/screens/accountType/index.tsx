@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Pressable,
@@ -12,6 +12,7 @@ import {
 import { StackScreenProps } from '@react-navigation/stack';
 import { Profile, People } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { BlurView } from '@react-native-community/blur';
 
@@ -25,6 +26,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import GeneralStyle from '@/src/constants/GeneralStyle';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { savePendingAccountType } from '@/src/services/accountTypeStorage';
 import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
 import { HapticService } from '@/src/services/haptic';
@@ -40,6 +42,9 @@ function AccountType({ navigation, route }: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const isTablet = windowWidth >= 768;
   const isIos = Platform.OS === 'ios';
+  const headerHeight = useHeaderHeight();
+  // iOS uses a transparent nav header that overlays content; offset the title past it.
+  const headerClearance = isIos ? headerHeight + spacing.x16 : spacing.x16;
   const primaryTextColor = dark ? colors.text : '#032F3C';
   const baseCardStyle = card ?? {
     padding: spacing.x16,
@@ -63,7 +68,6 @@ function AccountType({ navigation, route }: Props) {
   const optionOneAnim = useRef(new Animated.Value(0)).current;
   const optionTwoAnim = useRef(new Animated.Value(0)).current;
   const footerAnim = useRef(new Animated.Value(0)).current;
-  const hasAnimated = useRef(false);
 
   const dropShadow = {
     shadowColor: '#000',
@@ -147,65 +151,57 @@ function AccountType({ navigation, route }: Props) {
     ],
   });
 
-  useEffect(() => {
-    let task: ReturnType<typeof InteractionManager.runAfterInteractions> | undefined;
-
-    if (!hasAnimated.current) {
-      task = InteractionManager.runAfterInteractions(() => {
-        hasAnimated.current = true;
-
-        const playWobble = (anim: Animated.Value) =>
-          Animated.sequence([
-            Animated.timing(anim, {
-              toValue: 1,
-              duration: 260,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: false,
-            }),
-            Animated.timing(anim, {
-              toValue: 0.9,
-              duration: 120,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: false,
-            }),
-            Animated.spring(anim, {
-              toValue: 1,
-              friction: 6,
-              tension: 90,
-              useNativeDriver: false,
-            }),
-          ]);
-
+  useMountEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      const playWobble = (anim: Animated.Value) =>
         Animated.sequence([
-          Animated.timing(headerAnim, {
+          Animated.timing(anim, {
             toValue: 1,
-            duration: 240,
+            duration: 260,
             easing: Easing.out(Easing.cubic),
             useNativeDriver: false,
           }),
-          Animated.timing(cardsAnim, {
-            toValue: 1,
-            duration: 220,
-            easing: Easing.out(Easing.cubic),
+          Animated.timing(anim, {
+            toValue: 0.9,
+            duration: 120,
+            easing: Easing.inOut(Easing.ease),
             useNativeDriver: false,
           }),
-          Animated.timing(footerAnim, {
+          Animated.spring(anim, {
             toValue: 1,
-            duration: 200,
-            easing: Easing.out(Easing.cubic),
+            friction: 6,
+            tension: 90,
             useNativeDriver: false,
           }),
-          Animated.stagger(120, [playWobble(optionOneAnim), playWobble(optionTwoAnim)]),
-        ]).start();
-      });
-    }
+        ]);
+
+      Animated.sequence([
+        Animated.timing(headerAnim, {
+          toValue: 1,
+          duration: 240,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+        Animated.timing(cardsAnim, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+        Animated.timing(footerAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+        Animated.stagger(120, [playWobble(optionOneAnim), playWobble(optionTwoAnim)]),
+      ]).start();
+    });
 
     return () => {
-      if (task) {
-        task.cancel();
-      }
+      task.cancel();
     };
-  }, [cardsAnim, footerAnim, headerAnim, optionOneAnim, optionTwoAnim]);
+  });
 
   return (
     <UserStepsLayout backgroundColor={colors.background} showCustomHeaderOnAndroid>
@@ -233,7 +229,7 @@ function AccountType({ navigation, route }: Props) {
                   fontSize: 32,
                   lineHeight: 40,
                 },
-                { color: primaryTextColor, marginTop: 18 },
+                { color: primaryTextColor, marginTop: headerClearance },
               ]}
             >
               Choose an account type

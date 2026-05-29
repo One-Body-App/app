@@ -1,5 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, Pressable, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  FlatList,
+  Image,
+  ListRenderItem,
+  RefreshControl,
+  StyleSheet,
+  Pressable,
+  View,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
@@ -60,6 +68,78 @@ const isUpcomingEvent = (startDate: string) => {
 
   return startDate >= new Date().toISOString().slice(0, 10);
 };
+
+type GoEventListItemProps = {
+  eventRecord: ConnectPortalEventRecord;
+  palette: ReturnType<typeof useConnectPalette>;
+  onPress: (
+    eventId: string,
+    source: 'connect_go_landing_featured' | 'connect_go_landing_list'
+  ) => void;
+};
+
+const GoEventListItem = React.memo(function GoEventListItem({
+  eventRecord,
+  palette,
+  onPress,
+}: GoEventListItemProps) {
+  const handlePress = useCallback(() => {
+    onPress(eventRecord.id, 'connect_go_landing_list');
+  }, [eventRecord.id, onPress]);
+
+  return (
+    <Pressable
+      style={[styles.eventCard, { backgroundColor: palette.inputBg, borderColor: palette.border }]}
+      onPress={handlePress}
+    >
+      <Image
+        source={{
+          uri: eventRecord.photoUri || eventRecord.heroImageUri || NO_PROFILE_IMAGE,
+        }}
+        style={styles.eventImage}
+        resizeMode="cover"
+      />
+
+      <View style={styles.eventCopy}>
+        <StyledText style={[styles.eventTitle, { color: palette.textPrimary }]} numberOfLines={2}>
+          {eventRecord.title}
+        </StyledText>
+
+        <View style={styles.eventMetaRow}>
+          <MaterialIcons name="place" size={15} color={palette.textSecondary} />
+          <StyledText
+            style={[styles.eventMeta, { color: palette.textSecondary }]}
+            numberOfLines={1}
+          >
+            {eventRecord.venueName || eventRecord.address || 'Location TBD'}
+          </StyledText>
+        </View>
+
+        <View style={styles.eventMetaRow}>
+          <MaterialIcons name="calendar-today" size={15} color={palette.textSecondary} />
+          <StyledText
+            style={[styles.eventMeta, { color: palette.textSecondary }]}
+            numberOfLines={1}
+          >
+            {formatConnectPortalDateTime(eventRecord)}
+          </StyledText>
+        </View>
+      </View>
+
+      <Pressable
+        style={[
+          styles.eventAction,
+          { borderColor: palette.activeText, backgroundColor: 'transparent' },
+        ]}
+        onPress={handlePress}
+      >
+        <StyledText style={[styles.eventActionText, { color: palette.activeText }]}>
+          Details
+        </StyledText>
+      </Pressable>
+    </Pressable>
+  );
+});
 
 function GoLandingScreen({ navigation }: Props): React.JSX.Element {
   const palette = useConnectPalette();
@@ -168,15 +248,22 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
   ).length;
   const onlineEventCount = eventRecords.filter((eventRecord) => eventRecord.isOnline).length;
 
-  const handleEventPress = (
-    eventId: string,
-    source: 'connect_go_landing_featured' | 'connect_go_landing_list'
-  ) => {
-    trackConnectPortalEventTelemetry(eventId, 'detail_open', {
-      source,
-    }).catch(() => {});
-    navigation.navigate('ConnectGoEventView', { eventId });
-  };
+  const handleEventPress = useCallback(
+    (eventId: string, source: 'connect_go_landing_featured' | 'connect_go_landing_list') => {
+      trackConnectPortalEventTelemetry(eventId, 'detail_open', {
+        source,
+      }).catch(() => {});
+      navigation.navigate('ConnectGoEventView', { eventId });
+    },
+    [navigation]
+  );
+
+  const renderRecommendedEvent: ListRenderItem<ConnectPortalEventRecord> = useCallback(
+    ({ item }) => (
+      <GoEventListItem eventRecord={item} palette={palette} onPress={handleEventPress} />
+    ),
+    [handleEventPress, palette]
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -466,64 +553,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
             </View>
           </View>
         }
-        renderItem={({ item: eventRecord }) => (
-          <Pressable
-            style={[
-              styles.eventCard,
-              { backgroundColor: palette.inputBg, borderColor: palette.border },
-            ]}
-            onPress={() => handleEventPress(eventRecord.id, 'connect_go_landing_list')}
-          >
-            <Image
-              source={{
-                uri: eventRecord.photoUri || eventRecord.heroImageUri || NO_PROFILE_IMAGE,
-              }}
-              style={styles.eventImage}
-              resizeMode="cover"
-            />
-
-            <View style={styles.eventCopy}>
-              <StyledText
-                style={[styles.eventTitle, { color: palette.textPrimary }]}
-                numberOfLines={2}
-              >
-                {eventRecord.title}
-              </StyledText>
-
-              <View style={styles.eventMetaRow}>
-                <MaterialIcons name="place" size={15} color={palette.textSecondary} />
-                <StyledText
-                  style={[styles.eventMeta, { color: palette.textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {eventRecord.venueName || eventRecord.address || 'Location TBD'}
-                </StyledText>
-              </View>
-
-              <View style={styles.eventMetaRow}>
-                <MaterialIcons name="calendar-today" size={15} color={palette.textSecondary} />
-                <StyledText
-                  style={[styles.eventMeta, { color: palette.textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {formatConnectPortalDateTime(eventRecord)}
-                </StyledText>
-              </View>
-            </View>
-
-            <Pressable
-              style={[
-                styles.eventAction,
-                { borderColor: palette.activeText, backgroundColor: 'transparent' },
-              ]}
-              onPress={() => handleEventPress(eventRecord.id, 'connect_go_landing_list')}
-            >
-              <StyledText style={[styles.eventActionText, { color: palette.activeText }]}>
-                Details
-              </StyledText>
-            </Pressable>
-          </Pressable>
-        )}
+        renderItem={renderRecommendedEvent}
         ItemSeparatorComponent={EventItemSeparator}
         ListEmptyComponent={
           featuredEvent ? (

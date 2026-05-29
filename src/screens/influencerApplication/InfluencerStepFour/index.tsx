@@ -196,31 +196,37 @@ function CreatorStepFour({ navigation, route }: Props) {
   }, [navigation, previousData, selectedTypes, selectedTopics, interests]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.headerWrap}>
-        <View style={styles.header}>
-          <View style={styles.headerSide}>
-            <Pressable
-              style={styles.headerIconButton}
-              onPress={() => navigation.goBack()}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
-            </Pressable>
-          </View>
-          <Text style={styles.headerTitle}>Creator Application</Text>
-          <View style={[styles.headerSide, styles.headerActionContainer]}>
-            <Pressable
-              onPress={() => setShowQuitModal(true)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.headerActionText}>Quit</Text>
-            </Pressable>
+    <View style={styles.safeArea}>
+      <SafeAreaView edges={['top']}>
+        <View style={styles.headerWrap}>
+          <View style={styles.header}>
+            <View style={styles.headerSide}>
+              <Pressable
+                style={styles.headerIconButton}
+                onPress={() => navigation.goBack()}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
+              </Pressable>
+            </View>
+            <Text style={styles.headerTitle}>Creator Application</Text>
+            <View style={[styles.headerSide, styles.headerActionContainer]}>
+              <Pressable
+                onPress={() => setShowQuitModal(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.headerActionText}>Quit</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.titleSection}>
           <Text style={styles.stepIndicator}>Final step</Text>
           <Text style={styles.mainHeading}>How do you share your message?</Text>
@@ -385,7 +391,7 @@ function CreatorStepFour({ navigation, route }: Props) {
           </View>
         </View>
       </CustomModal>
-    </SafeAreaView>
+    </View>
   );
 }
 

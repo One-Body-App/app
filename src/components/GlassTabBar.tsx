@@ -414,8 +414,11 @@ export default function GlassTabBar({
         {
           backgroundColor: palette.liquidShellOuter,
           borderColor: palette.liquidBorder,
-          shadowColor: palette.liquidShadow,
-          shadowOpacity: palette.liquidShadowOpacity,
+          boxShadow: `0 12px 18px ${
+            palette.isDark
+              ? `rgba(0, 0, 0, ${palette.liquidShadowOpacity})`
+              : `rgba(3, 47, 60, ${palette.liquidShadowOpacity})`
+          }`,
         },
         style,
       ]}
@@ -464,8 +467,11 @@ export default function GlassTabBar({
                 ? palette.liquidPillMovingFill
                 : palette.liquidPillFill,
               borderColor: palette.liquidPillBorder,
-              shadowColor: palette.liquidPillShadow,
-              shadowOpacity: palette.liquidPillShadowOpacity,
+              boxShadow: `0 ${isTransitioning ? 10 : 8}px ${isTransitioning ? 18 : 14}px ${
+                palette.isDark
+                  ? `rgba(0, 0, 0, ${isTransitioning ? 0.2 : palette.liquidPillShadowOpacity})`
+                  : `rgba(3, 47, 60, ${isTransitioning ? 0.2 : palette.liquidPillShadowOpacity})`
+              }`,
             },
             {
               width: pillWidth,
@@ -695,11 +701,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(232,240,244,0.92)',
     backgroundColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#032f3c',
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 5,
   },
   shellInner: {
     margin: 1,
@@ -752,17 +753,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(65,137,159,0.26)',
     borderWidth: 1.2,
     borderColor: 'rgba(255,255,255,0.98)',
-    shadowColor: '#032f3c',
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
     overflow: 'hidden',
   },
-  activePillMoving: {
-    shadowOpacity: 0.2,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-  },
+  activePillMoving: {},
   activePillTone: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -815,10 +808,7 @@ const styles = StyleSheet.create({
     bottom: '12%',
     width: 22,
     borderRadius: 999,
-    shadowColor: '#ffffff',
-    shadowOpacity: 0.18,
-    shadowRadius: 7,
-    shadowOffset: { width: 0, height: 0 },
+    boxShadow: '0 0 7px rgba(255, 255, 255, 0.18)',
   },
   activePillDropletHeadLeft: {
     left: 6,

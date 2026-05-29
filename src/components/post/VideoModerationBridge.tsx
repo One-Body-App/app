@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import {
@@ -46,8 +46,8 @@ type WebViewMessage =
 export default function VideoModerationBridge() {
   const webViewRef = useRef<WebView>(null);
   const activeRequestIdRef = useRef<string | null>(null);
-  const [bridgeReady, setBridgeReady] = useState(false);
-  const [pendingRequest, setPendingRequest] = useState<PendingModerationRequest | null>(null);
+  const bridgeReadyRef = useRef(false);
+  const pendingRequestRef = useRef<PendingModerationRequest | null>(null);
 
   const html = useMemo(
     () =>
@@ -60,23 +60,32 @@ export default function VideoModerationBridge() {
     []
   );
 
+  const postModerationRequest = useCallback((request: PendingModerationRequest) => {
+    if (!webViewRef.current) {
+      pendingRequestRef.current = request;
+      return;
+    }
+
+    webViewRef.current.postMessage(
+      JSON.stringify({
+        type: 'classify',
+        requestId: request.id,
+        frameDataUris: request.frameDataUris,
+      })
+    );
+    activeRequestIdRef.current = request.id;
+  }, []);
+
   const dispatchRequest = useCallback(
     (request: PendingModerationRequest) => {
-      if (!bridgeReady || !webViewRef.current) {
-        setPendingRequest(request);
+      if (!bridgeReadyRef.current) {
+        pendingRequestRef.current = request;
         return;
       }
 
-      webViewRef.current.postMessage(
-        JSON.stringify({
-          type: 'classify',
-          requestId: request.id,
-          frameDataUris: request.frameDataUris,
-        })
-      );
-      activeRequestIdRef.current = request.id;
+      postModerationRequest(request);
     },
-    [bridgeReady]
+    [postModerationRequest]
   );
 
   useObservedEffect(() => {
@@ -86,52 +95,44 @@ export default function VideoModerationBridge() {
     };
   }, [dispatchRequest]);
 
-  useObservedEffect(() => {
-    if (!bridgeReady || !pendingRequest || !webViewRef.current) {
-      return;
-    }
+  const handleMessage = useCallback(
+    (event: WebViewMessageEvent) => {
+      try {
+        const parsed = JSON.parse(event.nativeEvent.data || '{}') as WebViewMessage;
+        if (parsed.type === 'ready') {
+          bridgeReadyRef.current = true;
+          const pendingRequest = pendingRequestRef.current;
+          pendingRequestRef.current = null;
+          if (pendingRequest) {
+            postModerationRequest(pendingRequest);
+          }
+          return;
+        }
 
-    webViewRef.current.postMessage(
-      JSON.stringify({
-        type: 'classify',
-        requestId: pendingRequest.id,
-        frameDataUris: pendingRequest.frameDataUris,
-      })
-    );
-    activeRequestIdRef.current = pendingRequest.id;
-    setPendingRequest(null);
-  }, [bridgeReady, pendingRequest]);
-
-  const handleMessage = useCallback((event: WebViewMessageEvent) => {
-    try {
-      const parsed = JSON.parse(event.nativeEvent.data || '{}') as WebViewMessage;
-      if (parsed.type === 'ready') {
-        setBridgeReady(true);
-        return;
-      }
-
-      if (parsed.type === 'result') {
-        activeRequestIdRef.current = null;
-        resolveVideoModerationRequest(parsed.requestId, parsed.payload);
-        return;
-      }
-
-      if (parsed.type === 'error') {
-        const requestId = parsed.requestId || activeRequestIdRef.current;
-        if (requestId) {
+        if (parsed.type === 'result') {
           activeRequestIdRef.current = null;
-          rejectVideoModerationRequest(
-            requestId,
-            new Error(parsed.message || 'Video moderation bridge error.')
-          );
+          resolveVideoModerationRequest(parsed.requestId, parsed.payload);
+          return;
+        }
+
+        if (parsed.type === 'error') {
+          const requestId = parsed.requestId || activeRequestIdRef.current;
+          if (requestId) {
+            activeRequestIdRef.current = null;
+            rejectVideoModerationRequest(
+              requestId,
+              new Error(parsed.message || 'Video moderation bridge error.')
+            );
+          }
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.log('[VideoModerationBridge] Invalid message', error);
         }
       }
-    } catch (error) {
-      if (__DEV__) {
-        console.log('[VideoModerationBridge] Invalid message', error);
-      }
-    }
-  }, []);
+    },
+    [postModerationRequest]
+  );
 
   return (
     <View pointerEvents="none" style={styles.container}>

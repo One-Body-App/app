@@ -83,6 +83,17 @@ export const loginWithEmailAndPassword = async (params: {
   return res;
 };
 
+export const migrateLegacyPasswordToClerk = async (params: { email: string; password: string }) => {
+  return ApiCall<{ migrated: boolean }>({
+    route: 'auth/clerk/migrate-password',
+    verb: 'post',
+    params: {
+      email: params.email.trim().toLowerCase(),
+      password: params.password,
+    },
+  });
+};
+
 const persistTokensIfProvided = async (response: any) => {
   if (response?.tokens?.accessToken) {
     await persistTokensSafely(response.tokens);

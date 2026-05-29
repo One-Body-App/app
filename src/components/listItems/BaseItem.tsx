@@ -1,6 +1,5 @@
 import React, {
   ReactNode,
-  forwardRef,
   useCallback,
   useImperativeHandle,
   useLayoutEffect,
@@ -233,10 +232,13 @@ const normalizeReactionType = (type?: SocialPostReactionType) => {
   return type;
 };
 
-const InlineReactionBar = forwardRef<
-  ReactionBarRef,
-  { onDismiss: () => void; onReactionSelect: (reaction: AnimatedReaction) => void }
->(({ onDismiss, onReactionSelect }, ref) => {
+type InlineReactionBarProps = {
+  onDismiss: () => void;
+  onReactionSelect: (reaction: AnimatedReaction) => void;
+  ref?: React.Ref<ReactionBarRef>;
+};
+
+function InlineReactionBar({ onDismiss, onReactionSelect, ref }: InlineReactionBarProps) {
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const [visible, setVisible] = useState(false);
@@ -302,11 +304,7 @@ const InlineReactionBar = forwardRef<
         minWidth: REACTION_BAR_WIDTH,
         transform: [{ scale }],
         opacity,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 5,
+        boxShadow: '0 3px 4px rgba(0, 0, 0, 0.2)',
       }}
     >
       {REACTION_BAR_ITEMS.map((reaction) => (
@@ -326,7 +324,7 @@ const InlineReactionBar = forwardRef<
       ))}
     </Animated.View>
   );
-});
+}
 
 function BaseItem({
   transparency,

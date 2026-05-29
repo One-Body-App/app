@@ -241,31 +241,37 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
   const modalCloseBg = palette.isDark ? '#032f3c' : '#f3f4f6';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
-      <ServeHeader
-        title="My Serve"
-        titleColor={palette.text}
-        onBack={() => {
-          if (navigation.canGoBack()) {
-            navigation.goBack();
-            return;
+    <View style={[styles.container, { backgroundColor: palette.background }]}>
+      <SafeAreaView edges={['top']}>
+        <ServeHeader
+          title="My Serve"
+          titleColor={palette.text}
+          onBack={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+              return;
+            }
+            navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
+          }}
+          rightAccessory={
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Create opportunity"
+              onPress={handlePostJob}
+              style={styles.headerActionButton}
+            >
+              <MaterialIcons name="add" size={22} color={palette.text} />
+            </Pressable>
           }
-          navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
-        }}
-        rightAccessory={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Create opportunity"
-            onPress={handlePostJob}
-            style={styles.headerActionButton}
-          >
-            <MaterialIcons name="add" size={22} color={palette.text} />
-          </Pressable>
-        }
-      />
-      <ServeHubTabs activeTab="Created" navigation={navigation} palette={palette} />
+        />
+        <ServeHubTabs activeTab="Created" navigation={navigation} palette={palette} />
+      </SafeAreaView>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         <Pressable
           style={[styles.postJobButton, { backgroundColor: postJobButtonColor }]}
           onPress={handlePostJob}
@@ -405,7 +411,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
           </View>
         </View>
       </CustomModal>
-    </SafeAreaView>
+    </View>
   );
 }
 

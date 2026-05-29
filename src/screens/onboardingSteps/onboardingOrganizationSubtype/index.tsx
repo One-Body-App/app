@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Pressable, View } from 'react-native';
 
 import { useSelector } from 'react-redux';
@@ -39,7 +39,7 @@ function SubtypeCard({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(14)).current;
 
-  useEffect(() => {
+  useMountEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -54,7 +54,7 @@ function SubtypeCard({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim, index]);
+  });
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -74,6 +74,10 @@ function SubtypeCard({
     }).start();
   };
 
+  const unselectedCardStyle = dark ? styles.cardDark : styles.cardLight;
+  const unselectedLabelStyle = dark ? styles.cardLabelDark : styles.cardLabelLight;
+  const unselectedRadioStyle = dark ? styles.radioDark : styles.radioLight;
+
   return (
     <Animated.View
       style={[
@@ -88,31 +92,16 @@ function SubtypeCard({
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[
-          styles.card,
-          isSelected ? styles.cardSelected : dark ? styles.cardDark : styles.cardLight,
-        ]}
+        style={[styles.card, isSelected ? styles.cardSelected : unselectedCardStyle]}
       >
         <StyledText
-          style={[
-            styles.cardLabel,
-            isSelected
-              ? styles.cardLabelSelected
-              : dark
-                ? styles.cardLabelDark
-                : styles.cardLabelLight,
-          ]}
+          style={[styles.cardLabel, isSelected ? styles.cardLabelSelected : unselectedLabelStyle]}
           numberOfLines={2}
         >
           {item.label}
         </StyledText>
 
-        <View
-          style={[
-            styles.radio,
-            isSelected ? styles.radioSelected : dark ? styles.radioDark : styles.radioLight,
-          ]}
-        >
+        <View style={[styles.radio, isSelected ? styles.radioSelected : unselectedRadioStyle]}>
           {isSelected && <View style={styles.radioDot} />}
         </View>
       </Pressable>
@@ -143,6 +132,8 @@ function OnboardingOrganizationSubtype({ navigation, route }: Props) {
   );
 
   const subtypeItems = selectedCategoryGroup?.subtypes ?? [];
+  const hasSubtypes = subtypeItems.length > 0;
+  const hasLoadedTypes = organizationTypes.length > 0;
 
   const selectedOrganizationSubtype =
     subtypeItems.find((item) => item.organizationTypeId === selectedOrganizationType) ?? null;
@@ -225,7 +216,7 @@ function OnboardingOrganizationSubtype({ navigation, route }: Props) {
           </StyledText>
         </View>
 
-        {subtypeItems.length > 0 ? (
+        {hasSubtypes && (
           <View style={styles.list}>
             {subtypeItems.map((item, index) => (
               <SubtypeCard
@@ -238,7 +229,8 @@ function OnboardingOrganizationSubtype({ navigation, route }: Props) {
               />
             ))}
           </View>
-        ) : organizationTypes.length > 0 ? (
+        )}
+        {!hasSubtypes && hasLoadedTypes && (
           <View style={styles.emptyState}>
             <StyledText
               style={[
@@ -249,7 +241,7 @@ function OnboardingOrganizationSubtype({ navigation, route }: Props) {
               No subtypes are available for this category yet.
             </StyledText>
           </View>
-        ) : null}
+        )}
       </View>
     </OnboardingStepsLayout>
   );
@@ -297,11 +289,7 @@ const styles = StyleSheet.create({
   cardSelected: {
     backgroundColor: Colors.primary.brand,
     borderColor: Colors.primary.brand,
-    shadowColor: Colors.primary.brand,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
+    boxShadow: '0 3px 6px rgba(18, 107, 135, 0.25)',
   },
   cardLight: {
     backgroundColor: '#FFFFFF',

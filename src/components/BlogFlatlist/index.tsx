@@ -1,4 +1,4 @@
-import React, { ComponentType, ReactElement, useCallback, useState } from 'react';
+import React, { ComponentType, ReactElement, useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -35,12 +35,12 @@ function BlogFlatlist({
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const navigation = useNavigation<any>();
-  const [page, setPage] = useState<number>(1);
+  const pageRef = useRef(1);
+  const isEndOfListRef = useRef(false);
   const [blogs, setBlogs] = useState<any>([]);
   const [show, setShow] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(true);
-  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
   const [currentPopupItem] = useState<PopupItem>();
 
   const getBlog = useCallback(
@@ -65,10 +65,10 @@ function BlogFlatlist({
               allItems.findIndex((candidate) => String(candidate?.id) === String(item?.id))
           );
           if (pageNumber === 1) {
-            setIsEndOfList(false);
+            isEndOfListRef.current = false;
             setBlogs(mergedItems);
           } else if (res?.response.length < 1) {
-            setIsEndOfList(true);
+            isEndOfListRef.current = true;
           } else {
             setBlogs((previousBlogs: ArticleType[]) => [
               ...previousBlogs,
@@ -83,7 +83,7 @@ function BlogFlatlist({
       } finally {
         setLoadingMore(false);
         setRefreshing(false);
-        setPage(pageNumber);
+        pageRef.current = pageNumber;
       }
     },
     [token, user, userId]
@@ -159,7 +159,7 @@ function BlogFlatlist({
             enabled
             refreshing={refreshing}
             onRefresh={() => {
-              setIsEndOfList(false);
+              isEndOfListRef.current = false;
               setRefreshing(true);
               getBlog(1).then(() => undefined);
             }}
@@ -184,8 +184,8 @@ function BlogFlatlist({
         renderItem={renderItem}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
-          if (!loadingMore && !refreshing && !isEndOfList) {
-            getBlog(page + 1).then(() => undefined);
+          if (!loadingMore && !refreshing && !isEndOfListRef.current) {
+            getBlog(pageRef.current + 1).then(() => undefined);
           }
         }}
       />

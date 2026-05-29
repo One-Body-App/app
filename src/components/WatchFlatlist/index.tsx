@@ -43,10 +43,10 @@ function WatchFlatlist({
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
   const [posts, setPosts] = useState<WatchPost[]>([]);
-  const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
+  const isEndOfListRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [isEndOfList, setIsEndOfList] = useState(false);
   const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
   const { width } = useWindowDimensions();
   const { imageViewer, openImages } = useSharedImageViewer();
@@ -121,9 +121,9 @@ function WatchFlatlist({
 
           if (pageNumber === 1) {
             setPosts(mergeOptimisticWatchPosts(nextPosts));
-            setIsEndOfList(false);
+            isEndOfListRef.current = false;
           } else if (nextPosts.length < 1) {
-            setIsEndOfList(true);
+            isEndOfListRef.current = true;
           } else {
             setPosts((previous) => mergeOptimisticWatchPosts([...previous, ...nextPosts]));
           }
@@ -133,7 +133,7 @@ function WatchFlatlist({
       } finally {
         setIsLoading(false);
         setRefreshing(false);
-        setPage(pageNumber);
+        pageRef.current = pageNumber;
       }
     },
     [mergeOptimisticWatchPosts, token, userId]
@@ -168,15 +168,15 @@ function WatchFlatlist({
         renderItem={renderItem}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
-          if (!isLoading && !refreshing && !isEndOfList && posts.length > 0) {
-            getWatchPosts(page + 1).then(() => undefined);
+          if (!isLoading && !refreshing && !isEndOfListRef.current && posts.length > 0) {
+            getWatchPosts(pageRef.current + 1).then(() => undefined);
           }
         }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => {
-              setIsEndOfList(false);
+              isEndOfListRef.current = false;
               setRefreshing(true);
               getWatchPosts(1).then(() => undefined);
             }}

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, use, useCallback, useMemo, useRef, useState } from 'react';
 import { Animated } from 'react-native';
 
 type TabBarTranslateY = Animated.Value | Animated.AnimatedInterpolation<number>;
@@ -91,5 +91,5 @@ export function TabBarAnimationProvider({ children }: TabBarAnimationProviderPro
 }
 
 export function useTabBarAnimation() {
-  return useContext(TabBarAnimationContext);
+  return use(TabBarAnimationContext);
 }

@@ -124,14 +124,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 50, // Pill shape
     width: '100%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    boxShadow: '0 2px 3.84px rgba(0, 0, 0, 0.25)',
   },
   buttonDark: {
     backgroundColor: '#126b87',

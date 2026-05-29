@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   RefreshControl,
   ScrollView,
   TextInput,
@@ -22,6 +23,10 @@ import type {
   CreatorBlogSort,
 } from '@/src/services/creatorBlogs/types';
 import isCreatorBlogEligible from '@/src/utils/creatorBlogAccess';
+
+const dashboardScrollInsets = { top: spacing.x20, bottom: spacing.x48 };
+const dashboardScrollAndroidPadding =
+  Platform.OS === 'android' ? { paddingTop: spacing.x20, paddingBottom: spacing.x48 } : {};
 
 const FILTERS: CreatorBlogFilter[] = ['all', 'draft', 'published', 'archived'];
 const SORT_LABELS: Record<CreatorBlogSort, string> = {
@@ -266,7 +271,12 @@ export default function BlogDashboard() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: spacing.x20, paddingBottom: spacing.x48 }}
+      contentContainerStyle={{
+        paddingHorizontal: spacing.x20,
+        ...dashboardScrollAndroidPadding,
+      }}
+      contentInset={dashboardScrollInsets}
+      scrollIndicatorInsets={dashboardScrollInsets}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

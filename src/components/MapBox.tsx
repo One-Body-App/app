@@ -1,8 +1,18 @@
-import React, { useState, SetStateAction, Dispatch, ReactElement, useEffect } from 'react';
+import React, {
+  useCallback,
+  useState,
+  SetStateAction,
+  Dispatch,
+  ReactElement,
+  useEffect,
+  useRef,
+} from 'react';
 import {
   FlatList,
+  ListRenderItem,
   Platform,
   Pressable,
+  StyleSheet,
   View,
   PermissionsAndroid,
   ActivityIndicator,
@@ -39,6 +49,44 @@ type MapBoxProps = {
 
 let timer: NodeJS.Timeout | null = null;
 const accessToken = String(MAPBOX_PUBLIC_TOKEN ?? '').trim();
+
+const mapBoxStyles = StyleSheet.create({
+  emptyText: {
+    padding: 18,
+    textAlign: 'center',
+  },
+  suggestionText: {
+    marginHorizontal: 18,
+    marginVertical: 10,
+  },
+});
+
+type MapBoxSuggestionRowProps = {
+  item: MapSuggestion;
+  textColor: string;
+  onSelect: (item: MapSuggestion) => void;
+};
+
+const MapBoxSuggestionRow = React.memo(function MapBoxSuggestionRow({
+  item,
+  textColor,
+  onSelect,
+}: MapBoxSuggestionRowProps) {
+  const handlePress = useCallback(() => {
+    onSelect(item);
+  }, [item, onSelect]);
+
+  return (
+    <Pressable onPress={handlePress}>
+      <View>
+        <StyledText style={[mapBoxStyles.suggestionText, { color: textColor }]}>
+          {item.place_name}
+        </StyledText>
+      </View>
+    </Pressable>
+  );
+});
+
 function MapBox({
   types,
   countries,
@@ -53,39 +101,50 @@ function MapBox({
 }: MapBoxProps) {
   const { colors } = useTheme();
 
-  const [, setshown] = useState<boolean>(!!location);
   const [loading, setLoading] = useState<boolean>(false);
   const [suggetions, setSuggetions] = useState<MapSuggestion[]>(location ? [location] : []);
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
-  const [locationPrompted, setLocationPrompted] = useState(false);
-  const [userCoords, setUserCoords] = useState<{ lng: number; lat: number } | null>(null);
+  const locationPromptedRef = useRef(false);
+  const userCoordsRef = useRef<{ lng: number; lat: number } | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
-      setLocationPrompted(val === '1');
+      locationPromptedRef.current = val === '1';
     });
   }, []);
 
   useEffect(() => {
-    if (!modalVisible || userCoords) {
+    if (!modalVisible || userCoordsRef.current) {
       return;
     }
     Geolocation.getCurrentPosition(
       (info) => {
-        setUserCoords({ lng: info.coords.longitude, lat: info.coords.latitude });
+        userCoordsRef.current = { lng: info.coords.longitude, lat: info.coords.latitude };
       },
       () => {},
       { enableHighAccuracy: false, timeout: 5000 }
     );
-  }, [modalVisible, userCoords]);
+  }, [modalVisible]);
 
-  const focusSelectionStart = () => {
+  const focusSelectionStart = useCallback(() => {
     setSelection({ start: 0, end: 0 });
     requestAnimationFrame(() => {
       setSelection(undefined);
     });
-  };
+  }, []);
+
+  const onclose = useCallback(() => {
+    if (inline) {
+      setSuggetions([]);
+      return;
+    }
+
+    setsearchLocation('');
+    setModalVisible?.(false);
+    setSuggetions([]);
+    // setCheckIn(false);
+  }, [inline, setModalVisible]);
 
   const getSuggestion = async (val: string) => {
     setLoading(true);
@@ -94,6 +153,7 @@ function MapBox({
     setsearchLocation(val);
     if (val) {
       timer = setTimeout(() => {
+        const userCoords = userCoordsRef.current;
         fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${accessToken}${
             types ? `&types=${types?.join(',')}` : '&types=place'
@@ -103,11 +163,6 @@ function MapBox({
         )
           .then((response) => response.json())
           .then((data) => {
-            if (data?.features == undefined) {
-              setshown(false);
-            } else {
-              setshown(true);
-            }
             setSuggetions(data?.features);
             setLoading(false);
           });
@@ -117,22 +172,9 @@ function MapBox({
       setLoading(false);
     }
   };
-  const onclose = () => {
-    if (inline) {
-      setSuggetions([]);
-      setshown(false);
-      return;
-    }
-
-    setsearchLocation('');
-    setModalVisible?.(false);
-    setSuggetions([]);
-    setshown(false);
-    // setCheckIn(false);
-  };
   const getlocationPermison = async () => {
     try {
-      if (locationPrompted) {
+      if (locationPromptedRef.current) {
         Geolocation.getCurrentPosition((info) => {
           getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
         });
@@ -168,7 +210,7 @@ function MapBox({
       console.warn(err);
     } finally {
       await AsyncStorage.setItem('location_permission_requested', '1');
-      setLocationPrompted(true);
+      locationPromptedRef.current = true;
     }
   };
   const getcurrentLocation = (longitude: number, latitude: number) => {
@@ -190,6 +232,27 @@ function MapBox({
         onclose();
       });
   };
+
+  const handleSelectSuggestion = useCallback(
+    (item: MapSuggestion) => {
+      if (setLongitude) setLongitude(item?.center[0]);
+      if (setLatitude) setLatitude(item?.center[1]);
+
+      setLocation(item);
+      setsearchLocation(item.place_name);
+      focusSelectionStart();
+
+      onclose();
+    },
+    [focusSelectionStart, onclose, setLatitude, setLocation, setLongitude]
+  );
+
+  const renderSuggestionItem: ListRenderItem<MapSuggestion> = useCallback(
+    ({ item }) => (
+      <MapBoxSuggestionRow item={item} textColor={colors.text} onSelect={handleSelectSuggestion} />
+    ),
+    [colors.text, handleSelectSuggestion]
+  );
 
   const searchInput = (
     <StyledTextInput
@@ -236,34 +299,13 @@ function MapBox({
         // eslint-disable-next-line react/jsx-no-useless-fragment
         <>
           {searchLocation && !loading && location == null ? (
-            <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
+            <StyledText style={[Typography.body.x2M, mapBoxStyles.emptyText]}>
               No results found
             </StyledText>
           ) : null}
         </>
       }
-      renderItem={({ item }) => {
-        return (
-          <Pressable
-            onPress={() => {
-              if (setLongitude) setLongitude(item?.center[0]);
-              if (setLatitude) setLatitude(item?.center[1]);
-
-              setLocation(item);
-              setsearchLocation(item.place_name);
-              focusSelectionStart();
-
-              onclose();
-            }}
-          >
-            <View>
-              <StyledText style={{ color: colors.text, marginHorizontal: 18, marginVertical: 10 }}>
-                {item.place_name}
-              </StyledText>
-            </View>
-          </Pressable>
-        );
-      }}
+      renderItem={renderSuggestionItem}
     />
   );
 
