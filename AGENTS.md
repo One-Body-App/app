@@ -26,6 +26,8 @@
 ## Env/Deployment
 
 - Mobile builds depend on `.env*` config for API base URLs and keys; do not change env files unless explicitly asked.
+- Do not read or print values from `.env.local` or other local secret env files. Use `.env.example` for env variable names, expected shape, and documentation.
+- Never include secret values, private tokens, keys, or local-only env values in responses, logs, commits, or docs.
 - Be mindful of staging vs production endpoints shared with admin.
 
 ## Testing
