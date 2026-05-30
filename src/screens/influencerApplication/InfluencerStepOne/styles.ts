@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -96,12 +96,8 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     alignItems: 'center',
-    shadowColor: '#126BB7',
-    shadowOffset: {
-      width: 0,
-      height: 25,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    boxShadow: '0 25px 20px rgba(18, 107, 183, 0.1)',
   },
 });
+
+export default styles;

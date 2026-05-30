@@ -1,0 +1,780 @@
+diff --git a/node_modules/rn-fetch-blob/ios/RNFetchBlob/RNFetchBlob.m b/node_modules/rn-fetch-blob/ios/RNFetchBlob/RNFetchBlob.m
+index 671aa69..4917a5b 100644
+--- a/node_modules/rn-fetch-blob/ios/RNFetchBlob/RNFetchBlob.m
++++ b/node_modules/rn-fetch-blob/ios/RNFetchBlob/RNFetchBlob.m
+@@ -375,7 +375,7 @@ RCT_EXPORT_METHOD(ls:(NSString *)path resolver:(RCTPromiseResolveBlock)resolve r
+ RCT_EXPORT_METHOD(stat:(NSString *)target callback:(RCTResponseSenderBlock) callback)
+ {
+ 
+-    [RNFetchBlobFS getPathFromUri:target completionHandler:^(NSString *path, ALAssetRepresentation *asset) {
++    [RNFetchBlobFS getPathFromUri:target completionHandler:^(NSString *path, id asset) {
+         __block NSMutableArray * result;
+         if(path != nil)
+         {
+@@ -399,8 +399,8 @@ RCT_EXPORT_METHOD(stat:(NSString *)target callback:(RCTResponseSenderBlock) call
+         }
+         else if(asset != nil)
+         {
+-            __block NSNumber * size = [NSNumber numberWithLong:[asset size]];
+-            result = [asset metadata];
++            __block NSNumber * size = @([[asset valueForKey:@"size"] longLongValue]);
++            result = [[asset valueForKey:@"metadata"] mutableCopy];
+             [result setValue:size forKey:@"size"];
+             callback(@[[NSNull null], result]);
+         }
+@@ -450,7 +450,7 @@ RCT_EXPORT_METHOD(lstat:(NSString *)path callback:(RCTResponseSenderBlock) callb
+ RCT_EXPORT_METHOD(cp:(NSString*)src toPath:(NSString *)dest callback:(RCTResponseSenderBlock) callback)
+ {
+ //    path = [RNFetchBlobFS getPathOfAsset:path];
+-    [RNFetchBlobFS getPathFromUri:src completionHandler:^(NSString *path, ALAssetRepresentation *asset) {
++    [RNFetchBlobFS getPathFromUri:src completionHandler:^(NSString *path, id asset) {
+         NSError * error = nil;
+         if(path == nil)
+         {
+diff --git a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h
+index 5141201..76b1773 100644
+--- a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h
++++ b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h
+@@ -20,6 +20,8 @@
+ 
+ @import AssetsLibrary;
+ 
++NS_ASSUME_NONNULL_BEGIN
++
+ @interface RNFetchBlobFS : NSObject <NSStreamDelegate>  {
+     NSOutputStream * outStream;
+     NSInputStream * inStream;
+@@ -36,13 +38,13 @@
+ 
+ @property (nonatomic) NSOutputStream * _Nullable outStream;
+ @property (nonatomic) NSInputStream * _Nullable inStream;
+-@property (strong, nonatomic) RCTResponseSenderBlock callback;
+-@property (nonatomic) RCTBridge * bridge;
+-@property (nonatomic) NSString * encoding;
+-@property (nonatomic) NSString * taskId;
+-@property (nonatomic) NSString * path;
++@property (strong, nonatomic, nullable) RCTResponseSenderBlock callback;
++@property (nonatomic, nullable) RCTBridge * bridge;
++@property (nonatomic, nullable) NSString * encoding;
++@property (nonatomic, nullable) NSString * taskId;
++@property (nonatomic, nullable) NSString * path;
+ @property (nonatomic) int bufferSize;
+-@property (nonatomic) NSString * streamId;
++@property (nonatomic, nullable) NSString * streamId;
+ @property (nonatomic) BOOL appendData;
+ 
+ // get dirs
+@@ -56,23 +58,23 @@
+ + (NSString *) getPictureDir;
+ + (NSString *) getTempPath;
+ + (NSString *) getTempPath:(NSString*)taskId withExtension:(NSString *)ext;
+-+ (NSString *) getPathOfAsset:(NSString *)assetURI;
+-+ (NSString *) getPathForAppGroup:(NSString *)groupName;
+-+ (void) getPathFromUri:(NSString *)uri completionHandler:(void(^)(NSString * path, ALAssetRepresentation *asset)) onComplete;
+++ (NSString * _Nullable) getPathOfAsset:(NSString *)assetURI;
+++ (NSString * _Nullable) getPathForAppGroup:(NSString *)groupName;
+++ (void) getPathFromUri:(NSString *)uri completionHandler:(void (^ _Nonnull)(NSString * _Nullable path, id _Nullable asset))onComplete;
+ 
+ // fs methods
+-+ (RNFetchBlobFS *) getFileStreams;
+++ (NSMutableDictionary *) getFileStreams;
+ + (BOOL) mkdir:(NSString *) path;
+ + (void) mkdir:(NSString *) path resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+ + (void) hash:(NSString *)path
+     algorithm:(NSString *)algorithm
+      resolver:(RCTPromiseResolveBlock)resolve
+      rejecter:(RCTPromiseRejectBlock)reject;
+-+ (NSDictionary *) stat:(NSString *) path error:(NSError **) error;
+++ (NSDictionary *) stat:(NSString *) path error:(NSError * _Nullable * _Nullable) error;
+ + (void) exists:(NSString *) path callback:(RCTResponseSenderBlock)callback;
+ + (void) writeFileArray:(NSString *)path data:(NSArray *)data append:(BOOL)append resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+ + (void) writeFile:(NSString *)path encoding:(NSString *)encoding data:(NSString *)data append:(BOOL)append resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+-+ (void) readFile:(NSString *)path encoding:(NSString *)encoding onComplete:(void (^)(NSData * content, NSString* code, NSString * errMsg))onComplete;
+++ (void) readFile:(NSString *)path encoding:(NSString *)encoding onComplete:(void (^ _Nonnull)(id _Nullable content, NSString * _Nullable code, NSString * _Nullable errMsg))onComplete;
+ + (void) readAssetFile:(NSData *)assetUrl completionBlock:(void(^)(NSData * content))completionBlock failBlock:(void(^)(NSError * err))failBlock;
+ + (void) slice:(NSString *)path
+          dest:(NSString *)dest
+@@ -82,14 +84,14 @@
+      resolver:(RCTPromiseResolveBlock)resolve
+      rejecter:(RCTPromiseRejectBlock)reject;
+ //+ (void) writeFileFromFile:(NSString *)src toFile:(NSString *)dest append:(BOOL)append;
+-+ (void) writeAssetToPath:(ALAssetRepresentation * )rep dest:(NSString *)dest;
+++ (void) writeAssetToPath:(id)rep dest:(NSString *)dest;
+ + (void) readStream:(NSString *)uri encoding:(NSString * )encoding bufferSize:(int)bufferSize tick:(int)tick streamId:(NSString *)streamId bridgeRef:(RCTBridge *)bridgeRef;
+ + (void) df:(RCTResponseSenderBlock)callback;
+ 
+ // constructor
+-- (id) init;
+-- (id)initWithCallback:(RCTResponseSenderBlock)callback;
+-- (id)initWithBridgeRef:(RCTBridge *)bridgeRef;
++- (instancetype) init;
++- (instancetype)initWithCallback:(RCTResponseSenderBlock)callback;
++- (instancetype)initWithBridgeRef:(RCTBridge *)bridgeRef;
+ 
+ // file stream
+ - (void) openWithDestination;
+@@ -106,4 +108,6 @@
+ 
+ @end
+ 
++NS_ASSUME_NONNULL_END
++
+ #endif /* RNFetchBlobFS_h */
+diff --git a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m
+index e597ee5..545dd81 100644
+--- a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m
++++ b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m
+@@ -14,18 +14,82 @@
+ @import AssetsLibrary;
+ 
+ #import <CommonCrypto/CommonDigest.h>
++#import <dlfcn.h>
++#import <objc/message.h>
+ 
+ #if __has_include(<React/RCTAssert.h>)
+ #import <React/RCTBridge.h>
+-#import <React/RCTEventDispatcher.h>
+ #else
+ #import "RCTBridge.h"
+-#import "RCTEventDispatcher.h"
+ #endif
+ 
+ 
+ NSMutableDictionary *fileStreams = nil;
+ 
++typedef unsigned char *(*RNFetchBlobCCMD5Function)(const void *data, CC_LONG len, unsigned char *md);
++
++static RNFetchBlobCCMD5Function RNFetchBlobGetCCMD5Function(void)
++{
++    static RNFetchBlobCCMD5Function function = NULL;
++    static dispatch_once_t onceToken;
++    dispatch_once(&onceToken, ^{
++        function = (RNFetchBlobCCMD5Function)dlsym(RTLD_DEFAULT, "CC_MD5");
++    });
++    return function;
++}
++
++static void RNFetchBlobEmitDeviceEvent(RCTBridge *bridge, NSString *name, id body)
++{
++    if (bridge == nil || name == nil) {
++        return;
++    }
++
++    NSArray *args = body ? @[ name, body ] : @[ name ];
++    [bridge enqueueJSCall:@"RCTDeviceEventEmitter" method:@"emit" args:args completion:NULL];
++}
++
++static id RNFetchBlobAssetDefaultRepresentation(id asset)
++{
++    return ((id (*)(id, SEL))objc_msgSend)(asset, @selector(defaultRepresentation));
++}
++
++static long long RNFetchBlobAssetSize(id asset)
++{
++    return ((long long (*)(id, SEL))objc_msgSend)(asset, @selector(size));
++}
++
++static NSUInteger RNFetchBlobAssetGetBytes(id asset, uint8_t *buffer, long long offset, NSUInteger length, NSError **error)
++{
++    return ((NSUInteger (*)(id, SEL, uint8_t *, long long, NSUInteger, NSError **))objc_msgSend)(
++        asset,
++        @selector(getBytes:fromOffset:length:error:),
++        buffer,
++        offset,
++        length,
++        error
++    );
++}
++
++static void RNFetchBlobResolveALAsset(NSURL *assetURL, void (^resultBlock)(id asset), void (^failureBlock)(NSError *error))
++{
++    Class libraryClass = NSClassFromString(@"ALAssetsLibrary");
++    if (libraryClass == Nil) {
++        if (failureBlock != nil) {
++            failureBlock(nil);
++        }
++        return;
++    }
++
++    id library = [[libraryClass alloc] init];
++    ((void (*)(id, SEL, NSURL *, id, id))objc_msgSend)(
++        library,
++        @selector(assetForURL:resultBlock:failureBlock:),
++        assetURL,
++        resultBlock,
++        failureBlock
++    );
++}
++
+ ////////////////////////////////////////
+ //
+ //  File system access methods
+@@ -40,12 +104,14 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ @synthesize outStream;
+ @synthesize inStream;
++@synthesize bridge = bridge;
+ @synthesize encoding;
+ @synthesize callback;
+ @synthesize taskId;
+ @synthesize path;
+ @synthesize appendData;
+ @synthesize bufferSize;
++@synthesize streamId = streamId;
+ 
+ - (id)init {
+     self = [super init];
+@@ -65,7 +131,7 @@ NSMutableDictionary *fileStreams = nil;
+ }
+ 
+ // static member getter
+-+ (NSArray *) getFileStreams {
+++ (NSMutableDictionary *) getFileStreams {
+ 
+     if(fileStreams == nil)
+         fileStreams = [[NSMutableDictionary alloc] init];
+@@ -158,12 +224,10 @@ NSMutableDictionary *fileStreams = nil;
+            streamId:(NSString *)streamId
+           bridgeRef:(RCTBridge *)bridgeRef
+ {
+-    [[self class] getPathFromUri:uri completionHandler:^(NSString *path, ALAssetRepresentation *asset) {
++    [[self class] getPathFromUri:uri completionHandler:^(NSString *path, id asset) {
+ 
+-        __block RCTEventDispatcher * event = bridgeRef.eventDispatcher;
+         __block int read = 0;
+         __block int backoff = tick *1000;
+-        __block int chunkSize = bufferSize;
+         // allocate buffer in heap instead of stack
+         uint8_t * buffer;
+         @try
+@@ -175,7 +239,7 @@ NSMutableDictionary *fileStreams = nil;
+                 {
+                     NSString * message = [NSString stringWithFormat:@"File does not exist at path %@", path];
+                     NSDictionary * payload = @{ @"event": FS_EVENT_ERROR, @"code": @"ENOENT", @"detail": message };
+-                    [event sendDeviceEventWithName:streamId body:payload];
++                    RNFetchBlobEmitDeviceEvent(bridgeRef, streamId, payload);
+                     free(buffer);
+                     return ;
+                 }
+@@ -183,7 +247,7 @@ NSMutableDictionary *fileStreams = nil;
+                 [stream open];
+                 while((read = [stream read:buffer maxLength:bufferSize]) > 0)
+                 {
+-                    [[self class] emitDataChunks:[NSData dataWithBytes:buffer length:read] encoding:encoding streamId:streamId event:event];
++                    [[self class] emitDataChunks:[NSData dataWithBytes:buffer length:read] encoding:encoding streamId:streamId bridge:bridgeRef];
+                     if(tick > 0)
+                     {
+                         usleep(backoff);
+@@ -195,10 +259,10 @@ NSMutableDictionary *fileStreams = nil;
+             {
+                 int cursor = 0;
+                 NSError * err;
+-                while((read = [asset getBytes:buffer fromOffset:cursor length:bufferSize error:&err]) > 0)
++                while((read = (int)RNFetchBlobAssetGetBytes(asset, buffer, cursor, bufferSize, &err)) > 0)
+                 {
+                     cursor += read;
+-                    [[self class] emitDataChunks:[NSData dataWithBytes:buffer length:read] encoding:encoding streamId:streamId event:event];
++                    [[self class] emitDataChunks:[NSData dataWithBytes:buffer length:read] encoding:encoding streamId:streamId bridge:bridgeRef];
+                     if(tick > 0)
+                     {
+                         usleep(backoff);
+@@ -208,7 +272,7 @@ NSMutableDictionary *fileStreams = nil;
+             else
+             {
+                 NSDictionary * payload = @{ @"event": FS_EVENT_ERROR, @"code": @"EINVAL", @"detail": @"Unable to resolve URI" };
+-                [event sendDeviceEventWithName:streamId body:payload];
++                RNFetchBlobEmitDeviceEvent(bridgeRef, streamId, payload);
+             }
+             // release buffer
+             if(buffer != nil)
+@@ -218,12 +282,12 @@ NSMutableDictionary *fileStreams = nil;
+         @catch (NSError * err)
+         {
+             NSDictionary * payload = @{ @"event": FS_EVENT_ERROR, @"code": @"EUNSPECIFIED", @"detail": [err description] };
+-            [event sendDeviceEventWithName:streamId body:payload];
++            RNFetchBlobEmitDeviceEvent(bridgeRef, streamId, payload);
+         }
+         @finally
+         {
+             NSDictionary * payload = @{ @"event": FS_EVENT_END, @"detail": @"" };
+-            [event sendDeviceEventWithName:streamId body:payload];
++            RNFetchBlobEmitDeviceEvent(bridgeRef, streamId, payload);
+         }
+ 
+     }];
+@@ -232,7 +296,7 @@ NSMutableDictionary *fileStreams = nil;
+ }
+ 
+ // send read stream chunks via native event emitter
+-+ (void) emitDataChunks:(NSData *)data encoding:(NSString *) encoding streamId:(NSString *)streamId event:(RCTEventDispatcher *)event
+++ (void) emitDataChunks:(NSData *)data encoding:(NSString *) encoding streamId:(NSString *)streamId bridge:(RCTBridge *)bridge
+ {
+     @try
+     {
+@@ -243,12 +307,12 @@ NSMutableDictionary *fileStreams = nil;
+                                        @"event": FS_EVENT_DATA,
+                                        @"detail" : [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
+                                        };
+-            [event sendDeviceEventWithName:streamId body:payload];
++            RNFetchBlobEmitDeviceEvent(bridge, streamId, payload);
+         }
+         else if ([[encoding lowercaseString] isEqualToString:@"base64"])
+         {
+             NSDictionary * payload = @{ @"event": FS_EVENT_DATA,  @"detail" : [data base64EncodedStringWithOptions:0] };
+-            [event sendDeviceEventWithName:streamId body:payload];
++            RNFetchBlobEmitDeviceEvent(bridge, streamId, payload);
+         }
+         else if([[encoding lowercaseString] isEqualToString:@"ascii"])
+         {
+@@ -266,25 +330,21 @@ NSMutableDictionary *fileStreams = nil;
+             }
+ 
+             NSDictionary * payload = @{ @"event": FS_EVENT_DATA,  @"detail" : asciiArray };
+-            [event sendDeviceEventWithName:streamId body:payload];
++            RNFetchBlobEmitDeviceEvent(bridge, streamId, payload);
+         }
+ 
+     }
+     @catch (NSException * ex)
+     {
+         NSString * message = [NSString stringWithFormat:@"Failed to convert data to '%@' encoded string, this might due to the source data is not able to convert using this encoding. source = %@", encoding, [ex description]];
+-        [event
+-         sendDeviceEventWithName:streamId
+-         body:@{
+-                @"event" : MSG_EVENT_ERROR,
+-                @"detail" : message
+-                }];
+-        [event
+-         sendDeviceEventWithName:MSG_EVENT
+-         body:@{
+-                @"event" : MSG_EVENT_WARN,
+-                @"detail" : message
+-                }];
++        RNFetchBlobEmitDeviceEvent(bridge, streamId, @{
++            @"event" : MSG_EVENT_ERROR,
++            @"detail" : message
++        });
++        RNFetchBlobEmitDeviceEvent(bridge, MSG_EVENT, @{
++            @"event" : MSG_EVENT_WARN,
++            @"detail" : message
++        });
+     }
+ }
+ 
+@@ -292,7 +352,7 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ + (NSNumber *) writeFileFromFile:(NSString *)src toFile:(NSString *)dest append:(BOOL)append callback:(void(^)(NSString * errMsg, NSNumber *size))callback
+ {
+-    [[self class] getPathFromUri:src completionHandler:^(NSString *path, ALAssetRepresentation *asset) {
++    [[self class] getPathFromUri:src completionHandler:^(NSString *path, id asset) {
+         if(path != nil)
+         {
+             __block NSInputStream * is = [[NSInputStream alloc] initWithFileAtPath:path];
+@@ -322,7 +382,7 @@ NSMutableDictionary *fileStreams = nil;
+             __block long written = 0;
+             uint8_t buffer[10240];
+             [os open];
+-            while((read = [asset getBytes:buffer fromOffset:cursor length:10240 error:nil]) > 0)
++            while((read = (int)RNFetchBlobAssetGetBytes(asset, buffer, cursor, 10240, nil)) > 0)
+             {
+                 cursor += read;
+                 [os write:buffer maxLength:read];
+@@ -477,23 +537,24 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ + (void) readFile:(NSString *)path
+          encoding:(NSString *)encoding
+-       onComplete:(void (^)(NSData * content, NSString * codeStr, NSString * errMsg))onComplete
++       onComplete:(void (^)(id content, NSString * codeStr, NSString * errMsg))onComplete
+ {
+-    [[self class] getPathFromUri:path completionHandler:^(NSString *path, ALAssetRepresentation *asset) {
++    [[self class] getPathFromUri:path completionHandler:^(NSString *path, id asset) {
+         __block NSData * fileContent;
+         NSError * err;
+         __block Byte * buffer;
+         if(asset != nil)
+         {
+-            buffer = malloc(asset.size);
+-            [asset getBytes:buffer fromOffset:0 length:asset.size error:&err];
++            NSUInteger assetSize = (NSUInteger)RNFetchBlobAssetSize(asset);
++            buffer = malloc(assetSize);
++            RNFetchBlobAssetGetBytes(asset, buffer, 0, assetSize, &err);
+             if(err != nil)
+             {
+                 onComplete(nil, @"EUNSPECIFIED", [err description]);
+                 free(buffer);
+                 return;
+             }
+-            fileContent = [NSData dataWithBytes:buffer length:asset.size];
++            fileContent = [NSData dataWithBytes:buffer length:assetSize];
+             free(buffer);
+         }
+         else
+@@ -526,7 +587,7 @@ NSMutableDictionary *fileStreams = nil;
+             }
+             else if ([[encoding lowercaseString] isEqualToString:@"ascii"]) {
+                 NSMutableArray * resultArray = [NSMutableArray array];
+-                char * bytes = [fileContent bytes];
++                const char * bytes = [fileContent bytes];
+                 for(int i=0;i<[fileContent length];i++) {
+                     [resultArray addObject:[NSNumber numberWithChar:bytes[i]]];
+                 }
+@@ -597,7 +658,12 @@ NSMutableDictionary *fileStreams = nil;
+     unsigned char buffer[digestLength];
+ 
+     if ([algorithm isEqualToString:@"md5"]) {
+-        CC_MD5(content.bytes, (CC_LONG)content.length, buffer);
++        RNFetchBlobCCMD5Function md5Function = RNFetchBlobGetCCMD5Function();
++        if (md5Function == NULL) {
++            reject(@"EUNSPECIFIED", @"MD5 function is unavailable on this device", nil);
++            return;
++        }
++        md5Function(content.bytes, (CC_LONG)content.length, buffer);
+     } else if ([algorithm isEqualToString:@"sha1"]) {
+         CC_SHA1(content.bytes, (CC_LONG)content.length, buffer);
+     } else if ([algorithm isEqualToString:@"sha224"]) {
+@@ -651,11 +717,11 @@ NSMutableDictionary *fileStreams = nil;
+     if([fm fileExistsAtPath:path isDirectory:&isDir] == NO) {
+         return nil;
+     }
+-    NSDictionary * info = [fm attributesOfItemAtPath:path error:&error];
+-    NSString * size = [NSString stringWithFormat:@"%d", [info fileSize]];
++    NSDictionary * info = [fm attributesOfItemAtPath:path error:error];
++    NSString * size = [NSString stringWithFormat:@"%llu", [info fileSize]];
+     NSString * filename = [path lastPathComponent];
+     NSDate * lastModified;
+-    [[NSURL fileURLWithPath:path] getResourceValue:&lastModified forKey:NSURLContentModificationDateKey error:&error];
++    [[NSURL fileURLWithPath:path] getResourceValue:&lastModified forKey:NSURLContentModificationDateKey error:error];
+     return @{
+              @"size" : size,
+              @"filename" : filename,
+@@ -670,7 +736,7 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ + (void) exists:(NSString *) path callback:(RCTResponseSenderBlock)callback
+ {
+-    [[self class] getPathFromUri:path completionHandler:^(NSString *path, ALAssetRepresentation *asset) {
++    [[self class] getPathFromUri:path completionHandler:^(NSString *path, id asset) {
+         if(path != nil)
+         {
+             BOOL isDir = NO;
+@@ -761,7 +827,7 @@ NSMutableDictionary *fileStreams = nil;
+      resolver:(RCTPromiseResolveBlock)resolve
+      rejecter:(RCTPromiseRejectBlock)reject
+ {
+-    [[self class] getPathFromUri:path completionHandler:^(NSString *path, ALAssetRepresentation *asset)
++    [[self class] getPathFromUri:path completionHandler:^(NSString *path, id asset)
+     {
+         if(path != nil)
+         {
+@@ -787,7 +853,7 @@ NSMutableDictionary *fileStreams = nil;
+             long max = MIN(size, [end longValue]);
+ 
+             if(![fm fileExistsAtPath:dest]) {
+-                if(![fm createFileAtPath:dest contents:@"" attributes:nil]) {
++                if(![fm createFileAtPath:dest contents:nil attributes:nil]) {
+                     return reject(@"ENOENT", [NSString stringWithFormat:@"File '%@' does not exist and could not be created", path], nil);
+                 }
+             }
+@@ -825,29 +891,41 @@ NSMutableDictionary *fileStreams = nil;
+             long chunkRead = 0;
+             NSOutputStream * os = [[NSOutputStream alloc] initToFileAtPath:dest append:NO];
+             [os open];
+-            long size = asset.size;
++            long size = (long)RNFetchBlobAssetSize(asset);
+             long max = MIN(size, [end longValue]);
+ 
+             while(read < expected) {
+-                uint8_t * chunk[10240];
++                uint8_t chunk[10240];
+                 long chunkSize = 0;
+                 if([start longValue] + read + 10240 > max)
+                 {
+                     NSLog(@"read chunk %lu", max - read - [start longValue]);
+                     chunkSize = max - read - [start longValue];
+-                    chunkRead = [asset getBytes:chunk fromOffset:[start longValue] + read length:chunkSize error:nil];
++                    chunkRead = (long)RNFetchBlobAssetGetBytes(
++                        asset,
++                        chunk,
++                        [start longValue] + read,
++                        (NSUInteger)chunkSize,
++                        nil
++                    );
+                 }
+                 else
+                 {
+                     NSLog(@"read chunk %lu", 10240);
+                     chunkSize = 10240;
+-                    chunkRead = [asset getBytes:chunk fromOffset:[start longValue] + read length:chunkSize error:nil];
++                    chunkRead = (long)RNFetchBlobAssetGetBytes(
++                        asset,
++                        chunk,
++                        [start longValue] + read,
++                        (NSUInteger)chunkSize,
++                        nil
++                    );
+                 }
+                 if( chunkRead <= 0)
+                     break;
+                 long remain = expected - read;
+ 
+-                [os write:chunk maxLength:chunkSize];
++                [os write:chunk maxLength:(NSUInteger)chunkSize];
+                 read += chunkRead;
+             }
+             [os close];
+@@ -875,20 +953,17 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ # pragma mark - get absolute path of resource
+ 
+-+ (void) getPathFromUri:(NSString *)uri completionHandler:(void(^)(NSString * path, ALAssetRepresentation *asset)) onComplete
+++ (void) getPathFromUri:(NSString *)uri completionHandler:(void(^)(NSString * path, id asset)) onComplete
+ {
+     if([uri hasPrefix:AL_PREFIX])
+     {
+         NSURL *asseturl = [NSURL URLWithString:uri];
+-        __block ALAssetsLibrary* assetslibrary = [[ALAssetsLibrary alloc] init];
+-        [assetslibrary assetForURL:asseturl
+-                       resultBlock:^(ALAsset *asset) {
+-                           __block ALAssetRepresentation * present = [asset defaultRepresentation];
+-                           onComplete(nil, present);
+-                       }
+-                      failureBlock:^(NSError *error) {
+-                          onComplete(nil, nil);
+-                      }];
++        RNFetchBlobResolveALAsset(asseturl, ^(id asset) {
++            id present = RNFetchBlobAssetDefaultRepresentation(asset);
++            onComplete(nil, present);
++        }, ^(NSError *error) {
++            onComplete(nil, nil);
++        });
+     }
+     else
+     {
+@@ -918,14 +993,14 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ }
+ 
+-+ (void) writeAssetToPath:(ALAssetRepresentation * )rep dest:(NSString *)dest
+++ (void) writeAssetToPath:(id)rep dest:(NSString *)dest
+ {
+     int read = 0;
+     int cursor = 0;
+     Byte * buffer = (Byte *)malloc(10240);
+     NSOutputStream * ostream = [[NSOutputStream alloc] initToFileAtPath:dest append:NO];
+     [ostream open];
+-    while((read = [rep getBytes:buffer fromOffset:cursor length:10240 error:nil]) > 0)
++    while((read = (int)RNFetchBlobAssetGetBytes(rep, buffer, cursor, 10240, nil)) > 0)
+     {
+         cursor+=10240;
+         [ostream write:buffer maxLength:read];
+diff --git a/node_modules/rn-fetch-blob/ios/RNFetchBlobNetwork.m b/node_modules/rn-fetch-blob/ios/RNFetchBlobNetwork.m
+index f2e40b6..82437a5 100644
+--- a/node_modules/rn-fetch-blob/ios/RNFetchBlobNetwork.m
++++ b/node_modules/rn-fetch-blob/ios/RNFetchBlobNetwork.m
+@@ -17,12 +17,10 @@
+ #if __has_include(<React/RCTAssert.h>)
+ #import <React/RCTRootView.h>
+ #import <React/RCTLog.h>
+-#import <React/RCTEventDispatcher.h>
+ #import <React/RCTBridge.h>
+ #else
+ #import "RCTRootView.h"
+ #import "RCTLog.h"
+-#import "RCTEventDispatcher.h"
+ #import "RCTBridge.h"
+ #endif
+ 
+@@ -34,6 +32,16 @@
+ 
+ NSMapTable * expirationTable;
+ 
++static void RNFetchBlobEmitDeviceEvent(RCTBridge *bridge, NSString *name, id body)
++{
++    if (bridge == nil || name == nil) {
++        return;
++    }
++
++    NSArray *args = body ? @[ name, body ] : @[ name ];
++    [bridge enqueueJSCall:@"RCTDeviceEventEmitter" method:@"emit" args:args completion:NULL];
++}
++
+ __attribute__((constructor))
+ static void initialize_tables() {
+     if (expirationTable == nil) {
+@@ -168,7 +176,7 @@ static void initialize_tables() {
+         {
+             RCTBridge * bridge = [RNFetchBlob getRCTBridge];
+             id args = @{ @"taskId": key };
+-            [bridge.eventDispatcher sendDeviceEventWithName:EVENT_EXPIRE body:args];
++            RNFetchBlobEmitDeviceEvent(bridge, EVENT_EXPIRE, args);
+             
+         }
+         
+diff --git a/node_modules/rn-fetch-blob/ios/RNFetchBlobRequest.m b/node_modules/rn-fetch-blob/ios/RNFetchBlobRequest.m
+index cdbe6b1..9d96d25 100644
+--- a/node_modules/rn-fetch-blob/ios/RNFetchBlobRequest.m
++++ b/node_modules/rn-fetch-blob/ios/RNFetchBlobRequest.m
+@@ -14,6 +14,7 @@
+ 
+ #import "IOS7Polyfill.h"
+ #import <CommonCrypto/CommonDigest.h>
++#import <dlfcn.h>
+ 
+ 
+ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+@@ -42,6 +43,28 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+ 
+ @implementation RNFetchBlobRequest
+ 
++typedef unsigned char *(*RNFetchBlobCCMD5Function)(const void *data, CC_LONG len, unsigned char *md);
++
++static RNFetchBlobCCMD5Function RNFetchBlobGetCCMD5Function(void)
++{
++    static RNFetchBlobCCMD5Function function = NULL;
++    static dispatch_once_t onceToken;
++    dispatch_once(&onceToken, ^{
++        function = (RNFetchBlobCCMD5Function)dlsym(RTLD_DEFAULT, "CC_MD5");
++    });
++    return function;
++}
++
++static void RNFetchBlobEmitDeviceEvent(RCTBridge *bridge, NSString *name, id body)
++{
++    if (bridge == nil || name == nil) {
++        return;
++    }
++
++    NSArray *args = body ? @[ name, body ] : @[ name ];
++    [bridge enqueueJSCall:@"RCTDeviceEventEmitter" method:@"emit" args:args completion:NULL];
++}
++
+ @synthesize taskId;
+ @synthesize expectedBytes;
+ @synthesize receivedBytes;
+@@ -55,7 +78,11 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+ - (NSString *)md5:(NSString *)input {
+     const char* str = [input UTF8String];
+     unsigned char result[CC_MD5_DIGEST_LENGTH];
+-    CC_MD5(str, (CC_LONG)strlen(str), result);
++    RNFetchBlobCCMD5Function md5Function = RNFetchBlobGetCCMD5Function();
++    if (md5Function == NULL) {
++        return nil;
++    }
++    md5Function(str, (CC_LONG)strlen(str), result);
+ 
+     NSMutableString *ret = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH*2];
+     for (int i = 0; i<CC_MD5_DIGEST_LENGTH; i++) {
+@@ -164,12 +191,6 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+     self.task = [session dataTaskWithRequest:req];
+     [self.task resume];
+ 
+-    // network status indicator
+-    if ([[options objectForKey:CONFIG_INDICATOR] boolValue]) {
+-        dispatch_async(dispatch_get_main_queue(), ^{
+-            [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:YES];
+-        });
+-    }
+ }
+ 
+ ////////////////////////////////////////
+@@ -200,13 +221,10 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+ 
+         if (self.isServerPush) {
+             if (partBuffer) {
+-                [self.bridge.eventDispatcher
+-                 sendDeviceEventWithName:EVENT_SERVER_PUSH
+-                 body:@{
+-                        @"taskId": taskId,
+-                        @"chunk": [partBuffer base64EncodedStringWithOptions:0],
+-                        }
+-                 ];
++                RNFetchBlobEmitDeviceEvent(self.bridge, EVENT_SERVER_PUSH, @{
++                    @"taskId": taskId,
++                    @"chunk": [partBuffer base64EncodedStringWithOptions:0],
++                });
+             }
+ 
+             partBuffer = [[NSMutableData alloc] init];
+@@ -257,18 +275,15 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+             }
+         }
+ 
+-        [self.bridge.eventDispatcher
+-         sendDeviceEventWithName: EVENT_STATE_CHANGE
+-         body:@{
+-                @"taskId": taskId,
+-                @"state": @"2",
+-                @"headers": headers,
+-                @"redirects": redirects,
+-                @"respType" : respType,
+-                @"timeout" : @NO,
+-                @"status": [NSNumber numberWithInteger:statusCode]
+-                }
+-         ];
++        RNFetchBlobEmitDeviceEvent(self.bridge, EVENT_STATE_CHANGE, @{
++            @"taskId": taskId,
++            @"state": @"2",
++            @"headers": headers,
++            @"redirects": redirects,
++            @"respType" : respType,
++            @"timeout" : @NO,
++            @"status": [NSNumber numberWithInteger:statusCode]
++        });
+     } else {
+         NSLog(@"oops");
+     }
+@@ -345,15 +360,12 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+     NSNumber * now =[NSNumber numberWithFloat:((float)receivedBytes/(float)expectedBytes)];
+ 
+     if ([self.progressConfig shouldReport:now]) {
+-        [self.bridge.eventDispatcher
+-         sendDeviceEventWithName:EVENT_PROGRESS
+-         body:@{
+-                @"taskId": taskId,
+-                @"written": [NSString stringWithFormat:@"%lld", (long long) receivedBytes],
+-                @"total": [NSString stringWithFormat:@"%lld", (long long) expectedBytes],
+-                @"chunk": chunkString
+-                }
+-         ];
++        RNFetchBlobEmitDeviceEvent(self.bridge, EVENT_PROGRESS, @{
++            @"taskId": taskId,
++            @"written": [NSString stringWithFormat:@"%lld", (long long) receivedBytes],
++            @"total": [NSString stringWithFormat:@"%lld", (long long) expectedBytes],
++            @"chunk": chunkString
++        });
+     }
+ }
+ 
+@@ -373,13 +385,6 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+     NSString * respStr;
+     NSString * rnfbRespType;
+ 
+-    // only run this if we were requested to change it
+-    if ([[options objectForKey:CONFIG_INDICATOR] boolValue]) {
+-        dispatch_async(dispatch_get_main_queue(), ^{
+-            [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:NO];
+-        });
+-    }
+-
+     if (error) {
+         if (error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled) {
+             errMsg = @"task cancelled";
+@@ -439,14 +444,11 @@ typedef NS_ENUM(NSUInteger, ResponseFormat) {
+     NSNumber * now = [NSNumber numberWithFloat:((float)totalBytesWritten/(float)totalBytesExpectedToWrite)];
+ 
+     if ([self.uploadProgressConfig shouldReport:now]) {
+-        [self.bridge.eventDispatcher
+-         sendDeviceEventWithName:EVENT_PROGRESS_UPLOAD
+-         body:@{
+-                @"taskId": taskId,
+-                @"written": [NSString stringWithFormat:@"%ld", (long) totalBytesWritten],
+-                @"total": [NSString stringWithFormat:@"%ld", (long) totalBytesExpectedToWrite]
+-                }
+-         ];
++        RNFetchBlobEmitDeviceEvent(self.bridge, EVENT_PROGRESS_UPLOAD, @{
++            @"taskId": taskId,
++            @"written": [NSString stringWithFormat:@"%ld", (long) totalBytesWritten],
++            @"total": [NSString stringWithFormat:@"%ld", (long) totalBytesExpectedToWrite]
++        });
+     }
+ }
+ 

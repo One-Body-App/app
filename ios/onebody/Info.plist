@@ -26,13 +26,12 @@
 	<array>
 		<dict>
 			<key>CFBundleIdentifier</key>
-			<string/>
+			<string></string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.googleusercontent.apps.420515523880-1gfl6ab00f23tq0pqdpls7j6lboj7g8u</string>
-				<string>fb1977514759116109</string>
 			</array>
 		</dict>
 		<dict>
@@ -58,12 +57,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>102</string>
-	<key>FacebookAppID</key>
-	<string>1977514759116109</string>
-	<key>FacebookClientToken</key>
-	<string>871a04e1e70813d7517dff1a75dc8a14</string>
-	<key>FacebookDisplayName</key>
-	<string>One Body</string>
+	<key>FirebaseCrashlyticsCollectionEnabled</key>
+	<false/>
 	<key>FirebaseDynamicLinksCustomDomains</key>
 	<array>
 		<string>https://app.onebodyapp.com</string>
@@ -74,10 +69,6 @@
 	<string>YES</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>twitter</string>
-		<string>twitterauth</string>
-		<string>fbapi</string>
-		<string>fb-messenger-share-api</string>
 		<string>mailto</string>
 		<string>readdle-spark</string>
 		<string>airmail</string>
@@ -101,17 +92,13 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app uses the location services to personalize the user content shown to the user</string>
-	<key>NSLocationUsageDescription</key>
-	<string>This app uses the location services to personalize the user content shown to the user</string>
+	<string>One Body uses the camera so you can capture photos and videos for your profile, posts, and messages.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app uses the location services to personalize the user content shown to the user</string>
+	<string>One Body uses your location while you use location-based features like finding nearby content, events, and communities.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
+	<string>One Body uses the microphone so you can record audio with videos and other camera features.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
+	<string>One Body uses your photo library so you can choose photos and videos for your profile, posts, and messages.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>
@@ -169,6 +156,24 @@
 		<string>OpenSans_SemiCondensed-SemiBold.ttf</string>
 		<string>OpenSans_SemiCondensed-SemiBoldItalic.ttf</string>
 		<string>MaterialDesignIcons.ttf</string>
+		<string>Rubik-Regular.ttf</string>
+		<string>Rubik-Italic.ttf</string>
+		<string>Rubik-Light.ttf</string>
+		<string>Rubik-LightItalic.ttf</string>
+		<string>Rubik-Medium.ttf</string>
+		<string>Rubik-MediumItalic.ttf</string>
+		<string>Rubik-SemiBold.ttf</string>
+		<string>Rubik-SemiBoldItalic.ttf</string>
+		<string>Rubik-Bold.ttf</string>
+		<string>Rubik-BoldItalic.ttf</string>
+		<string>Rubik-ExtraBold.ttf</string>
+		<string>Rubik-ExtraBoldItalic.ttf</string>
+		<string>Rubik-Black.ttf</string>
+		<string>Rubik-BlackItalic.ttf</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -178,13 +183,15 @@
 	<array>
 		<string>arm64</string>
 	</array>
+	<key>UIStatusBarHidden</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
+	<true/>
+	<key>firebase_json_raw</key>
+	<string>e30=</string>
 </dict>
 </plist>

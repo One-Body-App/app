@@ -1,4 +1,4 @@
-import { unescape } from 'lodash';
+import unescape from 'lodash/unescape';
 import { Linking } from 'react-native';
 
 import Config from 'react-native-config';
@@ -8,8 +8,7 @@ import { sha256 } from 'js-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 
-// TEMP: Hardcode BASE_URL to staging to bypass env issues. Remove when env is correct.
-export const BASE_URL = 'https://stagingapi.onebodyapp.com/api';
+export const BASE_URL = Config.BASE_URL ?? '';
 export const { PRIVACY_POLICY_URL } = Config;
 export const { TERMS_CONDITIONS_URL } = Config;
 export const { GOOGLE_LOGIN_CLIENT_ID } = Config;
@@ -19,9 +18,14 @@ export const { INSTAGRAM_CONNECT_REDIRECT } = Config;
 export const { INSTAGRAM_RECONNECT_REDIRECT } = Config;
 export const { NO_PROFILE_IMAGE } = Config;
 export const { NO_POST_IMAGE_URL } = Config;
-export const { TWITTER_CLIENT_ID } = Config;
 export const { GIPHY_KEY_IOS } = Config;
 export const { GIPHY_KEY_ANDROID } = Config;
+export const { MAPBOX_PUBLIC_TOKEN } = Config;
+export const ENABLE_NATIVE_CHAT = ['1', 'true', 'yes', 'on'].includes(
+  String(Config.ENABLE_NATIVE_CHAT ?? '')
+    .toLowerCase()
+    .trim()
+);
 
 export const OpenURLButton = async (
   url: string,
@@ -131,66 +135,10 @@ export const getInstagramAuthToken = async (
         instagramToken: result.data?.instagramToken,
       };
     }
+
+    return undefined;
   } catch (error: any) {
     console.log(error);
-    return undefined;
-  }
-};
-
-export const getTwitterAuthToken = async (
-  code: string,
-  codeConfirmation: string,
-  userToken: string,
-  redirectUrl: string
-) => {
-  try {
-    const options = {
-      method: 'POST',
-      url: `${BASE_URL}/auth/twitter-token-oauth-2`,
-      data: {
-        redirect_uri: redirectUrl,
-        code,
-        codeVerifier: codeConfirmation,
-        updateUser: true,
-      },
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: `Bearer ${userToken}`,
-      },
-    };
-
-    const result = await axios.request(options);
-
-    if (result.data) {
-      InAppBrowser.closeAuth();
-
-      return {
-        twitterTokenExpires: result.data?.expiresAt,
-        twitterTokenExpiresAtReal: result.data?.expiresAtReal,
-        twitterUsername: result.data?.twitterHandler,
-        twitterId: result.data?.twitterId,
-        twitterToken: result.data?.twitterToken,
-        twitterRefreshToken: result.data?.twitterRefreshToken,
-      };
-    }
-    return undefined;
-  } catch (error: any) {
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.log(error.response.data);
-      console.log(error.response.status);
-      console.log(error.response.headers);
-    } else if (error.request) {
-      // The request was made but no response was received
-      // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-      // http.ClientRequest in node.js
-      console.log(error.request);
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.log('Error', error.message);
-    }
-    console.log(error.config);
     return undefined;
   }
 };

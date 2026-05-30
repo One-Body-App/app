@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { Text, View, TextInput, Pressable } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -9,20 +9,33 @@ import Button from '../Button';
 import { setLoader, setPrayers } from '@/src/redux/actions/GeneralActions';
 import Love from '@/assets/svg/Love.svg';
 import Loved from '@/assets/svg/Loved.svg';
-import Pray from '@/assets/svg/Pray.svg';
-import Praying from '@/assets/svg/Praying.svg';
+import Prayers from '@/assets/svg/prayers.svg';
 import Rejoice from '@/assets/svg/Rejoice.svg';
 import Rejoiced from '@/assets/svg/Rejoiced.svg';
 import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
-function PrayerSocials({ item, color }) {
+interface PrayerSocialsProps {
+  item: {
+    post?: {
+      _id?: string;
+      loves?: string[];
+      rejoice?: string[];
+      praying?: string[];
+      prayerType?: string;
+    };
+  };
+  color?: string;
+}
+
+function PrayerSocials({ item, color }: PrayerSocialsProps) {
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.getProfileData);
-  const prayers = useSelector((state) => state.prayer.prayers);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const prayers = useSelector((state: RootState) => state.prayer.prayers);
 
-  const handelLike = async (id, type) => {
+  const handelLike = async (id: string | undefined, type: 'praying' | 'rejoice' | 'loves') => {
     // updatelocalLike(id);
     try {
       const res = await ApiCall({
@@ -30,48 +43,56 @@ function PrayerSocials({ item, color }) {
         token,
         verb: 'patch',
       });
-      if (res?.status == '200') {
+      if (res?.status === 200) {
         updateList(id, res?.response?.data);
-      } else {
-        console.log('error', res?.response);
       }
-    } catch (e) {
-      console.log('saga sign up err --- ', e);
+    } catch (error) {
+      // no-op: handle silently
     }
   };
-  const updateList = (id, prayitem) => {
+  const updateList = (id: any, prayitem: any) => {
     // const arr = prayers;
-    const index = prayers.findIndex((p) => p?.post?._id == id);
+    const index = prayers.findIndex((p) => p?.post?._id === id);
     prayers[index] = prayitem;
     const arr = prayers;
     dispatch(setPrayers([]));
 
     dispatch(setPrayers(arr));
   };
-  const updateList2 = (id, prayitem) => {
+  const updateList2 = (id: any, prayitem: any) => {
     const arr = prayers;
 
-    const index = arr.findIndex((p) => p?.post?._id == id);
+    const index = arr.findIndex((p) => p?.post?._id === id);
     arr[index] = prayitem;
     dispatch(setPrayers([]));
 
     dispatch(setPrayers(arr));
   };
-  const checkLike = (item, type) => {
-    if (type == 'loves') {
-      return item?.post?.loves.includes(user?.userID);
+  const checkLike = (
+    entry: {
+      post?: {
+        loves?: string[] | null;
+        rejoice?: string[] | null;
+        praying?: string[] | null;
+      };
+    },
+    type: string
+  ) => {
+    if (type === 'loves') {
+      return !!entry?.post?.loves?.includes(user?.userId ?? '');
     }
-    if (type == 'rejoice') {
-      return item?.post?.rejoice.includes(user?.userID);
+    if (type === 'rejoice') {
+      return !!entry?.post?.rejoice?.includes(user?.userId ?? '');
     }
-    if (type == 'praying') {
-      return item?.post?.praying.includes(user?.userID);
+    if (type === 'praying') {
+      return !!entry?.post?.praying?.includes(user?.userId ?? '');
     }
+    return false;
   };
   return (
     <View style={{ flexDirection: 'row' }}>
-      {item?.post?.prayerType == 'exhortation' ? null : (
-        <TouchableOpacity
+      {item?.post?.prayerType === 'exhortation' ? null : (
+        <Pressable
           style={{
             justifyContent: 'center',
             width: '28%',
@@ -85,17 +106,13 @@ function PrayerSocials({ item, color }) {
             handelLike(item?.post?._id, 'praying');
           }}
         >
-          {checkLike(item, 'praying') ? (
-            <Praying style={{ color: '#126B87' }} />
-          ) : (
-            <Pray style={{ color: '#126B87' }} />
-          )}
+          <Prayers color="#126B87" />
           <Text style={checkLike(item, 'praying') ? { color } : { color: '#4F6D77' }}>
             {checkLike(item, 'praying') ? 'Praying' : 'Pray'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
-      <TouchableOpacity
+      <Pressable
         onPress={() => {
           const itm = item;
 
@@ -107,19 +124,15 @@ function PrayerSocials({ item, color }) {
             justifyContent: 'center',
             alignItems: 'center',
           },
-          item.post.prayerType == 'exhortation' ? { width: '38%' } : { width: '28%' },
+          item?.post?.prayerType === 'exhortation' ? { width: '38%' } : { width: '28%' },
         ]}
       >
-        {checkLike(item, 'rejoice') ? (
-          <Rejoiced style={{ color: '#126B87' }} />
-        ) : (
-          <Rejoice style={{ color: '#126B87' }} />
-        )}
+        {checkLike(item, 'rejoice') ? <Rejoiced color="#126B87" /> : <Rejoice color="#126B87" />}
         <Text style={checkLike(item, 'rejoice') ? { color } : { color: '#4F6D77' }}>
           {checkLike(item, 'rejoice') ? 'Rejoiced' : 'Rejoice'}
         </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
+      </Pressable>
+      <Pressable
         style={{
           justifyContent: 'center',
           alignItems: 'center',
@@ -131,15 +144,11 @@ function PrayerSocials({ item, color }) {
           handelLike(item?.post?._id, 'loves');
         }}
       >
-        {checkLike(item, 'loves') ? (
-          <Loved style={{ color: '#126B87' }} />
-        ) : (
-          <Love color="#126B87" style={{ color: '#126B87' }} />
-        )}
+        {checkLike(item, 'loves') ? <Loved color="#126B87" /> : <Love color="#126B87" />}
         <Text style={checkLike(item, 'loves') ? { color } : { color: '#4F6D77' }}>
           {checkLike(item, 'loves') ? 'Loved' : 'Love'}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }

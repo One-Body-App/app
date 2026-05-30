@@ -1,7 +1,8 @@
-import { StatusBar, PixelRatio, Dimensions, Platform } from 'react-native';
+import { StatusBar, PixelRatio, Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 
-const { height, width } = Dimensions.get('window');
+const { height, width } = initialWindowMetrics?.frame ?? { height: 812, width: 375 };
 export function isIphoneX() {
   return (Platform.OS === 'ios' && DeviceInfo.hasNotch()) || DeviceInfo.hasDynamicIsland();
 }

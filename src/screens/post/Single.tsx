@@ -1,25 +1,21 @@
-import { StackScreenProps } from '@react-navigation/stack';
-import { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
-  Keyboard,
   Platform,
-  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  Pressable,
+  useWindowDimensions,
   View,
-  KeyboardEvent,
-  RefreshControl,
-  EmitterSubscription,
 } from 'react-native';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
-import {
-  GiphyDialog,
-  GiphyDialogEvent,
-  GiphyDialogMediaSelectEventHandler,
-  GiphyMedia,
-} from '@giphy/react-native-sdk';
-import { useToast } from 'react-native-toast-notifications';
+import Icon from '@react-native-vector-icons/ionicons';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import StyledText from '@/components/styled/Text';
@@ -27,93 +23,100 @@ import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { CommentPost, SocialPost, SocialPostReaction } from '@/utils/types';
-
-import CommentField from '@/components/comments/Field';
-import CommentItem from '@/components/comments/CommentItem';
+import { CommentPost, PostType, SocialPost } from '@/utils/types';
+import CommentThread from '@/components/comments/Thread';
 import SocialItem from '@/components/listItems/SocialItem';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
+import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
+import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import {
+  deleteOwnedPost,
+  emitFeedItemUnavailable,
+  emitOwnedPostDeleted,
+  getFeedItemUnavailableMessage,
+} from '@/services/ownedPostDeletion';
+import {
+  createPostTelemetryRequestId,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+} from '@/services/postTelemetry';
 
-type Props = StackScreenProps<MainStackParamList, 'SinglePost'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'SinglePost'>;
 
-let keyboardWillShowListener: EmitterSubscription;
-let onKeyboardWillHideListener: EmitterSubscription;
 function SinglePost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();
-  const [comments, setComments] = useState<CommentPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
-  const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
-  const [editingCommentId, setEditingCommentId] = useState<string>('');
 
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
-  const { colors } = useTheme();
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
+  const { colors, dark } = useTheme();
+  const { width } = useWindowDimensions();
+  const { imageViewer, openImages } = useSharedImageViewer();
+  const socialItemContentWidth = Math.max(width - spacing.x16 * 2, 0);
+  const backNavigationInFlightRef = useRef(false);
+  const unavailableHandledRef = useRef(false);
+  const requestIdRef = useRef(createPostTelemetryRequestId());
+  const resetToHomeFeed = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'MainRoot',
+          params: {
+            screen: 'Main',
+            params: {
+              screen: 'HomeTab',
+              params: {
+                screen: 'Home',
+              },
+            },
+          },
+        } as any,
+      ],
+    });
+  }, [navigation]);
+  const handleBackPress = () => {
+    if (backNavigationInFlightRef.current) {
+      return;
+    }
 
-  const [page, setPage] = useState(1);
-  const [isEndOfList, setIsEndOfList] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const toast = useToast();
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-  const onKeyboardWillShow = (e: KeyboardEvent) => {
-    setKeyboardHeight(e.endCoordinates.height);
+    backNavigationInFlightRef.current = true;
+    setTimeout(() => {
+      backNavigationInFlightRef.current = false;
+    }, 350);
+
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    resetToHomeFeed();
   };
 
-  const onKeyboardWillHide = () => {
-    setKeyboardHeight(0);
-  };
-
-  useEffect(() => {
-    if (!isEditingComment) {
-      if (Platform.OS === 'ios') {
-        // These listeners on ios are a little more snappy but not available on Android
-        // If you want to use this on Android use keyboardDidShow/Hide
-        keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', onKeyboardWillShow);
-        onKeyboardWillHideListener = Keyboard.addListener('keyboardWillHide', onKeyboardWillHide);
+  const getPost = useCallback(async () => {
+    const handleUnavailablePost = (message?: string) => {
+      if (unavailableHandledRef.current) {
+        return;
       }
 
-      return () => {
-        if (Platform.OS === 'ios') {
-          onKeyboardWillHideListener.remove();
-          onKeyboardWillHideListener.remove();
-          // Keyboard.removeAllListeners('keyboardWillShow');
+      const postId = String(route.params?.postId ?? '').trim();
+      if (postId.length > 0) {
+        emitFeedItemUnavailable({
+          type: PostType.social,
+          id: postId,
+        });
+      }
 
-          // Keyboard.removeAllListeners('keyboardWillHide');
-        }
-      };
-    }
-  }, []);
-
-  const refreshContent = () => {
-    setIsEndOfList(false);
-    setPage(1);
-    getComments(1);
-    setIsRefreshing(true);
-  };
-
-  useEffect(() => {
-    getComments(page);
-  }, [page]);
-
-  useEffect(() => {
-    if (!isEditingComment) {
-      setGif(null);
-    }
-  }, [isEditingComment]);
-
-  // Handling GIFs selection in GiphyDialog
-  useEffect(() => {
-    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
-      setGif(e.media);
-      GiphyDialog.hide();
+      unavailableHandledRef.current = true;
+      Toast.show(message || 'This post is no longer available.', Toast.SHORT);
+      handleBackPress();
     };
-    const listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
-    return () => {
-      listener.remove();
-    };
-  }, []);
 
-  const getPost = async () => {
     setIsLoading(true);
     try {
       const result = await ApiCall({
@@ -125,20 +128,24 @@ function SinglePost({ navigation, route }: Props) {
 
       setIsLoading(false);
 
-      if (result.status == 200) {
+      if (result.status === 200) {
         if (result.response) {
+          unavailableHandledRef.current = false;
           setPost(result.response);
         } else {
           setIsNotFound(true);
+          handleUnavailablePost();
         }
       } else {
         setIsNotFound(true);
+        handleUnavailablePost(getFeedItemUnavailableMessage(result.response));
       }
     } catch (e) {
       setIsLoading(false);
       setIsNotFound(true);
+      handleUnavailablePost();
     }
-  };
+  }, [handleBackPress, route.params?.postId, token]);
 
   // useEffect(() => {
   //   if (post) {
@@ -148,253 +155,198 @@ function SinglePost({ navigation, route }: Props) {
   //   }
   // }, [post]);
 
-  const getComments = async (page: number) => {
-    setIsLoading(true);
-    try {
-      const result = await ApiCall({
-        route: `comments/social/${route.params?.postId}?page=${page}`,
-        token,
-
-        verb: 'get',
-      });
-
-      setIsLoading(false);
-      setIsRefreshing(false);
-      let newComments = [];
-      if (result.status == 200) {
-        if (page == 1) {
-          newComments = result?.response.content ?? [];
-
-          setIsEndOfList(false);
-        } else {
-          newComments = [...comments, ...(result?.response.content ?? [])];
-          if (result?.response.content.length < 1) {
-            setIsEndOfList(true);
-          }
-        }
-
-        setComments(newComments);
-      }
-    } catch (e) {
-      setIsRefreshing(false);
-      setIsLoading(false);
-    }
-  };
-
-  const publishComment = async (content?: string) => {
-    setIsLoading(true);
-    try {
-      const result = await ApiCall({
-        route: `comments/social/${route.params?.postId}`,
-        token,
-
-        verb: 'post',
-        params: {
-          content,
-          gif: mediaGif,
-        },
-      });
-
-      setIsLoading(false);
-
-      if (result.status == 200) {
-        refreshContent();
-      }
-    } catch (e) {
-      setIsLoading(false);
-    }
-  };
-
   const removePost = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `social/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status == 200) {
-        await getPost();
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+    const normalizedId = String(id ?? '').trim();
+    if (normalizedId.length < 1) {
+      Toast.show('Unable to delete this post right now.', Toast.SHORT);
+      return;
     }
-  };
 
-  const editComment = async (id: string, content: string) => {
-    try {
-      const res = await ApiCall({
-        route: `comments/social/${route.params?.postId}/${id}`,
-        verb: 'patch',
-        token,
-        params: {
-          content,
-          gif: mediaGif,
-        },
-      });
+    const result = await deleteOwnedPost({
+      type,
+      id: normalizedId,
+      token: token ?? undefined,
+    });
 
-      if (res?.status == 200) {
-        toast.show('Comment modified successfully', {
-          id: 'successMessage',
-          type: 'success',
-          placement: 'bottom',
-        });
-        await getComments(1);
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+    if (!result.ok) {
+      Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+      return;
     }
-  };
 
-  const removeComment = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `comments/social/${route.params?.postId}/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status == 200) {
-        await getComments(1);
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
+    emitOwnedPostDeleted({
+      type: result.type,
+      id: normalizedId,
+    });
+    handleBackPress();
   };
 
   const editPost = async (id: string) => {
     navigation.navigate('Post', { postId: id });
   };
 
+  const openCommentThread = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      const currentPostId = route.params?.postId;
+      if (!commentId || !currentPostId) {
+        return;
+      }
+
+      navigation.push('SinglePost', {
+        postId: currentPostId,
+        threadRootCommentId: commentId,
+        threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+      });
+    },
+    [navigation, route.params?.postId]
+  );
+
+  const trackSinglePostTelemetry = useCallback(
+    (
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>
+    ) => {
+      const postId = route.params?.postId;
+      if (!postId) {
+        return;
+      }
+
+      trackPostTelemetry({
+        postId,
+        postType: 'social',
+        contentType: post?.type ?? 'social',
+        tags: Array.isArray((post as { tags?: unknown } | undefined)?.tags)
+          ? ((post as { tags?: string[] }).tags ?? [])
+          : [],
+        authorId: post?.userData?._id,
+        userId: currentUser?._id ? String(currentUser._id) : undefined,
+        surface: 'social_feed',
+        surfaceTab: 'detail',
+        entrypoint: 'single_post',
+        requestId: requestIdRef.current,
+        isOwnPost:
+          Boolean(currentUser?._id) && Boolean(post?.userData?._id)
+            ? String(currentUser._id) === String(post.userData._id)
+            : undefined,
+        isRepost: Boolean((post as { repost?: unknown } | undefined)?.repost),
+        privacyState:
+          (post as { private?: boolean } | undefined)?.private === true ? 'private' : 'public',
+        ...overrides,
+        eventName,
+        metadata,
+      });
+    },
+    [currentUser?._id, post, route.params?.postId]
+  );
+
   useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
+  }, [token]);
+
+  useMountEffect(() => {
     if (route.params?.postId) {
       getPost();
     }
-  }, [route.params?.postId]);
+  });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1, top: -1 * keyboardHeight }}>
-        {post ? (
-          <>
-            <View style={{ flexGrow: 1 }}>
-              <FlatList
-                data={comments}
-                refreshing={isRefreshing}
-                // style={{ flexGrow: 1, flex: 1 }}
-                style={{ flex: 1 }}
-                ListHeaderComponent={() => (
-                  <SocialItem
-                    editPost={editPost}
-                    removePost={removePost}
-                    itemData={post}
-                    socialPostviewStyle={{
-                      borderBottomColor: Colors.neutral[800],
-                      borderBottomWidth: borderWidth.thin,
-                    }}
-                  />
-                )}
-                // contentContainerStyle={{ paddingBottom: keyboardHeight + 80 }}
-                // onEndReachedThreshold={0.5}
-                // onEndReached={() => {
-                //   if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-                // }}
-                // ListFooterComponent={() => (
-                //   <View>
-                //     {isEndOfList ? (
-                //       <StyledText style={{ textAlign: 'center' }}>
-                //         Not more social posts at this time
-                //       </StyledText>
-                //     ) : null}
-                //   </View>
-                // )}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={isRefreshing}
-                    onRefresh={() => {
-                      refreshContent();
-                    }}
-                  />
-                }
-                ListEmptyComponent={() => {
-                  if (isLoading) {
-                    return <ActivityIndicator />;
-                  }
-
-                  return null;
-                }}
-                renderItem={({ item }) => {
-                  let myReaction: SocialPostReaction | undefined;
-
-                  item.reactions?.forEach((reaction) => {
-                    if (reaction.userId == user?._id) {
-                      myReaction = reaction;
-                    }
-                  });
-
-                  return (
-                    <CommentItem
-                      removePost={removeComment}
-                      editCommentAction={editComment}
-                      onPress={() => {
-                        if (post?.userData._id && post.userData._id != user?._id) {
-                          // navigation.navigate('UserProfile', {
-                          //   id: post?.userData._id,
-                          // });
-                        }
-                      }}
-                      setEditingComment={(isEditingComment: boolean) => {
-                        if (isEditingComment) setGif(item.gif ?? null);
-                        setIsEditingComment(isEditingComment);
-                        if (item.commentId) setEditingCommentId(item.commentId);
-                      }}
-                      postData={{
-                        id: item.commentId,
-                        content: item.content,
-                        reactions: item.reactions,
-                        myReaction,
-                        edited: item.edited,
-                        gif:
-                          isEditingComment && editingCommentId == item.commentId
-                            ? mediaGif
-                            : item.gif,
-                      }}
-                      userData={item.userData}
-                    />
-                  );
-                }}
+      {Platform.OS === 'android' ? (
+        <>
+          <StatusBar
+            barStyle={dark ? 'light-content' : 'dark-content'}
+            backgroundColor={colors.background}
+          />
+          <View style={singleStyles.header}>
+            <Pressable
+              onPress={handleBackPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={singleStyles.backButton}
+            >
+              <Icon
+                name="chevron-back"
+                size={28}
+                color={dark ? colors.text : Colors.primary.brand}
               />
-            </View>
-            {!isEditingComment ? (
-              <View style={{ flex: 0 }}>
-                <CommentField
-                  mediaGif={mediaGif}
-                  setGif={setGif}
-                  publishComment={publishComment}
-                  isEditingComment={false}
-                />
-              </View>
-            ) : null}
-          </>
-        ) : (
-          // eslint-disable-next-line react/jsx-no-useless-fragment
-          <>
-            {isLoading ? (
-              <ActivityIndicator
-                animating={isLoading}
-                size="small"
-                color={Colors.neutral[200]}
-                style={{ marginRight: spacing.x10 }}
-              />
-            ) : (
-              // eslint-disable-next-line react/jsx-no-useless-fragment
-              <>{isNotFound ? <StyledText>Not Found</StyledText> : null}</>
-            )}
-          </>
-        )}
-      </View>
+            </Pressable>
+            <Text style={[singleStyles.headerTitle, { color: colors.text }]}>Comment</Text>
+          </View>
+        </>
+      ) : null}
+      {post ? (
+        <CommentThread
+          type={PostType.social}
+          postId={route.params?.postId ?? ''}
+          threadRootCommentId={route.params?.threadRootCommentId}
+          threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
+          onOpenCommentThread={openCommentThread}
+          onPostRefresh={getPost}
+          onTelemetryEvent={trackSinglePostTelemetry}
+          headerContainerStyle={{
+            paddingHorizontal: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            borderBottomWidth: 0,
+          }}
+          header={
+            <SocialItem
+              editPost={editPost}
+              removePost={removePost}
+              itemData={post}
+              visible
+              contentWidth={socialItemContentWidth}
+              onOpenImages={openImages}
+              onTelemetryEvent={trackSinglePostTelemetry}
+              socialPostviewStyle={{
+                marginHorizontal: 0,
+                marginBottom: 0,
+                borderRadius: 0,
+                borderWidth: 0,
+                borderTopWidth: 0,
+                borderRightWidth: 0,
+                borderLeftWidth: 0,
+                borderBottomColor: Colors.neutral[800],
+                borderBottomWidth: borderWidth.thin,
+                backgroundColor: 'transparent',
+              }}
+            />
+          }
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          {isLoading ? (
+            <ActivityIndicator
+              animating={isLoading}
+              size="small"
+              color={Colors.neutral[200]}
+              style={{ marginRight: spacing.x10 }}
+            />
+          ) : null}
+          {!isLoading && isNotFound ? <StyledText>Not Found</StyledText> : null}
+        </View>
+      )}
+      {imageViewer}
     </SafeAreaView>
   );
 }
+
+const singleStyles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 4,
+    marginRight: 8,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+});
 
 export default SinglePost;

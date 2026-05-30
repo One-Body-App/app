@@ -1,1639 +1,1964 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Image } from 'expo-image';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
+  BackHandler,
+  RefreshControl,
+  ScrollView,
+  Pressable,
   View,
-  TouchableOpacity,
-  useColorScheme,
   Platform,
-  AppState,
-  AppStateStatus,
+  PermissionsAndroid,
 } from 'react-native';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  AppleAuthProvider,
-  FirebaseAuthTypes,
-  GoogleAuthProvider,
-  TwitterAuthProvider,
-  getAuth,
-  getIdToken,
-  sendEmailVerification,
-  signInWithCredential,
-  signInWithEmailAndPassword,
-  reload,
-  checkActionCode,
-  applyActionCode,
-  signOut,
-} from '@react-native-firebase/auth';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { LoginManager } from 'react-native-fbsdk-next';
-import axios from 'axios';
-import { getApp } from '@react-native-firebase/app';
-
-import { useToast } from 'react-native-toast-notifications';
-import { useNavigation, useTheme, useFocusEffect } from '@react-navigation/native';
-import { appleAuth } from '@invertase/react-native-apple-authentication';
-import FontAwesome from '@react-native-vector-icons/fontawesome';
-import { openInbox } from 'react-native-email-link';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { getHeight } from '@/utils/ResponsiveFun';
-import { validateFields } from '@/utils/validation/validate-fields';
-import validator from '@/utils/validation/validator';
-import GeneralStyle from '../../constants/GeneralStyle';
-import Google from '@/assets/svg/G.svg';
-import Twitter from '@/assets/svg/Twitter.svg';
-import Apple from '@/assets/svg/Apple.svg';
-import Button from '../Button';
-
-import { styles } from './styles';
-import { requestUserPermission } from '@/services/notification/notificationServices';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import {
-  loginSocialRequest,
-  logout,
-  sendVerificationEmail,
-  signUp,
-  getProfile,
-} from '@/src/redux/actions/AuthActions';
-
-import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
-
-import { getTwitterLoginToken, processLogin } from '@/services/login';
-import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
+import { useDispatch } from 'react-redux';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import { useSSO } from '@clerk/expo';
+import { useSignIn } from '@clerk/expo/legacy';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import Geolocation from '@react-native-community/geolocation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import LottieView from 'lottie-react-native';
+import noop from 'lodash/noop';
+import QRCode from 'react-native-qrcode-svg';
 import { MainStackParamList } from '@/src/navigator/types';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
+import {
+  beginPasskeyLogin,
+  beginPasskeyRegistration,
+  beginTotpSetup,
+  MfaChallengeResponse,
+  MfaMethod,
+  sendEmailMfaCode,
+  verifyBackupCode,
+  verifyEmailMfaCode,
+  verifyTotpCode,
+  verifyTotpSetup,
+  finishPasskeyLogin,
+  finishPasskeyRegistration,
+  migrateLegacyPasswordToClerk,
+} from '@/services/login';
+import { getSocialAuthActionLabel } from '@/src/utils/socialAuthFlow';
+import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
+import { syncClerkUserProfile } from '@/src/services/clerkSync';
+import resolveInitialMfaMethod from '@/src/utils/mfa';
+import {
+  isPasskeyAssociationError,
+  isPasskeyCancellationError,
+  PASSKEY_ASSOCIATION_FALLBACK_MESSAGE,
+} from '@/src/utils/passkeyErrors';
+import { getValidAccessToken } from '@/src/services/authTokens';
+
+import Button from '../Button';
+import CustomClipboard, { CustomClipboardHandle } from '../CustomClipboard';
 import StyledText from '../styled/Text';
-import { Colors, Typography } from '@/src/styles';
-import { spacing } from '@/src/styles/spacing';
-import { button } from '@/src/styles/buttons';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledTextInput from '../styled/TextInput';
-import { fontSize } from '@/src/styles/typography';
-import { loadPendingAccountType, clearPendingAccountType } from '@/src/services/accountTypeStorage';
+import createLoginStyles from './styles';
 
-type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
+type Nav = NativeStackNavigationProp<MainStackParamList, 'Login'>;
 
-interface Props {
-  showConfirmationEmailMessage: boolean;
-  verifyAccount?: boolean;
-  oauth_token?: string;
-  oauth_verifier?: string;
+const googleIcon = require('@/assets/icons/google.png');
 
-  action?: string;
+const passkeyHeroAnimation = require('../../assets/animations/Password Authentication');
+const passkeyHeroAnimationAndroid = require('../../assets/animations/onboarding-intro');
+const passkeyHeroFallbackAnimation = require('../../assets/animations/choose-your-colors');
 
-  mode?: string;
-  oobCode?: string;
+const oneBodyLottieColorFilters = [
+  { keypath: 'Correct', color: '#12D2D9' },
+  { keypath: 'Cloud e', color: '#12D2D9' },
+  { keypath: 'Finger Scan', color: '#126B87' },
+  { keypath: 'Pin 1', color: '#126B87' },
+  { keypath: 'Pin 2', color: '#126B87' },
+  { keypath: 'Pin 3', color: '#126B87' },
+  { keypath: 'Pin 4', color: '#126B87' },
+  { keypath: 'Pin 5', color: '#126B87' },
+  { keypath: 'Pin 6', color: '#126B87' },
+  { keypath: 'Pin Tab', color: '#032F3C' },
+  { keypath: 'Object', color: '#032F3C' },
+  { keypath: 'Cloud 1', color: '#12D2D9' },
+];
+
+type LoginComponentProps = {
   currentUserEmail?: string;
-  onlyPassword?: boolean;
-  toScreenRouteParams?: Record<string, string>;
-  updateParent?: Function;
+  initialMfaChallenge?: MfaChallengeResponse;
+  onMfaLaunchScreenChange?: (isVisible: boolean) => void;
+};
 
-  enabledLoginProviders?: string[];
-}
+const passkeyClient: any = (() => {
+  try {
+    // eslint-disable-next-line global-require
+    return require('react-native-passkey');
+  } catch (error) {
+    return null;
+  }
+})();
 
-const logVerifyEmail = (...args: any[]) => {
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.log(...args);
+const resolvePasskeyApi = () => {
+  const passkeyApi =
+    passkeyClient?.Passkey ??
+    passkeyClient?.default?.Passkey ??
+    passkeyClient?.default ??
+    passkeyClient;
+
+  return {
+    register: passkeyApi?.register,
+    authenticate: passkeyApi?.authenticate,
+    isSupported:
+      typeof passkeyApi?.isSupported === 'function'
+        ? passkeyApi.isSupported.bind(passkeyApi)
+        : undefined,
+  };
+};
+
+const sanitizeAnalyticsReason = (value: unknown) => {
+  if (typeof value !== 'string' || !value.trim()) {
+    return 'unknown';
+  }
+
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return normalized.slice(0, 72) || 'unknown';
+};
+
+const getClerkErrorMessage = (error: any, fallback = 'Sign in failed.') => {
+  return (
+    error?.errors?.[0]?.longMessage ?? error?.errors?.[0]?.message ?? error?.message ?? fallback
+  );
+};
+
+const getIncompleteClerkSignInMessage = (result: any) => {
+  const status = String(result?.status ?? '');
+  if (status === 'needs_second_factor') {
+    return 'Additional verification is required before signing in.';
+  }
+  if (status === 'needs_first_factor') {
+    return 'Enter the verification code sent to your email to continue.';
+  }
+  if (status === 'needs_identifier') {
+    return 'Enter your email address to continue.';
+  }
+  if (status === 'needs_new_password') {
+    return 'Reset your password to finish signing in.';
+  }
+  if (status === 'needs_factor_one' || status === 'needs_factor_two') {
+    return 'Additional verification is required before signing in.';
+  }
+  return 'Additional verification is required. Please check your email and try again.';
+};
+
+const toBase64FromBase64Url = (value?: string) => {
+  if (!value || typeof value !== 'string') {
+    return value ?? '';
+  }
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const paddingNeeded = normalized.length % 4;
+  if (paddingNeeded === 0) {
+    return normalized;
+  }
+  return `${normalized}${'='.repeat(4 - paddingNeeded)}`;
+};
+
+const toBase64UrlFromBase64 = (value?: string) => {
+  if (!value || typeof value !== 'string') {
+    return value ?? '';
+  }
+  return value.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+};
+
+const normalizePasskeyRegistrationRequestForNative = (request: any) => ({
+  ...request,
+  challenge: toBase64FromBase64Url(request?.challenge),
+  user: {
+    ...(request?.user ?? {}),
+    id: toBase64FromBase64Url(request?.user?.id),
+  },
+  excludeCredentials: Array.isArray(request?.excludeCredentials)
+    ? request.excludeCredentials.map((credential: any) => ({
+        ...credential,
+        id: toBase64FromBase64Url(credential?.id),
+      }))
+    : request?.excludeCredentials,
+});
+
+const normalizePasskeyAuthenticationRequestForNative = (request: any) => ({
+  ...request,
+  challenge: toBase64FromBase64Url(request?.challenge),
+  allowCredentials: Array.isArray(request?.allowCredentials)
+    ? request.allowCredentials.map((credential: any) => ({
+        ...credential,
+        id: toBase64FromBase64Url(credential?.id),
+      }))
+    : request?.allowCredentials,
+});
+
+const normalizePasskeyRegistrationResponseForServer = (response: any) => ({
+  ...response,
+  type: response?.type ?? 'public-key',
+  id: toBase64UrlFromBase64(response?.id),
+  rawId: toBase64UrlFromBase64(response?.rawId),
+  response: {
+    ...(response?.response ?? {}),
+    clientDataJSON: toBase64UrlFromBase64(response?.response?.clientDataJSON),
+    attestationObject: toBase64UrlFromBase64(response?.response?.attestationObject),
+  },
+});
+
+const normalizePasskeyAuthenticationResponseForServer = (response: any) => ({
+  ...response,
+  type: response?.type ?? 'public-key',
+  id: toBase64UrlFromBase64(response?.id),
+  rawId: toBase64UrlFromBase64(response?.rawId),
+  response: {
+    ...(response?.response ?? {}),
+    authenticatorData: toBase64UrlFromBase64(response?.response?.authenticatorData),
+    clientDataJSON: toBase64UrlFromBase64(response?.response?.clientDataJSON),
+    signature: toBase64UrlFromBase64(response?.response?.signature),
+    userHandle: response?.response?.userHandle
+      ? toBase64UrlFromBase64(response.response.userHandle)
+      : response?.response?.userHandle,
+  },
+});
+
+const extractTotpSetupCode = (otpauthUri: string) => {
+  if (!otpauthUri) {
+    return '';
+  }
+
+  const match = otpauthUri.match(/[?&]secret=([^&]+)/i);
+  if (!match?.[1]) {
+    return otpauthUri;
+  }
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch (_error) {
+    return match[1];
   }
 };
 
 function LoginComponent({
-  showConfirmationEmailMessage,
-  oauth_token,
-  oauth_verifier,
-  oobCode,
-  mode,
-  action,
-  verifyAccount,
-
   currentUserEmail,
-  onlyPassword,
-  toScreenRouteParams,
-  enabledLoginProviders,
-  updateParent,
-}: Props) {
+  initialMfaChallenge,
+  onMfaLaunchScreenChange,
+}: LoginComponentProps) {
   const dispatch = useDispatch();
-  const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const navigation = useNavigation<Nav>();
+  const { isLoaded: isSignInLoaded, signIn, setActive } = useSignIn();
+  const { startSSOFlow } = useSSO();
+  const { dark } = useTheme();
+  const styles = useMemo(() => createLoginStyles(dark), [dark]);
+  const trackMfaEvent = noop as (eventName: string, params: Record<string, any>) => undefined;
+  const initialMfaMethod: MfaMethod = initialMfaChallenge
+    ? resolveInitialMfaMethod(initialMfaChallenge)
+    : 'passkey';
+  const initialMfaChallengeSignature = [
+    initialMfaChallenge?.mfaToken ?? '',
+    initialMfaChallenge?.enrollmentRequired ? '1' : '0',
+    initialMfaChallenge?.preferredMethod ?? '',
+    initialMfaChallenge?.availableMethods?.join(',') ?? '',
+    initialMfaChallenge?.emailMasked ?? '',
+    initialMfaChallenge?.reason ?? '',
+  ].join('|');
 
-  const authState = useSelector((rootState: RootState) => rootState.auth);
-  const userProfile = useSelector((rootState: RootState) => rootState.auth.getProfileData);
-  const toScreen = useSelector(
-    (rootState: RootState) => rootState.general.loginVerficationBackPage
-  );
-  const toScreenParams = useSelector(
-    (rootState: RootState) => rootState.general.loginVerficationBackPageParams
-  );
-
-  const inputRefs = {
-    email: useRef<any>(null),
-    password: useRef<any>(null),
-  };
-  const [state, setState] = useState({
+  const [form, setForm] = useState(() => ({
     email: currentUserEmail ?? '',
-    emailError: '',
     password: '',
-    passwordError: '',
-  });
-  const resetForm = useCallback(() => {
-    setState({
-      email: currentUserEmail ?? '',
-      emailError: '',
-      password: '',
-      passwordError: '',
-    });
-  }, [currentUserEmail]);
-
-  const toast = useToast();
-  const firebaseAuth = getAuth(getApp());
-
-  const [error, seterror] = useState<string>();
-  const [success, setSuccess] = useState<string>('');
+    code: '',
+  }));
   const [hidePass, setHidePass] = useState(true);
-  const [isVerificationNeeded, setIsVerificationNeeded] = useState<boolean>(false);
-  const [token, setToken] = useState('');
-  const [verificationEmailRequested, setVerificationEmailRequested] = useState(false);
-
-  const [newUserCredentials, setNewUserCredentials] =
-    useState<FirebaseAuthTypes.UserCredential | null>(null);
-  const hasRunFocusVerifyCheck = useRef(false);
-  const hasProcessedVerification = useRef(false);
-  const lastOobCode = useRef<string | null>(null);
-
-  const accountType = useSelector((rootState: RootState) => rootState.general.accountType);
-
-  const changeHandler = useCallback((type: 'email' | 'password', value: string) => {
-    setState((prevState) => ({
-      ...prevState,
-      [type]: value,
-      ...(type === 'email' ? { emailError: '' } : {}),
-      ...(type === 'password' ? { passwordError: '' } : {}),
-    }));
-  }, []);
-  const gotoSignup = useCallback(async () => {
-    setNewUserCredentials(null);
-    dispatch(setAccountType(''));
-
-    if (firebaseAuth.currentUser) {
-      await reload(firebaseAuth.currentUser);
-    }
-    if (firebaseAuth.currentUser) {
-      await getIdToken(firebaseAuth.currentUser, true);
-    }
-  }, [dispatch, firebaseAuth]);
-  const sendFcm = useCallback((fcmToken: string) => {
-    requestUserPermission(fcmToken, true);
-  }, []);
-
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: GOOGLE_LOGIN_CLIENT_ID,
-      offlineAccess: true,
-      forceCodeForRefreshToken: true,
-    });
-
-    // navigation.addListener('beforeRemove', (e) => {
-    //   LoginManager.logOut();
-    //   if (firebaseAuth.currentUser?.uid) {
-    //     firebaseAuth.signOut();
-
-    //     firebaseAuth.currentUser?.reload();
-    //   }
-    //   dispatch(logout());
-    // });
-  }, []);
-
-  useEffect(() => {
-    if (token) {
-      if (firebaseAuth.currentUser) {
-        reload(firebaseAuth.currentUser);
-      }
-
-      if (Platform.OS === 'android') {
-        navigation.replace('MainRoot', {
-          screen: 'Main',
-          params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
-        });
-      }
-    }
-  }, [token, firebaseAuth.currentUser, navigation]);
-
-  useFocusEffect(
-    useCallback(() => {
-      resetForm();
-
-      // Skip focus check if we have an oobCode - the verification useEffect will handle it
-      if (oobCode) {
-        logVerifyEmail(
-          '[VerifyEmail] focus check skipped, oobCode present - useEffect will handle'
-        );
-        return;
-      }
-
-      // On iOS with verifyAccount mode, also skip - AppState handler will check after Safari
-      if (Platform.OS === 'ios' && verifyAccount) {
-        logVerifyEmail(
-          '[VerifyEmail] focus check skipped on iOS verifyAccount mode - AppState will handle'
-        );
-        return;
-      }
-
-      if (hasRunFocusVerifyCheck.current && Platform.OS !== 'ios') {
-        return;
-      }
-      // On iOS, we want to allow the check to run when focusing if we are in the verifyAccount state
-      if (hasRunFocusVerifyCheck.current && Platform.OS === 'ios' && !verifyAccount) {
-        return;
-      }
-      hasRunFocusVerifyCheck.current = true;
-
-      const checkVerifiedAndNavigate = async () => {
-        const { currentUser } = firebaseAuth;
-        if (!currentUser) {
-          return;
-        }
-        try {
-          await reload(currentUser);
-          logVerifyEmail('[VerifyEmail] focus check after reload', {
-            emailVerified: currentUser.emailVerified,
-            uid: currentUser.uid,
-            platform: Platform.OS,
-          });
-          if (currentUser.emailVerified) {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainRoot' }],
-            });
-          }
-        } catch (err) {
-          logVerifyEmail('[VerifyEmail] focus check failed', err);
-        }
-      };
-
-      checkVerifiedAndNavigate();
-    }, [firebaseAuth, navigation, resetForm, oobCode, verifyAccount])
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [successText, setSuccessText] = useState<string>('');
+  const [mfaChallenge, setMfaChallenge] = useState<MfaChallengeResponse | null>(
+    () => initialMfaChallenge ?? null
   );
+  const [selectedMfaMethod, setSelectedMfaMethod] = useState<MfaMethod>(() => initialMfaMethod);
+  const [totpOtpauth, setTotpOtpauth] = useState<string>('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [pendingAccessToken, setPendingAccessToken] = useState<string>('');
+  const [isPasskeyAssociationUnavailable, setIsPasskeyAssociationUnavailable] = useState(false);
+  const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
+  const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const clipboardRef = useRef<CustomClipboardHandle>(null);
+  const locationPromptedRef = useRef(false);
+  const hasAutoPromptedPasskeyRef = useRef(false);
+  const hasPasskeyHeroLoadedRef = useRef(false);
+  const submissionInFlightRef = useRef(false);
+  const passkeyInFlightRef = useRef<Promise<void> | null>(null);
+  const handledInitialMfaChallengeSignatureRef = useRef<string | null>(null);
+
+  const logAndroidPasskey = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (__DEV__ && Platform.OS === 'android') {
+      console.log('[AndroidPasskey]', event, payload ?? {});
+    }
+  }, []);
 
   useEffect(() => {
-    logVerifyEmail('[VerifyEmail] effect check', {
-      mode,
-      action,
-      hasOobCode: !!oobCode,
-      oobCodeLength: oobCode?.length,
-      platform: Platform.OS,
-      hasCurrentUser: !!firebaseAuth.currentUser,
-      currentUserEmail: firebaseAuth.currentUser?.email,
-      alreadyProcessed: hasProcessedVerification.current,
+    AsyncStorage.getItem('location_permission_requested').then((val) => {
+      locationPromptedRef.current = val === '1';
     });
-
-    if (mode === 'verifyEmail' && action === 'action' && oobCode) {
-      // Prevent multiple runs for the same code
-      if (hasProcessedVerification.current && lastOobCode.current === oobCode) {
-        logVerifyEmail('[VerifyEmail] Skipping - already processed this code');
-        return;
-      }
-
-      hasProcessedVerification.current = true;
-      lastOobCode.current = oobCode;
-
-      logVerifyEmail('[VerifyEmail] Starting verification process', {
-        mode,
-        action,
-        hasOobCode: !!oobCode,
-        oobCodeLength: oobCode?.length,
-        platform: Platform.OS,
-        hasCurrentUser: !!firebaseAuth.currentUser,
-        currentUserEmail: firebaseAuth.currentUser?.email,
-      });
-
-      const verifyEmail = async () => {
-        try {
-          logVerifyEmail('[VerifyEmail] Step 1: Checking action code');
-          const result = await checkActionCode(firebaseAuth, oobCode);
-          logVerifyEmail('[VerifyEmail] Step 2: Action code checked', {
-            operation: result.operation,
-            email: result.data.email,
-          });
-
-          if (result.operation === 'VERIFY_EMAIL') {
-            logVerifyEmail('[VerifyEmail] Step 3: Applying action code');
-            await applyActionCode(firebaseAuth, oobCode);
-            logVerifyEmail('[VerifyEmail] Step 4: Action code applied');
-
-            // Reload the current user to update emailVerified status
-            const { currentUser } = firebaseAuth;
-            logVerifyEmail('[VerifyEmail] Step 5: Current user check', {
-              hasCurrentUser: !!currentUser,
-              currentUserEmail: currentUser?.email,
-            });
-
-            if (currentUser) {
-              logVerifyEmail('[VerifyEmail] Step 6: Reloading user');
-              await reload(currentUser);
-              logVerifyEmail('[VerifyEmail] Step 7: After reload', {
-                emailVerified: currentUser.emailVerified,
-                uid: currentUser.uid,
-              });
-
-              // Poll briefly to allow emailVerified to propagate (iOS can lag)
-              let verified = currentUser.emailVerified;
-              logVerifyEmail('[VerifyEmail] Step 8: Starting polling loop', {
-                initialVerified: verified,
-              });
-              /* eslint-disable no-await-in-loop */
-              for (let i = 0; i < 3 && !verified; i += 1) {
-                await new Promise<void>((resolve) => {
-                  setTimeout(resolve, 1000);
-                });
-                await reload(currentUser);
-                verified = currentUser.emailVerified;
-                logVerifyEmail('[VerifyEmail] Polling emailVerified', {
-                  emailVerified: verified,
-                  attempt: i + 1,
-                });
-              }
-              /* eslint-enable no-await-in-loop */
-
-              logVerifyEmail('[VerifyEmail] Step 9: Polling complete', { finalVerified: verified });
-
-              // Force token refresh to ensure global state updates and profile fetch
-              logVerifyEmail('[VerifyEmail] Step 10: Getting new ID token');
-              const newToken = await getIdToken(currentUser, true);
-              logVerifyEmail('[VerifyEmail] Step 11: Got new token', { hasToken: !!newToken });
-
-              // Explicitly trigger profile fetch to ensure it happens on iOS
-              // This is critical because onIdTokenChanged might not fire quickly enough
-              if (newToken) {
-                logVerifyEmail('[VerifyEmail] Step 12: Dispatching profile fetch');
-                dispatch(getProfile.Request({ token: newToken }));
-              }
-
-              // Wait a brief moment to allow profile fetch to start
-              logVerifyEmail('[VerifyEmail] Step 13: Waiting for profile fetch to start');
-              await new Promise<void>((resolve) => {
-                setTimeout(resolve, 500);
-              });
-              logVerifyEmail('[VerifyEmail] Step 14: Wait complete');
-
-              if (firebaseAuth.currentUser?.emailVerified) {
-                logVerifyEmail('[VerifyEmail] Step 15: Navigating to MainRoot');
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'MainRoot' }],
-                });
-              } else {
-                logVerifyEmail('[VerifyEmail] Step 15: Showing success message (not verified)');
-                setSuccess('Email verification successful. Please Sign in to your account');
-              }
-            } else {
-              logVerifyEmail('[VerifyEmail] No current user - showing success message');
-              setSuccess('Email verification successful. Please Sign in to your account');
-            }
-          } else {
-            // Operation is UNKNOWN - this means the code was likely already used
-            // But let's try to apply it anyway in case it still works
-            logVerifyEmail(
-              '[VerifyEmail] Operation was not VERIFY_EMAIL, attempting to apply anyway',
-              {
-                operation: result.operation,
-              }
-            );
-
-            const { currentUser } = firebaseAuth;
-            if (currentUser) {
-              try {
-                // Try to apply the code anyway
-                logVerifyEmail('[VerifyEmail] Attempting to apply UNKNOWN action code');
-                await applyActionCode(firebaseAuth, oobCode);
-                logVerifyEmail('[VerifyEmail] Successfully applied UNKNOWN action code');
-
-                // Reload and check
-                await reload(currentUser);
-                await getIdToken(currentUser, true);
-
-                logVerifyEmail('[VerifyEmail] After applying UNKNOWN code', {
-                  emailVerified: currentUser.emailVerified,
-                  uid: currentUser.uid,
-                });
-
-                if (currentUser.emailVerified) {
-                  logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
-                  const newToken = await getIdToken(currentUser, true);
-                  if (newToken) {
-                    dispatch(getProfile.Request({ token: newToken }));
-                  }
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'MainRoot' }],
-                  });
-                  return; // Exit early on success
-                }
-              } catch (applyError: any) {
-                logVerifyEmail('[VerifyEmail] Failed to apply UNKNOWN action code', {
-                  error: applyError.message,
-                  code: applyError.code,
-                });
-              }
-
-              // If applying failed or email still not verified, check if it's already verified
-              await reload(currentUser);
-              await getIdToken(currentUser, true);
-
-              logVerifyEmail('[VerifyEmail] Checked current user after UNKNOWN operation', {
-                emailVerified: currentUser.emailVerified,
-                uid: currentUser.uid,
-              });
-
-              if (currentUser.emailVerified) {
-                logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
-                const newToken = await getIdToken(currentUser, true);
-                if (newToken) {
-                  dispatch(getProfile.Request({ token: newToken }));
-                }
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'MainRoot' }],
-                });
-              } else {
-                logVerifyEmail('[VerifyEmail] Email still not verified');
-                setSuccess('Verification link may have expired. Please request a new one.');
-              }
-            } else {
-              logVerifyEmail('[VerifyEmail] No current user - showing success message');
-              setSuccess('Email verification successful. Please Sign in to your account');
-            }
-          }
-        } catch (e: any) {
-          logVerifyEmail('[VerifyEmail] ERROR', {
-            message: e?.message,
-            code: e?.code,
-            platform: Platform.OS,
-          });
-          seterror('Invalid Verification code, please try again.');
-        }
-      };
-      verifyEmail();
-    }
-
-    if (mode === 'verifyAndChangeEmail' && action === 'action' && oobCode) {
-      const verifyAndChangeEmail = async () => {
-        try {
-          const result = await checkActionCode(firebaseAuth, oobCode);
-          await applyActionCode(firebaseAuth, oobCode);
-
-          setSuccess('Email changed successful. Please Sign in to your account');
-          setState((prev) => ({ ...prev, email: result.data.email ?? '' }));
-        } catch (e: any) {
-          if (updateParent) {
-            updateParent(false);
-          }
-          navigation.goBack();
-          toast.show('Invalid Verification code, please try again.', {
-            placement: 'top',
-            type: 'danger',
-          });
-        }
-      };
-      verifyAndChangeEmail();
-    }
-  }, [
-    mode,
-    action,
-    oobCode,
-    firebaseAuth,
-    navigation,
-    updateParent,
-    toast,
-    setSuccess,
-    seterror,
-    dispatch,
-  ]);
+  }, []);
 
   useEffect(() => {
-    if (!success) {
+    if (!initialMfaChallenge) return;
+    if (handledInitialMfaChallengeSignatureRef.current === initialMfaChallengeSignature) {
       return;
     }
-    const restoreAccountType = async () => {
-      const pendingType = await loadPendingAccountType();
-      if (pendingType) {
-        dispatch(setAccountType(pendingType));
-        await clearPendingAccountType();
-      }
-    };
-    restoreAccountType();
-  }, [success, dispatch]);
+    handledInitialMfaChallengeSignatureRef.current = initialMfaChallengeSignature;
+
+    const preferredMethod = resolveInitialMfaMethod(initialMfaChallenge);
+
+    hasAutoPromptedPasskeyRef.current = false;
+    hasPasskeyHeroLoadedRef.current = false;
+    submissionInFlightRef.current = false;
+    passkeyInFlightRef.current = null;
+    trackMfaEvent('mfa_method_selected', {
+      method: preferredMethod,
+      source: 'challenge_prefill',
+      enrollment_required: initialMfaChallenge.enrollmentRequired,
+      reason: initialMfaChallenge.reason,
+      fallback: preferredMethod !== initialMfaChallenge.preferredMethod,
+    });
+
+    if (preferredMethod === 'email' && !initialMfaChallenge.enrollmentRequired) {
+      sendEmailMfaCode({ mfaToken: initialMfaChallenge.mfaToken })
+        .then((res) => {
+          if (res.status === 200) {
+            setSuccessText(`A verification code was sent to ${initialMfaChallenge.emailMasked}.`);
+          }
+        })
+        .catch(() => undefined);
+    }
+  }, [initialMfaChallenge, initialMfaChallengeSignature, trackMfaEvent]);
 
   useEffect(() => {
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      logVerifyEmail('[VerifyEmail] AppState changed', {
-        nextAppState,
-        verifyAccount,
-        hasOobCode: !!oobCode,
-        hasCurrentUser: !!firebaseAuth.currentUser,
+    if (!mfaChallenge || selectedMfaMethod !== 'passkey') {
+      return;
+    }
+
+    logAndroidPasskey('mfa_challenge_mounted', {
+      enrollmentRequired: mfaChallenge.enrollmentRequired,
+      reason: mfaChallenge.reason,
+      availableMethods: mfaChallenge.availableMethods,
+    });
+  }, [logAndroidPasskey, mfaChallenge, selectedMfaMethod]);
+
+  const completeLogin = useCallback(
+    (accessToken: string) => {
+      clearPendingSocialContinuation();
+      logAndroidPasskey('token_accepted', {
+        hasAccessToken: Boolean(accessToken),
+        source: mfaChallenge?.enrollmentRequired ? 'passkey_enrollment' : 'auth_success',
+      });
+      dispatch(setLoginData({ token: accessToken, resetProfile: true }));
+      dispatch(getProfile.Request({ token: accessToken }));
+      logAndroidPasskey('profile_request_start', {
+        source: mfaChallenge?.enrollmentRequired ? 'passkey_enrollment' : 'auth_success',
+      });
+      navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+    },
+    [dispatch, logAndroidPasskey, mfaChallenge?.enrollmentRequired, navigation]
+  );
+
+  const handleAuthResult = useCallback(
+    async (response: any) => {
+      if (response?.mfaRequired) {
+        const challenge = response as MfaChallengeResponse;
+        const preferredMethod = resolveInitialMfaMethod(challenge);
+        setMfaChallenge(challenge);
+        setSelectedMfaMethod(preferredMethod);
+        setForm((prev) => ({ ...prev, code: '' }));
+        setSuccessText('');
+        setTotpOtpauth('');
+        setIsPasskeyAssociationUnavailable(false);
+        setShowOtherMfaOptions(false);
+        trackMfaEvent('mfa_method_selected', {
+          method: preferredMethod,
+          source: 'challenge_response',
+          enrollment_required: challenge.enrollmentRequired,
+          reason: challenge.reason,
+          fallback: preferredMethod !== challenge.preferredMethod,
+        });
+        if (preferredMethod === 'email' && !challenge.enrollmentRequired) {
+          await sendEmailMfaCode({ mfaToken: challenge.mfaToken });
+          setSuccessText(`A verification code was sent to ${challenge.emailMasked}.`);
+        }
+        return;
+      }
+
+      const token = response?.tokens?.accessToken;
+      if (!token) {
+        throw new Error('Invalid authentication response');
+      }
+
+      const codes = Array.isArray(response?.backupCodes) ? response.backupCodes : [];
+      if (codes.length > 0) {
+        setBackupCodes(codes);
+        setPendingAccessToken(token);
+        setSuccessText('Save these backup codes in a safe place. They are shown only once.');
+        return;
+      }
+
+      completeLogin(token);
+    },
+    [completeLogin, trackMfaEvent]
+  );
+
+  const requestEmailMfaCode = useCallback(
+    async (challenge: MfaChallengeResponse, successMessage?: string) => {
+      const res = await sendEmailMfaCode({ mfaToken: challenge.mfaToken });
+      if (res.status !== 200) {
+        throw new Error((res.response as any)?.message ?? 'Unable to send email code.');
+      }
+
+      setSuccessText(successMessage ?? `A verification code was sent to ${challenge.emailMasked}.`);
+      return res;
+    },
+    []
+  );
+
+  const ensureLocationPermission = useCallback(async () => {
+    if (locationPromptedRef.current) return;
+    try {
+      let granted = false;
+      if (Platform.OS === 'android') {
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Allow location',
+            message: 'We use your city to help secure your login.',
+            buttonPositive: 'Allow',
+          }
+        );
+        granted = result === PermissionsAndroid.RESULTS.GRANTED;
+      } else {
+        Geolocation.requestAuthorization();
+        granted = true;
+      }
+
+      if (granted) {
+        Geolocation.getCurrentPosition(
+          () => undefined,
+          () => undefined,
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
+        );
+      }
+    } catch (e) {
+      // ignore permission errors; login can proceed
+    } finally {
+      await AsyncStorage.setItem('location_permission_requested', '1');
+      locationPromptedRef.current = true;
+    }
+  }, []);
+
+  const runPasskey = useCallback(async () => {
+    if (!mfaChallenge) return;
+    if (passkeyInFlightRef.current) {
+      await passkeyInFlightRef.current;
+      return;
+    }
+
+    const { register, authenticate, isSupported } = resolvePasskeyApi();
+    const flow = mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge';
+    const operation = (async () => {
+      setIsSubmitting(true);
+      trackMfaEvent('mfa_method_begin', {
+        method: 'passkey',
+        flow,
+        reason: mfaChallenge.reason,
       });
 
-      // Skip AppState handler when we have an oobCode - the verification useEffect handles it
-      if (oobCode) {
-        logVerifyEmail(
-          '[VerifyEmail] AppState check skipped - oobCode present, useEffect handles it'
+      if (typeof isSupported === 'function' && !isSupported()) {
+        setError(
+          `Passkeys are not supported on this ${Platform.OS === 'android' ? 'Android' : 'iOS'} device.`
         );
+        trackMfaEvent('mfa_method_failure', {
+          method: 'passkey',
+          flow,
+          reason: 'unsupported_device',
+        });
         return;
       }
 
-      // Only run AppState checks when user is waiting for email verification
-      // (verifyAccount mode without oobCode)
-      if (!verifyAccount) {
-        logVerifyEmail('[VerifyEmail] AppState check skipped - not in verifyAccount mode');
+      if (!register || !authenticate) {
+        setError('Passkey API is unavailable in this build.');
+        trackMfaEvent('mfa_method_failure', {
+          method: 'passkey',
+          flow,
+          reason: 'passkey_api_unavailable',
+        });
         return;
       }
 
-      if (nextAppState === 'active') {
-        const { currentUser } = firebaseAuth;
-        if (!currentUser) {
-          logVerifyEmail('[VerifyEmail] No current user in AppState handler');
+      try {
+        if (mfaChallenge.enrollmentRequired) {
+          logAndroidPasskey('begin_registration_start', {
+            reason: mfaChallenge.reason,
+          });
+          let begin = await beginPasskeyRegistration({
+            mfaToken: mfaChallenge.mfaToken,
+            deviceName: Platform.OS === 'ios' ? 'iPhone' : 'Android Device',
+          });
+
+          if (begin.status >= 500 && Platform.OS === 'android') {
+            begin = await beginPasskeyRegistration({
+              mfaToken: mfaChallenge.mfaToken,
+            });
+          }
+
+          if (begin.status !== 200) {
+            throw new Error(
+              (begin.response as any)?.message ?? 'Unable to begin passkey registration.'
+            );
+          }
+          logAndroidPasskey('begin_registration_end', {
+            status: begin.status,
+          });
+          const nativeRegistrationRequest = normalizePasskeyRegistrationRequestForNative(
+            begin.response
+          );
+          logAndroidPasskey('native_prompt_start', {
+            flow,
+          });
+          const credential = await register(nativeRegistrationRequest);
+          logAndroidPasskey('native_prompt_end', {
+            flow,
+            success: true,
+          });
+          logAndroidPasskey('finish_registration_start', {
+            reason: mfaChallenge.reason,
+          });
+          const finish = await finishPasskeyRegistration({
+            mfaToken: mfaChallenge.mfaToken,
+            response: normalizePasskeyRegistrationResponseForServer(credential),
+          });
+          if (finish.status !== 200) {
+            throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
+          }
+          logAndroidPasskey('finish_registration_end', {
+            status: finish.status,
+          });
+          trackMfaEvent('mfa_method_success', {
+            method: 'passkey',
+            flow,
+          });
+          await handleAuthResult(finish.response);
           return;
         }
 
-        logVerifyEmail('[VerifyEmail] App became active, checking verification status...');
-
-        try {
-          // Force reload from Firebase servers
-          await reload(currentUser);
-
-          // Get fresh token to ensure we have latest claims
-          await getIdToken(currentUser, true);
-
-          logVerifyEmail('[VerifyEmail] AppState check after reload', {
-            emailVerified: currentUser.emailVerified,
-            uid: currentUser.uid,
-            email: currentUser.email,
-          });
-
-          if (currentUser.emailVerified) {
-            logVerifyEmail('[VerifyEmail] Email is verified! Fetching profile and navigating...');
-
-            // Force token refresh to ensure profile is fetched and state is updated
-            const newToken = await getIdToken(currentUser, true);
-            if (newToken) {
-              dispatch(getProfile.Request({ token: newToken }));
-            }
-
-            // Navigate to onboarding
-            logVerifyEmail('[VerifyEmail] Navigating to MainRoot');
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainRoot' }],
-            });
-          } else {
-            logVerifyEmail('[VerifyEmail] Email still not verified after reload');
-          }
-        } catch (err) {
-          logVerifyEmail('[VerifyEmail] AppState verification check failed', err);
+        const begin = await beginPasskeyLogin({ mfaToken: mfaChallenge.mfaToken });
+        if (begin.status !== 200) {
+          throw new Error((begin.response as any)?.message ?? 'Unable to begin passkey login.');
         }
+        const nativeAuthenticationRequest = normalizePasskeyAuthenticationRequestForNative(
+          begin.response
+        );
+        logAndroidPasskey('native_prompt_start', {
+          flow,
+        });
+        const assertion = await authenticate(nativeAuthenticationRequest);
+        logAndroidPasskey('native_prompt_end', {
+          flow,
+          success: true,
+        });
+        const finish = await finishPasskeyLogin({
+          mfaToken: mfaChallenge.mfaToken,
+          response: normalizePasskeyAuthenticationResponseForServer(assertion),
+        });
+        if (finish.status !== 200) {
+          throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
+        }
+        trackMfaEvent('mfa_method_success', {
+          method: 'passkey',
+          flow,
+        });
+        await handleAuthResult(finish.response);
+      } catch (mfaError: any) {
+        logAndroidPasskey('native_prompt_end', {
+          flow,
+          success: false,
+          message: mfaError?.message ?? String(mfaError),
+        });
+        if (isPasskeyCancellationError(mfaError)) {
+          trackMfaEvent('mfa_method_cancelled', {
+            method: 'passkey',
+            flow,
+            reason: 'user_cancelled',
+          });
+          setError('');
+          return;
+        }
+        if (
+          Platform.OS === 'ios' &&
+          !mfaChallenge.enrollmentRequired &&
+          mfaChallenge.availableMethods.includes('email') &&
+          isPasskeyAssociationError(mfaError)
+        ) {
+          setSelectedMfaMethod('email');
+          setIsPasskeyAssociationUnavailable(true);
+          setShowOtherMfaOptions(true);
+          setForm((prev) => ({ ...prev, code: '' }));
+          setError('');
+          trackMfaEvent('mfa_method_failure', {
+            method: 'passkey',
+            flow,
+            reason: 'ios_webcredentials_association',
+          });
+          trackMfaEvent('mfa_fallback_selected', {
+            from_method: 'passkey',
+            to_method: 'email',
+            enrollment_required: false,
+            reason: mfaChallenge.reason,
+          });
+          trackMfaEvent('mfa_method_selected', {
+            method: 'email',
+            source: 'auto_fallback',
+            enrollment_required: false,
+            reason: mfaChallenge.reason,
+            fallback: true,
+            preferred_method: mfaChallenge.preferredMethod,
+          });
+          trackMfaEvent('mfa_method_begin', {
+            method: 'email',
+            flow,
+            reason: mfaChallenge.reason,
+          });
+          try {
+            await requestEmailMfaCode(mfaChallenge, PASSKEY_ASSOCIATION_FALLBACK_MESSAGE);
+            trackMfaEvent('mfa_method_success', {
+              method: 'email',
+              flow,
+              stage: 'send_code',
+            });
+            return;
+          } catch (emailError: any) {
+            trackMfaEvent('mfa_method_failure', {
+              method: 'email',
+              flow,
+              reason: sanitizeAnalyticsReason(emailError?.message),
+            });
+            throw emailError;
+          }
+        }
+        trackMfaEvent('mfa_method_failure', {
+          method: 'passkey',
+          flow,
+          reason: sanitizeAnalyticsReason(mfaError?.message),
+        });
+        throw mfaError;
       }
+    })();
+
+    passkeyInFlightRef.current = operation;
+
+    try {
+      await operation;
+    } finally {
+      if (passkeyInFlightRef.current === operation) {
+        passkeyInFlightRef.current = null;
+      }
+      setIsSubmitting(false);
+    }
+  }, [handleAuthResult, logAndroidPasskey, mfaChallenge, requestEmailMfaCode, trackMfaEvent]);
+
+  useEffect(() => {
+    hasAutoPromptedPasskeyRef.current = false;
+    setIsPasskeyAssociationUnavailable(false);
+  }, [mfaChallenge?.mfaToken]);
+
+  useEffect(() => {
+    if (!mfaChallenge) return undefined;
+    if (selectedMfaMethod !== 'passkey') return undefined;
+    if (isPasskeyAssociationUnavailable) return undefined;
+    if (hasAutoPromptedPasskeyRef.current) return undefined;
+
+    hasAutoPromptedPasskeyRef.current = true;
+    let isCancelled = false;
+
+    const startPasskey = () => {
+      if (isCancelled) {
+        return;
+      }
+
+      logAndroidPasskey('auto_start_requested', {
+        enrollmentRequired: mfaChallenge.enrollmentRequired,
+        reason: mfaChallenge.reason,
+      });
+      runPasskey().catch((e: any) => {
+        if (!isCancelled) {
+          setError(e?.message ?? 'Passkey verification failed.');
+        }
+      });
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    startPasskey();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    logAndroidPasskey,
+    isPasskeyAssociationUnavailable,
+    mfaChallenge,
+    runPasskey,
+    selectedMfaMethod,
+  ]);
+
+  const submitMfa = useCallback(async () => {
+    if (!mfaChallenge) return;
+    if (!mfaChallenge.mfaToken) {
+      throw new Error('Missing MFA session');
+    }
+
+    if (selectedMfaMethod === 'passkey') {
+      await runPasskey();
+      return;
+    }
+
+    const flow = mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge';
+    trackMfaEvent('mfa_method_begin', {
+      method: selectedMfaMethod,
+      flow,
+      reason: mfaChallenge.reason,
+    });
+
+    try {
+      if (selectedMfaMethod === 'totp' && mfaChallenge.enrollmentRequired && !totpOtpauth) {
+        const begin = await beginTotpSetup({ mfaToken: mfaChallenge.mfaToken });
+        if (begin.status !== 200) {
+          throw new Error(
+            (begin.response as any)?.message ?? 'Unable to begin authenticator setup.'
+          );
+        }
+        setTotpOtpauth((begin.response as any)?.otpauth ?? '');
+        setShowOtherMfaOptions(true);
+        setSuccessText('Enter the verification code from your authenticator app.');
+        return;
+      }
+
+      if (!form.code.trim()) {
+        setError('Enter your verification code.');
+        return;
+      }
+
+      if (selectedMfaMethod === 'totp') {
+        if (mfaChallenge.enrollmentRequired) {
+          if (!totpOtpauth) {
+            const begin = await beginTotpSetup({ mfaToken: mfaChallenge.mfaToken });
+            if (begin.status !== 200) {
+              throw new Error(
+                (begin.response as any)?.message ?? 'Unable to begin authenticator setup.'
+              );
+            }
+            setTotpOtpauth((begin.response as any)?.otpauth ?? '');
+          }
+          const verify = await verifyTotpSetup({
+            mfaToken: mfaChallenge.mfaToken,
+            code: form.code.trim(),
+          });
+          if (verify.status !== 200) {
+            throw new Error((verify.response as any)?.message ?? 'Invalid authenticator code.');
+          }
+          trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+          await handleAuthResult(verify.response);
+          return;
+        }
+
+        const verify = await verifyTotpCode({
+          mfaToken: mfaChallenge.mfaToken,
+          code: form.code.trim(),
+        });
+        if (verify.status !== 200) {
+          throw new Error((verify.response as any)?.message ?? 'Invalid authenticator code.');
+        }
+        trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+        await handleAuthResult(verify.response);
+        return;
+      }
+
+      if (selectedMfaMethod === 'backup') {
+        const verify = await verifyBackupCode({
+          mfaToken: mfaChallenge.mfaToken,
+          code: form.code.trim(),
+        });
+        if (verify.status !== 200) {
+          throw new Error((verify.response as any)?.message ?? 'Invalid backup code.');
+        }
+        trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+        await handleAuthResult(verify.response);
+        return;
+      }
+
+      const verify = await verifyEmailMfaCode({
+        mfaToken: mfaChallenge.mfaToken,
+        code: form.code.trim(),
+      });
+      if (verify.status !== 200) {
+        throw new Error((verify.response as any)?.message ?? 'Invalid email code.');
+      }
+      trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+      await handleAuthResult(verify.response);
+    } catch (mfaError: any) {
+      trackMfaEvent('mfa_method_failure', {
+        method: selectedMfaMethod,
+        flow,
+        reason: sanitizeAnalyticsReason(mfaError?.message),
+      });
+      throw mfaError;
+    }
+  }, [
+    form.code,
+    handleAuthResult,
+    mfaChallenge,
+    runPasskey,
+    selectedMfaMethod,
+    totpOtpauth,
+    trackMfaEvent,
+  ]);
+
+  const selectMethod = useCallback(
+    async (method: MfaMethod) => {
+      if (!mfaChallenge) return;
+      const fallback = method !== mfaChallenge.preferredMethod;
+      if (method === 'passkey' && isPasskeyAssociationUnavailable) {
+        setError('');
+        setSuccessText(PASSKEY_ASSOCIATION_FALLBACK_MESSAGE);
+        return;
+      }
+      setSelectedMfaMethod(method);
+      setError('');
+      setSuccessText('');
+      setForm((prev) => ({ ...prev, code: '' }));
+      trackMfaEvent('mfa_method_selected', {
+        method,
+        source: 'user',
+        enrollment_required: mfaChallenge.enrollmentRequired,
+        reason: mfaChallenge.reason,
+        fallback,
+        preferred_method: mfaChallenge.preferredMethod,
+      });
+      if (fallback) {
+        trackMfaEvent('mfa_fallback_selected', {
+          from_method: mfaChallenge.preferredMethod,
+          to_method: method,
+          enrollment_required: mfaChallenge.enrollmentRequired,
+          reason: mfaChallenge.reason,
+        });
+      }
+      if (mfaChallenge.enrollmentRequired) {
+        setShowOtherMfaOptions(method !== 'passkey');
+      } else {
+        setShowOtherMfaOptions(true);
+      }
+
+      if (method === 'email' && !mfaChallenge.enrollmentRequired) {
+        trackMfaEvent('mfa_method_begin', {
+          method: 'email',
+          flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
+          reason: mfaChallenge.reason,
+        });
+        try {
+          await requestEmailMfaCode(mfaChallenge);
+        } catch (emailError: any) {
+          trackMfaEvent('mfa_method_failure', {
+            method: 'email',
+            flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
+            reason: sanitizeAnalyticsReason(emailError?.message),
+          });
+          throw emailError;
+        }
+        trackMfaEvent('mfa_method_success', {
+          method: 'email',
+          flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
+          stage: 'send_code',
+        });
+      }
+    },
+    [isPasskeyAssociationUnavailable, mfaChallenge, requestEmailMfaCode, trackMfaEvent]
+  );
+
+  const handleEmailAsMfaEnrollment = async () => {
+    if (!mfaChallenge || !mfaChallenge.enrollmentRequired) {
+      return;
+    }
+
+    if (submissionInFlightRef.current) {
+      return;
+    }
+
+    submissionInFlightRef.current = true;
+    setIsSubmitting(true);
+    setError('');
+    setSuccessText('');
+    dispatch(setLoader(true));
+    try {
+      const fallback = mfaChallenge.preferredMethod !== 'email';
+      trackMfaEvent('mfa_method_selected', {
+        method: 'email',
+        source: 'user',
+        enrollment_required: true,
+        reason: mfaChallenge.reason,
+        fallback,
+        preferred_method: mfaChallenge.preferredMethod,
+      });
+      if (fallback) {
+        trackMfaEvent('mfa_fallback_selected', {
+          from_method: selectedMfaMethod,
+          to_method: 'email',
+          enrollment_required: true,
+          reason: mfaChallenge.reason,
+        });
+      }
+
+      trackMfaEvent('mfa_method_begin', {
+        method: 'email',
+        flow: 'enroll',
+        reason: mfaChallenge.reason,
+      });
+
+      const verify = await verifyEmailMfaCode({
+        mfaToken: mfaChallenge.mfaToken,
+        code: '',
+      });
+
+      if (verify.status !== 200) {
+        throw new Error((verify.response as any)?.message ?? 'Unable to continue with email MFA.');
+      }
+
+      const accessToken = (verify.response as any)?.tokens?.accessToken;
+      if (!accessToken) {
+        throw new Error('Unable to continue with email MFA.');
+      }
+
+      trackMfaEvent('mfa_method_success', {
+        method: 'email',
+        flow: 'enroll',
+      });
+
+      completeLogin(accessToken);
+      setTimeout(() => {
+        Alert.alert(
+          'Security Notice',
+          'Email alone is not a secure method of 2 factor authentication. Please consider utilizing a Passkey or Authenticator to secure your account.'
+        );
+      }, 300);
+    } catch (mfaError: any) {
+      trackMfaEvent('mfa_method_failure', {
+        method: 'email',
+        flow: 'enroll',
+        reason: sanitizeAnalyticsReason(mfaError?.message),
+      });
+      setError(mfaError?.message ?? 'Unable to continue with email MFA.');
+    } finally {
+      submissionInFlightRef.current = false;
+      setIsSubmitting(false);
+      dispatch(setLoader(false));
+    }
+  };
+
+  const signInUser = useCallback(async () => {
+    if (submissionInFlightRef.current) {
+      return;
+    }
+
+    submissionInFlightRef.current = true;
+    setIsSubmitting(true);
+    try {
+      setError('');
+      setSuccessText('');
+      dispatch(setLoader(true));
+
+      if (backupCodes.length > 0 && pendingAccessToken) {
+        completeLogin(pendingAccessToken);
+        return;
+      }
+
+      if (mfaChallenge) {
+        await submitMfa();
+        return;
+      }
+
+      if (!form.email || !form.password) {
+        setError('Enter your email and password.');
+        return;
+      }
+      if (!isSignInLoaded || !signIn || !setActive) {
+        setError('Sign in is still loading. Please try again.');
+        return;
+      }
+
+      await ensureLocationPermission();
+
+      const normalizedEmail = form.email.trim().toLowerCase();
+      const attemptClerkPasswordSignIn = () =>
+        signIn.create({
+          identifier: normalizedEmail,
+          password: form.password,
+          strategy: 'password',
+        });
+
+      let result;
+      try {
+        result = await attemptClerkPasswordSignIn();
+      } catch (clerkError: any) {
+        const migration = await migrateLegacyPasswordToClerk({
+          email: normalizedEmail,
+          password: form.password,
+        }).catch(() => undefined);
+
+        if (migration?.status === 200 && migration.response?.migrated) {
+          result = await attemptClerkPasswordSignIn();
+        } else {
+          throw clerkError;
+        }
+      }
+
+      if (result.status !== 'complete' || !result.createdSessionId) {
+        setError(getIncompleteClerkSignInMessage(result));
+        return;
+      }
+
+      await setActive({ session: result.createdSessionId });
+      const accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        throw new Error('Unable to start Clerk session.');
+      }
+
+      completeLogin(accessToken);
+    } catch (e: any) {
+      const fallbackMessage = getClerkErrorMessage(e);
+      if (fallbackMessage.toLowerCase().includes('verify your email')) {
+        navigation.navigate('ConfirmLogin', {
+          showConfirmationEmailMessage: true,
+          prefillEmail: form.email,
+        } as any);
+        return;
+      }
+      setError(fallbackMessage);
+    } finally {
+      submissionInFlightRef.current = false;
+      setIsSubmitting(false);
+      dispatch(setLoader(false));
+    }
+  }, [
+    backupCodes.length,
+    completeLogin,
+    dispatch,
+    ensureLocationPermission,
+    form.email,
+    form.password,
+    handleAuthResult,
+    isSignInLoaded,
+    mfaChallenge,
+    navigation,
+    pendingAccessToken,
+    setActive,
+    signIn,
+    submitMfa,
+  ]);
+
+  const handleSocialLogin = useCallback(
+    async (provider: 'google' | 'apple') => {
+      if (socialLoading || mfaChallenge || submissionInFlightRef.current) return;
+      const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+      setError('');
+      setSuccessText('');
+      dispatch(setLoader(true));
+      setSocialLoading(true);
+      try {
+        await ensureLocationPermission();
+        const { createdSessionId, setActive: activateSsoSession } = await startSSOFlow({
+          strategy: provider === 'google' ? 'oauth_google' : 'oauth_apple',
+          redirectUrl: 'onebodyapp://oauth-native-callback',
+        } as any);
+
+        if (!createdSessionId || !activateSsoSession) {
+          setError(`Unable to sign in with ${providerLabel}. Please try again.`);
+          return;
+        }
+
+        await activateSsoSession({ session: createdSessionId });
+        const accessToken = await getValidAccessToken();
+        if (!accessToken) {
+          throw new Error('Unable to start Clerk session.');
+        }
+
+        await syncClerkUserProfile({});
+        clearPendingSocialContinuation();
+        dispatch(
+          setLoginData({
+            token: accessToken,
+            resetProfile: true,
+            authMethod: 'social',
+            bypassMandatoryMfaOnboarding: true,
+          })
+        );
+        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+      } catch (e: any) {
+        setError(
+          e?.message ??
+            `Unable to ${getSocialAuthActionLabel('login')} with ${providerLabel}. Please try again.`
+        );
+      } finally {
+        dispatch(setLoader(false));
+        setSocialLoading(false);
+      }
+    },
+    [dispatch, ensureLocationPermission, mfaChallenge, navigation, socialLoading, startSSOFlow]
+  );
+
+  const methodButton = (method: MfaMethod, label: string) => {
+    const isSelected = selectedMfaMethod === method;
+    const isDisabled = isSubmitting || (method === 'passkey' && isPasskeyAssociationUnavailable);
+    let labelColor = '#222';
+    if (dark) {
+      labelColor = '#ddd';
+    }
+    if (isSelected) {
+      labelColor = '#fff';
+    }
+
+    return (
+      <Pressable
+        key={method}
+        disabled={isDisabled}
+        onPress={() => selectMethod(method)}
+        style={{
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: isSelected ? '#41899f' : '#8b929a',
+          backgroundColor: isSelected ? '#41899f' : 'transparent',
+          opacity: isDisabled ? 0.6 : 1,
+        }}
+      >
+        <StyledText style={{ color: labelColor }}>{label}</StyledText>
+      </Pressable>
+    );
+  };
+
+  const showCodeInput = mfaChallenge && selectedMfaMethod !== 'passkey';
+  const mfaHeaderText = (() => {
+    if (!mfaChallenge) {
+      return 'Welcome back';
+    }
+
+    return 'Secure Sign-In';
+  })();
+  const subHeaderText = (() => {
+    if (!mfaChallenge) {
+      return 'Sign in to your account';
+    }
+
+    if (mfaChallenge.enrollmentRequired) {
+      return 'Set up multi-factor authentication to continue';
+    }
+
+    return 'Choose a verification method to continue';
+  })();
+  const primaryButtonText = (() => {
+    if (backupCodes.length > 0 && pendingAccessToken) {
+      return 'I Saved My Backup Codes';
+    }
+
+    if (!mfaChallenge) {
+      return 'Sign In';
+    }
+
+    if (selectedMfaMethod !== 'passkey') {
+      return 'Verify';
+    }
+
+    if (mfaChallenge.enrollmentRequired) {
+      return 'Set Up Passkey';
+    }
+
+    return 'Verify with Passkey';
+  })();
+  const showMfaLaunchScreen = !!mfaChallenge && mfaChallenge.enrollmentRequired;
+  const isPasskeyEnrollmentScreen =
+    showMfaLaunchScreen && selectedMfaMethod === 'passkey' && !showOtherMfaOptions;
+  const isTotpEnrollmentScreen = showMfaLaunchScreen && selectedMfaMethod === 'totp';
+  const totpSetupCode = useMemo(() => extractTotpSetupCode(totpOtpauth), [totpOtpauth]);
+  const handleCopyManualTotpCode = useCallback(() => {
+    if (!totpSetupCode) {
+      return;
+    }
+    clipboardRef.current?.copy(totpSetupCode);
+    setSuccessText('Setup code copied to clipboard.');
+  }, [totpSetupCode]);
+  const handleBackFromMfaLaunch = useCallback(() => {
+    setMfaChallenge(null);
+    setSelectedMfaMethod('passkey');
+    setShowOtherMfaOptions(false);
+    setTotpOtpauth('');
+    setBackupCodes([]);
+    setPendingAccessToken('');
+    hasAutoPromptedPasskeyRef.current = false;
+    setIsPasskeyAssociationUnavailable(false);
+    setError('');
+    setSuccessText('');
+    setIsSubmitting(false);
+    submissionInFlightRef.current = false;
+    passkeyInFlightRef.current = null;
+  }, []);
+  const handleMfaLaunchBack = useCallback(() => {
+    if (selectedMfaMethod === 'totp') {
+      setSelectedMfaMethod('passkey');
+      setShowOtherMfaOptions(false);
+      setError('');
+      setSuccessText('');
+      setForm((prev) => ({ ...prev, code: '' }));
+      return;
+    }
+
+    handleBackFromMfaLaunch();
+  }, [handleBackFromMfaLaunch, selectedMfaMethod]);
+  const launchPrimaryButtonText = (() => {
+    if (backupCodes.length > 0 && pendingAccessToken) {
+      return 'I Saved My Backup Codes';
+    }
+    if (selectedMfaMethod === 'totp') {
+      return totpOtpauth ? 'Verify Authenticator Code' : 'Set up Authenticator App';
+    }
+    return 'Set up your Passkey';
+  })();
+  const launchHeaderTitle = isTotpEnrollmentScreen ? 'Authenticator' : 'Passkeys';
+  const launchTitleText = (() => {
+    if (isPasskeyEnrollmentScreen) {
+      return 'Create a Passkey';
+    }
+    return 'Set up your authenticator app';
+  })();
+  const launchDescriptionText = (() => {
+    if (isPasskeyEnrollmentScreen) {
+      return 'Passkeys uses the same method as unlocking your phone, making your account nearly impossible to hack.';
+    }
+    return 'Use your authenticator app to generate verification codes each time you sign in.';
+  })();
+  let heroAnimationSource = passkeyHeroAnimation;
+  if (Platform.OS === 'android') {
+    heroAnimationSource = passkeyHeroAnimationAndroid;
+  }
+  if (useAndroidFallbackHero) {
+    heroAnimationSource = passkeyHeroFallbackAnimation;
+  }
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    if (
+      Platform.OS === 'android' &&
+      showMfaLaunchScreen &&
+      !hasPasskeyHeroLoadedRef.current &&
+      !useAndroidFallbackHero
+    ) {
+      timeout = setTimeout(() => {
+        if (!hasPasskeyHeroLoadedRef.current) {
+          setUseAndroidFallbackHero(true);
+        }
+      }, 1800);
+    }
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [showMfaLaunchScreen, useAndroidFallbackHero]);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      navigation.setOptions({ headerShown: !showMfaLaunchScreen });
+    }
+
+    return () => {
+      if (Platform.OS === 'ios') {
+        navigation.setOptions({ headerShown: true });
+      }
+    };
+  }, [navigation, showMfaLaunchScreen]);
+
+  useEffect(() => {
+    onMfaLaunchScreenChange?.(showMfaLaunchScreen);
+
+    if (Platform.OS !== 'android' || !showMfaLaunchScreen) {
+      return () => {
+        onMfaLaunchScreenChange?.(false);
+      };
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleMfaLaunchBack();
+      return true;
+    });
 
     return () => {
       subscription.remove();
+      onMfaLaunchScreenChange?.(false);
     };
-  }, [firebaseAuth, navigation, dispatch, verifyAccount, oobCode]);
+  }, [handleMfaLaunchBack, onMfaLaunchScreenChange, showMfaLaunchScreen]);
 
-  // useEffect(() => {
-  //   if (action == 'confirmation' && provider == 'twitter') {
-
-  //   }
-  // }, [action]);
-
-  useEffect(() => {
-    const checkNewUserCredentials = async () => {
-      if (newUserCredentials && accountType) {
-        const data = {
-          email: newUserCredentials?.user.email,
-          name: newUserCredentials?.user.displayName,
-          socialData: newUserCredentials?.additionalUserInfo,
-          userId: newUserCredentials.user.uid,
-          token,
-          accountType,
-        };
-
-        dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
-      } else if (newUserCredentials) {
-        seterror('User not found, please register to continue');
-        newUserCredentials.user.delete();
-        LoginManager.logOut();
-        await signOut(firebaseAuth);
-        if (firebaseAuth.currentUser) {
-          await reload(firebaseAuth.currentUser);
-        }
-        dispatch(logout());
-      }
-    };
-
-    if (newUserCredentials) {
-      checkNewUserCredentials();
-    }
-  }, [newUserCredentials, accountType, token, dispatch, gotoSignup, firebaseAuth, sendFcm]);
-
-  useEffect(() => {
-    if (oauth_token && oauth_verifier) {
-      const getTwitterAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: 'https://api.twitter.com/oauth/access_token',
-            params: {
-              oauth_token,
-              oauth_verifier,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          };
-          const result = await axios.request(options);
-
-          if (result.data) {
-            const tokenData = result.data.split('&')?.map((item: string) => {
-              return item.split('=')[1];
-            });
-
-            const twitterCredential = TwitterAuthProvider.credential(tokenData[0], tokenData[1]);
-            const userCredentials = await signInWithCredential(firebaseAuth, twitterCredential);
-
-            if (
-              !!verifyAccount &&
-              !!onlyPassword &&
-              userCredentials.user.email !== currentUserEmail
-            ) {
-              if (updateParent) {
-                updateParent(false);
-              }
-              navigation.goBack();
-              toast.show(`Please login with the current user's email`, {
-                type: 'error',
-                placement: 'top',
-              });
-            } else if (verifyAccount) {
-              if (toScreen) {
-                navigation.goBack();
-
-                navigation.push(toScreen as keyof MainStackParamList, {
-                  // setError: seterror,
-                  ...toScreenParams,
-                });
-              } else {
-                if (updateParent) {
-                  updateParent(true);
-                }
-                navigation.goBack();
-              }
-            } else {
-              processLogin(userCredentials, setNewUserCredentials, setToken);
-            }
-          }
-        } catch (twitterAuthError: any) {
-          if (twitterAuthError.nativeErrorMessage.includes('auth/user-not-found')) {
-            seterror('User/password combination not found');
-          } else {
-            seterror(twitterAuthError.nativeErrorMessage);
-          }
-        }
-      };
-      getTwitterAuthToken();
-    }
-  }, [
-    oauth_token,
-    oauth_verifier,
-    firebaseAuth,
-    verifyAccount,
-    onlyPassword,
-    currentUserEmail,
-    updateParent,
-    navigation,
-    toast,
-    toScreen,
-    toScreenParams,
-  ]);
-
-  useEffect(() => {
-    if (authState?.sendVerificationEmailSuccess === true) {
-      toast.show(`Verification email successfully sent. Check your inbox.`, {
-        type: 'success',
-        placement: 'top',
-      });
-    }
-  }, [authState?.sendVerificationEmailSuccess, toast]);
-
-  useEffect(() => {
-    if (authState?.sendVerificationEmailSuccess === false) {
-      toast.show(`We couldn't send the verification email. Please try again.`, {
-        type: 'danger',
-        placement: 'top',
-      });
-    }
-  }, [authState?.sendVerificationEmailSuccess, toast]);
-
-  useEffect(() => {
-    // Auto-send verification email when:
-    // 1. User needs verification after login (isVerificationNeeded)
-    // 2. Explicitly requested via prop (showConfirmationEmailMessage)
-    // 3. Landed on ConfirmLogin with verifyAccount (from signup flow)
-    const shouldAutoSend =
-      (isVerificationNeeded || showConfirmationEmailMessage || verifyAccount) &&
-      !verificationEmailRequested;
-
-    if (!shouldAutoSend) {
-      return;
-    }
-
-    const sendVerification = async () => {
-      const { currentUser } = firebaseAuth;
-      if (Platform.OS === 'android' && currentUser) {
-        try {
-          await sendEmailVerification(currentUser);
-          setVerificationEmailRequested(true);
-          return;
-        } catch {
-          // Fall back to backend email if Firebase fails.
-        }
-      }
-
-      const firebaseToken = currentUser ? await getIdToken(currentUser) : undefined;
-      if (firebaseToken) {
-        setVerificationEmailRequested(true);
-        dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
-      }
-    };
-
-    sendVerification();
-  }, [
-    dispatch,
-    isVerificationNeeded,
-    showConfirmationEmailMessage,
-    verifyAccount,
-    verificationEmailRequested,
-    firebaseAuth.currentUser,
-  ]);
-
-  const signInUser = async () => {
-    try {
-      const { email, password } = state;
-      const emailError = await validator('email', email);
-      const passwordError = await validator('password', password);
-      seterror('');
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('[login] signInUser submit', {
-          email,
-          verifyAccount: !!verifyAccount,
-          onlyPassword: !!onlyPassword,
-        });
-      }
-
-      if (!!verifyAccount && !!onlyPassword && email !== currentUserEmail) {
-        throw new Error("Please login with the current user's email");
-      }
-
-      if (!emailError && !passwordError) {
-        dispatch(setLoader(true));
-
-        const emailCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
-        if (__DEV__) {
-          // eslint-disable-next-line no-console
-          console.log('[login] firebase signIn success', {
-            uid: emailCredential.user.uid,
-            emailVerified: !!emailCredential.user.emailVerified,
-          });
-        }
-
-        if (verifyAccount) {
-          setState({ ...state, password: '' });
-
-          if (mode === 'verifyEmail') {
-            if (Platform.OS === 'ios') {
-              navigation.pop();
-            }
-            await processLogin(emailCredential, setNewUserCredentials, setToken);
-          } else if (toScreen) {
-            navigation.goBack();
-            navigation.push(toScreen as keyof MainStackParamList, {
-              // setError: seterror,
-              ...toScreenRouteParams,
-            });
-          } else {
-            if (updateParent) {
-              updateParent(true);
-            }
-            navigation.goBack();
-          }
-        } else if (emailCredential.user.emailVerified) {
-          await processLogin(emailCredential, setNewUserCredentials, setToken);
-          dispatch(setLoader(false));
-        } else {
-          setIsVerificationNeeded(true);
-          await processLogin(emailCredential, setNewUserCredentials, setToken);
-
-          dispatch(setLoader(false));
-        }
-
-        // dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
-      } else {
-        setState({ ...state, emailError, passwordError });
-      }
-    } catch (signInUserError: any) {
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('[login] signInUser error', {
-          message: signInUserError?.message,
-          code: signInUserError?.code,
-        });
-      }
-      let message = 'User/password combination not found';
-      if (
-        signInUserError.message &&
-        !signInUserError.message.includes('auth/user-not-found') &&
-        !signInUserError.message.includes('auth/wrong-password')
-      ) {
-        message = signInUserError.message;
-      }
-      if (__DEV__) {
-        console.warn('signInUser error', signInUserError?.code, signInUserError?.message);
-      }
-      seterror(message);
-      dispatch(setLoader(false));
-    }
-  };
-  const onTwitterButtonPress = async () => {
-    try {
-      seterror('');
-      setState({ ...state, emailError: '', passwordError: '' });
-
-      const urlToken = await getTwitterLoginToken(false, verifyAccount);
-
-      if (urlToken) {
-        OpenURLButton(
-          `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
-          false,
-          true,
-          verifyAccount
-            ? 'onebodyapp://app.onebodyapp.com/auth/confirmation'
-            : 'onebodyapp://app.onebodyapp.com/login/twitter'
-        );
-
-        // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
-      }
-    } catch (e) {
-      // Error handled silently or via other mechanisms
-    }
-  };
-
-  async function onAppleButtonPress() {
-    // performs login request
-    // const appleAuthRequestResponse = await appleAuth.performRequest({
-    //   requestedOperation: appleAuth.Operation.LOGIN,
-    //   requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-    // });
-
-    // // get current authentication state for user
-    // // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
-    // const credentialState = await appleAuth.getCredentialStateForUser(
-    //   appleAuthRequestResponse.user
-    // );
-
-    // // use credentialState response to ensure the user is authenticated
-    // if (credentialState === appleAuth.State.AUTHORIZED) {
-    //   console.warn('apple response', appleAuthRequestResponse);
-
-    //   // user is authenticated
-    // }
-    try {
-      // Start the sign-in request
-      const appleAuthRequestResponse = await appleAuth.performRequest({
-        requestedOperation: appleAuth.Operation.LOGIN,
-        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-      });
-
-      // Ensure Apple returned a user identityToken
-      if (!appleAuthRequestResponse.identityToken) {
-        throw new Error('Apple Sign-In failed - no identify token returned');
-      }
-
-      // Create a Firebase credential from the response
-      const { identityToken, nonce } = appleAuthRequestResponse;
-      const appleCredential = AppleAuthProvider.credential(identityToken, nonce);
-
-      const credentialState = await appleAuth.getCredentialStateForUser(
-        appleAuthRequestResponse.user
-      );
-
-      if (credentialState === appleAuth.State.AUTHORIZED) {
-        const userCredentials = await signInWithCredential(firebaseAuth, appleCredential);
-
-        processLogin(userCredentials, setNewUserCredentials, setToken);
-      }
-    } catch (appleAuthError: any) {
-      if (appleAuthError.code !== appleAuth.Error.CANCELED && appleAuthError.message)
-        seterror(appleAuthError.message);
-    }
-  }
-
-  const googleSignIn = async () => {
-    try {
-      seterror('');
-      dispatch(setLoader(true));
-      setState({ ...state, emailError: '', passwordError: '' });
-
-      // Get the users ID token
-      const { idToken } = await GoogleSignin.signIn();
-
-      // Create a Google credential with the token
-      const googleCredential = GoogleAuthProvider.credential(idToken);
-      const userCredentials = await signInWithCredential(firebaseAuth, googleCredential);
-
-      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email !== currentUserEmail) {
-        navigation.goBack();
-        toast.show(`Please login with the current user's email`, {
-          type: 'error',
-          placement: 'top',
-        });
-      } else if (verifyAccount) {
-        if (toScreen) {
-          navigation.goBack();
-
-          navigation.push(toScreen as keyof MainStackParamList, {
-            // setError: seterror,
-            ...toScreenParams,
-          });
-        } else {
-          if (updateParent) {
-            updateParent(true);
-          }
-          navigation.goBack();
-        }
-      } else {
-        await processLogin(userCredentials, setNewUserCredentials, setToken);
-      }
-      dispatch(setLoader(false));
-    } catch (signInError: any) {
-      if (!signInError.message.includes('Code=-5')) {
-        seterror(signInError.message.replace(`[${signInError.code}]`, ''));
-      }
-    }
-  };
-
-  const scheme = useColorScheme();
-  const { colors } = useTheme();
-  const isDark = scheme === 'dark';
-  const brandWhite = '#f6f6f7';
-
-  const [resendAttempts, setResendAttempts] = useState(0);
-  const [resendMessage, setResendMessage] = useState<string>('');
-
-  if (isVerificationNeeded || (showConfirmationEmailMessage && userProfile)) {
+  if (showMfaLaunchScreen) {
     return (
-      <View style={{ marginHorizontal: spacing.x16, flex: 1, marginTop: spacing.x24 }}>
-        <StyledText style={[Typography.header.h1, isDark ? { color: brandWhite } : undefined]}>
-          Verify your email address
-        </StyledText>
-        <StyledText
-          style={[
-            Typography.subheader.R,
-            { color: isDark ? brandWhite : Colors.neutral[300], marginTop: spacing.x8 },
-          ]}
-        >
-          You’ll need to verify your email to complete your account activation.
-        </StyledText>
-        <StyledText
-          style={[
-            Typography.subheader.R,
-            {
-              ...fontSize.x1,
-              color: isDark ? brandWhite : Colors.primarySapphire[300],
-              marginTop: spacing.x8,
-              marginBottom: spacing.x48,
-            },
-          ]}
-        >
-          Check your junk/spam folder if the Verification email is not received.
-        </StyledText>
-        <Button
-          text="Go to My Email"
-          btnStyle={[
-            button.primary,
-            {
-              flex: 1,
-            },
-          ]}
-          onPress={() => {
-            openInbox();
-          }}
-          btnTextStyle={[{ color: '#fff' }]}
-        />
-        <Button
-          onPress={async () => {
-            const firebaseToken = firebaseAuth.currentUser
-              ? await getIdToken(firebaseAuth.currentUser)
-              : undefined;
-            dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
-          }}
-          text="Didn’t receive the mail? "
-          wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'center' }}
-          btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[300] }]}
-          rightIcon={
-            <StyledText style={{ color: Colors.primarySapphire.brand }}>Resend email</StyledText>
-          }
-        />
-        <Button
-          onPress={async () => {
-            const { currentUser } = firebaseAuth;
-            if (!currentUser) {
-              Toast.show('Please log in again', Toast.SHORT);
-              return;
-            }
-
-            try {
-              await reload(currentUser);
-              await getIdToken(currentUser, true);
-
-              if (currentUser.emailVerified) {
-                const newToken = await getIdToken(currentUser, true);
-                if (newToken) {
-                  dispatch(getProfile.Request({ token: newToken }));
-                }
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'MainRoot' }],
-                });
-              } else {
-                Toast.show(
-                  'Email not verified yet. Please check your email and click the verification link.',
-                  Toast.LONG
-                );
-              }
-            } catch (error) {
-              Toast.show('Unable to check verification status. Please try again.', Toast.SHORT);
-            }
-          }}
-          text="I've verified my email"
-          btnStyle={[
-            button.primary,
-            {
-              flex: 1,
-              marginTop: 20,
-            },
-          ]}
-          btnTextStyle={[{ color: '#fff' }]}
-        />
-      </View>
-    );
-  }
-
-  const getButtonTextStyle = () => {
-    return { ...styles.btnTitle, color: scheme === 'dark' ? '#838383' : Colors.primary.brand };
-  };
-
-  const getButtonContainer = () => {
-    return { ...styles.buttonContainer, borderColor: colors.border };
-  };
-
-  const getDisabledButtonTextStyle = () => {
-    return {
-      ...styles.disabledBtnTextStyle,
-      color: scheme === 'dark' ? '#3a3a3a' : '#B3C1C5',
-      borderColor: colors.border,
-    };
-  };
-
-  const getDisabledButtonStyle = () => {
-    return { ...styles.disabledButtonContainer, borderColor: colors.border };
-  };
-
-  if (verifyAccount) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          marginHorizontal: spacing.x16,
-          paddingVertical: spacing.x24,
-          justifyContent: 'space-between',
-        }}
-      >
-        <View>
-          <StyledText
-            style={[Typography.header.h1, { color: isDark ? brandWhite : Colors.primary.brand }]}
-          >
-            Verify your Email address
-          </StyledText>
-          <StyledText
-            style={[
-              Typography.subheader.R,
-              {
-                color: isDark ? brandWhite : Colors.primary.brand,
-                marginTop: spacing.x8,
-                lineHeight: 21,
-              },
-            ]}
-          >
-            You’ll need to verify your email to complete your account activation.
-          </StyledText>
-
-          <View
-            style={{
-              marginTop: spacing.x24,
-              paddingHorizontal: spacing.x16,
-              paddingVertical: spacing.x20,
-              backgroundColor: colors.card,
-              borderRadius: borderRadius.base,
-              borderWidth: 1,
-              borderColor: Colors.neutral[800],
-            }}
-          >
-            <Button
-              text="Open email app"
-              btnStyle={[
-                button.primary,
-                {
-                  width: '100%',
-                  paddingVertical: spacing.x13,
-                  borderRadius: 60,
-                },
-              ]}
-              btnTextStyle={{ color: '#FFF', fontSize: 14, fontWeight: '500', lineHeight: 24 }}
-              onPress={() => {
-                openInbox();
+      <View style={styles.screenContainer}>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 36, flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          alwaysBounceVertical
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => {
+                setIsRefreshing(true);
+                setTimeout(() => setIsRefreshing(false), 250);
               }}
             />
-
-            <TouchableOpacity
-              style={{ marginTop: spacing.x16, alignSelf: 'center' }}
-              onPress={async () => {
-                if (resendAttempts >= 5) {
-                  setResendMessage('Please wait before requesting another verification email.');
-                  return;
-                }
-                const { currentUser } = firebaseAuth;
-                if (!currentUser) {
-                  setResendMessage('Please log in again to resend the verification email.');
-                  return;
-                }
-                try {
-                  if (Platform.OS === 'android') {
-                    await sendEmailVerification(currentUser);
-                  } else {
-                    const firebaseToken = await getIdToken(currentUser, true);
-                    if (!firebaseToken) {
-                      setResendMessage('Please log in again to resend the verification email.');
-                      return;
-                    }
-                    dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
-                  }
-                  setResendAttempts((prev) => prev + 1);
-                  setResendMessage('Verification email sent. Please check your inbox.');
-                } catch {
-                  setResendMessage('Unable to resend right now. Please try again later.');
-                }
+          }
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: 12,
+              marginBottom: 8,
+            }}
+          >
+            <Pressable
+              disabled={isSubmitting}
+              onPress={handleMfaLaunchBack}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+                opacity: isSubmitting ? 0.6 : 1,
               }}
             >
-              <StyledText style={{ color: Colors.neutral[300] }}>
-                Didn’t get mail?{' '}
-                <StyledText style={{ color: Colors.primary.brand }}>Resend email</StyledText>
-              </StyledText>
-            </TouchableOpacity>
-            {resendMessage ? (
+              <Ionicons name="arrow-back" size={26} color="#126B87" />
+            </Pressable>
+            <StyledText
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                marginRight: 40,
+                fontFamily: 'Rubik',
+                fontWeight: '700',
+                fontSize: 18,
+                color: dark ? '#FFFFFF' : '#0e181b',
+              }}
+            >
+              {launchHeaderTitle}
+            </StyledText>
+          </View>
+
+          <LottieView
+            key={useAndroidFallbackHero ? 'mfa-hero-fallback' : 'mfa-hero-primary'}
+            source={heroAnimationSource}
+            autoPlay
+            loop
+            colorFilters={Platform.OS === 'ios' ? oneBodyLottieColorFilters : undefined}
+            renderMode={Platform.OS === 'android' ? 'SOFTWARE' : 'AUTOMATIC'}
+            hardwareAccelerationAndroid={false}
+            enableSafeModeAndroid
+            cacheComposition={false}
+            onAnimationLoaded={() => {
+              hasPasskeyHeroLoadedRef.current = true;
+            }}
+            onAnimationFailure={(errorMessage) => {
+              if (Platform.OS === 'android') {
+                setUseAndroidFallbackHero(true);
+              }
+              console.warn('MFA hero animation failed to load', errorMessage);
+            }}
+            style={{
+              width: '100%',
+              height: 320,
+              marginBottom: 24,
+              alignSelf: 'center',
+            }}
+            resizeMode="contain"
+          />
+
+          <StyledText
+            style={{
+              fontFamily: 'Rubik',
+              fontWeight: '700',
+              fontSize: 26,
+              lineHeight: 34,
+              color: dark ? '#FFFFFF' : '#0e181b',
+              marginBottom: 12,
+            }}
+          >
+            {launchTitleText}
+          </StyledText>
+
+          <StyledText
+            style={{
+              fontFamily: 'Lato',
+              fontWeight: '500',
+              fontSize: 16,
+              lineHeight: 26,
+              color: dark ? '#A7B7BC' : '#4e6a71',
+              marginBottom: 30,
+            }}
+          >
+            {launchDescriptionText}
+          </StyledText>
+
+          {isPasskeyEnrollmentScreen ? (
+            <View style={{ rowGap: 20, marginBottom: 28 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: 'rgba(17, 106, 136, 0.12)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 14,
+                  }}
+                >
+                  <Ionicons name="finger-print-outline" size={24} color="#126B87" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Rubik',
+                      fontWeight: '700',
+                      fontSize: 16,
+                      lineHeight: 22,
+                      color: dark ? '#FFFFFF' : '#0e181b',
+                    }}
+                  >
+                    Sign in using biometrics
+                  </StyledText>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Lato',
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: dark ? '#A7B7BC' : '#4e6a71',
+                    }}
+                  >
+                    Quick access with FaceID or TouchID
+                  </StyledText>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: 'rgba(17, 106, 136, 0.12)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 14,
+                  }}
+                >
+                  <Ionicons name="sync-outline" size={24} color="#126B87" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Rubik',
+                      fontWeight: '700',
+                      fontSize: 16,
+                      lineHeight: 22,
+                      color: dark ? '#FFFFFF' : '#0e181b',
+                    }}
+                  >
+                    Syncs across your devices
+                  </StyledText>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Lato',
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: dark ? '#A7B7BC' : '#4e6a71',
+                    }}
+                  >
+                    Available on all your logged-in platforms
+                  </StyledText>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: 'rgba(17, 106, 136, 0.12)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 14,
+                  }}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={24} color="#126B87" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Rubik',
+                      fontWeight: '700',
+                      fontSize: 16,
+                      lineHeight: 22,
+                      color: dark ? '#FFFFFF' : '#0e181b',
+                    }}
+                  >
+                    Instant and secure
+                  </StyledText>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Lato',
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: dark ? '#A7B7BC' : '#4e6a71',
+                    }}
+                  >
+                    End-to-end encryption for your safety
+                  </StyledText>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {isTotpEnrollmentScreen && totpOtpauth ? (
+            <View
+              style={{
+                marginBottom: 14,
+                borderRadius: 16,
+                paddingHorizontal: 14,
+                paddingTop: 14,
+                paddingBottom: 10,
+                backgroundColor: dark ? '#202328' : '#EFF2F4',
+              }}
+            >
               <StyledText
                 style={{
-                  color: Colors.primary.brand,
-                  textAlign: 'center',
-                  marginTop: spacing.x8,
-                  fontSize: 12,
+                  color: dark ? '#FFFFFF' : '#0f172a',
+                  fontFamily: 'Rubik',
+                  fontWeight: '700',
+                  fontSize: 18,
                 }}
               >
-                {resendMessage}
+                Step 2: Connect your authenticator app
               </StyledText>
-            ) : null}
-          </View>
-        </View>
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: dark ? '#334155' : '#d4dbe1',
+                  marginVertical: 10,
+                }}
+              />
+              <StyledText style={{ color: dark ? '#D4D8DC' : '#334155', fontSize: 15 }}>
+                Use your authenticator app to scan this code.
+              </StyledText>
 
-        <View style={{ marginTop: spacing.x20 }}>
-          <Button
-            text="Cancel"
-            btnStyle={{
-              paddingVertical: spacing.x10,
-            }}
-            onPress={async () => {
-              if (updateParent) {
-                updateParent(false);
-              }
+              <View
+                style={{
+                  marginTop: 12,
+                  marginBottom: 12,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    padding: 8,
+                    borderRadius: 10,
+                  }}
+                >
+                  <QRCode value={totpOtpauth} size={126} />
+                </View>
+              </View>
 
-              navigation.goBack();
-              if (!onlyPassword) {
-                dispatch(signUp.Reset());
-                LoginManager.logOut();
-                await signOut(firebaseAuth);
-                dispatch(logout());
+              <StyledText
+                style={{
+                  color: dark ? '#D4D8DC' : '#334155',
+                  fontSize: 12,
+                  marginBottom: 3,
+                }}
+              >
+                Setup code
+              </StyledText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <StyledText
+                  style={{
+                    color: dark ? '#FFFFFF' : '#0f172a',
+                    fontFamily: 'Rubik',
+                    fontWeight: '600',
+                    fontSize: 16,
+                  }}
+                >
+                  {totpSetupCode}
+                </StyledText>
+                <Pressable
+                  onPress={handleCopyManualTotpCode}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={{
+                    marginLeft: 8,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="copy-outline" size={36} color="#126B87" />
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+
+          {isTotpEnrollmentScreen && (
+            <View style={styles.inputSpacer}>
+              <StyledText style={styles.inputLabel}>Verification code</StyledText>
+              <StyledTextInput
+                placeholder="Enter code"
+                placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                autoCapitalize="characters"
+                keyboardType="number-pad"
+                value={form.code}
+                backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                inputWrapperStyle={styles.inputWrapper}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, code: v }))}
+              />
+            </View>
+          )}
+
+          {!!successText && <StyledText style={styles.successAlertText}>{successText}</StyledText>}
+          {!!error && <StyledText style={styles.fieldError}>{error}</StyledText>}
+
+          {backupCodes.length > 0 ? (
+            <View style={{ marginTop: 8, marginBottom: 8, rowGap: 6 }}>
+              {backupCodes.map((code) => (
+                <StyledText
+                  key={code}
+                  style={{ color: dark ? '#fff' : '#111827', fontWeight: '700' }}
+                >
+                  {code}
+                </StyledText>
+              ))}
+            </View>
+          ) : null}
+
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => {
+              if (backupCodes.length > 0 && pendingAccessToken) {
+                completeLogin(pendingAccessToken);
+                return;
               }
+              signInUser();
             }}
-            btnTextStyle={{ color: Colors.neutral[300] }}
-          />
-        </View>
+            style={{
+              backgroundColor: '#126B87',
+              height: 56,
+              borderRadius: 28,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 14,
+              marginTop: 6,
+              opacity: isSubmitting ? 0.6 : 1,
+            }}
+          >
+            <StyledText
+              style={{ color: '#FFFFFF', fontFamily: 'Lato', fontWeight: '700', fontSize: 18 }}
+            >
+              {launchPrimaryButtonText}
+            </StyledText>
+          </Pressable>
+
+          {isPasskeyEnrollmentScreen && mfaChallenge?.availableMethods.includes('totp') ? (
+            <Pressable
+              disabled={isSubmitting}
+              onPress={() => {
+                selectMethod('totp').catch((e: any) => {
+                  setError(e?.message ?? 'Unable to switch to authenticator.');
+                });
+              }}
+            >
+              <StyledText
+                style={{
+                  textAlign: 'center',
+                  color: dark ? '#A7B7BC' : '#4e6a71',
+                  fontFamily: 'Lato',
+                  fontWeight: '700',
+                  fontSize: 16,
+                }}
+              >
+                Use other MFA options
+              </StyledText>
+            </Pressable>
+          ) : null}
+
+          {isTotpEnrollmentScreen && mfaChallenge?.availableMethods.includes('email') ? (
+            <Pressable
+              disabled={isSubmitting}
+              onPress={() => {
+                handleEmailAsMfaEnrollment().catch((e: any) => {
+                  setError(e?.message ?? 'Unable to continue with email MFA.');
+                });
+              }}
+            >
+              <StyledText
+                style={{
+                  textAlign: 'center',
+                  color: dark ? '#A7B7BC' : '#4e6a71',
+                  fontFamily: 'Lato',
+                  fontWeight: '700',
+                  fontSize: 16,
+                }}
+              >
+                Use email as MFA (less secure)
+              </StyledText>
+            </Pressable>
+          ) : null}
+          <CustomClipboard ref={clipboardRef} />
+        </ScrollView>
       </View>
     );
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        marginHorizontal: spacing.x16,
-      }}
-    >
-      <View style={{ marginVertical: spacing.x16 }}>
-        <StyledText style={[Typography.header.h1]}>
-          {verifyAccount ? 'Verify your account information' : 'Welcome back'}
-        </StyledText>
-
-        {!verifyAccount ? (
-          <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
-          >
-            Sign in to your account
-          </StyledText>
-        ) : null}
-      </View>
-      <View
-        style={{
-          paddingHorizontal: spacing.x16,
-          paddingVertical: spacing.x24,
-
-          backgroundColor: colors.background,
-          borderRadius: borderRadius.base,
-          marginBottom: spacing.x64,
-        }}
+    <View style={styles.screenContainer}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => {
+              setIsRefreshing(true);
+              setTimeout(() => setIsRefreshing(false), 250);
+            }}
+          />
+        }
       >
-        {verifyAccount && error ? (
-          <View style={{ ...styles.Errorview }}>
-            <StyledText style={styles.errortext}>{error}</StyledText>
-          </View>
-        ) : null}
-        {!verifyAccount ? (
-          <View>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', marginBottom: spacing.x24, flex: 1 }}
-              onPress={() => {
-                navigation.replace('AccountType');
-              }}
-            >
-              <StyledText style={{ color: Colors.neutral[300] }}>New to One Body? </StyledText>
-              <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                Create an account
-              </StyledText>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-        <View style={{ flex: 1 }}>
-          {enabledLoginProviders && enabledLoginProviders?.indexOf('password') > -1 ? (
-            <View style={{ flex: 2, flexGrow: 1, flexShrink: 0 }}>
-              {success ? (
-                <View
-                  style={[
-                    GeneralStyle.MessageView,
-                    { backgroundColor: Colors.successFeedback.background },
-                  ]}
-                >
-                  <StyledText style={styles.successtext}>{success}</StyledText>
-                </View>
-              ) : null}
-              <StyledTextInput
-                wrapperStyle={{ flex: 1 }}
-                ref={inputRefs.email}
-                value={state.email}
-                returnKeyType="next"
-                keyboardType="email-address"
-                label="Email"
-                autoCorrect={false}
-                placeholder="Email address"
-                autoComplete="email"
-                autoCapitalize="none"
-                onFocus={() => setState({ ...state, emailError: '' })}
-                onBlur={() =>
-                  validateFields(state.email, 'email', (validationError: string) =>
-                    setState({ ...state, emailError: validationError })
-                  )
-                }
-                onSubmitEditing={() => inputRefs.password?.current.focus()}
-                onChangeText={(email) => changeHandler('email', email.trim())}
-              />
-              {state.emailError ? (
-                <StyledText style={{ ...GeneralStyle.InputError }}>{state.emailError}</StyledText>
-              ) : null}
+        <View style={[styles.headerFrame, { marginTop: 28 }]}>
+          <StyledText style={styles.welcomeText}>{mfaHeaderText}</StyledText>
+          <StyledText style={styles.subHeaderText}>{subHeaderText}</StyledText>
+        </View>
 
-              <StyledTextInput
-                wrapperStyle={{ marginTop: 15, flex: 1 }}
-                ref={inputRefs.password}
-                value={state.password}
-                returnKeyType="send"
-                label="Password"
-                placeholder="Password"
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry={!!hidePass}
-                rightIcon={
-                  <View style={{ justifyContent: 'center' }}>
-                    <MaterialCommunityIcons
-                      name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                      size={15}
-                      color={Colors.primarySapphire[500]}
-                      onPress={() => setHidePass(!hidePass)}
-                    />
-                  </View>
-                }
-                onFocus={() => setState({ ...state, passwordError: '' })}
-                onSubmitEditing={() => signInUser()}
-                onChangeText={(password) => changeHandler('password', password.trim())}
-              />
-              {state.passwordError ? (
-                <StyledText style={{ ...GeneralStyle.InputError }}>
-                  {state.passwordError}
-                </StyledText>
-              ) : null}
+        <View style={styles.cardContainer}>
+          {!mfaChallenge ? (
+            <View style={styles.newAccountRow}>
+              <StyledText style={styles.newAccountText}>New to One Body? </StyledText>
+              <Pressable
+                onPress={() => {
+                  navigation.navigate('AccountType' as any);
+                }}
+              >
+                <StyledText style={styles.newAccountLink}>Create an account</StyledText>
+              </Pressable>
             </View>
           ) : null}
 
-          <View style={{ flex: 1, paddingTop: spacing.x32 }}>
-            {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
-              <View style={{ marginHorizontal: 10 }}>
-                <Button
-                  text="Sign in"
-                  disabled={!state.password || !state.email}
-                  btnStyle={[
-                    button.primary,
-                    {
-                      flex: 1,
-                    },
-                  ]}
-                  disabledBtnStyle={[
-                    button.primary,
-                    {
-                      backgroundColor: Colors.primarySapphire[200],
-                      flex: 1,
-                      opacity: 0.4,
-                    },
-                  ]}
-                  onPress={() => signInUser()}
-                  btnTextStyle={{ color: '#FFF' }}
-                />
-              </View>
-            ) : null}
-
-            {verifyAccount ? (
-              <View style={{ marginTop: enabledLoginProviders ? 20 : 0 }}>
-                <Button
-                  text="Cancel"
-                  btnStyle={[
-                    {
-                      flex: 1,
-                    },
-                  ]}
-                  onPress={async () => {
-                    if (updateParent) {
-                      updateParent(false);
-                    }
-
-                    navigation.goBack();
-                    if (!onlyPassword) {
-                      dispatch(signUp.Reset());
-                      LoginManager.logOut();
-                      await signOut(firebaseAuth);
-                      dispatch(logout());
-                    }
-                  }}
-                  btnTextStyle={{ color: Colors.neutral[300] }}
-                />
-              </View>
-            ) : null}
-
-            {!verifyAccount && error ? (
-              <View style={{ ...styles.Errorview, marginTop: spacing.x24 }}>
-                <StyledText style={styles.errortext}>{error}</StyledText>
-              </View>
-            ) : null}
-
-            {enabledLoginProviders &&
-            enabledLoginProviders?.includes('password') &&
-            ((enabledLoginProviders && enabledLoginProviders?.includes('google.com')) ||
-              (enabledLoginProviders && enabledLoginProviders?.includes('facebook.com')) ||
-              (enabledLoginProviders && enabledLoginProviders?.includes('twitter.com'))) ? (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  flex: 1,
-                  marginTop: spacing.x24,
-                }}
-              >
-                <View
-                  style={{
-                    borderBottomColor: Colors.neutral[800],
-                    borderBottomWidth: borderWidth.thin,
-                    flex: 1,
-                  }}
-                />
-
-                <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[300] }}>
-                  Or
-                </StyledText>
-                <View
-                  style={{
-                    borderBottomColor: Colors.neutral[800],
-                    borderBottomWidth: borderWidth.thin,
-                    flex: 1,
-                  }}
-                />
-              </View>
-            ) : null}
-
-            {enabledLoginProviders ? (
-              <View
-                style={{
-                  marginTop: spacing.x24,
-                  flex: 1,
-                  flexDirection: 'column',
-                }}
-              >
-                <View style={{ flexDirection: 'row', flex: 1 }}>
-                  {enabledLoginProviders &&
-                  enabledLoginProviders?.includes('google.com') &&
-                  enabledLoginProviders?.includes('password') ? (
-                    <View style={{ paddingHorizontal: 10, flex: 1 }}>
-                      <Button
-                        onPress={() => googleSignIn()}
-                        wrapperViewBtnStyle={{ flex: 1 }}
-                        leftIcon={<Google style={{ alignSelf: 'center' }} fill="#000" />}
-                        btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
-                      />
-                    </View>
-                  ) : (
-                    // eslint-disable-next-line react/jsx-no-useless-fragment
-                    <>
-                      {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
-                        <Button
-                          text="Log in with Google"
-                          leftIcon={<Google style={{ marginRight: 7 }} height={getHeight(5)} />}
-                          btnStyle={getButtonContainer()}
-                          btnTextStyle={getButtonTextStyle()}
-                          onPress={() => googleSignIn()}
-                          disabledBtnStyle={getDisabledButtonStyle()}
-                          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                          wrapperBtnStyle={{ width: '100%' }}
-                        />
-                      ) : null}
-                    </>
-                  )}
-
-                  {/* {enabledLoginProviders &&
-        enabledLoginProviders?.includes('facebook.com') &&
-        enabledLoginProviders?.includes('password') ? (
-          <View style={{ paddingHorizontal: 10, flex: 1 }}>
-            <Button
-              onPress={() => facebookLogin()}
-              wrapperViewBtnStyle={{ flex: 1 }}
-              leftIcon={<Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />}
-              btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
+          <View style={styles.inputSpacer}>
+            <StyledText style={styles.inputLabel}>Email</StyledText>
+            <StyledTextInput
+              placeholder="Email Address"
+              placeholderTextColor={dark ? '#999DA1' : '#838584'}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!mfaChallenge}
+              value={form.email}
+              backgroundColor={dark ? '#202328' : '#F2F3F3'}
+              inputWrapperStyle={styles.inputWrapper}
+              onChangeText={(v) => setForm((prev) => ({ ...prev, email: v.trim() }))}
             />
           </View>
-        ) : (
-          // <TouchableOpacity onPress={() => facebookLogin()} style={styles.socialContainer}>
-          //   <Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />
-          // </TouchableOpacity>
-          <>
-            {enabledLoginProviders && enabledLoginProviders?.includes('facebook.com') ? (
-              <Button
-                text={'Login with Facebook'}
-                leftIcon={<Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />}
-                btnStyle={getButtonContainer()}
-                btnTextStyle={getButtonTextStyle()}
-                onPress={() => {
-                  facebookLogin();
-                }}
-                disabledBtnStyle={getDisabledButtonStyle()}
-                disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                wrapperBtnStyle={{
-                  width: '100%',
 
-                  paddingVertical: 10,
-                }}
+          {!mfaChallenge ? (
+            <View style={styles.inputSpacer}>
+              <StyledText style={styles.inputLabel}>Password</StyledText>
+              <StyledTextInput
+                placeholder="Password"
+                placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                secureTextEntry={hidePass}
+                value={form.password}
+                backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                inputWrapperStyle={styles.inputWrapper}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, password: v }))}
+                rightIcon={
+                  <Ionicons
+                    name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                    size={22}
+                    color="#41dbe1"
+                    onPress={() => setHidePass(!hidePass)}
+                    style={{ alignSelf: 'center' }}
+                  />
+                }
               />
-            ) : null}
-          </>
-        )} */}
+            </View>
+          ) : (
+            <View style={{ marginTop: 8, rowGap: 10 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {mfaChallenge.enrollmentRequired ? (
+                  <>
+                    {mfaChallenge.availableMethods.includes('passkey')
+                      ? methodButton('passkey', 'Passkey')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('totp')
+                      ? methodButton('totp', 'Authenticator')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('email')
+                      ? methodButton('email', 'Email')
+                      : null}
+                  </>
+                ) : (
+                  <>
+                    {mfaChallenge.availableMethods.includes('passkey')
+                      ? methodButton('passkey', 'Passkey')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('totp')
+                      ? methodButton('totp', 'Authenticator')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('email')
+                      ? methodButton('email', 'Email')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('backup')
+                      ? methodButton('backup', 'Backup Code')
+                      : null}
+                  </>
+                )}
+              </View>
 
-                  {enabledLoginProviders &&
-                  enabledLoginProviders?.includes('twitter.com') &&
-                  enabledLoginProviders?.includes('password') ? (
-                    <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
-                      <Button
-                        onPress={() => onTwitterButtonPress()}
-                        wrapperViewBtnStyle={{ flex: 1 }}
-                        leftIcon={<Twitter fill="#00acee" style={{ alignSelf: 'center' }} />}
-                        btnStyle={[
-                          getButtonContainer(),
-                          {
-                            marginHorizontal: 0,
-                            flex: 1,
-                          },
-                        ]}
-                      />
-                    </View>
-                  ) : (
-                    // eslint-disable-next-line react/jsx-no-useless-fragment
-                    <>
-                      {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
-                        <Button
-                          text="Login with Twitter"
-                          leftIcon={
-                            <Twitter
-                              style={{ marginRight: 7 }}
-                              height={getHeight(5)}
-                              fill="#00acee"
-                            />
-                          }
-                          btnStyle={getButtonContainer()}
-                          btnTextStyle={getButtonTextStyle()}
-                          onPress={() => {
-                            onTwitterButtonPress();
-                          }}
-                          disabledBtnStyle={getDisabledButtonStyle()}
-                          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                          wrapperBtnStyle={{ width: '100%' }}
-                        />
-                      ) : null}
-                    </>
-                  )}
+              {selectedMfaMethod === 'passkey' ? (
+                <StyledText style={{ color: dark ? '#cdd0d4' : '#4b5563' }}>
+                  Use Face ID, Touch ID, or device biometrics to verify.
+                </StyledText>
+              ) : null}
 
-                  {enabledLoginProviders &&
-                  enabledLoginProviders?.includes('apple') &&
-                  enabledLoginProviders?.includes('password') &&
-                  Platform.OS === 'ios' ? (
-                    <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
-                      <Button
-                        onPress={() => onAppleButtonPress()}
-                        wrapperViewBtnStyle={{ flex: 1 }}
-                        leftIcon={
-                          <FontAwesome
-                            name="apple"
-                            style={{
-                              // flex: 1,
-                              // marginRight: getWidth(3),
-                              // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
-                              color: colors.text,
-                            }}
-                            size={22}
-                          />
-                        }
-                        btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
-                      />
-                    </View>
-                  ) : (
-                    // eslint-disable-next-line react/jsx-no-useless-fragment
-                    <>
-                      {enabledLoginProviders &&
-                      enabledLoginProviders?.includes('apple') &&
-                      Platform.OS === 'ios' ? (
-                        <Button
-                          text="Login with Apple"
-                          leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}
-                          btnStyle={getButtonContainer()}
-                          btnTextStyle={getButtonTextStyle()}
-                          onPress={() => {
-                            onAppleButtonPress();
-                          }}
-                          disabledBtnStyle={getDisabledButtonStyle()}
-                          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                          wrapperBtnStyle={{ width: '100%' }}
-                        />
-                      ) : null}
-                    </>
-                  )}
+              {selectedMfaMethod === 'totp' && mfaChallenge.enrollmentRequired ? (
+                <StyledText style={{ color: dark ? '#cdd0d4' : '#4b5563' }}>
+                  Add this key in your authenticator app: {totpOtpauth || 'Tap Verify to generate'}
+                </StyledText>
+              ) : null}
+
+              {mfaChallenge.enrollmentRequired && mfaChallenge.availableMethods.includes('totp') ? (
+                <Pressable
+                  disabled={isSubmitting}
+                  onPress={() => selectMethod(selectedMfaMethod === 'totp' ? 'passkey' : 'totp')}
+                >
+                  <StyledText style={{ color: dark ? '#9aa4af' : '#6b7280', fontSize: 12 }}>
+                    {selectedMfaMethod === 'totp'
+                      ? 'Use passkey instead (recommended).'
+                      : 'Prefer an authenticator app? Use TOTP instead.'}
+                  </StyledText>
+                </Pressable>
+              ) : null}
+
+              {mfaChallenge.enrollmentRequired ? (
+                <StyledText style={{ color: dark ? '#818a94' : '#9ca3af', fontSize: 12 }}>
+                  Email verification remains available, but passkey is more secure.
+                </StyledText>
+              ) : null}
+
+              {showCodeInput ? (
+                <View style={styles.inputSpacer}>
+                  <StyledText style={styles.inputLabel}>
+                    {selectedMfaMethod === 'backup' ? 'Backup code' : 'Verification code'}
+                  </StyledText>
+                  <StyledTextInput
+                    placeholder={
+                      selectedMfaMethod === 'backup' ? 'Enter backup code' : 'Enter code'
+                    }
+                    placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                    autoCapitalize="characters"
+                    keyboardType={selectedMfaMethod === 'backup' ? 'default' : 'number-pad'}
+                    value={form.code}
+                    backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                    inputWrapperStyle={styles.inputWrapper}
+                    onChangeText={(v) => setForm((prev) => ({ ...prev, code: v }))}
+                  />
                 </View>
-                {!verifyAccount &&
-                enabledLoginProviders &&
-                enabledLoginProviders?.includes('password') ? (
-                  <View style={{ alignItems: 'center', flex: 1, marginTop: spacing.x16 }}>
-                    <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                      <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                        Forgot Password?
-                      </StyledText>
-                    </TouchableOpacity>
-                  </View>
+              ) : null}
+            </View>
+          )}
+
+          {!!successText && <StyledText style={styles.successAlertText}>{successText}</StyledText>}
+          {!!error && <StyledText style={styles.fieldError}>{error}</StyledText>}
+
+          {backupCodes.length > 0 ? (
+            <View style={{ marginTop: 8, marginBottom: 8, rowGap: 6 }}>
+              {backupCodes.map((code) => (
+                <StyledText
+                  key={code}
+                  style={{ color: dark ? '#fff' : '#111827', fontWeight: '700' }}
+                >
+                  {code}
+                </StyledText>
+              ))}
+            </View>
+          ) : null}
+
+          <Button
+            text={primaryButtonText}
+            btnStyle={styles.primaryBtn}
+            btnTextStyle={styles.primaryBtnText}
+            onPress={signInUser}
+            disabled={isSubmitting}
+          />
+
+          {!mfaChallenge ? (
+            <View style={styles.socialSection}>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <StyledText style={styles.orText}>Or</StyledText>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.socialIconsRow}>
+                <Pressable
+                  style={styles.socialBtn}
+                  disabled={socialLoading}
+                  onPress={() => handleSocialLogin('google')}
+                  accessibilityLabel="Continue with Google"
+                >
+                  <Image source={googleIcon} style={styles.socialIcon} />
+                </Pressable>
+
+                {Platform.OS === 'ios' ? (
+                  <Pressable
+                    style={styles.socialBtn}
+                    disabled={socialLoading}
+                    onPress={() => handleSocialLogin('apple')}
+                    accessibilityLabel="Continue with Apple"
+                  >
+                    <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFFF' : '#212121'} />
+                  </Pressable>
                 ) : null}
               </View>
-            ) : null}
-          </View>
-        </View>
 
-        <View />
-      </View>
+              <Pressable
+                onPress={() => {
+                  navigation.navigate('ForgotPassword' as any, { email: form.email } as any);
+                }}
+              >
+                <StyledText style={styles.forgotPasswordText}>Forgot Password?</StyledText>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      </ScrollView>
     </View>
   );
 }

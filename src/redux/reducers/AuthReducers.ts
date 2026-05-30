@@ -1,4 +1,3 @@
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AnyAction, Reducer } from 'redux';
 import { User } from '@/utils/types';
 import {
@@ -8,16 +7,24 @@ import {
   GetProfile,
   SignUp,
   SendVerificationEmail,
+  VerifyEmailToken,
 } from '../action-types';
 
-interface UserData extends FirebaseAuthTypes.User {
-  tokenResult: FirebaseAuthTypes.IdTokenResult;
+interface UserData {
+  email?: string | null;
+  emailVerified?: boolean;
+  uid?: string;
+  tokenResult?: any;
+  [key: string]: any;
 }
 
 type AuthReducer = {
   signUpSuccess?: boolean;
   signUpData: ArrayLike<any> | null | undefined;
   sendVerificationEmailSuccess?: boolean;
+  verifyEmailTokenSuccess?: boolean;
+  verifyEmailTokenPending: boolean;
+  verifyEmailTokenError: string | null;
   sendVerificationEmailData: ArrayLike<any> | null | undefined;
   getBadgesSuccess?: boolean;
   setUserBadgesSuccess?: boolean;
@@ -34,6 +41,11 @@ type AuthReducer = {
   FcmToken: string;
   error: string[] | null;
   isLoading: boolean;
+  logoutPending: boolean;
+  logoutCompletedAt?: number;
+  logoutDestination?: 'Intro' | 'Login';
+  sessionAuthMethod?: 'social' | null;
+  bypassMandatoryMfaOnboarding: boolean;
 };
 
 const initialState: AuthReducer = {
@@ -47,19 +59,55 @@ const initialState: AuthReducer = {
   error: null,
   signUpData: null,
   sendVerificationEmailData: null,
+  verifyEmailTokenPending: false,
+  verifyEmailTokenError: null,
+  verifyEmailTokenSuccess: undefined,
   getBadgesData: null,
   getProfileData: null,
   getProfileError: null,
   isLoading: false,
+  logoutPending: false,
+  logoutCompletedAt: undefined,
+  logoutDestination: undefined,
+  sessionAuthMethod: null,
+  bypassMandatoryMfaOnboarding: false,
+};
+
+const resetLogoutState = {
+  logoutPending: false,
+  logoutCompletedAt: undefined,
+  logoutDestination: undefined,
 };
 
 const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
-    case ACTIONS.FETCH_LOGIN_DATA:
+    case ACTIONS.FETCH_LOGIN_DATA: {
+      const shouldResetSessionProfile = action.data?.resetProfile === true;
       return {
         ...state,
         userToken: action.data?.token,
+        userProfile: shouldResetSessionProfile ? null : state.userProfile,
+        userData: shouldResetSessionProfile ? null : state.userData,
+        getProfileData: shouldResetSessionProfile ? null : state.getProfileData,
+        getProfileSuccess: shouldResetSessionProfile ? undefined : state.getProfileSuccess,
+        getProfileError: shouldResetSessionProfile ? null : state.getProfileError,
+        verifyEmailTokenPending: shouldResetSessionProfile ? false : state.verifyEmailTokenPending,
+        verifyEmailTokenError: shouldResetSessionProfile ? null : state.verifyEmailTokenError,
+        verifyEmailTokenSuccess: shouldResetSessionProfile
+          ? undefined
+          : state.verifyEmailTokenSuccess,
+        sessionAuthMethod:
+          action.data && Object.prototype.hasOwnProperty.call(action.data, 'authMethod')
+            ? (action.data?.authMethod ?? null)
+            : state.sessionAuthMethod,
+        bypassMandatoryMfaOnboarding:
+          action.data &&
+          Object.prototype.hasOwnProperty.call(action.data, 'bypassMandatoryMfaOnboarding')
+            ? action.data?.bypassMandatoryMfaOnboarding === true
+            : state.bypassMandatoryMfaOnboarding,
+        ...resetLogoutState,
       };
+    }
 
     case ACTIONS.FETCH_SIGN_UP:
       return {
@@ -72,6 +120,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         otpToken: action.data.token,
+        ...resetLogoutState,
       };
 
     case ACTIONS.ERRORS: {
@@ -91,6 +140,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userProfile: action.data,
+        getProfileData: action.data,
       };
 
     case ACTIONS.UPDATE_USER:
@@ -105,23 +155,33 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case ACTIONS.LOGOUT:
       return {
         ...state,
-        userToken: '',
-        userProfile: null,
-        errors: null,
-        otpToken: '',
-        loginErrors: [],
-        userData: null,
-        getProfileData: null,
-        getProfileError: null,
-        isLoading: false,
+        logoutPending: true,
+        logoutDestination: action.data?.destination ?? 'Intro',
+      };
+
+    case ACTIONS.LOGOUT_COMPLETE:
+      return {
+        ...initialState,
+        logoutPending: false,
+        logoutCompletedAt: action.data?.completedAt ?? Date.now(),
+        logoutDestination: action.data?.destination ?? 'Intro',
+      };
+
+    case ACTIONS.CLEAR_AUTH_STATE:
+      return {
+        ...initialState,
+        ...resetLogoutState,
       };
 
     case ACTIONS.SET_USER_NOTIFICATIONS:
       return {
         ...state,
-
         userProfile: {
           ...state.userProfile,
+          ...action.data.notifications,
+        },
+        getProfileData: {
+          ...state.getProfileData,
           ...action.data.notifications,
         },
       };
@@ -139,6 +199,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         signUpSuccess: true,
         signUpData: action.payload,
         userProfile: action.payload,
+        ...resetLogoutState,
       };
     case SignUp.FAILED:
       return {
@@ -172,6 +233,35 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         ...state,
         sendVerificationEmailSuccess: false,
         error: action.payload,
+      };
+
+    case VerifyEmailToken.REQUEST:
+      return {
+        ...state,
+        verifyEmailTokenPending: true,
+        verifyEmailTokenError: null,
+        verifyEmailTokenSuccess: undefined,
+      };
+    case VerifyEmailToken.SUCCESS:
+      return {
+        ...state,
+        verifyEmailTokenPending: false,
+        verifyEmailTokenError: null,
+        verifyEmailTokenSuccess: true,
+      };
+    case VerifyEmailToken.FAILED:
+      return {
+        ...state,
+        verifyEmailTokenPending: false,
+        verifyEmailTokenError: action.payload,
+        verifyEmailTokenSuccess: false,
+      };
+    case VerifyEmailToken.RESET:
+      return {
+        ...state,
+        verifyEmailTokenPending: false,
+        verifyEmailTokenError: null,
+        verifyEmailTokenSuccess: undefined,
       };
 
     // Badges

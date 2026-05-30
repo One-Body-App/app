@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-icons';
-import { deleteUser, getAuth, signOut } from '@react-native-firebase/auth';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { useToast } from 'react-native-toast-notifications';
 import Button from '@/components/Button';
@@ -23,6 +22,7 @@ import { button } from '@/src/styles/buttons';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { logout } from '@/src/redux/actions/AuthActions';
+import { clearAuthTokens } from '@/services/authTokens';
 
 type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccount'>;
 
@@ -30,12 +30,10 @@ function RemoveAccount({ navigation }: Props) {
   const [reason, setReason] = useState<string>('');
   const [comments, setComments] = useState<string>('');
 
-  const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors } = useTheme();
   const dispatch = useDispatch();
   const toast = useToast();
-  const firebaseAuth = getAuth();
 
   const options = [
     {
@@ -52,13 +50,7 @@ function RemoveAccount({ navigation }: Props) {
     },
   ];
 
-  useEffect(() => {
-    if (loginSuccess) {
-      accountDeactivate();
-    }
-  }, [loginSuccess]);
-
-  const accountDeactivate = async () => {
+  const accountDeactivate = useCallback(async () => {
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
@@ -68,7 +60,7 @@ function RemoveAccount({ navigation }: Props) {
         verb: 'delete',
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         toast.show('Account Removed Successfully', {
           placement: 'top',
           type: 'success',
@@ -76,19 +68,25 @@ function RemoveAccount({ navigation }: Props) {
 
         dispatch(setLoader(false));
         LoginManager.logOut();
+        await clearAuthTokens();
         dispatch(logout());
-
-        if (firebaseAuth.currentUser) {
-          await deleteUser(firebaseAuth.currentUser);
-        }
-        await signOut(firebaseAuth);
       } else {
         dispatch(setLoader(false));
       }
     } catch (e) {
       console.log('saga change pasword err --- ', e);
     }
-  };
+  }, [comments, dispatch, reason, toast, token]);
+
+  const handleConfirmLoginResult = useCallback(
+    (loginSuccess: boolean) => {
+      if (!loginSuccess) {
+        return;
+      }
+      accountDeactivate();
+    },
+    [accountDeactivate]
+  );
 
   return (
     <View style={{ flex: 1, margin: spacing.x24 }}>
@@ -98,7 +96,7 @@ function RemoveAccount({ navigation }: Props) {
       >
         <ScrollView>
           <View>
-            <StyledText style={[Typography.header.h1]}>You will be missed</StyledText>
+            <StyledText style={Typography.header.h1}>You will be missed</StyledText>
             <View style={{ flexDirection: 'row' }}>
               <StyledText style={[Typography.subheader.R, { color: Colors.neutral[300] }]}>
                 We are sorry to see you go. Deleting your account will erase all of the data we have
@@ -119,44 +117,46 @@ function RemoveAccount({ navigation }: Props) {
             <View style={{ marginVertical: spacing.x24, flex: 1 }}>
               <View
                 style={{
-                  borderWidth: Platform.OS == 'ios' ? borderWidth.thin : 0,
+                  borderWidth: Platform.OS === 'ios' ? borderWidth.thin : 0,
                   borderColor: Colors.neutral[600],
                   borderRadius: borderRadius.base,
                   overflow: 'hidden',
                 }}
               >
                 {options.map((item, index) => {
+                  let leftIcon = null;
+                  if (Platform.OS === 'android') {
+                    leftIcon =
+                      reason === item.reason ? (
+                        <Icon
+                          name="radio-button-on"
+                          size={20}
+                          color={Colors.errorFeedback.background}
+                          style={{ marginRight: spacing.x10 }}
+                        />
+                      ) : (
+                        <Icon
+                          name="radio-button-off"
+                          size={20}
+                          color={Colors.neutral[200]}
+                          style={{ marginRight: spacing.x10 }}
+                        />
+                      );
+                  }
+
                   return (
                     <Button
-                      key={index}
+                      key={item.reason}
                       text={item.reason}
                       onPress={() => setReason(item.reason)}
-                      leftIcon={
-                        Platform.OS == 'android' ? (
-                          reason == item.reason ? (
-                            <Icon
-                              name="radio-button-on"
-                              size={20}
-                              color={Colors.errorFeedback.background}
-                              style={{ marginRight: spacing.x10 }}
-                            />
-                          ) : (
-                            <Icon
-                              name="radio-button-off"
-                              size={20}
-                              color={Colors.neutral[200]}
-                              style={{ marginRight: spacing.x10 }}
-                            />
-                          )
-                        ) : null
-                      }
+                      leftIcon={leftIcon}
                       rightIcon={
-                        Platform.OS == 'ios' ? (
+                        Platform.OS === 'ios' ? (
                           <Icon
                             name="check"
                             color={Colors.errorFeedback.background}
                             style={{
-                              opacity: reason == item.reason ? 1 : 0,
+                              opacity: reason === item.reason ? 1 : 0,
                             }}
                             size={20}
                           />
@@ -166,7 +166,7 @@ function RemoveAccount({ navigation }: Props) {
                         styles.btn,
                         {
                           borderBottomWidth:
-                            index < options.length - 1 && Platform.OS == 'ios'
+                            index < options.length - 1 && Platform.OS === 'ios'
                               ? borderWidth.thin
                               : 0,
                         },
@@ -174,7 +174,7 @@ function RemoveAccount({ navigation }: Props) {
                       btnTextStyle={[
                         styles.btnText,
                         {
-                          fontWeight: reason == item.reason ? 'bold' : 'normal',
+                          fontWeight: reason === item.reason ? 'bold' : 'normal',
                           color: !reason
                             ? colors.text
                             : reason == item.reason
@@ -222,10 +222,9 @@ function RemoveAccount({ navigation }: Props) {
             <Button
               text="Remove Account"
               onPress={() => {
-                setLoginSuccess(false);
                 // navigation.navigate('ConfirmLogin', {});
                 navigation.navigate('ConfirmLogin', {
-                  updateParent: setLoginSuccess,
+                  updateParent: handleConfirmLoginResult,
                 });
               }}
               wrapperViewBtnStyle={{ marginTop: spacing.x32 }}
@@ -245,12 +244,10 @@ function RemoveAccount({ navigation }: Props) {
                 navigation.goBack();
               }}
               wrapperViewBtnStyle={{ marginTop: spacing.x10 }}
-              btnStyle={[
-                {
-                  flex: 1,
-                  padding: Spacing.spacing.x10,
-                },
-              ]}
+              btnStyle={{
+                flex: 1,
+                padding: Spacing.spacing.x10,
+              }}
             />
           </View>
         </ScrollView>

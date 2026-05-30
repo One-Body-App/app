@@ -1,17 +1,15 @@
 import { Edit, Setting2, ProfileAdd, Star1, UserRemove, LogoutCurve } from 'iconsax-react-native';
 import React, { useState } from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
-import FastImage from 'react-native-fast-image';
-import { LoginManager } from 'react-native-fbsdk-next';
+import { View, Pressable, ScrollView } from 'react-native';
 import Rate, { AndroidMarket } from 'react-native-rate';
 import Feather from '@react-native-vector-icons/feather';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import AntDesignIcon from '@react-native-vector-icons/ant-design';
 import { useDispatch } from 'react-redux';
-import { getAuth, signOut } from '@react-native-firebase/auth';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import FastImage from '@/components/primitives/FastImage';
 import { MainDrawerParamsList, MyProfileStackParamsList } from '@/src/navigator/types';
 import { User } from '@/utils/types';
 import { spacing } from '@/src/styles/spacing';
@@ -32,7 +30,7 @@ const options = {
   preferredAndroidMarket: AndroidMarket.Google,
   preferInApp: true,
   openAppStoreIfInAppFails: true,
-  fallbackPlatformURL: 'http://www.onebodyapp.com',
+  fallbackPlatformURL: 'https://www.onebodyapp.com',
 };
 
 type Props = {
@@ -46,11 +44,11 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
   const { colors } = useTheme();
   const navigation = useNavigation<
     | CompositeNavigationProp<
-        StackNavigationProp<MyProfileStackParamsList, 'MyProfile'>,
+        NativeStackNavigationProp<MyProfileStackParamsList, 'MyProfile'>,
         DrawerNavigationProp<MainDrawerParamsList, 'Main'>
       >
     | CompositeNavigationProp<
-        StackNavigationProp<MyProfileStackParamsList, 'EditProfile'>,
+        NativeStackNavigationProp<MyProfileStackParamsList, 'EditProfile'>,
         DrawerNavigationProp<MainDrawerParamsList, 'Main'>
       >
   >();
@@ -77,14 +75,14 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
           backgroundColor: colors.background,
         }}
       >
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
             setShowModal(false);
           }}
           style={{ alignSelf: 'flex-end' }}
         >
           <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
-        </TouchableOpacity>
+        </Pressable>
         <View
           style={{
             paddingHorizontal: spacing.x16,
@@ -102,10 +100,12 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
         >
           <FastImage
             resizeMode="contain"
-            style={[
-              profileImageList,
-              { height: 40, width: 40, marginBottom: 0, alignSelf: 'flex-start' },
-            ]}
+            style={
+              [
+                profileImageList,
+                { height: 40, width: 40, marginBottom: 0, alignSelf: 'flex-start' },
+              ] as any
+            }
             source={{ uri: userData?.profileImage || NO_PROFILE_IMAGE }}
           />
 
@@ -196,7 +196,9 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
               />
             }
             onPress={() => {
-              OpenURLButton('https://usersuccess.onebodyapp.com/portal/en/kb/one-body-inc');
+              OpenURLButton(
+                'https://app.termly.io/policy-viewer/policy.html?policyUUID=84dd2dd3-ee3f-48f4-a92c-24b637820776'
+              );
             }}
             btnStyle={{ marginBottom: spacing.x32 }}
           />
@@ -248,10 +250,8 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
           />
           <Button
             text="Log out"
-            onPress={async () => {
-              LoginManager.logOut();
+            onPress={() => {
               dispatch(logout());
-              await signOut(getAuth());
             }}
             btnStyle={{ marginBottom: spacing.x32 }}
             leftIcon={

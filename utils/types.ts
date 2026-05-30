@@ -12,6 +12,13 @@ export type Interest = {
   deleteFlag: boolean;
   _id: string;
 };
+export type OrganizationType = {
+  _id: string;
+  organizationType: string;
+  name?: string;
+  category?: string;
+};
+export type OrganizationSize = 'small' | 'medium' | 'large' | 'mega';
 export type Tag = {
   _id: string;
   deleteFlag: boolean;
@@ -26,6 +33,12 @@ export type Badge = {
   deleteFlag: boolean;
   title: string;
   badge: string;
+};
+
+export type TaggedMention = {
+  userId: string;
+  username: string;
+  displayName: string;
 };
 
 type Coordinates = {
@@ -49,6 +62,8 @@ export type TGender = 'Male' | 'Female';
 type Profile = {
   churchType?: string;
   churchSubType?: string;
+  organizationCategory?: string;
+  organizationSubType?: string;
   oftenChurch?: string;
   dateOfBirth: string;
   gender: TGender;
@@ -57,8 +72,9 @@ type Profile = {
   contactName?: string;
   contactEmail?: string;
   contactPhoneNumber?: string;
+  organizationSize?: OrganizationSize;
   whatIDo?: Tag;
-  typeOfOrganization?: Tag;
+  typeOfOrganization?: OrganizationType;
   isLocationPublic?: boolean;
   isChurchTypePublic?: boolean;
 };
@@ -83,9 +99,13 @@ export type SavedPost = {
 
 export type User = {
   badges: string[];
+  allowDirectMessages?: boolean;
+  allowTagging?: boolean;
   createdAt: string;
   deactivated: { isDeactivated: boolean };
   email: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
   interests: Interest[];
   isInfluencer: boolean;
   isProfileCompleted: boolean;
@@ -93,9 +113,11 @@ export type User = {
   profileImage?: string;
   profileHeader?: string;
   accountType: AccountType;
+  role?: string;
   updatedAt: string;
   username: string;
   bio?: string;
+  watchCount?: number;
   website: string;
 
   _id: string;
@@ -110,24 +132,24 @@ export type User = {
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
   subscribedToNewsletter: boolean;
+  tagNotificationsEnabled?: boolean;
+  isProfilePublic?: boolean;
+  mfaConfig?: {
+    isMfaActive?: boolean;
+    defaultMethod?: 'passkey' | 'totp' | 'email' | 'backup';
+  };
   influencerProfile?: InfluencerProfile;
   profile: Profile;
   savedPrayers?: string[];
   savedPost?: SavedPost[];
   savedPostData?: SocialPost[];
   whatIDo?: Tag;
-  typeOfOrganization?: Tag;
+  typeOfOrganization?: OrganizationType;
 };
 
 type InfluencerProfile = {
   _id: string;
   userID?: string;
-  twitterId?: string;
-  twitterHandler?: string;
-
-  twitterTokenExpirationReal?: number;
-  twitterTokenExpiration?: number;
-
   instagramId?: string;
   instagramHandler?: string;
   instagramTokenExpirationReal?: number;
@@ -135,7 +157,7 @@ type InfluencerProfile = {
   rssUrl: string;
   category: string[];
   comments: string;
-  influencerStatus: 'approved' | 'pending';
+  influencerStatus: 'approved' | 'pending' | 'rejected' | 'coaching';
   createdAt: string;
   updatedAt: string;
 };
@@ -146,8 +168,10 @@ export type ArticleType = {
   created: Date;
   image?: { url: string };
   title: string | { a: any };
+  description?: string;
   comments?: CommentPost[];
   commentNumber?: number;
+  repostCount?: number;
   userData: {
     _id: string;
     name: string;
@@ -157,7 +181,6 @@ export type ArticleType = {
 
     website?: string;
     instagramHandler?: string;
-    twitterHandler?: string;
     isApprovedInfluencer?: boolean;
     interests?: Interest[];
   };
@@ -170,8 +193,14 @@ export enum AccountType {
 }
 
 export enum SocialPostReactionType {
+  like = 'like',
   love = 'love',
   praying = 'praying',
+  praise = 'praise',
+  haha = 'haha',
+  wow = 'wow',
+  sad = 'sad',
+  angry = 'angry',
   happy = 'happy',
 }
 
@@ -189,6 +218,33 @@ export type SocialPostReaction = {
   userId: string;
   createdAt?: Date;
   updatedAt?: Date;
+};
+
+export type ReactionDetailsTab =
+  | 'all'
+  | 'like'
+  | 'love'
+  | 'praying'
+  | 'praise'
+  | 'haha'
+  | 'wow'
+  | 'sad'
+  | 'angry';
+
+export type ReactionDetailsUser = {
+  userId: string;
+  name: string;
+  username: string;
+  profileImage?: string;
+  reactionType: Exclude<ReactionDetailsTab, 'all'>;
+  isConnected: boolean;
+};
+
+export type ReactionDetailsResponse = {
+  totals: Record<ReactionDetailsTab, number>;
+  tab: ReactionDetailsTab;
+  items: ReactionDetailsUser[];
+  hasMore: boolean;
 };
 
 export interface ResponseGenerator {
@@ -218,14 +274,17 @@ export interface SocialPost {
   _id?: string;
   postId?: string;
   content: string;
+  mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   date: string;
-  source: 'twitter' | 'instagram';
+  source: 'instagram';
   handler: string;
   link: string;
   title: string;
   mediaUrl?: string;
   comments?: CommentPost[];
   commentNumber?: number;
+  repostCount?: number;
   attachments?: [
     {
       media_key: string;
@@ -238,6 +297,12 @@ export interface SocialPost {
     },
   ];
   mediaType?: string;
+  aspect_ratio?: string;
+  aspectRatio?: number;
+  videoWidth?: number;
+  videoHeight?: number;
+  duration?: string;
+  durationMs?: number;
   permalink?: string;
   userData: {
     _id: string;
@@ -245,7 +310,6 @@ export interface SocialPost {
     username: string;
     accountType: AccountType;
     profileImage: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
     interests?: Interest[];
@@ -264,13 +328,48 @@ export interface SocialPost {
   };
   locationName?: string;
   edited?: boolean;
+  repost?: {
+    sourceType: 'social' | 'prayer' | 'rss' | 'comment';
+    sourceId: string;
+    sourceCommentId?: string;
+    sourceObjectType?: 'social' | 'prayer' | 'rss' | 'watch';
+    sourceObjectId?: string;
+    sourceAuthorId?: string;
+    sourceAuthorName?: string;
+    sourceAuthorUsername?: string;
+    sourceAuthorProfileImage?: string;
+    sourceCreatedAt?: string;
+    sourceTitle?: string;
+    sourceDescription?: string;
+    sourceContent?: string;
+    sourceContentSnippet?: string;
+    sourceLink?: string;
+    sourceImage?: string;
+    sourceImages?: string[];
+    sourceVideos?: string[];
+    sourceGif?: GiphyMedia;
+    sourceCategory?: string;
+    sourceMediaUrl?: string;
+    sourceMediaType?: string;
+    sourceTags?: string[];
+    repostType: 'repost' | 'quote';
+    createdFromIndexId?: string;
+  };
 }
 
 export interface WatchPost {
   _id?: string;
   playBackId?: string;
   postId?: string;
+  aspect_ratio?: string;
+  aspectRatio?: number;
+  videoWidth?: number;
+  videoHeight?: number;
+  duration?: string;
+  durationMs?: number;
   content: string;
+  mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   date: string;
   handler: string;
   link: string;
@@ -286,7 +385,6 @@ export interface WatchPost {
     username: string;
     accountType: AccountType;
     profileImage: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
   };
@@ -315,6 +413,8 @@ export enum PrayerWallCategory {
 export interface PrayerPost {
   postId?: string;
   content: string;
+  mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   date: string;
   private: boolean;
   category: PrayerWallCategory;
@@ -324,7 +424,6 @@ export interface PrayerPost {
     username?: string;
     accountType?: AccountType;
     profileImage?: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
   };
@@ -341,6 +440,7 @@ export interface PrayerPost {
   id: string;
   comments: CommentPost[];
   commentNumber: number;
+  repostCount?: number;
 
   reactions: SocialPostReaction[];
   location?: {
@@ -352,30 +452,38 @@ export interface PrayerPost {
 }
 
 export interface PostUserData {
-  twitterHandler?: string;
   instagramHandler?: string;
   name: string;
   username?: string;
   _id?: string;
   accountType?: AccountType;
   profileImage?: string;
+  profile_image?: string;
+  avatar?: string;
   profileIcon?: ReactElement;
+  isLocationPublic?: boolean;
+  profile?: {
+    isLocationPublic?: boolean;
+    location?: Location;
+  };
 }
 
 export interface CommentPost {
+  _id: string | undefined;
   commentId?: string;
   dateSeconds: number;
   date: string;
   objectId: string;
   objectType: string;
   content: string;
+  mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
   userData: {
     _id?: string;
     name: string;
     username?: string;
     accountType?: AccountType;
     profileImage?: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
   };
@@ -387,6 +495,39 @@ export interface CommentPost {
   updated: Date;
 
   reactions?: SocialPostReaction[];
+  repostCount?: number;
+  bookmarkCount?: number;
+  bookmarkedByMe?: boolean;
   response?: CommentPost[];
   edited?: boolean;
+}
+
+export interface SerializableCommentSnapshot {
+  _id?: string;
+  commentId?: string;
+  dateSeconds?: number;
+  date?: string;
+  objectId?: string;
+  objectType?: string;
+  content?: string;
+  mentionedUserIds?: string[];
+  mentions?: TaggedMention[];
+  userData?: {
+    _id?: string;
+    name?: string;
+    username?: string;
+    accountType?: AccountType;
+    profileImage?: string;
+    instagramHandler?: string;
+    isApprovedInfluencer?: boolean;
+  };
+  images?: string[];
+  reactions?: SocialPostReaction[];
+  repostCount?: number;
+  bookmarkCount?: number;
+  bookmarkedByMe?: boolean;
+  created?: string;
+  updated?: string;
+  edited?: boolean;
+  response?: SerializableCommentSnapshot[];
 }

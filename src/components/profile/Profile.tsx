@@ -1,142 +1,118 @@
-import { StyleSheet, Platform, FlatList } from 'react-native';
-import { MaterialTabBar, TabBarProps, Tabs } from 'react-native-collapsible-tab-view';
-import { createRef, useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { Colors } from '../../styles';
-import { borderWidth } from '../../styles/outlines';
-import { spacing } from '../../styles/spacing';
+import { useProfileAvatarAnimation } from './useProfileAvatarAnimation';
+import ProfileAvatarOverlay from './ProfileAvatarOverlay';
 
-import { AccountType, Badge, RefreshListRef, User } from '@/utils/types';
-import BlogFlatlist from '../BlogFlatlist';
+import { Colors } from '@/src/styles';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import StyledText from '@/components/styled/Text';
 import SocialFlatlist from '../SocialFlatlist';
-
+import BlogFlatlist from '../BlogFlatlist';
+import WatchFlatlist from '../WatchFlatlist';
 import ProfileHeader from './ProfileHeader';
-import PrayerWallMyPrayersComponent from '../prayerWallMyPrayersComponent';
+import { ProfileProps, ProfileVariant } from './profileTypes';
+import { getVisibleProfileTabs, ProfileTabKey } from './profileUtils';
+import { useAvatarOverlayEligibility } from './avatarOverlayEligibility';
+import {
+  getRecentCompletedWatchUploadsSnapshot,
+  subscribeRecentCompletedWatchUploads,
+} from '@/src/services/recentCompletedWatchUploads';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Route = {
-  key: string;
-  title: string;
+const TAB_LABELS: Record<ProfileTabKey, string> = {
+  post: 'Post',
+  social: 'Social',
+  blog: 'Blog',
+  watch: 'Watch',
 };
 
-export interface ProfileProps {
-  profileData: User;
-  currentUser: User;
-  relatedUsers?: User[];
-  handleSubscribe?: Function;
-  handleUnSubscribe?: Function;
-  refreshContent?: boolean;
-  setRefreshContent?: Function;
+type ProfileTabBarProps = {
+  activeTab: ProfileTabKey;
+  visibleTabs: ProfileTabKey[];
+  onTabPress: (tab: ProfileTabKey) => void;
+  variant: ProfileVariant;
+};
+
+function ProfileTabBar({ activeTab, onTabPress, visibleTabs, variant }: ProfileTabBarProps) {
+  const { dark, colors } = useTheme();
+  const isSelfVariant = variant === 'self';
+
+  return (
+    <View
+      style={[
+        styles.tabBarShell,
+        isSelfVariant ? styles.selfTabBarShell : null,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <View
+        style={[
+          styles.tabBarRow,
+          isSelfVariant
+            ? styles.selfTabBarRow
+            : {
+                backgroundColor: colors.background,
+                borderBottomColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+                borderTopColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+              },
+        ]}
+      >
+        {visibleTabs.map((tab) => {
+          const isActive = tab === activeTab;
+
+          return (
+            <Pressable
+              key={tab}
+              onPress={() => onTabPress(tab)}
+              style={[
+                styles.tabButton,
+                isSelfVariant ? styles.selfTabButton : null,
+                isActive && !isSelfVariant
+                  ? {
+                      backgroundColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+                    }
+                  : null,
+              ]}
+            >
+              {isSelfVariant ? (
+                <View style={styles.selfTabInner}>
+                  <StyledText
+                    style={[
+                      styles.tabLabel,
+                      { color: dark ? colors.text : Colors.primary.brand },
+                      isActive ? styles.activeTabLabel : null,
+                      styles.selfTabLabel,
+                    ]}
+                  >
+                    {TAB_LABELS[tab]}
+                  </StyledText>
+                  <View
+                    style={[
+                      styles.selfTabIndicator,
+                      isActive ? styles.selfTabIndicatorActive : null,
+                    ]}
+                  />
+                </View>
+              ) : (
+                <StyledText
+                  style={[
+                    styles.tabLabel,
+                    { color: dark ? colors.text : Colors.primary.brand },
+                    isActive ? styles.activeTabLabel : null,
+                  ]}
+                >
+                  {TAB_LABELS[tab]}
+                </StyledText>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
-
-// export const profileImagesize = 80;
-// export const HEADER_EXPANDED_HEIGHT = 550;
-// export const HEADER_COLLAPSED_HEIGHT = 132;
-
-// function Profile({
-//   profileData,
-//   currentUser,
-//   relatedUsers,
-//   handleSubscribe,
-//   handleUnSubscribe,
-//   refreshContent,
-//   setRefreshContent,
-// }: ProfileProps) {
-//   const socialList = createRef<RefreshListRef>();
-
-//   const onlyOneTab =
-//     profileData?.influencerProfile?.influencerStatus !== 'approved' ||
-//     !profileData?.influencerProfile?.rssUrl;
-
-//   useEffect(() => {
-//     if (refreshContent && setRefreshContent) {
-//       setRefreshContent(false);
-//       socialList.current?.setRefreshing();
-//     }
-//   }, [refreshContent]);
-
-//   const { colors } = useTheme();
-
-//   const renderTabBar = useCallback(
-//     (props: TabBarProps) => {
-//       return (
-//         <MaterialTabBar
-//           {...props}
-//           indicatorStyle={{ backgroundColor: Colors.primary.brand }}
-//           tabStyle={{ flex: 1 }}
-//           activeColor={colors.text}
-//           contentContainerStyle={{ flex: 1 }}
-//           inactiveColor={Colors.neutral[200]}
-//           scrollEnabled
-//         />
-//       );
-//     },
-//     [colors.text]
-//   );
-
-//   return (
-//     <Tabs.Container
-//       lazy
-//       renderHeader={(props) => {
-//         return (
-//           <ProfileHeader
-//             profileData={profileData}
-//             currentUser={currentUser}
-//             relatedUsers={relatedUsers}
-//             handleSubscribe={handleSubscribe}
-//             handleUnSubscribe={handleUnSubscribe}
-//             {...props}
-//           />
-//         );
-//       }}
-//       minHeaderHeight={HEADER_COLLAPSED_HEIGHT}
-//       headerContainerStyle={{
-//         backgroundColor: colors.card,
-//         shadowOffset: {
-//           width: 0,
-//           height: Platform.OS === 'ios' || onlyOneTab ? 0 : 2,
-//         },
-//         shadowOpacity: Platform.OS === 'ios' || onlyOneTab ? 0 : 0.23,
-//         shadowRadius: 2.62,
-//         borderBottomWidth: Platform.OS === 'ios' || onlyOneTab ? borderWidth.thin : 0,
-//         borderBottomColor: Platform.OS === 'ios' || onlyOneTab ? Colors.neutral[800] : undefined,
-//         // paddingBottom: onlyOneTab ? spacing.x10 : undefined,
-//       }}
-//       renderTabBar={onlyOneTab ? () => null : renderTabBar}
-//     >
-//       <Tabs.Tab name="social" label="Social">
-//         <SocialFlatlist ref={socialList} userIdToPullData={profileData._id} />
-//       </Tabs.Tab>
-
-//       {/* <Tabs.Tab name="prayers" label="Prayers">
-//         <PrayerWallMyPrayersComponent />
-//       </Tabs.Tab> */}
-
-//       {profileData?.influencerProfile?.influencerStatus === 'approved' &&
-//       profileData?.influencerProfile?.rssUrl ? (
-//         <Tabs.Tab name="blog" label="Blog/News">
-//           <BlogFlatlist userId={profileData._id} />
-//         </Tabs.Tab>
-//       ) : null}
-//     </Tabs.Container>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   bottomView: {
-//     justifyContent: 'flex-end',
-//     margin: 0,
-//   },
-
-//   content2: {
-//     // backgroundColor: 'white',
-//     alignItems: 'center',
-//     padding: 13,
-//     borderTopRightRadius: 17,
-//     borderTopLeftRadius: 17,
-//     // height: getHeight(70),
-//     flex: 1,
-//   },
-// });
 
 function Profile({
   profileData,
@@ -144,57 +120,197 @@ function Profile({
   relatedUsers,
   handleSubscribe,
   handleUnSubscribe,
-  refreshContent,
-  setRefreshContent,
+  refreshToken = 0,
+  variant = 'public',
+  avatarExpansionEnabled = true,
 }: ProfileProps) {
-  const [activeTab, setActiveTab] = useState('social');
-  const socialList = createRef<RefreshListRef>();
+  const { colors } = useTheme();
+  const avatarAnimation = useProfileAvatarAnimation();
+  const canOpenAvatarOverlay = useAvatarOverlayEligibility(
+    profileData.profileImage,
+    avatarAnimation.expandedSize
+  );
+  const [recentCompletedWatchUploadsCount, setRecentCompletedWatchUploadsCount] = useState(
+    getRecentCompletedWatchUploadsSnapshot().filter(
+      (upload) => upload.ownerUserId === currentUser._id
+    ).length
+  );
+  const visibleTabs = useMemo((): ProfileTabKey[] => {
+    const baseTabs = getVisibleProfileTabs(profileData);
+    if (variant === 'self' && recentCompletedWatchUploadsCount > 0 && !baseTabs.includes('watch')) {
+      return [...baseTabs, 'watch'];
+    }
+    return baseTabs;
+  }, [profileData, recentCompletedWatchUploadsCount, variant]);
+  const initialTab = visibleTabs[0] ?? 'post';
+  const [requestedTab, setRequestedTab] = useState<ProfileTabKey>(initialTab);
+  const activeTab = visibleTabs.includes(requestedTab) ? requestedTab : initialTab;
+
+  useMountEffect(() => {
+    if (variant !== 'self') {
+      return undefined;
+    }
+
+    return subscribeRecentCompletedWatchUploads((uploads) => {
+      setRecentCompletedWatchUploadsCount(
+        uploads.filter((upload) => upload.ownerUserId === currentUser._id).length
+      );
+    });
+  });
 
   useEffect(() => {
-    if (refreshContent && setRefreshContent) {
-      setRefreshContent(false);
-      socialList.current?.setRefreshing();
-    }
-  }, [refreshContent]);
+    avatarAnimation.reset();
 
-  if (activeTab == 'social') {
+    return () => {
+      avatarAnimation.reset();
+    };
+  }, [avatarAnimation, profileData._id, profileData.profileImage]);
+
+  const showAvatarAnimation = variant !== 'self' && avatarExpansionEnabled && canOpenAvatarOverlay;
+
+  const headerContent = (
+    <>
+      <ProfileHeader
+        key={`${profileData._id}-${(profileData.badgesData ?? []).map((badge) => badge._id).join(',')}`}
+        profileData={profileData}
+        currentUser={currentUser}
+        relatedUsers={relatedUsers}
+        handleSubscribe={handleSubscribe}
+        handleUnSubscribe={handleUnSubscribe}
+        variant={variant}
+        avatarAnimation={showAvatarAnimation ? avatarAnimation : undefined}
+      />
+      <ProfileTabBar
+        activeTab={activeTab}
+        onTabPress={setRequestedTab}
+        visibleTabs={visibleTabs}
+        variant={variant}
+      />
+    </>
+  );
+  const listKey = `${profileData._id}-${activeTab}-${refreshToken}`;
+
+  const overlay = showAvatarAnimation ? (
+    <ProfileAvatarOverlay imageUri={profileData.profileImage} animation={avatarAnimation} />
+  ) : null;
+
+  if (activeTab === 'social' && visibleTabs.includes('social')) {
     return (
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
+        <SocialFlatlist
+          key={listKey}
+          headerItem={headerContent}
+          userIdToPullData={profileData._id}
+          socialType="instagram"
+          emptyText="No social posts yet"
+        />
+        {overlay}
+      </View>
+    );
+  }
+
+  if (activeTab === 'blog' && visibleTabs.includes('blog')) {
+    return (
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
+        <BlogFlatlist
+          key={listKey}
+          headerItem={headerContent}
+          userId={profileData._id}
+          emptyText="No blog posts yet"
+        />
+        {overlay}
+      </View>
+    );
+  }
+
+  if (activeTab === 'watch' && visibleTabs.includes('watch')) {
+    return (
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
+        <WatchFlatlist
+          key={listKey}
+          headerItem={headerContent}
+          userId={profileData._id}
+          emptyText="No watch posts yet"
+        />
+        {overlay}
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ backgroundColor: colors.background, flex: 1 }}>
       <SocialFlatlist
-        ref={socialList}
-        headerItem={() => (
-          <ProfileHeader
-            profileData={profileData}
-            currentUser={currentUser}
-            relatedUsers={relatedUsers}
-            handleSubscribe={handleSubscribe}
-            handleUnSubscribe={handleUnSubscribe}
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-          />
-        )}
+        key={listKey}
+        headerItem={headerContent}
         userIdToPullData={profileData._id}
+        socialType="onebody"
+        emptyText="No social posts to display"
       />
-    );
-  }
-  if (activeTab == 'blog') {
-    return (
-      <BlogFlatlist
-        userId={profileData._id}
-        headerItem={() => (
-          <ProfileHeader
-            profileData={profileData}
-            currentUser={currentUser}
-            relatedUsers={relatedUsers}
-            handleSubscribe={handleSubscribe}
-            handleUnSubscribe={handleUnSubscribe}
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-          />
-        )}
-      />
-    );
-  }
-  return null;
+      {overlay}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  activeTabLabel: {
+    color: Colors.primarySapphire.brand,
+  },
+  selfTabBarRow: {
+    borderBottomColor: Colors.neutral[800],
+    borderBottomWidth: borderWidth.thin,
+    flexDirection: 'row',
+    paddingHorizontal: spacing.x20,
+  },
+  selfTabBarShell: {
+    marginBottom: spacing.x12,
+    marginTop: spacing.x4,
+  },
+  selfTabButton: {
+    borderRadius: 0,
+    paddingHorizontal: spacing.x4,
+    paddingVertical: spacing.x10,
+  },
+  selfTabIndicator: {
+    backgroundColor: 'transparent',
+    borderRadius: borderRadius.max,
+    height: 3,
+    marginTop: spacing.x8,
+    minWidth: 28,
+    width: '100%',
+  },
+  selfTabIndicatorActive: {
+    backgroundColor: Colors.primarySapphire.brand,
+  },
+  selfTabInner: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.x6,
+  },
+  selfTabLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  tabBarRow: {
+    borderBottomColor: Colors.neutral[800],
+    borderBottomWidth: borderWidth.thin,
+    borderTopColor: Colors.neutral[800],
+    borderTopWidth: borderWidth.thin,
+    flexDirection: 'row',
+    gap: spacing.x8,
+    paddingHorizontal: spacing.x16,
+    paddingVertical: spacing.x10,
+  },
+  tabBarShell: {},
+  tabButton: {
+    alignItems: 'center',
+    borderRadius: borderRadius.button,
+    flex: 1,
+    paddingHorizontal: spacing.x10,
+    paddingVertical: spacing.x10,
+  },
+  tabLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
 
 export default Profile;

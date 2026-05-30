@@ -5,16 +5,9 @@ import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 
 const shadowPosts = {
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 0,
-  },
-  shadowOpacity: 0.15,
-  shadowRadius: 5,
-  elevation: 1,
+  boxShadow: '0 0px 5px rgba(0, 0, 0, 0.3)',
 };
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   continer: {
     flex: 1,
   },
@@ -167,21 +160,14 @@ export const styles = StyleSheet.create({
     color: '#032F3C',
     fontFamily: 'OpenSans-Medium',
     marginLeft: 10,
-    padding: 10,
-    paddingBottom: 10,
+    padding: 8,
+    paddingBottom: 8,
   },
   newsimage: {
     height: getHeight(40),
     width: getWidth(65),
     marginBottom: getHeight(4),
-    shadowColor: '#0e5469',
-    shadowOffset: {
-      width: 0,
-      height: 20,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 0,
+    boxShadow: '0 20px 10px rgba(14, 84, 105, 0.1)',
   },
   newsicon: {
     alignSelf: 'flex-end',
@@ -204,8 +190,8 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2.5),
     fontFamily: 'OpenSans-Medium',
     marginLeft: getWidth(2),
-    padding: 10,
-    paddingBottom: 0,
+    padding: 12,
+    paddingBottom: 8,
     color: '#126B87',
   },
   socialpostfooter: {
@@ -214,13 +200,18 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   postView: {
-    // flex: 1,
     flexGrow: 1,
-    flexDirection: 'row',
-    borderBottomWidth: borderWidth.thick * 2,
-    padding: spacing.x10,
+    flexDirection: 'column',
+    borderBottomWidth: 0,
+    paddingHorizontal: spacing.x16,
+    paddingVertical: spacing.x16,
+    marginHorizontal: 7,
+    marginBottom: spacing.x16,
+    borderRadius: borderRadius.base,
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
+    backgroundColor: Colors.neutral[800],
+    ...shadowPosts,
   },
   socialpostview: {
     flexGrow: 1,
@@ -233,9 +224,9 @@ export const styles = StyleSheet.create({
 
     // ...shadowPosts,
     // marginBottom: 15,
-    borderBottomColor: '#E7F0F3',
-    borderBottomWidth: borderWidth.thick * 2,
-    padding: spacing.x16,
+    borderBottomColor: Colors.neutral[800],
+    borderBottomWidth: borderWidth.hairline,
+    padding: spacing.x24,
     // flex: 1,
     // marginHorizontal: 7,
   },
@@ -255,12 +246,7 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
   newspostimage: {
-    // height: getHeight(22),
-    // width: '100%',
-
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
-    paddingHorizontal: 10,
+    borderRadius: 12,
   },
   blogposttext: {
     fontSize: 20,
@@ -283,10 +269,7 @@ export const styles = StyleSheet.create({
     // height: getHeight(23),
   },
   blogpostimage: {
-    borderTopEndRadius: borderRadius.small,
-    borderTopStartRadius: borderRadius.small,
-    // marginVertical: 5,
-    // elevation: 0,
+    borderRadius: 12,
     width: '100%',
     aspectRatio: 16 / 9,
   },
@@ -390,3 +373,5 @@ export const styles = StyleSheet.create({
   //   padding: 8,
   // },
 });
+
+export default styles;

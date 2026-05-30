@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
@@ -15,7 +16,7 @@ import { ApiCall } from '@/services/api';
 import StyledSelect from '@/components/styled/Select';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchType'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingChurchType'>;
 
 function OnboardingChurchType({ navigation }: Props) {
   const { dark, colors } = useTheme();
@@ -36,22 +37,20 @@ function OnboardingChurchType({ navigation }: Props) {
       if (res?.status === 200) {
         setChurchTypes(res?.response as ChurchType[]);
       } else if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }
   }, [token]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (token) {
       getChurchTypes();
     }
-  }, [token, getChurchTypes]);
+  });
 
   const selectedChurchTypeFiltered = churchTypes.filter((item) => {
     return item._id === selectedChurchType;

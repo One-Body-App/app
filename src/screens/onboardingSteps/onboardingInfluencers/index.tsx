@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Image, TouchableOpacity, ScrollView, FlatList, RefreshControl } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { Image } from 'expo-image';
+import React, { useCallback, useRef, useState } from 'react';
+import { View, Pressable, FlatList, RefreshControl, Platform } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { serialize } from 'object-to-formdata';
 import { useTheme } from '@react-navigation/native';
-import { styles } from './styles';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, User } from '@/utils/types';
@@ -21,8 +23,21 @@ import { fontSize } from '@/src/styles/typography';
 import { orgprofileUpdate, profileUpdate } from '@/src/redux/actions/AuthActions';
 import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
+
+const influencerListInsets = { bottom: spacing.x48 };
+const influencerListAndroidPadding =
+  Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
+
+function EmptyInfluencersList() {
+  return (
+    <StyledText style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}>
+      No Search Results
+    </StyledText>
+  );
+}
 
 function OnboardingInfluencers({ route }: Props) {
   const { dark } = useTheme();
@@ -35,50 +50,60 @@ function OnboardingInfluencers({ route }: Props) {
   const toast = useToast();
   const dispatch = useDispatch();
   const [searchText, setSearchText] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
-  const [loadingMore, setLoadingMore] = useState<boolean>(true);
-  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
+  const pageRef = useRef(1);
+  const loadingMoreRef = useRef(true);
+  const isEndOfListRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      getInfluencers(page);
-      setLoadingMore(true);
-    }
-  }, [token, searchText, page]);
+  const getInfluencerId = useCallback((item?: User) => {
+    const raw = item?._id ?? item?.id ?? item?.userId;
+    return raw ? String(raw) : '';
+  }, []);
 
-  const getInfluencers = async (pageNumber: number) => {
-    try {
-      const res = await ApiCall({
-        route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
-        verb: 'get',
-        token,
-      });
+  const getInfluencerKey = useCallback(
+    (item: User, index: number) => {
+      const stable = getInfluencerId(item) || item?.username || item?.email;
+      return `${stable || 'influencer'}-${index}`;
+    },
+    [getInfluencerId]
+  );
 
-      if (res?.status == 200) {
-        let userData = [];
+  const getInfluencers = useCallback(
+    async (pageNumber: number, term: string = searchText) => {
+      loadingMoreRef.current = true;
+      try {
+        const res = await ApiCall({
+          route: `user/get-users-to-subscribe/${pageNumber}?term=${term}&itemsPerPage=12`,
+          verb: 'get',
+          token,
+        });
 
-        if (pageNumber == 1) {
-          userData = res?.response.data ?? [];
-          setIsEndOfList(false);
-        } else {
-          userData = [...influencers, ...(res?.response.data ?? [])];
-          if (res?.response.data.length < 1) {
-            setIsEndOfList(true);
+        if (res?.status === 200) {
+          const responseData: User[] = Array.isArray(res?.response?.data) ? res.response.data : [];
+
+          if (pageNumber === 1) {
+            setInfluencers(responseData);
+            isEndOfListRef.current = false;
+          } else {
+            if (responseData.length < 1) {
+              isEndOfListRef.current = true;
+            }
+            setInfluencers((prev) => [...prev, ...responseData]);
           }
+        } else if (__DEV__) {
+          console.log('error', res?.response);
         }
-
-        setInfluencers(userData);
-      } else {
-        console.log('error', res?.response);
+        loadingMoreRef.current = false;
+        setIsRefreshing(false);
+      } catch (e: any) {
+        if (__DEV__) {
+          console.log('saga error -- ', e.toString());
+        }
+        loadingMoreRef.current = false;
       }
-      setLoadingMore(false);
-      setIsRefreshing(false);
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-      setLoadingMore(false);
-    }
-  };
+    },
+    [searchText, token]
+  );
 
   const addFollowing = async () => {
     try {
@@ -89,74 +114,203 @@ function OnboardingInfluencers({ route }: Props) {
         verb: 'patch',
       });
 
-      if (res?.status != 200) {
+      if (res?.status !== 200) {
         // getInfluencers();
         // dispatch(setLoader(false));
 
         // next();
         // } else {
         dispatch(setLoader(false));
-        console.log('error', res);
+        if (__DEV__) {
+          console.log('error', res);
+        }
       }
     } catch (e: any) {
       toast.show('There was an error please try again', {
         type: 'danger',
       });
-      console.log('saga error -- ', e.toString());
+      if (__DEV__) {
+        console.log('saga error -- ', e.toString());
+      }
     }
   };
 
+  useMountEffect(() => {
+    if (token) {
+      getInfluencers(1);
+    }
+  });
+
+  const renderInfluencerItem = useCallback(
+    ({ item }: { item: User }) => {
+      const influencerId = getInfluencerId(item);
+      const isSelected = influencerId ? selectedInfluencers.includes(influencerId) : false;
+
+      return (
+        <Pressable
+          onPress={() => {
+            if (!influencerId) return;
+            if (selectedInfluencers.includes(influencerId)) {
+              setselectedInfluencers(
+                selectedInfluencers.filter((organizationId) => {
+                  return organizationId !== influencerId;
+                })
+              );
+            } else {
+              setselectedInfluencers([...selectedInfluencers, influencerId]);
+            }
+          }}
+          style={{
+            width: '33%',
+            alignItems: 'center',
+          }}
+        >
+          <Image
+            style={
+              isSelected
+                ? {
+                    ...profileImageList,
+                    borderWidth: 2.5,
+                    borderColor: '#12d2d9',
+                  }
+                : profileImageList
+            }
+            resizeMode="contain"
+            source={{
+              uri:
+                item?.profileImage && item?.profileImage !== ''
+                  ? item?.profileImage
+                  : 'https://cdn.onebodyapp.com/user/no-image.png',
+            }}
+          />
+
+          <View style={{ marginBottom: spacing.x24 }}>
+            <StyledText
+              style={{
+                textAlign: 'center',
+                color: isSelected ? '#12d2d9' : Colors.neutral.brand,
+              }}
+              numberOfLines={2}
+            >
+              {item?.name}
+            </StyledText>
+            <StyledText
+              numberOfLines={1}
+              style={{
+                color: isSelected ? '#12d2d9' : Colors.neutral[300],
+                alignSelf: 'center',
+                ...fontSize.x1,
+              }}
+            >
+              {item?.profile?.whatIDo?.name ??
+                item?.profile?.typeOfOrganization?.organizationType ??
+                item?.profile?.typeOfOrganization?.name}
+            </StyledText>
+          </View>
+        </Pressable>
+      );
+    },
+    [getInfluencerId, selectedInfluencers]
+  );
+
+  const showErrorToast = useCallback(
+    (message: string) => {
+      toast.show(message, {
+        type: 'danger',
+      });
+    },
+    [toast]
+  );
+
   return (
     <OnboardingStepsLayout
-      buttonText="Done"
+      buttonText={selectedInfluencers.length > 0 ? 'Next' : 'Skip'}
       dontUseScrollView
       onPress={async () => {
+        ReactNativeHapticFeedback.trigger('impactMedium', {
+          enableVibrateFallback: true,
+          ignoreAndroidSystemSettings: false,
+        });
+
+        if (!token) {
+          showErrorToast('Your session expired. Please sign in again.');
+          return;
+        }
+
         if (selectedInfluencers.length > 0) {
           await addFollowing();
+        }
 
-          if (route.params.profileType == AccountType.individual) {
-            const data: Record<string, any> = {
-              churchType: route.params.selectedChurchType,
-              churchSubType: route.params.selectedChurchSubType,
-              oftenChurch: route.params.selectedChurchAttendence,
-              dateOfBirth: route.params.dateOfBirth,
+        if (route.params.profileType === AccountType.individual) {
+          const data: Record<string, any> = {
+            dateOfBirth: route.params.dateOfBirth,
+            markProfileCompleted: true,
+          };
+
+          if (route.params.longitude && route.params.latitude && route.params.address) {
+            data.location = {
+              longitude: route.params.longitude,
+              latitude: route.params.latitude,
+              address: route.params.address,
             };
-
-            if (route.params.longitude && route.params.latitude && route.params.address) {
-              data.location = {
-                longitude: route.params.longitude,
-                latitude: route.params.latitude,
-                address: route.params.address,
-              };
-            }
-            dispatch(
-              profileUpdate({
-                data: serialize(data),
-                token,
-                accountType: route.params.profileType,
-              })
-            );
-          } else {
-            const data = {
-              typeOfOrganization: route.params.selectedOrganizationType,
-              contactEmail: route.params.organizationContactEmail,
-              companyName: route.params.organizationName,
-              contactName: route.params.organizationContactName,
-              contactPhoneNumber: route.params.organizationContactPhoneNumber,
-              location: {
-                longitude: route.params.longitude,
-                latitude: route.params.latitude,
-                address: route.params.address,
-              },
-            };
-
-            dispatch(orgprofileUpdate({ data, token }));
           }
+          dispatch(
+            profileUpdate({
+              data: serialize(data),
+              token,
+              accountType: route.params.profileType,
+            })
+          );
+        } else {
+          let missingOrgMessage: string | null = null;
+
+          if (!route.params.selectedOrganizationCategory) {
+            missingOrgMessage = 'Organization category is required';
+          } else if (!route.params.selectedOrganizationType) {
+            missingOrgMessage = 'Organization type is required';
+          } else if (!route.params.selectedOrganizationSubType) {
+            missingOrgMessage = 'Organization subtype is required';
+          } else if (!route.params.organizationName) {
+            missingOrgMessage = 'Organization name is required';
+          } else if (!route.params.organizationContactName) {
+            missingOrgMessage = 'Organization contact name is required';
+          } else if (!route.params.organizationContactEmail) {
+            missingOrgMessage = 'Organization contact email is required';
+          } else if (
+            route.params.longitude == null ||
+            route.params.latitude == null ||
+            !route.params.address
+          ) {
+            missingOrgMessage = 'Organization location is required';
+          }
+
+          if (missingOrgMessage) {
+            showErrorToast(missingOrgMessage);
+            return;
+          }
+
+          const data: Record<string, any> = {
+            organizationCategory: route.params.selectedOrganizationCategory,
+            organizationSubType: route.params.selectedOrganizationSubType,
+            typeOfOrganization: route.params.selectedOrganizationType,
+            contactEmail: route.params.organizationContactEmail,
+            companyName: route.params.organizationName,
+            contactName: route.params.organizationContactName,
+            contactPhoneNumber: route.params.organizationContactPhoneNumber,
+            markProfileCompleted: true,
+            location: {
+              longitude: route.params.longitude,
+              latitude: route.params.latitude,
+              address: route.params.address,
+            },
+          };
+
+          dispatch(orgprofileUpdate({ data, token }));
         }
       }}
       onboardingType={route.params.profileType}
-      activeStep={route.params.profileType == AccountType.individual ? 4 : 5}
-      disabled={selectedInfluencers.length == 0 || isLoading}
+      activeStep={4}
+      disabled={isLoading}
       loading={isLoading}
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
@@ -167,7 +321,7 @@ function OnboardingInfluencers({ route }: Props) {
               { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
             ]}
           >
-            Select Influencers & Organizations to connect to
+            Select Ministries and Creators to connect with
           </StyledText>
         </View>
 
@@ -177,7 +331,8 @@ function OnboardingInfluencers({ route }: Props) {
               clearButtonMode="always"
               onChangeText={(text) => {
                 setSearchText(text);
-                setPage(1);
+                pageRef.current = 1;
+                getInfluencers(1, text);
               }}
               value={searchText}
               leftIcon={
@@ -207,103 +362,42 @@ function OnboardingInfluencers({ route }: Props) {
                   refreshing={isRefreshing}
                   onRefresh={() => {
                     setIsRefreshing(true);
+                    pageRef.current = 1;
                     // setSearchChannelsToFollow([]);
                     // dispatch(getuserAll({ token: token }));
                     getInfluencers(1);
                   }}
                 />
               }
-              keyExtractor={(item) => {
-                return item.id || item._id;
+              keyExtractor={(item, index) => {
+                return getInfluencerKey(item, index);
               }}
               onEndReached={() => {
-                if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
+                if (!loadingMoreRef.current && !isRefreshing && !isEndOfListRef.current) {
+                  const nextPage = pageRef.current + 1;
+                  pageRef.current = nextPage;
+                  getInfluencers(nextPage);
+                }
               }}
               onEndReachedThreshold={0.8}
               contentContainerStyle={{
                 marginTop: spacing.x24,
-                paddingBottom: spacing.x48,
+                ...influencerListAndroidPadding,
                 // flexDirection: influencers.length < 1 ? 'column' : 'row',
                 // flexWrap: influencers.length < 1 ? 'nowrap' : 'wrap',
               }}
+              contentInset={influencerListInsets}
+              scrollIndicatorInsets={influencerListInsets}
               numColumns={3}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    if (item.id) {
-                      if (selectedInfluencers.includes(item.id)) {
-                        setselectedInfluencers(
-                          selectedInfluencers.filter((organizationId) => {
-                            return organizationId !== item.id;
-                          })
-                        );
-                      } else {
-                        setselectedInfluencers([...selectedInfluencers, item.id]);
-                      }
-                    }
-                  }}
-                  style={{
-                    width: '33%',
-
-                    alignItems: 'center',
-                  }}
-                >
-                  <Image
-                    style={
-                      item.id && selectedInfluencers.includes(item.id)
-                        ? {
-                            ...profileImageList,
-                            borderWidth: 2.5,
-                            borderColor: Colors.infoFeedback[200],
-                          }
-                        : profileImageList
-                    }
-                    resizeMode="contain"
-                    source={{
-                      uri:
-                        item?.profileImage && item?.profileImage != ''
-                          ? item?.profileImage
-                          : 'https://cdn.onebodyapp.com/user/no-image.png',
-                    }}
-                  />
-
-                  <View style={{ marginBottom: spacing.x24 }}>
-                    <StyledText
-                      style={{
-                        textAlign: 'center',
-                        color:
-                          item.id && selectedInfluencers.includes(item.id)
-                            ? Colors.infoFeedback[200]
-                            : Colors.neutral.brand,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {item?.name}
-                    </StyledText>
-                    <StyledText
-                      numberOfLines={1}
-                      style={{
-                        color:
-                          item.id && selectedInfluencers.includes(item.id)
-                            ? Colors.infoFeedback[400]
-                            : Colors.neutral[300],
-                        alignSelf: 'center',
-                        ...fontSize.x1,
-                      }}
-                    >
-                      {item?.profile?.whatIDo?.name ?? item?.profile?.typeOfOrganization?.name}
-                    </StyledText>
-                  </View>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={() => (
-                <StyledText
-                  style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}
-                >
-                  No Search Results
-                </StyledText>
-              )}
+              renderItem={renderInfluencerItem}
+              ListEmptyComponent={EmptyInfluencersList}
+              removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+              initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+              maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+              updateCellsBatchingPeriod={
+                STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+              }
+              windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
             />
           </View>
         </View>

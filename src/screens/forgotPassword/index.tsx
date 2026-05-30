@@ -2,10 +2,10 @@ import React from 'react';
 import { Linking, ScrollView, useColorScheme, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import GeneralStyle from '../../constants/GeneralStyle';
 import { ApiCall } from '@/src/services/api';
+import GeneralStyle from '../../constants/GeneralStyle';
 import Button from '@/components/Button';
 
 import { MainStackParamList } from '@/src/navigator/types';
@@ -17,9 +17,9 @@ import { borderRadius } from '@/src/styles/outlines';
 import StyledTextInput from '@/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
-type Props = StackScreenProps<MainStackParamList, 'ForgotPassword'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'ForgotPassword'>;
 
-function ForgotPassword({ navigation }: Props) {
+function ForgotPassword({ route }: Props) {
   const [email, setEmail] = React.useState<string>('');
   const [emailError, setEmailError] = React.useState<boolean>();
   const [error, seterror] = React.useState<string>('');
@@ -36,29 +36,37 @@ function ForgotPassword({ navigation }: Props) {
     return false;
   };
   const dispatch = useDispatch();
+
+  React.useEffect(() => {
+    const prefill = route?.params?.email;
+    if (prefill && !email) {
+      setEmail(prefill);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route?.params?.email]);
+
   const forget = async () => {
     if (!emailvalidate(email) && email != null) {
       setEmailError(false);
       seterror('');
       dispatch(setLoader(true));
       try {
-        const res = await ApiCall({
+        await ApiCall({
           route: 'auth/forgot-password',
-          params: { email },
           verb: 'patch',
+          params: { email: email.trim().toLowerCase() },
         });
-        if (res?.status == 200) {
-          setEmail('');
-          dispatch(setLoader(false));
-          setShowSuccess(true);
-        } else {
-          dispatch(setLoader(false));
-          seterror(res.response?.message);
-        }
+        setEmail('');
+        dispatch(setLoader(false));
+        setShowSuccess(true);
       } catch (e: any) {
         dispatch(setLoader(false));
-
-        console.log('saga error -- ', e.toString());
+        const message =
+          e?.errors?.[0]?.longMessage ??
+          e?.errors?.[0]?.message ??
+          e?.message ??
+          'Unable to send reset instructions.';
+        seterror(message);
       }
     } else {
       setEmailError(true);
@@ -71,7 +79,7 @@ function ForgotPassword({ navigation }: Props) {
       <ScrollView style={{ flexGrow: 1 }}>
         <View style={{ marginHorizontal: spacing.x16 }}>
           <View style={{ marginVertical: spacing.x16 }}>
-            <StyledText style={[Typography.header.h1]}>Forgot your password?</StyledText>
+            <StyledText style={Typography.header.h1}>Forgot your password?</StyledText>
 
             <StyledText
               style={[

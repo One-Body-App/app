@@ -1,113 +1,129 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-  Keyboard,
-  Platform,
-} from 'react-native';
-import { Avatar, Provider } from 'react-native-paper';
-import DropDown from 'react-native-paper-dropdown';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Text, View, FlatList, Pressable, ListRenderItem, StyleSheet } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import AntDesign from '@react-native-vector-icons/ant-design';
-import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
 import { useSelector } from 'react-redux';
 import RenderHtml from 'react-native-render-html';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/components/Header';
-import Button from '@/components/Button';
 import { styles } from './styles';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import { Colors } from '@/src/styles';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 // import ZendeskChat from 'react-native-zendesk-chat';
 
-function Faqs({ navigation }) {
-  const faqs = useSelector((state) => state.general.faqs);
-  const [selectedIndex, setSelectedIndex] = useState(null);
+type FaqItem = {
+  name?: string;
+  body?: string;
+};
+
+const faqRowStyles = StyleSheet.create({
+  list: {
+    height: getHeight(10),
+    alignSelf: 'center',
+  },
+  separator: {
+    height: getHeight(1.5),
+  },
+  row: {
+    width: getWidth(96),
+    borderBottomWidth: 0.45,
+    borderBottomColor: '#70747D',
+    borderRadius: 10,
+  },
+  rowButton: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: getHeight(5),
+    flexDirection: 'row',
+    marginHorizontal: 10,
+  },
+  rowTitle: {
+    color: ' #032F3C',
+    fontFamily: 'OpenSans-Regular',
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  answer: {
+    marginHorizontal: 10,
+    padding: 10,
+  },
+});
+
+function FaqSeparator() {
+  return <View style={faqRowStyles.separator} />;
+}
+
+type FaqRowProps = {
+  item: FaqItem;
+  index: number;
+  selected: boolean;
+  onToggle: (index: number) => void;
+};
+
+const FaqRow = React.memo(function FaqRow({ item, index, selected, onToggle }: FaqRowProps) {
+  const handlePress = useCallback(() => {
+    onToggle(index);
+  }, [index, onToggle]);
+  const htmlSource = useMemo(() => ({ html: item?.body ?? '' }), [item?.body]);
+
+  return (
+    <View style={faqRowStyles.row}>
+      <Pressable onPress={handlePress} style={faqRowStyles.rowButton}>
+        <Text style={faqRowStyles.rowTitle}>{item?.name}</Text>
+        {selected ? (
+          <AntDesign name="up" color={Colors.primarySapphire[500]} size={15} />
+        ) : (
+          <AntDesign name="down" color={Colors.primarySapphire[500]} size={15} />
+        )}
+      </Pressable>
+      {selected ? (
+        <View style={faqRowStyles.answer}>
+          <RenderHtml source={htmlSource} />
+        </View>
+      ) : null}
+    </View>
+  );
+});
+
+function Faqs({ navigation }: { navigation: any }) {
+  const faqs = useSelector((state: RootState) => state.general.faqs) as FaqItem[];
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const handleToggleFaq = useCallback((index: number) => {
+    setSelectedIndex((currentIndex) => (currentIndex === index ? null : index));
+  }, []);
+  const renderFaqItem: ListRenderItem<FaqItem> = useCallback(
+    ({ item, index }) => (
+      <FaqRow
+        item={item}
+        index={index}
+        selected={selectedIndex === index}
+        onToggle={handleToggleFaq}
+      />
+    ),
+    [handleToggleFaq, selectedIndex]
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent
-      />
-
       <Header
         title="FAQs"
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={20} />
-          </TouchableOpacity>
+          </Pressable>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>
-        <FlatList
+        <FlatList<FaqItem>
           data={faqs}
-          style={{ height: getHeight(10), alignSelf: 'center' }}
+          style={faqRowStyles.list}
           keyExtractor={(item, index) => index.toString()}
-          ItemSeparatorComponent={() => <View style={{ height: getHeight(1.5) }} />}
+          ItemSeparatorComponent={FaqSeparator}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
-          renderItem={({ item, index }) => (
-            <View
-              style={{
-                width: getWidth(96),
-                borderBottomWidth: 0.45,
-                borderBottomColor: '#70747D',
-                borderRadius: 10,
-              }}
-            >
-              <TouchableOpacity
-                onPress={() =>
-                  selectedIndex == index ? setSelectedIndex(null) : setSelectedIndex(index)
-                }
-                style={{
-                  flex: 1,
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  height: getHeight(5),
-                  flexDirection: 'row',
-                  marginHorizontal: 10,
-                }}
-              >
-                <Text
-                  style={{
-                    color: ' #032F3C',
-                    fontFamily: 'OpenSans-Regular',
-                    fontSize: 16,
-                    fontWeight: '400',
-                  }}
-                >
-                  {item?.name}
-                </Text>
-                {selectedIndex == index ? (
-                  <AntDesign name="up" color={Colors.primarySapphire[500]} size={15} />
-                ) : (
-                  <AntDesign name="down" color={Colors.primarySapphire[500]} size={15} />
-                )}
-              </TouchableOpacity>
-              {selectedIndex == index ? (
-                <View
-                  style={{
-                    marginHorizontal: 10,
-                    padding: 10,
-                  }}
-                >
-                  <RenderHtml source={{ html: item?.body }} />
-                </View>
-              ) : null}
-            </View>
-          )}
+          renderItem={renderFaqItem}
         />
       </View>
     </View>

@@ -3,7 +3,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1 },
   innerContainer: {
     flex: 1,
@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
   heading: {
     fontSize: getFontSize(2.5),
     fontWeight: '400',
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Rubik-Medium',
   },
   logouttext: {
     fontSize: getFontSize(2.5),
@@ -73,3 +73,5 @@ export const styles = StyleSheet.create({
     marginVertical: spacing.x16,
   },
 });
+
+export default styles;

@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { View, Pressable, ScrollView, Platform } from 'react-native';
 
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '@react-navigation/native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, Interest } from '@/utils/types';
@@ -19,12 +21,15 @@ import StyledTextInput from '@/components/styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
+
+const interestListInsets = { bottom: spacing.x48 };
+const interestListAndroidPadding = Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
 
 function OnboardingInterests({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [interest, setInterest] = useState<Interest[]>([]);
+  const interestsRef = useRef<Interest[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
   const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
   const toast = useToast();
@@ -39,15 +44,14 @@ function OnboardingInterests({ navigation, route }: Props) {
       });
 
       if (res?.status === 200) {
-        setInterest(res?.response as Interest[]);
-        setSearchInterest(res?.response as Interest[]);
+        const nextInterests = res?.response as Interest[];
+        interestsRef.current = nextInterests;
+        setSearchInterest(nextInterests);
       } else if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }
@@ -72,7 +76,6 @@ function OnboardingInterests({ navigation, route }: Props) {
       } else {
         dispatch(setLoader(false));
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('error', res);
         }
       }
@@ -81,22 +84,25 @@ function OnboardingInterests({ navigation, route }: Props) {
         type: 'danger',
       });
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }
   }, [dispatch, navigation, route.params, selectedInterest, toast, token]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (token) {
       getInterest();
     }
-  }, [token, getInterest]);
+  });
 
   return (
     <OnboardingStepsLayout
       buttonText="Next"
       onPress={() => {
+        ReactNativeHapticFeedback.trigger('impactMedium', {
+          enableVibrateFallback: true,
+          ignoreAndroidSystemSettings: false,
+        });
         if (selectedInterest.length >= 3) {
           addInterests();
         } else {
@@ -106,7 +112,7 @@ function OnboardingInterests({ navigation, route }: Props) {
         }
       }}
       onboardingType={route.params.profileType}
-      activeStep={route.params.profileType === AccountType.individual ? 3 : 4}
+      activeStep={3}
       disabled={selectedInterest.length < 3}
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
@@ -132,12 +138,12 @@ function OnboardingInterests({ navigation, route }: Props) {
               clearButtonMode="always"
               onChangeText={(text) => {
                 const newSearchInterest = [];
-                for (let i = 0; i < interest.length; i++) {
-                  if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                    newSearchInterest.push(interest[i]);
+                for (let i = 0; i < interestsRef.current.length; i++) {
+                  if (interestsRef.current[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                    newSearchInterest.push(interestsRef.current[i]);
                   }
-                  setSearchInterest(newSearchInterest);
                 }
+                setSearchInterest(newSearchInterest);
               }}
               leftIcon={
                 <View style={{ justifyContent: 'center' }}>
@@ -160,10 +166,12 @@ function OnboardingInterests({ navigation, route }: Props) {
             <ScrollView
               contentContainerStyle={{
                 marginTop: spacing.x24,
-                paddingBottom: spacing.x48,
+                ...interestListAndroidPadding,
                 flexDirection: searchInterest.length < 1 ? 'column' : 'row',
                 flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
               }}
+              contentInset={interestListInsets}
+              scrollIndicatorInsets={interestListInsets}
             >
               {searchInterest.length < 1 ? (
                 <StyledText
@@ -172,16 +180,14 @@ function OnboardingInterests({ navigation, route }: Props) {
                   No Search Results
                 </StyledText>
               ) : null}
-              {searchInterest.map((item, index) => {
+              {searchInterest.map((item) => {
                 return (
-                  <TouchableOpacity
-                    key={index}
+                  <Pressable
+                    key={item?._id}
                     onPress={() =>
                       selectedInterest.includes(item?._id)
                         ? setSelectedInterest(
-                            selectedInterest.filter(function (item2) {
-                              return item2 !== item?._id;
-                            })
+                            selectedInterest.filter((item2) => item2 !== item?._id)
                           )
                         : setSelectedInterest([...selectedInterest, item?._id])
                     }
@@ -194,7 +200,13 @@ function OnboardingInterests({ navigation, route }: Props) {
                               borderColor: Colors.primary.brand,
                             },
                           ]
-                        : iterestListItem
+                        : [
+                            iterestListItem,
+                            {
+                              backgroundColor: Colors.neutral[800],
+                              borderColor: Colors.neutral[700],
+                            },
+                          ]
                     }
                   >
                     <StyledText
@@ -207,7 +219,7 @@ function OnboardingInterests({ navigation, route }: Props) {
                     >
                       {item?.name}
                     </StyledText>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>

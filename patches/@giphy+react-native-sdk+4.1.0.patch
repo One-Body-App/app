@@ -1,0 +1,13 @@
+diff --git a/node_modules/@giphy/react-native-sdk/ios/RTNGiphyTheme.swift b/node_modules/@giphy/react-native-sdk/ios/RTNGiphyTheme.swift
+index f7821a4..80c56b6 100644
+--- a/node_modules/@giphy/react-native-sdk/ios/RTNGiphyTheme.swift
++++ b/node_modules/@giphy/react-native-sdk/ios/RTNGiphyTheme.swift
+@@ -30,7 +30,7 @@ let THEME_COLOR_FIELDS = [
+ ]
+ 
+ private func deserializeRNConfig(_ rawConfig: NSDictionary?) -> NSDictionary {
+-  let config = NSMutableDictionary(dictionary: rawConfig ?? [:])
++  let config = NSMutableDictionary(dictionary: rawConfig as? [AnyHashable: Any] ?? [:])
+ 
+   if let preset = config["preset"] as? String {
+     config["preset"] = GPHThemeType.fromRNValue(preset)

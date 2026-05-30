@@ -8,6 +8,9 @@ const isDarkMode = () => {
   return colorScheme === 'dark';
 };
 
+export const containFrame = 'rgba(18, 107, 135, 0.3)';
+export const rssContainFrame = 'rgba(205, 213, 216, 0.3)';
+
 export const primary: Record<ColorVariants, string> = {
   get brand() {
     const dark = isDarkMode();

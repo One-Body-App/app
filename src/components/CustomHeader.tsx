@@ -1,79 +1,114 @@
-import React from 'react';
-import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import React, { ReactNode } from 'react';
+import { View, Pressable, Platform, StyleSheet } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
-import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import FastImage from '@/components/primitives/FastImage';
 import { Colors } from '@/src/styles';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_CONTROL_SIZE,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 
 const logoWhite = require('@/assets/images/logo_header_white.png');
 const logoHeader = require('@/assets/images/logo_header.png');
 
 interface CustomHeaderProps {
   showBackButton?: boolean;
+  leftSlot?: ReactNode;
+  rightSlot?: ReactNode;
+  contentHeight?: number;
 }
 
-export default function CustomHeader({ showBackButton = true }: CustomHeaderProps) {
+export default function CustomHeader({
+  showBackButton = true,
+  leftSlot,
+  rightSlot,
+  contentHeight,
+}: CustomHeaderProps) {
   const navigation = useNavigation();
+  const canGoBack = navigation.canGoBack?.() ?? false;
   const { dark } = useTheme();
+  const resolvedContentHeight = contentHeight ?? APP_HEADER_ROW_HEIGHT;
+  const iconSize = 30;
+  const sideSlotStyle = {
+    width: APP_HEADER_SIDE_WIDTH,
+    height: resolvedContentHeight,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+  const headerRowStyle = Platform.OS === 'android' ? styles.headerRowAndroid : styles.headerRow;
 
   const androidBackgroundColor = dark ? Colors.neutral[900] : '#f5f5f5';
   const androidBorderColor = dark ? Colors.neutral[800] : '#e0e0e0';
+  const leftElement =
+    leftSlot ??
+    (showBackButton && canGoBack ? (
+      <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <MaterialCommunityIcons name="chevron-left" size={iconSize} color={Colors.primary.brand} />
+      </Pressable>
+    ) : null);
+  const rightElement = rightSlot ?? null;
 
   return (
     <View
+      testID="custom-header"
       style={[
         styles.container,
         {
           backgroundColor: Platform.OS === 'android' ? androidBackgroundColor : 'transparent',
           borderBottomColor: Platform.OS === 'android' ? androidBorderColor : 'transparent',
+          height: resolvedContentHeight,
         },
       ]}
     >
-      {showBackButton && (
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={28} color={Colors.primary.brand} />
-        </TouchableOpacity>
-      )}
-      <View style={styles.logoContainer}>
+      <View style={[styles.headerRow, headerRowStyle]}>
+        <View testID="custom-header-left-slot" style={sideSlotStyle}>
+          {leftElement}
+        </View>
         <FastImage
-          style={styles.logo}
+          testID="custom-header-logo"
+          style={[styles.logo, Platform.OS === 'android' ? styles.logoAndroid : null]}
           resizeMode={FastImage.resizeMode.contain}
           source={dark ? logoWhite : logoHeader}
         />
       </View>
-      {/* Spacer to keep logo centered when back button is present */}
-      {showBackButton && <View style={styles.spacer} />}
+      {/* Spacer/right slot to keep logo centered */}
+      <View testID="custom-header-right-slot" style={sideSlotStyle}>
+        {rightElement}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: Platform.OS === 'android' ? 56 : 44,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     borderBottomWidth: Platform.OS === 'android' ? 1 : 0,
   },
-  backButton: {
-    padding: 8,
-    marginTop: Platform.OS === 'android' ? -8 : 0,
-  },
-  logoContainer: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    alignItems: 'flex-start',
-    marginTop: Platform.OS === 'android' ? -8 : 0,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+  },
+  headerRowAndroid: {
+    justifyContent: 'flex-start',
+  },
+  backButton: {
+    width: APP_HEADER_CONTROL_SIZE,
+    height: APP_HEADER_CONTROL_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
-    width: 100,
-    height: 28,
+    width: 120,
+    height: 40,
   },
-  spacer: {
-    width: 44,
+  logoAndroid: {
+    marginLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
 });

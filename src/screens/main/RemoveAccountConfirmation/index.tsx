@@ -4,7 +4,6 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { deleteUser, getAuth, signOut } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 import { useTheme } from '@react-navigation/native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -14,10 +13,9 @@ import { styles } from './styles';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import { logout } from '@/src/redux/actions/AuthActions';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import { clearAuthTokens } from '@/services/authTokens';
 import GeneralStyle from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { RootStackParamList } from '@/src/_Navigation/types';
 
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
@@ -31,7 +29,6 @@ function DeactivateAccountConfirm({ navigation, route }: Props) {
   const dispatch = useDispatch();
   const toast = useToast();
   const { colors } = useTheme();
-  const firebaseAuth = getAuth();
   const accountDeactivate = async () => {
     dispatch(setLoader(true));
     try {
@@ -50,12 +47,8 @@ function DeactivateAccountConfirm({ navigation, route }: Props) {
 
         dispatch(setLoader(false));
         LoginManager.logOut();
+        await clearAuthTokens();
         dispatch(logout());
-
-        if (firebaseAuth.currentUser) {
-          await deleteUser(firebaseAuth.currentUser);
-        }
-        await signOut(firebaseAuth);
       } else {
         dispatch(setLoader(false));
       }
@@ -66,12 +59,6 @@ function DeactivateAccountConfirm({ navigation, route }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent
-      />
       <Header
         title="Remove account"
         leftView={

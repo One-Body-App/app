@@ -3,7 +3,7 @@ import {
   GestureResponderEvent,
   StyleProp,
   TextStyle,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
@@ -34,8 +34,7 @@ function GradientButton({
   return (
     <View style={{ flexDirection: 'row' }}>
       <LinearGradient colors={gradientcolors} style={btnStyle}>
-        <TouchableOpacity
-          activeOpacity={0.7}
+        <Pressable
           onPress={onPress}
           disabled={disabled}
           style={{
@@ -46,9 +45,9 @@ function GradientButton({
           }}
         >
           {leftIcon}
-          <StyledText style={[btnTextStyle]}>{text}</StyledText>
+          <StyledText style={btnTextStyle}>{text}</StyledText>
           {RightIcon}
-        </TouchableOpacity>
+        </Pressable>
       </LinearGradient>
     </View>
   );

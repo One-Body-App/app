@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   continer: {
     flex: 1,
   },
@@ -39,14 +39,7 @@ export const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     marginBottom: 5,
 
-    shadowColor: '#0e5469',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 30,
-    elevation: 0,
+    boxShadow: '0 1px 30px rgba(14, 84, 105, 0.3)',
   },
   blogpostpara: {
     padding: 2,
@@ -63,3 +56,5 @@ export const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
 });
+
+export default styles;

@@ -1,5 +1,29 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+def abiToTriple = [
+    'arm64-v8a'  : 'aarch64-linux-android',
+    'armeabi-v7a': 'arm-linux-androideabi',
+    'x86'        : 'i686-linux-android',
+    'x86_64'     : 'x86_64-linux-android',
+]
+
+def resolveNitroSoPath = { rootDir, variantName, abi ->
+    def nitroCxxDir = new File(rootDir, "../node_modules/react-native-nitro-modules/android/build/intermediates/cxx/${variantName}")
+    if (!nitroCxxDir.exists()) {
+        return null
+    }
+
+    def candidates = []
+    nitroCxxDir.eachDir { hashDir ->
+        def so = new File(hashDir, "obj/${abi}/libNitroModules.so")
+        if (so.exists()) {
+            candidates << so
+        }
+    }
+
+    return candidates ? candidates[0] : null
+}
+
 buildscript {
     ext {
         buildToolsVersion = "35.0.0"
@@ -12,6 +36,9 @@ buildscript {
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.1.20"
         firebaseBomVersion = "33.15.0"
+        androidXCredentialsVersion = "1.3.0"
+        googleIdVersion = "1.1.1"
+        okHttpVersion = "4.12.0"
     }
     repositories {
         maven { url 'https://maven.google.com' } // <--- Ensure this is present
@@ -33,9 +60,47 @@ buildscript {
     }
 }
 
-configurations.all {
-    resolutionStrategy {
-        force 'com.google.firebase:firebase-iid:21.1.0'
+allprojects {
+    repositories {
+        maven { url 'https://api.mapbox.com/downloads/v2/releases/maven' }
+        maven { url 'https://muxinc.jfrog.io/artifactory/default-maven-release-local' }
+        google()
+        mavenCentral()
+    }
+
+    configurations.configureEach {
+        resolutionStrategy {
+            force 'com.google.firebase:firebase-iid:21.1.0'
+            force "androidx.credentials:credentials:${rootProject.ext.androidXCredentialsVersion}"
+            force "androidx.credentials:credentials-play-services-auth:${rootProject.ext.androidXCredentialsVersion}"
+            force "com.google.android.libraries.identity.googleid:googleid:${rootProject.ext.googleIdVersion}"
+            force "com.squareup.okhttp3:okhttp:${rootProject.ext.okHttpVersion}"
+            force "com.squareup.okhttp3:okhttp-urlconnection:${rootProject.ext.okHttpVersion}"
+            force "com.squareup.okhttp3:logging-interceptor:${rootProject.ext.okHttpVersion}"
+
+            eachDependency { details ->
+                if (details.requested.group == "androidx.credentials" &&
+                        (details.requested.name == "credentials" ||
+                                details.requested.name == "credentials-play-services-auth")) {
+                    details.useVersion rootProject.ext.androidXCredentialsVersion
+                    details.because "Keep Clerk, Expo passkeys, and react-native-passkey on the same Credential Manager runtime"
+                }
+
+                if (details.requested.group == "com.google.android.libraries.identity.googleid" &&
+                        details.requested.name == "googleid") {
+                    details.useVersion rootProject.ext.googleIdVersion
+                    details.because "Avoid the googleid 1.2.x Credential Manager 1.6.x atomic group on Android"
+                }
+
+                if (details.requested.group == "com.squareup.okhttp3" &&
+                        (details.requested.name == "okhttp" ||
+                                details.requested.name == "okhttp-urlconnection" ||
+                                details.requested.name == "logging-interceptor")) {
+                    details.useVersion rootProject.ext.okHttpVersion
+                    details.because "Keep Clerk, Expo, and React Native on one OkHttp runtime for Android cookie handling"
+                }
+            }
+        }
     }
 }
 
@@ -45,6 +110,60 @@ subprojects {
             project.configurations.all {
                 resolutionStrategy {
                     force 'com.google.firebase:firebase-iid:21.1.0'
+                }
+            }
+        }
+
+        // Workaround for QuickCrypto+Nitro prefab metadata occasionally generating
+        // header-only linkage, which causes undefined Nitro symbols at link time.
+        if (project.name == "react-native-quick-crypto") {
+            project.tasks.matching { task -> task.name.startsWith("configureCMake") }.configureEach { task ->
+                task.doLast {
+                    def matcher = (task.name =~ /^configureCMake([A-Za-z]+)\[(.+)\]$/)
+                    if (!matcher.matches()) {
+                        return
+                    }
+
+                    def variantName = matcher[0][1]
+                    def abi = matcher[0][2]
+                    def triple = abiToTriple[abi] ?: abi
+                    def nitroSo = resolveNitroSoPath(rootProject.projectDir, variantName, abi)
+                    if (nitroSo == null) {
+                        logger.warn("[QuickCrypto/Nitro] Could not locate libNitroModules.so for ${variantName}/${abi}")
+                        return
+                    }
+
+                    def nitroSoPath = nitroSo.absolutePath.replace("\\", "/")
+                    def quickCryptoCxxDir = new File(project.projectDir, ".cxx/${variantName}")
+                    if (!quickCryptoCxxDir.exists()) {
+                        return
+                    }
+
+                    quickCryptoCxxDir.eachDir { hashDir ->
+                        def configs = []
+                        hashDir.eachFileRecurse { file ->
+                            if (file.name == "react-native-nitro-modulesConfig.cmake") {
+                                configs << file
+                            }
+                        }
+
+                        if (configs.isEmpty()) {
+                            logger.warn("[QuickCrypto/Nitro] No nitro config file found under ${hashDir.path} for ${variantName}/${abi}")
+                        }
+
+                        configs.each { nitroConfig ->
+                            def configText = nitroConfig.getText("UTF-8")
+                            if (configText.contains('INTERFACE_LINK_LIBRARIES ""')) {
+                                configText = configText.replace('INTERFACE_LINK_LIBRARIES ""', "INTERFACE_LINK_LIBRARIES \"${nitroSoPath}\"")
+                                nitroConfig.write(configText, "UTF-8")
+                                logger.lifecycle("[QuickCrypto/Nitro] Linked Nitro .so in ${nitroConfig.path}")
+                            } else if (configText.contains(nitroSoPath)) {
+                                logger.lifecycle("[QuickCrypto/Nitro] Nitro .so already linked in ${nitroConfig.path}")
+                            } else {
+                                logger.warn("[QuickCrypto/Nitro] Could not patch nitro link line in ${nitroConfig.path}")
+                            }
+                        }
+                    }
                 }
             }
         }

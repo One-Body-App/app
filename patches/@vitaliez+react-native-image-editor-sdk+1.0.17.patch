@@ -1,0 +1,19 @@
+diff --git a/node_modules/@vitaliez/react-native-image-editor-sdk/expo-module.config.json b/node_modules/@vitaliez/react-native-image-editor-sdk/expo-module.config.json
+--- a/node_modules/@vitaliez/react-native-image-editor-sdk/expo-module.config.json
++++ b/node_modules/@vitaliez/react-native-image-editor-sdk/expo-module.config.json
+@@ -1,12 +1,13 @@
+ {
+   "platforms": [
+-    "ios"
++    "apple"
+   ],
+-  "ios": {
++  "apple": {
++    "podspecPath": "ImageEditorSDK.podspec",
+     "modules": [
+       "ImageEditorModule",
+       "ImageEditorUIModule",
+       "ImageEditorViewManager"
+     ]
+   }
+ }

@@ -4,7 +4,7 @@ import {
   StyleProp,
   Text,
   TextStyle,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
@@ -41,8 +41,7 @@ function Button({
 }) {
   return (
     <View style={[{ flexDirection: 'row' }, wrapperViewBtnStyle]}>
-      <TouchableOpacity
-        activeOpacity={0.7}
+      <Pressable
         onPress={(event) => (onPress ? onPress(event) : null)}
         style={disabled && disabledBtnStyle ? disabledBtnStyle : btnStyle}
         disabled={disabled}
@@ -71,7 +70,7 @@ function Button({
 
           {rightIcon}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }

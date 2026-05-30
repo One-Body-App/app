@@ -1,359 +1,329 @@
 /* eslint-disable react/jsx-no-useless-fragment */
-import { StackScreenProps } from '@react-navigation/stack';
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Keyboard,
-  Platform,
-  SafeAreaView,
-  View,
-  KeyboardEvent,
-  RefreshControl,
-  EmitterSubscription,
-} from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
-import {
-  GiphyDialog,
-  GiphyDialogEvent,
-  GiphyDialogMediaSelectEventHandler,
-  GiphyMedia,
-} from '@giphy/react-native-sdk';
-import { useToast } from 'react-native-toast-notifications';
+import { CommonActions, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import StyledText from '@/components/styled/Text';
-import { PrayerWallStackParamsList } from '@/src/navigator/types';
+import Header from '@/components/Header';
+import GoBackIcon from '@/components/GoBackIcon';
+import { HomeStackParamsList, PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { CommentPost, PrayerPost, SocialPostReaction } from '@/utils/types';
+import { CommentPost, PostType, PrayerPost } from '@/utils/types';
 
 import PrayerItem from '@/components/listItems/PrayerItem';
-import CommentField from '@/components/comments/Field';
-import CommentItem from '@/components/comments/CommentItem';
+import CommentThread from '@/components/comments/Thread';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
+import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import {
+  createPostTelemetryRequestId,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+} from '@/services/postTelemetry';
+import {
+  deleteOwnedPost,
+  emitFeedItemUnavailable,
+  emitOwnedPostDeleted,
+  getFeedItemUnavailableMessage,
+} from '@/services/ownedPostDeletion';
 
-function LoadingEmptyComponent() {
-  return <ActivityIndicator />;
-}
-
-type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
-let keyboardWillShowListener: EmitterSubscription;
-let onKeyboardWillHideListener: EmitterSubscription;
+type Props = NativeStackScreenProps<PrayerWallStackParamsList, 'Single'>;
 function SinglePrayer({ navigation, route }: Props) {
   const [prayer, setPrayer] = useState<PrayerPost>();
-  const [comments, setComments] = useState<CommentPost[]>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const unavailableHandledRef = useRef(false);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
+  const postId = route.params?.postId;
+  const returnTo = route.params?.returnTo;
 
-  const [page, setPage] = useState(1);
-  const [isEndOfList, setIsEndOfList] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const toast = useToast();
-  const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-  const onKeyboardWillShow = (e: KeyboardEvent) => {
-    setKeyboardHeight(e.endCoordinates.height);
+  const requestIdRef = useState(() => createPostTelemetryRequestId())[0];
+  const resetToPrayerWallIndex = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [
+          {
+            name: 'MainRoot',
+          },
+          {
+            name: 'PrayerWall',
+            params: {
+              screen: 'index',
+            },
+          },
+        ],
+      })
+    );
+  }, [navigation]);
+
+  const resetToHomePrayerFeed = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainRoot',
+            params: {
+              screen: 'Main',
+              params: {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'Home',
+                  params: {
+                    selectedTab: 'pray' as HomeStackParamsList['Home']['selectedTab'],
+                    refreshToken: Date.now(),
+                  },
+                },
+              },
+            },
+          },
+        ],
+      })
+    );
+  }, [navigation]);
+
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    if (returnTo === 'home_pray') {
+      resetToHomePrayerFeed();
+      return;
+    }
+
+    resetToPrayerWallIndex();
   };
 
-  const onKeyboardWillHide = () => {
-    setKeyboardHeight(0);
-  };
+  const getPostPrayer = useCallback(async () => {
+    if (!postId) {
+      return;
+    }
 
-  useEffect(() => {
-    if (!isEditingComment) {
-      if (Platform.OS === 'ios') {
-        // These listeners on ios are a little more snappy but not available on Android
-        // If you want to use this on Android use keyboardDidShow/Hide
-        keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', onKeyboardWillShow);
-        onKeyboardWillHideListener = Keyboard.addListener('keyboardWillHide', onKeyboardWillHide);
+    const handleUnavailablePost = (message?: string) => {
+      if (unavailableHandledRef.current) {
+        return;
       }
 
-      return () => {
-        if (Platform.OS === 'ios') {
-          onKeyboardWillHideListener.remove();
-          onKeyboardWillHideListener.remove();
-          // Keyboard.removeAllListeners('keyboardWillShow');
+      unavailableHandledRef.current = true;
+      emitFeedItemUnavailable({
+        type: PostType.prayer,
+        id: postId,
+      });
+      Toast.show(message || 'This post is no longer available.', Toast.SHORT);
+      handleBackPress();
+    };
 
-          // Keyboard.removeAllListeners('keyboardWillHide');
+    setIsLoading(true);
+    try {
+      const result = await ApiCall({
+        route: `prayer/${postId}`,
+        token,
+
+        verb: 'get',
+      });
+
+      setIsLoading(false);
+
+      if (result.status === 200) {
+        if (result.response) {
+          unavailableHandledRef.current = false;
+          setPrayer(result.response);
+        } else {
+          handleUnavailablePost();
         }
-      };
-    }
-  }, []);
-  const refreshContent = () => {
-    setIsEndOfList(false);
-    setPage(1);
-    getComments();
-    setIsRefreshing(true);
-  };
-
-  useEffect(() => {
-    getComments();
-  }, [page]);
-
-  // Handling GIFs selection in GiphyDialog
-  useEffect(() => {
-    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
-      if (!isEditingComment) {
-        setGif(e.media);
-        GiphyDialog.hide();
-      }
-    };
-    const listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
-    return () => {
-      listener.remove();
-    };
-  }, []);
-
-  const getPostPrayer = async () => {
-    setIsLoading(true);
-    try {
-      const result = await ApiCall({
-        route: `prayer/${route.params?.postId}`,
-        token,
-
-        verb: 'get',
-      });
-
-      setIsLoading(false);
-
-      if (result.status == 200) {
-        setPrayer(result.response);
+      } else {
+        handleUnavailablePost(getFeedItemUnavailableMessage(result.response));
       }
     } catch (e) {
       setIsLoading(false);
+      handleUnavailablePost();
     }
-  };
-
-  const getComments = async () => {
-    setIsLoading(true);
-    try {
-      const result = await ApiCall({
-        route: `comments/prayer/${route.params?.postId}`,
-        token,
-
-        verb: 'get',
-      });
-
-      setIsLoading(false);
-      setIsRefreshing(false);
-      if (result.status == 200) {
-        setComments(result.response.content);
-      }
-    } catch (e) {
-      setIsRefreshing(false);
-      setIsLoading(false);
-    }
-  };
-
-  const publishComment = async (content?: string) => {
-    setIsLoading(true);
-    try {
-      const result = await ApiCall({
-        route: `comments/prayer/${route.params?.postId}`,
-        token,
-
-        verb: 'post',
-        params: {
-          content,
-          gif: mediaGif,
-        },
-      });
-
-      setIsLoading(false);
-
-      if (result.status == 200) {
-        refreshContent();
-      }
-    } catch (e) {
-      setIsLoading(false);
-    }
-  };
+  }, [handleBackPress, postId, token]);
 
   const removePost = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `prayer/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status == 200) {
-        await getPostPrayer();
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+    const normalizedId = String(id ?? '').trim();
+    if (normalizedId.length < 1) {
+      Toast.show('Unable to delete this post right now.', Toast.SHORT);
+      return;
     }
-  };
 
-  const editComment = async (id: string, content: string) => {
-    try {
-      const res = await ApiCall({
-        route: `comments/prayer/${route.params?.postId}/${id}`,
-        verb: 'patch',
-        token,
-        params: {
-          content,
-        },
-      });
+    const result = await deleteOwnedPost({
+      type,
+      id: normalizedId,
+      token: token ?? undefined,
+    });
 
-      if (res?.status == 200) {
-        toast.show('Comment modified successfully', {
-          id: 'successMessage',
-          type: 'success',
-          placement: 'bottom',
-        });
-        await getComments();
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+    if (!result.ok) {
+      Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+      return;
     }
-  };
 
-  const removeComment = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `comments/prayer/${route.params?.postId}/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status === 200) {
-        await getComments();
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
+    emitOwnedPostDeleted({
+      type: result.type,
+      id: normalizedId,
+    });
+    handleBackPress();
   };
 
   const editPost = async (id: string) => {
-    navigation.navigate('Prayer', { postId: id });
+    navigation.navigate('Prayer', { postId: id, returnTo });
     // setIsEditing(true);
   };
 
+  const openCommentThread = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      if (!postId || !commentId) {
+        return;
+      }
+
+      navigation.push('Single', {
+        postId,
+        threadRootCommentId: commentId,
+        threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+        returnTo,
+      });
+    },
+    [navigation, postId, returnTo]
+  );
+
+  const trackPrayerTelemetry = useCallback(
+    (
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>
+    ) => {
+      if (!postId) {
+        return;
+      }
+
+      trackPostTelemetry({
+        postId,
+        postType: 'prayer',
+        contentType: prayer?.category || 'prayer',
+        authorId: prayer?.userData?._id,
+        userId: user?._id ? String(user._id) : undefined,
+        surface: 'prayer_portal',
+        surfaceTab: 'detail',
+        entrypoint: 'prayer_post_detail',
+        requestId: requestIdRef,
+        isOwnPost:
+          Boolean(user?._id) && Boolean(prayer?.userData?._id)
+            ? String(user._id) === String(prayer.userData._id)
+            : undefined,
+        isRepost: false,
+        privacyState: prayer?.private ? 'private' : 'public',
+        ...overrides,
+        eventName,
+        metadata,
+      });
+    },
+    [postId, prayer, requestIdRef, user?._id]
+  );
+
   useEffect(() => {
-    if (route.params?.postId) {
-      getPostPrayer();
-    }
-  }, [route.params?.postId]);
+    setFeedTelemetryAuthToken(token || undefined);
+    getPostPrayer();
+  }, [getPostPrayer, token]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      {Platform.OS === 'android' ? (
+        <>
+          <StatusBar
+            barStyle={dark ? 'light-content' : 'dark-content'}
+            backgroundColor={colors.background}
+          />
+          <Header
+            title="Comment"
+            hideBorder
+            leftView={
+              <GoBackIcon
+                color={dark ? colors.text : Colors.primary.brand}
+                goBack={handleBackPress}
+              />
+            }
+            RightView={<View style={{ width: 20 }} />}
+          />
+        </>
+      ) : null}
       <View style={{ flex: 1 }}>
         {prayer ? (
           <>
-            {keyboardHeight == 0 ? (
-              <View>
+            <CommentThread
+              type={PostType.prayer}
+              postId={postId ?? ''}
+              threadRootCommentId={route.params?.threadRootCommentId}
+              threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
+              onOpenCommentThread={openCommentThread}
+              onTelemetryEvent={trackPrayerTelemetry}
+              isPrivate={Boolean(prayer.private)}
+              hideComposer={prayer.answered}
+              headerContainerStyle={{
+                paddingHorizontal: 0,
+                paddingTop: 0,
+                paddingBottom: 0,
+                borderBottomWidth: 0,
+              }}
+              header={
                 <PrayerItem
                   editPost={editPost}
                   removePost={prayer.answered ? undefined : removePost}
                   item={prayer}
+                  onTelemetryEvent={trackPrayerTelemetry}
                   style={{
+                    marginHorizontal: 0,
+                    marginBottom: 0,
+                    borderRadius: 0,
+                    borderWidth: 0,
+                    borderTopWidth: 0,
+                    borderRightWidth: 0,
+                    borderLeftWidth: 0,
                     borderBottomColor: Colors.neutral[800],
                     borderBottomWidth: borderWidth.thin,
+                    backgroundColor: 'transparent',
                   }}
                 />
-              </View>
-            ) : null}
-            <View style={{ flex: 1 }}>
-              <FlatList
-                data={comments}
-                refreshing={isRefreshing}
-                style={{ flexGrow: 1 }}
-                // onEndReachedThreshold={0.5}
-                // onEndReached={() => {
-                //   if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-                // }}
-                // ListFooterComponent={() => (
-                //   <View>
-                //     {isEndOfList ? (
-                //       <StyledText style={{ textAlign: 'center' }}>
-                //         Not more social posts at this time
-                //       </StyledText>
-                //     ) : null}
-                //   </View>
-                // )}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={isRefreshing}
-                    onRefresh={() => {
-                      refreshContent();
+              }
+              footer={
+                prayer.answered ? (
+                  <View
+                    style={{
+                      backgroundColor: Colors.successFeedback.background,
+                      padding: spacing.x16,
+                      marginHorizontal: spacing.x16,
+                      borderRadius: borderRadius.small,
                     }}
-                  />
-                }
-                ListEmptyComponent={isLoading ? LoadingEmptyComponent : undefined}
-                renderItem={({ item }) => {
-                  let myReaction: SocialPostReaction | undefined;
-
-                  item.reactions?.forEach((reaction) => {
-                    if (reaction.userId == user?._id) {
-                      myReaction = reaction;
-                    }
-                  });
-
-                  return (
-                    <View>
-                      <CommentItem
-                        setEditingComment={setIsEditingComment}
-                        removePost={prayer.answered ? undefined : removeComment}
-                        editCommentAction={editComment}
-                        onPress={() => {
-                          if (
-                            !prayer.private &&
-                            prayer?.userData._id &&
-                            prayer.userData._id != user?._id
-                          ) {
-                            navigation.navigate('UserProfile', {
-                              id: prayer?.userData._id,
-                            });
-                          }
-                        }}
-                        postData={{
-                          id: item.commentId,
-                          content: item.content,
-                          reactions: item.reactions,
-                          myReaction,
-                          edited: item.edited,
-                          gif: item.gif,
-                        }}
-                        userData={item.userData}
-                      />
-                    </View>
-                  );
-                }}
-              />
-            </View>
-            {prayer.answered ? (
-              <View
-                style={{
-                  backgroundColor: Colors.successFeedback.background,
-                  padding: spacing.x16,
-                  marginHorizontal: spacing.x16,
-                  borderRadius: borderRadius.small,
-                }}
-              >
-                <StyledText style={{ color: Colors.successFeedback.text }}>
-                  Praise God, prayer answered. Not collecting response at this time
-                </StyledText>
-              </View>
-            ) : (
-              <>
-                {!isEditingComment ? (
-                  <View style={{ top: keyboardHeight * -1 }}>
-                    <CommentField
-                      mediaGif={mediaGif}
-                      setGif={setGif}
-                      publishComment={publishComment}
-                    />
+                  >
+                    <StyledText style={{ color: Colors.successFeedback.text }}>
+                      Praise God, prayer answered. Not collecting response at this time
+                    </StyledText>
                   </View>
-                ) : null}
-              </>
-            )}
+                ) : null
+              }
+              onUserPress={() => {
+                if (!prayer.private && prayer?.userData._id && prayer.userData._id !== user?._id) {
+                  navigation.navigate('UserProfile', {
+                    id: prayer?.userData._id,
+                  });
+                }
+              }}
+            />
           </>
         ) : (
           <>
@@ -372,7 +342,6 @@ function SinglePrayer({ navigation, route }: Props) {
         {/* </ScrollView> */}
         {/* </KeyboardAvoidingView> */}
       </View>
-      {/* </TouchableWithoutFeedback> */}
     </SafeAreaView>
   );
 }

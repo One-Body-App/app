@@ -1,26 +1,32 @@
 import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
-  DrawerItemList,
+  DrawerItem,
 } from '@react-navigation/drawer';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { getAuth, signOut } from '@react-native-firebase/auth';
+import { Alert, StyleSheet, Pressable, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LogoutCurve, Setting2 } from 'iconsax-react-native';
-import { LoginManager } from 'react-native-fbsdk-next';
+import { LogoutCurve, ProfileAdd, Profile2User, Setting2 } from 'iconsax-react-native';
 import Icon from '@react-native-vector-icons/ant-design';
+import Feather from '@react-native-vector-icons/feather';
 import { useTheme } from '@react-navigation/native';
+import FastImage from '@/components/primitives/FastImage';
 import { RootState } from '../redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import StyledText from '../components/styled/Text';
 import Button from '../components/Button';
 import { spacing } from '../styles/spacing';
 import { profileImageList } from '../styles/items';
-import { Colors, Typography } from '../styles';
+import * as Colors from '../styles/colors';
+import * as Typography from '../styles/typography';
 import { borderRadius, borderWidth } from '../styles/outlines';
 import { logout } from '../redux/actions/AuthActions';
+import { getCreatorMenuLabel, getCreatorMenuState } from '../utils/creatorApplication';
+import { isZoeAiEligibleUser } from '../utils/zoeAccess';
+import Home2Icon from '@/assets/icons/home2.svg';
+import ZoeIcon from '@/assets/svg/zoeicon.svg';
+import BusinessUserCurriculumIcon from '@/assets/svg/Business-User-Curriculum--Streamline-Core-Remix.svg';
+import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core-Remix.svg';
 
 export default function DrawerContent({
   descriptors,
@@ -36,6 +42,10 @@ export default function DrawerContent({
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
+  const creatorStatus = user?.influencerProfile?.influencerStatus;
+  const creatorMenuState = getCreatorMenuState(creatorStatus);
+  const creatorMenuLabel = getCreatorMenuLabel(creatorStatus);
+  const canAccessZoeAi = isZoeAiEligibleUser(user);
 
   return (
     <DrawerContentScrollView
@@ -51,7 +61,7 @@ export default function DrawerContent({
     >
       <View style={styles.drawerContent}>
         <View>
-          <TouchableOpacity
+          <Pressable
             onPress={() => {
               navigation.navigate('Main', {
                 screen: 'MyProfileTab',
@@ -90,8 +100,7 @@ export default function DrawerContent({
             >
               <StyledText
                 numberOfLines={1}
-                // style={[Typography.body.x2M, { color: dark ? colors.text : Colors.neutral.brand }]}
-                style={[Typography.body.x2M, { color: dark ? colors.text : Colors.neutral.brand }]}
+                style={[Typography.body.x2M, { color: dark ? '#f6f6f7' : '#032f3c' }]}
               >
                 {user?.name}
               </StyledText>
@@ -106,10 +115,7 @@ export default function DrawerContent({
               <View>
                 <View style={{ flexDirection: 'row', marginTop: spacing.x8 }}>
                   <StyledText
-                    style={[
-                      Typography.body.x1M,
-                      { color: dark ? colors.text : Colors.neutral.brand },
-                    ]}
+                    style={[Typography.body.x1M, { color: dark ? '#f6f6f7' : '#032f3c' }]}
                   >
                     {user?.followerCount ?? 0}{' '}
                   </StyledText>
@@ -120,10 +126,7 @@ export default function DrawerContent({
 
                 <View style={{ flexDirection: 'row' }}>
                   <StyledText
-                    style={[
-                      Typography.body.x1M,
-                      { color: dark ? colors.text : Colors.neutral.brand },
-                    ]}
+                    style={[Typography.body.x1M, { color: dark ? '#f6f6f7' : '#032f3c' }]}
                   >
                     {user?.following?.length ?? 0}{' '}
                   </StyledText>
@@ -133,8 +136,118 @@ export default function DrawerContent({
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
-          <DrawerItemList descriptors={descriptors} state={drawerState} navigation={navigation} />
+          </Pressable>
+          <DrawerItem
+            label="Home"
+            focused={focusedRoute.name === 'Main'}
+            onPress={() => navigation.navigate('Main')}
+            icon={({ color, size }) => <Home2Icon width={size} height={size} color={color} />}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="Serve"
+            focused={false}
+            onPress={() =>
+              navigation.navigate('Main', {
+                screen: 'ConnectTab',
+                params: { screen: 'ConnectPortal', params: { initialTab: 'Serve' } },
+              })
+            }
+            icon={({ color, size }) => (
+              <BusinessUserCurriculumIcon width={size - 4} height={size - 4} color={color} />
+            )}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="Go!"
+            focused={false}
+            onPress={() =>
+              navigation.navigate('Main', {
+                screen: 'ConnectTab',
+                params: { screen: 'ConnectPortal', params: { initialTab: 'Go!' } },
+              })
+            }
+            icon={({ color, size }) => (
+              <CalendarEditIcon width={size - 4} height={size - 4} color={color} />
+            )}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={[Typography.body.x2M, { fontStyle: 'italic' }]}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          {canAccessZoeAi ? (
+            <DrawerItem
+              label="ZoeAI"
+              focused={focusedRoute.name === 'ZoeAI'}
+              onPress={() => navigation.navigate('ZoeAI')}
+              icon={({ color, size }) => <ZoeIcon width={size} height={size} color={color} />}
+              activeTintColor={focusedOptions.drawerActiveTintColor}
+              inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+              activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+              inactiveBackgroundColor="transparent"
+              labelStyle={Typography.body.x2M}
+              style={{ borderRadius: borderRadius.base }}
+            />
+          ) : null}
+          <DrawerItem
+            label="My Connections"
+            focused={focusedRoute.name === 'Connections'}
+            onPress={() => navigation.navigate('Connections')}
+            icon={({ color, size }) => <Profile2User size={size} color={color} />}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="Saved Posts"
+            focused={focusedRoute.name === 'Saved'}
+            onPress={() => navigation.navigate('Saved')}
+            icon={({ color, size }) => <Feather name="bookmark" size={size} color={color} />}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label={creatorMenuLabel}
+            focused={false}
+            onPress={() => {
+              navigation.navigate('Settings', {
+                screen:
+                  creatorMenuState === 'settings' ? 'InfluencerSettings' : 'InfluencerStepOne',
+              });
+            }}
+            icon={({ color, size }) =>
+              creatorMenuState === 'settings' ? (
+                <Setting2 size={size} color={color} />
+              ) : (
+                <ProfileAdd size={size} color={color} />
+              )
+            }
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
         </View>
         <View
           style={{
@@ -170,10 +283,8 @@ export default function DrawerContent({
                   },
                   {
                     text: 'Yes',
-                    onPress: async () => {
-                      LoginManager.logOut();
+                    onPress: () => {
                       dispatch(logout());
-                      await signOut(getAuth());
                     },
                   },
                 ],
@@ -194,7 +305,7 @@ export default function DrawerContent({
               padding: spacing.x16,
               borderRadius: borderRadius.base,
             }}
-            leftIcon={<Setting2 size={24} color={Colors.neutral[200]} />}
+            leftIcon={<Setting2 size={24} color={dark ? '#f6f6f7' : '#032f3c'} />}
             onPress={() => {
               navigation.navigate('Settings');
             }}
@@ -206,7 +317,9 @@ export default function DrawerContent({
               padding: spacing.x16,
               borderRadius: borderRadius.base,
             }}
-            leftIcon={<Icon name="customerservice" size={25} color={Colors.neutral[200]} />}
+            leftIcon={
+              <Icon name="customer-service" size={25} color={dark ? '#f6f6f7' : '#032f3c'} />
+            }
             onPress={() => {
               OpenURLButton('https://onebody.tawk.help/');
             }}

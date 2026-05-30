@@ -39,13 +39,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: getHeight(7),
 
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Lato-Regular',
   },
 
   heading: {
     fontSize: getFontSize(2.7),
     marginTop: getHeight(2),
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Rubik-Medium',
     textAlign: 'center',
 
     color: 'black',
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Lato-Regular',
     color: '#032F3C',
   },
   btn: {
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: getFontSize(2.7),
 
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Lato-Medium',
   },
 });
 

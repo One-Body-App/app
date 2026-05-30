@@ -1,947 +1,954 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
-import React, { useState } from 'react';
-import {
-  View,
-  Image,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  useWindowDimensions,
-  StyleSheet,
-  TextStyle,
-} from 'react-native';
-import FastImage from 'react-native-fast-image';
-import Toast from 'react-native-simple-toast';
-
+import { Image } from 'expo-image';
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import Icon from '@react-native-vector-icons/material-design-icons';
+import { Add, Calendar, Link21, Location, ShieldTick, HomeHashtag } from 'iconsax-react-native';
 import { format, parseISO } from 'date-fns';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { ProfileProps } from './Profile';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import Toast from 'react-native-simple-toast';
+import FastImage from '@/components/primitives/FastImage';
+
 import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import GeneralStyle from '@/src/constants/GeneralStyle';
-import {
-  MainBottomStackParamsList,
-  MainDrawerParamsList,
-  MyProfileStackParamsList,
-} from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
-
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-
-import { styles } from '../loginComponent/styles';
-import StyledText from '../styled/Text';
-import { AccountType, Badge } from '@/utils/types';
-import Selected from '@/assets/svg/Selected.svg';
-import Button from '../Button';
-import { button } from '@/src/styles/buttons';
 import { OpenURLButton } from '@/services/constants';
-import CustomModal from '../CustomModal';
+import { Badge } from '@/utils/types';
+import StyledText from '@/components/styled/Text';
+import CustomModal from '@/components/CustomModal';
+import Selected from '@/assets/svg/Selected.svg';
+import ProfileFill from '@/assets/svg/ProfileFill.svg';
+import { ProfileProps } from './profileTypes';
+import { getProfileDisplayName, getProfileRoleLabel, getProfileTypeLabel } from './profileUtils';
 
-interface HeaderProps extends ProfileProps {
-  setActiveTab: Function;
-  activeTab: string;
-}
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<MyProfileStackParamsList, 'MyProfile'>,
-  CompositeNavigationProp<
-    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
-    BottomTabNavigationProp<MainBottomStackParamsList, 'MyProfileTab'>
-  >
->;
+const COVER_HEIGHT = 150;
+const AVATAR_SIZE = 84;
+const DEFAULT_PROFILE_IMAGE = 'https://cdn.onebodyapp.com/user/no-image.png';
+
+const modalStyles = StyleSheet.create({
+  bottomView: {
+    justifyContent: 'flex-end',
+    margin: 0,
+  },
+  content: {
+    alignItems: 'center',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    flex: 1,
+    padding: spacing.x16,
+  },
+});
+
+const formatCount = (value?: number) => {
+  const count = Number(value ?? 0);
+
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  }
+
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+
+  return `${count}`;
+};
 
 function ProfileHeader({
   profileData,
   currentUser,
-  relatedUsers,
   handleSubscribe,
   handleUnSubscribe,
-  setActiveTab,
-  activeTab,
-  ...props
-}: HeaderProps) {
+  variant = 'public',
+  avatarAnimation,
+}: ProfileProps) {
   const dispatch = useDispatch();
-  const [requestModal, setRequestModal] = useState<boolean>(false);
-  const [height, setHeight] = useState<number>(0);
+  const navigation = useNavigation<any>();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const navigation = useNavigation<ScreenNavigationProp>();
   const authState = useSelector((state: RootState) => state.auth);
-  const { width } = useWindowDimensions();
-  // const { top, height } = useHeaderMeasurements();
-
-  // const scrollY = useCurrentTabScrollY();
-  const [selectedBadges, setSelectedBadges] = useState<Badge[]>(profileData?.badgesData ?? []);
-  const unselect = (id: string) => {
-    const array = selectedBadges.filter((item) => item._id != id);
-
-    setSelectedBadges(array);
-  };
   const { colors } = useTheme();
+  const isOwnProfile = profileData._id === currentUser._id;
+  const displayName = useMemo(() => getProfileDisplayName(profileData), [profileData]);
+  const roleLabel = useMemo(() => getProfileRoleLabel(profileData), [profileData]);
+  const typeLabel = useMemo(() => getProfileTypeLabel(profileData), [profileData]);
+  const persistedBadgeIds = useMemo(
+    () => (profileData.badgesData ?? []).map((badge) => badge._id),
+    [profileData.badgesData]
+  );
+  const joinedLabel = useMemo(() => {
+    if (!profileData.createdAt) {
+      return '';
+    }
 
-  // const profileImageAnimation = useAnimatedStyle(() => {
-  //   let valueTranslate = interpolate(
-  //     scrollY.value,
-  //     [0, -(height - HEADER_COLLAPSED_HEIGHT)],
-  //     [0, 0 - 300]
-  //   );
+    const parsedDate = parseISO(profileData.createdAt);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return '';
+    }
 
-  //   const maxValue =
-  //     height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize - 30; // 10 = marginTop
-  //   if (valueTranslate > maxValue) {
-  //     valueTranslate = maxValue;
-  //   }
+    return format(parsedDate, 'MMMM yyyy');
+  }, [profileData.createdAt]);
+  const isConnected = currentUser.following?.includes(profileData._id);
+  const isSelfVariant = variant === 'self';
+  const [requestModal, setRequestModal] = useState(false);
+  const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>(persistedBadgeIds);
+  const showSelfProfileMediaControls = isOwnProfile && isSelfVariant;
+  // Hide the original avatar while the overlay is open so they don't overlap.
+  // Derive from isOpen (0/1 numeric) — cheaper than string comparison on UI thread.
+  const rAvatarPlaceholderStyle = useAnimatedStyle(() => ({
+    opacity: avatarAnimation ? 1 - avatarAnimation.isOpen.value : 1,
+  }));
 
-  //   return {
-  //     transform: [
-  //       {
-  //         translateY: valueTranslate,
-  //       },
-  //     ],
-  //   };
-  // });
+  const badgeMap = useMemo(() => {
+    const allBadges = Array.isArray(authState?.getBadgesData) ? authState.getBadgesData : [];
+    return new Map(allBadges.map((badge: Badge) => [badge._id, badge]));
+  }, [authState?.getBadgesData]);
 
-  // const buttonsAnimation = useAnimatedStyle(() => {
-  //   let valueTranslate = interpolate(
-  //     scrollY.value,
-  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-  //     [0, 0 - 300]
-  //   );
+  const displayedBadges = useMemo(() => {
+    return persistedBadgeIds.flatMap((badgeId) => {
+      const fromProfile = (profileData.badgesData ?? []).find((badge) => badge._id === badgeId);
+      const badge = fromProfile ?? badgeMap.get(badgeId);
+      return badge ? [badge] : [];
+    });
+  }, [badgeMap, persistedBadgeIds, profileData.badgesData]);
+  const isAddOnlyBadgeRail = isOwnProfile && displayedBadges.length === 0;
+  const useCompactAddOnlyBadge = isSelfVariant && isAddOnlyBadgeRail;
+  const badgeTrailingContent = useMemo(() => {
+    if (useCompactAddOnlyBadge) {
+      return <Add size={20} color="#FFFFFF" />;
+    }
 
-  //   const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize - 75;
-  //   if (valueTranslate > maxValue) {
-  //     valueTranslate = maxValue;
-  //   }
+    if (displayedBadges.length < 3) {
+      return (
+        <View style={[styles.badgeAddButton, isSelfVariant ? styles.selfBadgeAddButton : null]}>
+          <Add size={16} color="#FFFFFF" />
+        </View>
+      );
+    }
 
-  //   return {
-  //     transform: [
-  //       {
-  //         translateY: valueTranslate,
-  //       },
-  //     ],
-  //   };
-  // });
+    return null;
+  }, [displayedBadges.length, isSelfVariant, useCompactAddOnlyBadge]);
 
-  // const nameAnimation = useAnimatedStyle(() => {
-  //   let valueTranslateY = interpolate(
-  //     scrollY.value,
-  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-  //     [0, 0 - 300]
-  //   );
+  const handleToggleBadge = (badgeId: string) => {
+    setSelectedBadgeIds((previous) => {
+      if (previous.includes(badgeId)) {
+        return previous.filter((selectedId) => selectedId !== badgeId);
+      }
 
-  //   let valueTranslateX = interpolate(
-  //     scrollY.value,
-  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-  //     [0, 0 - 90]
-  //   );
+      if (previous.length >= 3) {
+        Toast.show('You cannot select more than 3 badges!', Toast.LONG);
+        return previous;
+      }
 
-  //   let paddingRight = -1 * interpolate(scrollY.value, [0, 0 - 300], [0, 65]);
+      return [...previous, badgeId];
+    });
+  };
 
-  //   const maxValueY = height - HEADER_COLLAPSED_HEIGHT - 165;
-  //   if (valueTranslateY > maxValueY) {
-  //     valueTranslateY = maxValueY;
-  //   }
+  const openBadgeModal = () => {
+    setSelectedBadgeIds(persistedBadgeIds);
+    dispatch(getBadges.Request({ token }));
+    setRequestModal(true);
+  };
 
-  //   const maxValueX = width / 4;
-  //   if (valueTranslateX > maxValueX) {
-  //     valueTranslateX = maxValueX;
-  //   }
-  //   if (paddingRight > 95) {
-  //     paddingRight = 95;
-  //   }
+  const openDirectMessage = () => {
+    if (isOwnProfile) {
+      return;
+    }
 
-  //   return {
-  //     paddingRight,
-  //     transform: [
-  //       {
-  //         translateY: valueTranslateY,
-  //       },
-  //       {
-  //         translateX: valueTranslateX,
-  //       },
-  //     ],
-  //   };
-  // });
+    const chatParams = {
+      conversationType: 'direct' as const,
+      peerUserId: profileData._id,
+      peerName: displayName,
+      peerUsername: profileData.username,
+      peerAvatarUri: profileData.profileImage,
+    };
 
-  // const contentAnimation = useAnimatedStyle(() => {
-  //   const value = interpolate(
-  //     scrollY.value,
-  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-  //     [0, 0 - HEADER_COLLAPSED_HEIGHT]
-  //   );
-  //   const opacity = interpolate(scrollY.value, [0, 130], [1, 0]);
-  //   return {
-  //     opacity,
-  //     transform: [
-  //       {
-  //         translateY: -1 * value,
-  //       },
-  //     ],
-  //   };
-  // });
+    let navigator = navigation as any;
+    while (navigator) {
+      const routeNames = navigator.getState?.()?.routeNames ?? [];
 
-  // const connectedConnectorsContent = useAnimatedStyle(() => {
-  //   let valueTranslateY = interpolate(
-  //     scrollY.value,
-  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-  //     [0, 0 - 300]
-  //   );
-  //   let width = interpolate(scrollY.value, [0, 0 - 300], [0, 35]);
+      const routeNameSet = new Set(routeNames);
 
-  //   const maxValue = height - HEADER_COLLAPSED_HEIGHT - (height - 125);
+      if (routeNameSet.has('Messages')) {
+        navigator.navigate('Messages', {
+          screen: 'ChatDetail',
+          params: chatParams,
+        });
+        return;
+      }
 
-  //   if (valueTranslateY > -1 * maxValue) {
-  //     valueTranslateY = maxValue;
-  //   }
-  //   if (100 + width < 70) {
-  //     width = -38;
-  //   }
-  //   return {
-  //     width: `${100 + width}%`,
-  //     transform: [
-  //       {
-  //         translateY: -1 * valueTranslateY,
-  //       },
-  //     ],
-  //   };
-  // });
+      if (routeNameSet.has('Main')) {
+        navigator.navigate('Main', {
+          screen: 'Messages',
+          params: {
+            screen: 'ChatDetail',
+            params: chatParams,
+          },
+        });
+        return;
+      }
+
+      if (routeNameSet.has('MainRoot')) {
+        navigator.navigate('MainRoot', {
+          screen: 'Main',
+          params: {
+            screen: 'Messages',
+            params: {
+              screen: 'ChatDetail',
+              params: chatParams,
+            },
+          },
+        });
+        return;
+      }
+
+      navigator = navigator.getParent?.();
+    }
+  };
+
+  const handleWebsitePress = () => {
+    if (!profileData.website) {
+      return;
+    }
+
+    const websiteUrl = profileData.website.startsWith('http')
+      ? profileData.website
+      : `https://${profileData.website}`;
+
+    OpenURLButton(websiteUrl);
+  };
+
+  const handleShareProfile = async () => {
+    const profileUrl = profileData.username
+      ? `https://app.onebodyapp.com/profile/${profileData.username}`
+      : undefined;
+
+    await Share.share({
+      title: `Check out ${displayName} on One Body`,
+      url: profileUrl,
+      message: profileUrl ? `Check out ${displayName} on One Body\n${profileUrl}` : displayName,
+    });
+  };
+
+  const openEditProfile = (openMediaPicker?: 'photo' | 'header') => {
+    navigation.navigate('EditProfile', openMediaPicker ? { openMediaPicker } : undefined);
+  };
 
   return (
-    <View
-      pointerEvents="box-none"
-      onLayout={({ nativeEvent }) => {
-        const { height: divHeight } = nativeEvent.layout;
-        setHeight(divHeight);
-      }}
-    >
-      <View pointerEvents="box-none">
-        <View style={[{ width: '100%', height: 180 }]} pointerEvents="box-none">
-          {profileData?.profileHeader ? (
-            <View pointerEvents="none">
-              <Image
-                {...props}
-                style={[
-                  {
-                    height: 150,
-                    width: '100%',
-                  },
-                ]}
-                source={{
-                  uri: profileData?.profileHeader,
-                }}
-                resizeMode="cover"
-              />
-            </View>
-          ) : (
-            <View
-              style={{
-                backgroundColor: Colors.neutral[600],
-                height: 150,
-                width: '100%',
-              }}
-              pointerEvents="none"
-            />
-          )}
-          {profileData?.accountType === 'individual' &&
-          ((profileData?.badgesData?.length > 0 && profileData?._id !== currentUser._id) ||
-            (profileData?.badgesData?.length <= 3 && profileData?._id === currentUser._id)) ? (
-            <View
-              style={{
-                alignSelf: 'flex-end',
-                backgroundColor: 'rgba(0,0,0,0.45)',
-                borderRadius: borderRadius.button,
-                padding: spacing.x10,
-                marginRight: spacing.x24,
-                position: 'absolute',
-                bottom: 40, // size of the profile image + margin space
-                right: 0,
-              }}
-              pointerEvents="box-none"
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                }}
-              >
-                {profileData?.badgesData?.length < 3 && profileData?._id === currentUser._id && (
-                  <TouchableOpacity
-                    style={{
-                      borderColor: 'white',
-                      borderWidth: borderWidth.thin,
-                      borderRadius: borderRadius.max,
-                      padding: spacing.x8,
-                      marginRight: profileData?.badgesData.length > 0 ? spacing.x10 : 0,
-                    }}
-                    onPress={() => {
-                      // getBadge();
-                      dispatch(getBadges.Request({ token }));
-                      setRequestModal(true);
-                    }}
-                  >
-                    <Add color="white" size={20} />
-                  </TouchableOpacity>
-                )}
-
-                {profileData?.badgesData.map((item, index) => (
-                  <View key={index}>
-                    {profileData?.badgesData?.length < 3 ? (
-                      <FastImage
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: borderRadius.max,
-                          marginRight:
-                            index == (profileData?.badgesData.length ?? 0 - 1) ? 0 : spacing.x10,
-                        }}
-                        source={{
-                          uri: item.badge,
-                        }}
-                        resizeMode={FastImage.resizeMode.stretch}
-                        pointerEvents="none"
-                      />
-                    ) : profileData?._id == currentUser._id ? (
-                      <TouchableOpacity
-                        style={{ marginHorizontal: spacing.x10 }}
-                        onPress={() => {
-                          dispatch(getBadges.Request({ token }));
-                          // getBadge();
-                          setRequestModal(true);
-                        }}
-                      >
-                        <FastImage
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: borderRadius.max,
-                          }}
-                          source={{
-                            uri: item.badge,
-                          }}
-                          resizeMode={FastImage.resizeMode.stretch}
-                        />
-                      </TouchableOpacity>
-                    ) : (
-                      <FastImage
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: borderRadius.max,
-                        }}
-                        source={{
-                          uri: item.badge,
-                        }}
-                        resizeMode={FastImage.resizeMode.stretch}
-                        pointerEvents="none"
-                      />
-                    )}
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          <View
-            style={[
-              {
-                position: 'absolute',
-                bottom: 10,
-                marginLeft: spacing.x24,
-
-                // animatedStyles
-                // profileImageAnimation
-              },
-
-              // animatedStyles,
-            ]}
-            pointerEvents="none"
-          >
-            <FastImage
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: borderRadius.max,
-                borderWidth: borderWidth.base,
-                borderColor: 'white',
-              }}
-              source={{
-                uri: profileData?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
-              }}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.headerSection}>
+        <View style={styles.coverWrap}>
+          {profileData.profileHeader ? (
+            <Image
+              source={{ uri: profileData.profileHeader }}
+              style={styles.coverImage}
               resizeMode="cover"
             />
-          </View>
-        </View>
-      </View>
+          ) : (
+            <View style={styles.coverFallback} />
+          )}
 
-      <View style={[{ paddingHorizontal: spacing.x24 }]} pointerEvents="box-none">
-        <View
-          style={[
-            {
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-            },
-          ]}
-          pointerEvents="box-none"
-        >
-          <View style={[{ flex: 1, height: 70 }]}>
-            <View
-              style={{
-                flexDirection: 'row',
-                overflow: 'hidden',
-                paddingRight: spacing.x5,
-                alignItems: 'center',
-                flex: 1,
-              }}
+          {showSelfProfileMediaControls ? (
+            <Pressable
+              accessibilityLabel="Edit cover image"
+              onPress={() => openEditProfile('header')}
+              style={styles.coverEditButton}
+              testID="profile-cover-edit-button"
             >
-              <StyledText
-                numberOfLines={2}
-                style={[
-                  Typography.header.h3,
-                  {
-                    flex: 1,
-                    marginRight: spacing.x10,
-                  },
-                  // {
-                  //   marginTop: direction == 'down' ? 10 : 0,
-                  // },
-                ]}
-              >
-                {profileData?.accountType == 'organization' && profileData?.profile?.companyName
-                  ? profileData?.profile?.companyName
-                  : `${profileData?.name}`}
-              </StyledText>
-
-              {profileData?.influencerProfile?.influencerStatus == 'approved' ? (
-                <Icon name="check-decagram" size={20} color={Colors.primarySapphire.brand} />
-              ) : null}
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flex: 1, overflow: 'hidden', flexDirection: 'row' }}>
-                <StyledText
-                  style={{
-                    color: Colors.neutral[300],
-                    flex: 2,
-                    overflow: 'hidden',
-                  }}
-                  numberOfLines={1}
-                >
-                  {profileData?.username ? `@${profileData?.username}` : ''}
-                </StyledText>
-                {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
-                  <StyledText style={{ color: Colors.neutral[300], flex: 0 }}>
-                    {profileData?.username ? ` • ` : ''}
-                  </StyledText>
-                ) : null}
-                <StyledText style={{ flex: 1 }}>
-                  {`${
-                    profileData?.profile?.whatIDo?.name
-                      ? `${profileData?.profile?.whatIDo?.name}`
-                      : ''
-                  }`}
-                  {`${
-                    profileData?.profile?.typeOfOrganization
-                      ? `${profileData?.profile?.typeOfOrganization?.name}`
-                      : ''
-                  }`}
-                </StyledText>
-              </View>
-            </View>
-          </View>
-
-          <View
-            style={[
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-              },
-            ]}
-            pointerEvents="box-none"
-          >
-            {profileData?._id === currentUser._id ? (
-              <Button
-                onPress={() => {
-                  navigation.navigate('EditProfile');
-                }}
-                text="Edit Profile"
-                btnStyle={[
-                  button.primary,
-                  {
-                    paddingVertical: spacing.x10,
-                    paddingHorizontal: spacing.x16,
-                  },
-                ]}
-                btnTextStyle={{ color: '#FFF' }}
-              />
-            ) : (
-              <Button
-                onPress={() => {
-                  if (currentUser?.following.includes(profileData?._id)) {
-                    if (handleUnSubscribe) handleUnSubscribe(profileData?._id);
-                  } else if (handleSubscribe) handleSubscribe(profileData?._id);
-                }}
-                text={currentUser?.following.includes(profileData?._id) ? 'Connected' : 'Connect'}
-                btnStyle={[
-                  button.primary,
-                  {
-                    paddingVertical: spacing.x10,
-                    paddingHorizontal: spacing.x16,
-                    backgroundColor: currentUser?.following.includes(profileData?._id)
-                      ? Colors.neutral[500]
-                      : Colors.primarySapphire.brand,
-                  },
-                ]}
-                btnTextStyle={{
-                  color: currentUser?.following.includes(profileData?._id)
-                    ? Colors.neutral[700]
-                    : '#FFF',
-                }}
-              />
-            )}
-          </View>
-        </View>
-
-        <View pointerEvents="box-none">
-          {profileData?.influencerProfile?.influencerStatus === 'approved' && profileData?.bio ? (
-            <View style={{ marginBottom: spacing.x16 }} pointerEvents="box-none">
-              <StyledText numberOfLines={3} style={{ color: Colors.neutral[200] }}>
-                {profileData?.bio}
-              </StyledText>
-            </View>
-          ) : null}
-          <View
-            pointerEvents="none"
-            style={[
-              {
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                paddingBottom: spacing.x16,
-                justifyContent: 'center',
-              },
-            ]}
-          >
-            {profileData?.profile?.location?.address && profileData.profile.isLocationPublic ? (
-              <View style={{ flexDirection: 'row', flex: 1 }}>
-                <Location size={20} color={Colors.neutral.brand} />
-                <StyledText
-                  style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}
-                >
-                  {profileData?.profile?.location.address}
-                </StyledText>
-              </View>
-            ) : null}
-
-            <View
-              style={{
-                flexDirection: 'row',
-                paddingLeft:
-                  profileData?.profile?.location?.address && profileData.profile.isLocationPublic
-                    ? spacing.x16
-                    : 0,
-                flex: 1,
-              }}
-            >
-              <Calendar size={20} color={Colors.neutral.brand} />
-              <StyledText
-                style={{
-                  ...Typography.fontWeight.light,
-                  marginLeft: spacing.x10,
-                }}
-              >
-                Joined{' '}
-                <StyledText style={{ ...Typography.fontWeight.light }}>
-                  {format(parseISO(profileData?.createdAt ?? ''), 'MMM yyyy')}
-                </StyledText>
-              </StyledText>
-            </View>
-          </View>
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
-            pointerEvents="none"
-          >
-            <ShieldTick size={20} color={Colors.neutral.brand} />
-
-            <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
-              Profile
-            </StyledText>
-            <StyledText style={{}}>{profileData?.username ? ` • ` : ''}</StyledText>
-            <StyledText style={{ marginHorizontal: spacing.x10, textTransform: 'capitalize' }}>
-              {profileData?.accountType}{' '}
-              {profileData?.influencerProfile?.influencerStatus == 'approved' ? 'Influencer' : ''}
-            </StyledText>
-          </View>
-
-          {profileData.accountType === AccountType.individual &&
-          profileData.profile?.isChurchTypePublic ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                paddingBottom: spacing.x16,
-              }}
-              pointerEvents="none"
-            >
-              <HomeHashtag size={20} color={Colors.neutral.brand} />
-
-              <StyledText style={[{ marginHorizontal: spacing.x10 }, Typography.body.x2M]}>
-                Denomination
-                <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
-                <StyledText>
-                  {profileData?.profile.churchType}
-                  {profileData?.profile.churchSubType ? (
-                    <>
-                      {` - `}
-
-                      {profileData?.profile.churchSubType}
-                    </>
-                  ) : null}
-                </StyledText>
-              </StyledText>
-            </View>
-          ) : null}
-
-          {profileData?.website ? (
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
-              pointerEvents="box-none"
-            >
-              <Link21 size={20} color={Colors.neutral.brand} />
-              <TouchableOpacity
-                onPress={() =>
-                  OpenURLButton(
-                    `${
-                      profileData?.website.indexOf('https://') == -1
-                        ? `https://${profileData?.website}`
-                        : profileData?.website
-                    }`
-                  )
-                }
-                style={{ justifyContent: 'center', marginLeft: spacing.x10 }}
-              >
-                <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                  {profileData?.website}
-                </StyledText>
-              </TouchableOpacity>
-            </View>
+              <Icon name="pencil-outline" size={18} color="#FFFFFF" />
+            </Pressable>
           ) : null}
         </View>
 
-        <View
-          style={[
-            {
-              flexDirection: 'row',
-              alignItems: 'center',
-              // marginBottom: spacing.x10,
-              // width: '65%',
-              overflow: 'hidden',
-              height: 58,
-              // paddingTop: spacing.x5,
-              // backgroundColor: 'red',
-            },
-          ]}
-          pointerEvents="box-none"
-        >
-          <TouchableOpacity
-            onPress={() => {
-              navigation.navigate('Connections');
-            }}
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
-          >
-            <StyledText
-              style={[Typography.body.x3M, { flex: 1, lineHeight: 18, textAlign: 'center' }]}
-            >
-              {profileData?.followerCount && profileData?.followerCount > 999
-                ? `${(profileData.followerCount / 1000).toFixed(2)}k`
-                : profileData?.followerCount && profileData?.followerCount > 999999
-                  ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
-                  : (profileData?.followerCount ?? 0)}{' '}
-              <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
-            </StyledText>
-
-            <StyledText
+        {(displayedBadges.length > 0 || isOwnProfile) &&
+          (isOwnProfile ? (
+            <Pressable
+              onPress={openBadgeModal}
               style={[
-                Typography.body.x3M,
-                {
-                  marginLeft: spacing.x24,
-                  flex: 1,
-                  lineHeight: 18,
-                  textAlign: 'center',
-                },
+                styles.badgeRail,
+                isSelfVariant ? styles.selfBadgeRail : null,
+                isAddOnlyBadgeRail ? styles.badgeRailAddOnly : null,
+                isSelfVariant && isAddOnlyBadgeRail ? styles.selfBadgeRailAddOnly : null,
               ]}
             >
-              {profileData?.following.length > 999
-                ? `${(profileData.following.length / 1000).toFixed(2)}k`
-                : profileData?.following.length > 999999
-                  ? `${(profileData.following.length / 1000000).toFixed(2)}m`
-                  : (profileData?.following.length ?? 0)}{' '}
-              <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
+              {!useCompactAddOnlyBadge
+                ? displayedBadges
+                    .slice(0, 3)
+                    .map((badge) => (
+                      <FastImage
+                        key={badge._id}
+                        source={{ uri: badge.badge }}
+                        style={styles.badgeImage}
+                        resizeMode={FastImage.resizeMode.contain}
+                      />
+                    ))
+                : null}
+              {badgeTrailingContent}
+            </Pressable>
+          ) : (
+            <View style={[styles.badgeRail, isSelfVariant ? styles.selfBadgeRail : null]}>
+              {displayedBadges.slice(0, 3).map((badge) => (
+                <FastImage
+                  key={badge._id}
+                  source={{ uri: badge.badge }}
+                  style={styles.badgeImage}
+                  resizeMode={FastImage.resizeMode.contain}
+                />
+              ))}
+            </View>
+          ))}
+      </View>
+
+      <View style={styles.content}>
+        {isSelfVariant ? (
+          <View style={styles.selfHeroRow}>
+            <View style={styles.selfHero}>
+              {showSelfProfileMediaControls ? (
+                <Pressable
+                  accessibilityLabel="Edit profile photo"
+                  onPress={() => openEditProfile('photo')}
+                  style={styles.avatarEditButton}
+                  testID="profile-avatar-edit-button"
+                >
+                  <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
+                    {profileData.profileImage ? (
+                      <FastImage
+                        source={{ uri: profileData.profileImage }}
+                        style={[styles.avatar, styles.selfAvatar]}
+                        resizeMode={FastImage.resizeMode.cover}
+                      />
+                    ) : (
+                      <View style={[styles.avatar, styles.selfAvatar, styles.avatarFallback]}>
+                        <ProfileFill width={56} height={56} color={Colors.primarySapphire.brand} />
+                      </View>
+                    )}
+                    <View pointerEvents="none" style={styles.avatarEditBadge}>
+                      <Icon name="pencil-outline" size={16} color="#FFFFFF" />
+                    </View>
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
+                  {profileData.profileImage ? (
+                    <FastImage
+                      source={{ uri: profileData.profileImage }}
+                      style={[styles.avatar, styles.selfAvatar]}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  ) : (
+                    <View style={[styles.avatar, styles.selfAvatar, styles.avatarFallback]}>
+                      <ProfileFill width={56} height={56} color={Colors.primarySapphire.brand} />
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            <View style={styles.selfActionRow}>
+              <Pressable
+                onPress={() => openEditProfile()}
+                style={[styles.secondaryAction, styles.selfActionButton]}
+              >
+                <StyledText style={styles.secondaryActionText}>Edit Profile</StyledText>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  handleShareProfile().catch(() => undefined);
+                }}
+                style={[styles.primaryAction, styles.selfActionButton]}
+              >
+                <StyledText style={styles.primaryActionText}>Share Profile</StyledText>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.heroRow}>
+            <Animated.View
+              ref={avatarAnimation?.targetRef}
+              onLayout={avatarAnimation?.onTargetLayout}
+              style={styles.avatarWrap}
+            >
+              {profileData.profileImage ? (
+                avatarAnimation ? (
+                  // Single AnimatedPressable replaces the Animated.View + Pressable pair —
+                  // one fewer compositing layer on Android
+                  <AnimatedPressable
+                    testID="profile-public-avatar-button"
+                    onPress={avatarAnimation.open}
+                    style={[styles.avatar, styles.avatarClipped, rAvatarPlaceholderStyle]}
+                  >
+                    <FastImage
+                      source={{ uri: profileData.profileImage }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  </AnimatedPressable>
+                ) : (
+                  <View
+                    testID="profile-public-avatar-static"
+                    style={[styles.avatar, styles.avatarClipped]}
+                  >
+                    <FastImage
+                      source={{ uri: profileData.profileImage }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  </View>
+                )
+              ) : (
+                <View style={[styles.avatar, styles.avatarFallback]}>
+                  <ProfileFill width={50} height={50} color={Colors.primarySapphire.brand} />
+                </View>
+              )}
+            </Animated.View>
+
+            <View style={styles.actionRow}>
+              {isOwnProfile ? (
+                <Pressable onPress={() => openEditProfile()} style={styles.ownProfileAction}>
+                  <StyledText style={styles.primaryActionText}>Edit Profile</StyledText>
+                </Pressable>
+              ) : (
+                <>
+                  <Pressable
+                    style={[
+                      styles.secondaryAction,
+                      profileData.allowDirectMessages === false && styles.disabledAction,
+                    ]}
+                    onPress={openDirectMessage}
+                    disabled={profileData.allowDirectMessages === false}
+                  >
+                    <StyledText style={styles.secondaryActionText}>Message</StyledText>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.primaryAction, isConnected ? styles.connectedAction : null]}
+                    onPress={() => {
+                      if (isConnected) {
+                        handleUnSubscribe?.(profileData._id);
+                      } else {
+                        handleSubscribe?.(profileData._id);
+                      }
+                    }}
+                  >
+                    <StyledText style={styles.primaryActionText}>
+                      {isConnected ? 'Connected' : 'Connect'}
+                    </StyledText>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          </View>
+        )}
+
+        <View style={styles.identityBlock}>
+          <View style={styles.nameRow}>
+            <StyledText numberOfLines={2} style={styles.nameText}>
+              {displayName}
             </StyledText>
-          </TouchableOpacity>
+            {profileData.influencerProfile?.influencerStatus === 'approved' ? (
+              <Icon
+                name="check-decagram"
+                size={20}
+                color={Colors.primarySapphire.brand}
+                style={styles.verifiedIcon}
+              />
+            ) : null}
+          </View>
+
+          <View style={styles.subtitleRow}>
+            {profileData.username ? (
+              <StyledText style={styles.mutedText}>{`@${profileData.username}`}</StyledText>
+            ) : null}
+            {profileData.username && roleLabel ? (
+              <StyledText style={styles.mutedText}> • </StyledText>
+            ) : null}
+            {roleLabel ? <StyledText style={styles.subtitleText}>{roleLabel}</StyledText> : null}
+          </View>
+
+          {profileData.bio ? (
+            <StyledText style={styles.bioText}>{profileData.bio}</StyledText>
+          ) : null}
+
+          {(Boolean(
+            profileData.profile?.location?.address && profileData.profile?.isLocationPublic
+          ) ||
+            Boolean(joinedLabel)) && (
+            <View style={styles.inlineMetaRow}>
+              {profileData.profile?.location?.address && profileData.profile?.isLocationPublic ? (
+                <View style={styles.inlineMetaItem}>
+                  <Location size={18} color={Colors.neutral.brand} />
+                  <StyledText style={styles.inlineMetaText}>
+                    {profileData.profile.location.address}
+                  </StyledText>
+                </View>
+              ) : null}
+
+              {joinedLabel ? (
+                <View style={styles.inlineMetaItem}>
+                  <Calendar size={18} color={Colors.neutral.brand} />
+                  <StyledText style={styles.inlineMetaText}>Joined {joinedLabel}</StyledText>
+                </View>
+              ) : null}
+            </View>
+          )}
+
+          <View style={styles.metaRow}>
+            <ShieldTick size={18} color={Colors.neutral.brand} />
+            <StyledText style={styles.metaLabel}>Profile</StyledText>
+            <StyledText style={styles.metaSeparator}> • </StyledText>
+            <StyledText style={styles.metaValue}>{typeLabel}</StyledText>
+          </View>
+
+          {profileData.profile?.churchType && profileData.profile?.isChurchTypePublic ? (
+            <View style={styles.metaRow}>
+              <HomeHashtag size={18} color={Colors.neutral.brand} />
+              <StyledText style={styles.metaLabel}>Denomination</StyledText>
+              <StyledText style={styles.metaSeparator}> • </StyledText>
+              <StyledText style={styles.metaValue}>
+                {profileData.profile.churchType}
+                {profileData.profile.churchSubType ? ` - ${profileData.profile.churchSubType}` : ''}
+              </StyledText>
+            </View>
+          ) : null}
+
+          {profileData.website ? (
+            <Pressable style={styles.metaRow} onPress={handleWebsitePress}>
+              <Link21 size={18} color={Colors.neutral.brand} />
+              <StyledText style={styles.websiteText}>{profileData.website}</StyledText>
+            </Pressable>
+          ) : null}
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <StyledText style={styles.statCount}>
+                {formatCount(profileData.followerCount)}
+              </StyledText>
+              <StyledText style={styles.statLabel}>Connectors</StyledText>
+            </View>
+            <View style={styles.statItem}>
+              <StyledText style={styles.statCount}>
+                {formatCount(profileData.following?.length)}
+              </StyledText>
+              <StyledText style={styles.statLabel}>Connections</StyledText>
+            </View>
+          </View>
         </View>
       </View>
-      {profileData?.influencerProfile?.influencerStatus === 'approved' &&
-      profileData?.influencerProfile?.rssUrl ? (
-        <View
-          style={{
-            // backgroundColor: Colors.neutral[800],
-            borderColor: Colors.neutral[800],
-            borderTopWidth: borderWidth.thin,
-            borderBottomWidth: borderWidth.thin,
-            flexGrow: 1,
-            flexDirection: 'row',
-            paddingHorizontal: spacing.x10,
-          }}
-        >
-          <TouchableOpacity
-            style={[
-              style.tab,
-              { borderColor: Colors.neutral[800], borderRightWidth: borderWidth.thin },
-            ]}
-            onPress={() => {
-              setActiveTab('social');
-            }}
-          >
-            <StyledText style={activeTab == 'social' ? style.selectedMenuItem : style.menuItem}>
-              Social
-            </StyledText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => {
-              setActiveTab('blog');
-            }}
-            style={style.tab}
-          >
-            <StyledText style={activeTab == 'blog' ? style.selectedMenuItem : style.menuItem}>
-              Blog/News
-            </StyledText>
-          </TouchableOpacity>
-        </View>
-      ) : null}
 
       <CustomModal
         modalVisible={requestModal}
-        onclose={() => {
-          setRequestModal(false);
-        }}
-        style={styles.bottomView}
+        onclose={() => setRequestModal(false)}
+        style={modalStyles.bottomView}
       >
-        <View style={[styles.content2, { backgroundColor: colors.background }]}>
-          <SafeAreaView>
-            <StyledText
-              style={{
-                marginLeft: 20,
-                marginRight: 20,
-                textAlign: 'center',
-                letterSpacing: 0.25,
-              }}
-            >
-              <StyledText style={{ fontWeight: 'bold' }}>Select up to 3 badges</StyledText> you
-              would like to display on your profile
+        <View style={[modalStyles.content, { backgroundColor: colors.background }]}>
+          <View style={{ flex: 1, width: '100%' }}>
+            <StyledText style={styles.badgeModalTitle}>
+              Select up to 3 badges you would like to display on your profile
             </StyledText>
-            <View style={{ flex: 1 }}>
-              <View style={{ marginVertical: 15 }}>
-                <ScrollView>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      gap: spacing.x10,
-                    }}
-                  >
-                    {authState?.getBadgesData && authState?.getBadgesData?.length > 0
-                      ? authState?.getBadgesData?.map((item: any) => {
-                          return (
-                            <TouchableOpacity
-                              onPress={() => {
-                                if (profileData?.badges.includes(item?._id)) {
-                                  unselect(item?._id);
-                                } else {
-                                  const badgeIndex = selectedBadges.findIndex((badgeToCheck) => {
-                                    return badgeToCheck._id == item?._id;
-                                  });
+            <ScrollView
+              contentInsetAdjustmentBehavior="automatic"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.badgeSelectionGrid}>
+                {(authState?.getBadgesData ?? []).map((badge: Badge) => {
+                  const isSelected = selectedBadgeIds.includes(badge._id);
 
-                                  if (badgeIndex > -1) {
-                                    const newSelectedBadges = selectedBadges.filter(
-                                      (selectedBadge) => {
-                                        return selectedBadge._id != selectedBadges[badgeIndex]._id;
-                                      }
-                                    );
-                                    setSelectedBadges(newSelectedBadges);
-                                  } else if (selectedBadges.length < 3) {
-                                    setSelectedBadges([...selectedBadges, item]);
-                                  } else {
-                                    Toast.show('You cannot select more then 3 badges!', Toast.LONG);
-                                  }
-                                }
-                              }}
-                              style={{
-                                flex: 1,
-                                alignItems: 'stretch',
-                              }}
-                            >
-                              <View
-                                style={{
-                                  justifyContent: 'center',
-                                  alignItems: 'center',
-                                  alignContent: 'center',
-                                  flex: 1,
-                                }}
-                              >
-                                <FastImage
-                                  style={{
-                                    flexGrow: 1,
-                                    width: '80%',
-                                    borderRadius: borderRadius.max,
-                                    aspectRatio: 1,
-                                    // maxWidth: '80%',
-                                  }}
-                                  source={{
-                                    uri: item?.badge,
-                                  }}
-                                  resizeMode={FastImage.resizeMode.contain}
-                                />
-                                {selectedBadges.filter((x) => x._id == item?._id).length > 0 ? (
-                                  <View
-                                    style={{
-                                      position: 'absolute',
-                                      alignSelf: 'center',
-                                      marginTop: 2,
-                                    }}
-                                  >
-                                    <Selected />
-                                  </View>
-                                ) : null}
-                                <StyledText
-                                  style={{
-                                    color: Colors.primary.brand,
-
-                                    marginTop: spacing.x10,
-                                  }}
-                                >
-                                  {item?.title}
-                                </StyledText>
-                              </View>
-                            </TouchableOpacity>
-                          );
-                        })
-                      : null}
-                  </View>
-                </ScrollView>
-                {/* <FlatList
-                  data={authState?.getBadgesData}
-                  numColumns={3}
-                  showsHorizontalScrollIndicator={false}
-                  // ListFooterComponent={() => <View style={{ padding: 7 }} />}
-                  // ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (profileData?.badges.includes(item?._id)) {
-                          unselect(item?._id);
-                        } else {
-                          const badgeIndex = selectedBadges.findIndex((badgeToCheck) => {
-                            return badgeToCheck._id == item?._id;
-                          });
-
-                          if (badgeIndex > -1) {
-                            const newSelectedBadges = selectedBadges.filter((selectedBadge) => {
-                              return selectedBadge._id != selectedBadges[badgeIndex]._id;
-                            });
-                            setSelectedBadges(newSelectedBadges);
-                          } else {
-                            if (selectedBadges.length < 3) {
-                              setSelectedBadges([...selectedBadges, item]);
-                            } else {
-                              Toast.show('You cannot select more then 3 badges!', Toast.LONG);
-                            }
-                          }
-                        }
-                      }}
-                      style={{ width: 30, alignItems: 'center', height: 70 }}
+                  return (
+                    <Pressable
+                      key={badge._id}
+                      onPress={() => handleToggleBadge(badge._id)}
+                      style={styles.badgeSelectionItem}
                     >
                       <FastImage
-                        style={{ width: '33%', height: 40, borderRadius: borderRadius.max }}
-                        source={{
-                          uri: item?.badge,
-                        }}
+                        source={{ uri: badge.badge }}
+                        style={styles.badgeSelectionImage}
                         resizeMode={FastImage.resizeMode.contain}
                       />
-                      {selectedBadges.filter((x) => x._id == item?._id).length > 0 ? (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            alignSelf: 'center',
-                            marginTop: 2,
-                          }}
-                        >
+                      {isSelected ? (
+                        <View style={styles.selectedBadgeOverlay}>
                           <Selected />
                         </View>
                       ) : null}
-                      <StyledText
-                        style={{
-                          color: Colors.primary.brand,
-
-                          marginTop: spacing.x10,
-                        }}
-                      >
-                        {item?.title}
-                      </StyledText>
-                    </TouchableOpacity>
-                  )}
-                /> */}
+                      <StyledText style={styles.badgeSelectionLabel}>{badge.title}</StyledText>
+                    </Pressable>
+                  );
+                })}
               </View>
-            </View>
-
-            <View>
-              <TouchableOpacity
-                onPress={() => {
-                  dispatch(setUserBadges.Request({ token, badges: selectedBadges }));
-                  setRequestModal(false);
-                }}
-                style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
-              >
-                <StyledText
-                  style={{
-                    color: '#032F3C',
-                    fontWeight: 'bold',
-                    letterSpacing: 1.25,
-                  }}
-                >
-                  DONE
-                </StyledText>
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
+            </ScrollView>
+            <Pressable
+              onPress={() => {
+                dispatch(setUserBadges.Request({ token, badges: selectedBadgeIds }));
+                setRequestModal(false);
+              }}
+              style={styles.badgeDoneButton}
+            >
+              <StyledText style={styles.badgeDoneButtonText}>Done</StyledText>
+            </Pressable>
+          </View>
         </View>
       </CustomModal>
     </View>
   );
 }
 
-export default ProfileHeader;
-
-const menuItem: TextStyle = {
-  fontSize: 14,
-  textAlign: 'center',
-  fontWeight: '500',
-  textTransform: 'capitalize',
-};
-const style = StyleSheet.create({
-  tab: {
-    width: '50%',
-    padding: spacing.x10,
-    alignItems: 'center',
+const styles = StyleSheet.create({
+  actionRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.x10,
+    justifyContent: 'flex-end',
+    marginLeft: spacing.x16,
   },
-  menuItem,
-  selectedMenuItem: {
-    ...menuItem,
-    fontWeight: 'bold',
+  avatar: {
+    borderColor: '#FFFFFF',
+    borderRadius: AVATAR_SIZE / 2,
+    borderWidth: borderWidth.base,
+    height: AVATAR_SIZE,
+    width: AVATAR_SIZE,
+  },
+  avatarClipped: {
+    overflow: 'hidden',
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditBadge: {
+    alignItems: 'center',
+    backgroundColor: Colors.primarySapphire.brand,
+    borderColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: borderWidth.base,
+    bottom: 2,
+    height: 30,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 2,
+    width: 30,
+  },
+  avatarEditButton: {
+    alignSelf: 'flex-start',
+  },
+  avatarWrap: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: AVATAR_SIZE / 2 + 4,
+    padding: 4,
+  },
+  badgeAddButton: {
+    alignItems: 'center',
+    backgroundColor: Colors.primarySapphire.brand,
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  badgeDoneButton: {
+    alignItems: 'center',
+    backgroundColor: Colors.primary.brand,
+    borderRadius: borderRadius.button,
+    marginTop: spacing.x16,
+    paddingVertical: spacing.x13,
+  },
+  badgeDoneButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  badgeImage: {
+    borderRadius: borderRadius.max,
+    height: 34,
+    width: 34,
+  },
+  badgeModalTitle: {
+    marginBottom: spacing.x16,
+    textAlign: 'center',
+  },
+  badgeRail: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(78, 78, 78, 0.78)',
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderWidth: borderWidth.hairline,
+    borderRadius: 24,
+    bottom: 14,
+    flexDirection: 'row',
+    gap: spacing.x8,
+    paddingHorizontal: spacing.x8,
+    paddingVertical: spacing.x8,
+    position: 'absolute',
+    right: spacing.x20,
+  },
+  badgeRailAddOnly: {
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.x8,
+    paddingVertical: spacing.x8,
+    width: 56,
+  },
+  badgeSelectionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.x10,
+    justifyContent: 'space-between',
+  },
+  badgeSelectionImage: {
+    aspectRatio: 1,
+    width: '80%',
+  },
+  badgeSelectionItem: {
+    alignItems: 'center',
+    marginBottom: spacing.x16,
+    minWidth: '30%',
+    width: '30%',
+  },
+  badgeSelectionLabel: {
+    color: Colors.primary.brand,
+    marginTop: spacing.x8,
+    textAlign: 'center',
+  },
+  bioText: {
+    color: Colors.neutral[200],
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: spacing.x8,
+  },
+  connectedAction: {
+    backgroundColor: Colors.neutral[800],
+  },
+  container: {
+    width: '100%',
+  },
+  coverEditButton: {
+    alignItems: 'center',
+    backgroundColor: Colors.primarySapphire.brand,
+    borderColor: '#FFFFFF',
+    borderRadius: 21,
+    borderWidth: borderWidth.base,
+    height: 42,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: spacing.x16,
+    top: spacing.x12,
+    width: 42,
+    zIndex: 2,
+  },
+  content: {
+    paddingHorizontal: spacing.x20,
+    paddingBottom: spacing.x20,
+    paddingTop: spacing.x12,
+  },
+  coverFallback: {
+    backgroundColor: Colors.neutral[600],
+    height: COVER_HEIGHT,
+    width: '100%',
+  },
+  coverImage: {
+    height: COVER_HEIGHT,
+    width: '100%',
+  },
+  coverWrap: {
+    height: COVER_HEIGHT,
+    position: 'relative',
+  },
+  headerSection: {
+    position: 'relative',
+  },
+  disabledAction: {
+    opacity: 0.45,
+  },
+  heroRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.x12,
+    marginTop: -(AVATAR_SIZE / 2),
+  },
+  identityBlock: {
+    gap: spacing.x12,
+  },
+  inlineMetaItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.x8,
+  },
+  inlineMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.x12,
+    marginTop: spacing.x2,
+  },
+  inlineMetaText: {
+    color: Colors.neutral[300],
+    fontSize: 13,
+  },
+  metaLabel: {
+    ...Typography.body.x2M,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  metaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.x8,
+  },
+  metaSeparator: {
+    color: Colors.neutral[300],
+  },
+  metaValue: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  mutedText: {
+    color: Colors.neutral[300],
+    fontSize: 14,
+  },
+  nameRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  nameText: {
+    color: Colors.neutral.brand,
+    flexShrink: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  ownProfileAction: {
+    alignItems: 'center',
+    backgroundColor: Colors.primarySapphire.brand,
+    borderRadius: borderRadius.button,
+    justifyContent: 'center',
+    minHeight: 46,
+    minWidth: 164,
+    paddingHorizontal: spacing.x20,
+  },
+  primaryAction: {
+    alignItems: 'center',
+    backgroundColor: Colors.primarySapphire.brand,
+    borderRadius: borderRadius.button,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 46,
+    paddingHorizontal: spacing.x16,
+  },
+  primaryActionText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  secondaryAction: {
+    alignItems: 'center',
+    backgroundColor: Colors.neutral[900],
+    borderRadius: borderRadius.button,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 46,
+    paddingHorizontal: spacing.x16,
+  },
+  secondaryActionText: {
+    color: Colors.neutral.brand,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  selfActionButton: {
+    borderRadius: 22,
+    flex: 0,
+    minHeight: 42,
+    paddingHorizontal: spacing.x12,
+    width: '48%',
+  },
+  selfActionRow: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.x8,
+    marginLeft: spacing.x16,
+    marginRight: spacing.x2,
+    marginTop: spacing.x8,
+  },
+  selfAvatar: {
+    height: 96,
+    width: 96,
+  },
+  selfAvatarWrap: {
+    borderRadius: 52,
+    marginTop: -48,
+    padding: 5,
+  },
+  selfBadgeAddButton: {
+    backgroundColor: Colors.primary.brand,
+    height: 28,
+    width: 28,
+  },
+  selfBadgeRail: {
+    backgroundColor: 'rgba(3, 47, 60, 0.64)',
+    bottom: spacing.x12,
+    minHeight: 42,
+    paddingHorizontal: spacing.x6,
+    paddingVertical: spacing.x6,
+    right: spacing.x16,
+  },
+  selfBadgeRailAddOnly: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(53, 89, 99, 0.78)',
+    borderRadius: 21,
+    height: 42,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    width: 42,
+  },
+  selfHero: {
+    alignItems: 'flex-start',
+    marginBottom: spacing.x8,
+  },
+  selfHeroRow: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    marginBottom: spacing.x10,
+  },
+  selectedBadgeOverlay: {
+    position: 'absolute',
+    top: 4,
+  },
+  statCount: {
+    color: Colors.neutral.brand,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statItem: {
+    gap: spacing.x4,
+  },
+  statLabel: {
+    color: Colors.neutral[300],
+    fontSize: 14,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.x24,
+    marginTop: spacing.x4,
+  },
+  subtitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  subtitleText: {
+    fontSize: 13,
+  },
+  verifiedIcon: {
+    marginLeft: spacing.x8,
+    marginTop: 1,
+  },
+  websiteText: {
     color: Colors.primarySapphire.brand,
+    fontSize: 14,
+    marginLeft: spacing.x8,
   },
 });
+
+export default ProfileHeader;

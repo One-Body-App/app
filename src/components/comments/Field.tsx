@@ -1,22 +1,114 @@
-import { TouchableOpacity, View, ScrollView, EmitterSubscription } from 'react-native';
-import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
+import {
+  ActionSheetIOS,
+  Alert,
+  TextInput as RNTextInput,
+  TextInput,
+  Pressable,
+  View,
+  ScrollView,
+  Platform,
+} from 'react-native';
+import { CloseCircle, TickCircle } from 'iconsax-react-native';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import Color from 'color';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import StyledTextInput from '../styled/TextInput';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSelector } from 'react-redux';
+import ImagePicker from 'react-native-image-crop-picker';
+import FastImage from '@/components/primitives/FastImage';
+import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
+import type { TaggedMention } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import Button from '../Button';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
+import { MainStackParamList } from '@/src/navigator/types';
+import GifIcon from '@/components/GifIcon';
+import { sanitizeComposerText } from '@/components/composer/composerText';
+import {
+  createUploadImageRequestId,
+  waitForUploadImageResult,
+} from '@/src/screens/post/uploadImageBridge';
+import {
+  CLIENT_IMAGE_MAX_HEIGHT,
+  CLIENT_IMAGE_MAX_WIDTH,
+  CLIENT_IMAGE_PICKER_QUALITY,
+} from '@/src/screens/post/uploadImageConfig';
+import {
+  extractExifOrientation,
+  resolveEditorExifOrientation,
+} from '@/src/screens/post/uploadImageOrientation';
+import StyledText from '../styled/Text';
+
+const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => {
+  if (!media || typeof media !== 'object') {
+    return undefined;
+  }
+
+  const mediaRecord = media as unknown as Record<string, unknown>;
+  const directUrl = mediaRecord.url;
+  if (typeof directUrl === 'string' && directUrl.startsWith('http')) {
+    return directUrl;
+  }
+
+  const images = mediaRecord.images as Record<string, unknown> | undefined;
+  if (!images || typeof images !== 'object') {
+    return undefined;
+  }
+
+  const renditionKeys = [
+    'original',
+    'fixed_width',
+    'fixed_height',
+    'downsized',
+    'preview_gif',
+    'fixed_width_small',
+  ];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const renditionKey of renditionKeys) {
+    const rendition = images[renditionKey] as Record<string, unknown> | undefined;
+    if (!rendition || typeof rendition !== 'object') {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    const renditionUrl = rendition.url;
+    if (typeof renditionUrl === 'string' && renditionUrl.startsWith('http')) {
+      return renditionUrl;
+    }
+  }
+
+  return undefined;
+};
+
+const MEDIA_RADIUS = 12;
 
 interface Props {
   mediaGif: GiphyMedia | null;
   setGif: React.Dispatch<React.SetStateAction<GiphyMedia | null>>;
-  publishComment: Function;
+  publishComment: (payload: {
+    text: string;
+    mentionedUserIds: string[];
+    mentions: TaggedMention[];
+  }) => Promise<boolean> | boolean;
   text?: string;
+  mentions?: TaggedMention[];
+  placeholderText?: string;
   isEditingComment?: boolean;
   setEditingComment?: (status: boolean) => void;
   isFromBottomField?: boolean;
+  useBrandDarkTheme?: boolean;
+  allowMedia?: boolean;
+  allowImageAttachments?: boolean;
+  mediaImages?: string[];
+  setImages?: React.Dispatch<React.SetStateAction<string[]>>;
+  onOpenGifPicker?: () => void;
+  replyingToLabel?: string;
+  onCancelReply?: () => void;
+  focusRequestKey?: number;
 }
 
 function CommentField({
@@ -24,11 +116,104 @@ function CommentField({
   setGif,
   publishComment,
   text,
+  mentions,
+  placeholderText,
   isEditingComment,
   setEditingComment,
   isFromBottomField,
+  useBrandDarkTheme,
+  allowMedia,
+  allowImageAttachments,
+  mediaImages,
+  setImages,
+  onOpenGifPicker,
+  replyingToLabel,
+  onCancelReply,
+  focusRequestKey,
 }: Props) {
-  const [content, setContent] = useState(text ?? '');
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const { dark, colors } = useTheme();
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
+  const inputRef = useRef<RNTextInput | null>(null);
+  const InputComponent = isFromBottomField ? BottomSheetTextInput : TextInput;
+  const mentionComposer = useMentionComposer({
+    initialText: text ?? '',
+    initialMentions: mentions ?? [],
+    sanitizeText: (value) => sanitizeComposerText(value, 2000),
+  });
+  const {
+    suggestions,
+    isLoading: isMentionLoading,
+    isError: isMentionError,
+  } = useMentionSuggestions({
+    query: mentionComposer.activeMention?.query ?? '',
+    token,
+    limit: 8,
+    excludedUserIds: mentionComposer.mentionedUserIds,
+    enabled: Boolean(mentionComposer.activeMention?.query),
+  });
+  const content = mentionComposer.text;
+  const gifAspectRatioRaw = mediaGif?.aspectRatio;
+  const gifAspectRatio = Number(gifAspectRatioRaw);
+  const safeGifAspectRatio =
+    Number.isFinite(gifAspectRatio) && gifAspectRatio > 0 ? gifAspectRatio : 1;
+  const images = mediaImages ?? [];
+  const hasGif = Boolean(mediaGif?.id || mediaGif?.url);
+  const gifPreviewUrl = extractGifPreviewUrl(mediaGif);
+  const canUseGiphy = allowMedia ?? Platform.OS !== 'android';
+  const canUseImages = allowImageAttachments ?? false;
+  let composerBackground = '#ffffff';
+  let inputBackground = '#f1f3f4';
+  let dividerColor = '#e7eaed';
+  if (dark && useBrandDarkTheme) {
+    composerBackground = colors.card;
+    inputBackground = colors.background;
+    dividerColor = colors.border;
+  } else if (dark) {
+    composerBackground = '#1a2c32';
+    inputBackground = '#111d21';
+    dividerColor = '#22343a';
+  }
+  const inputTextColor = (() => {
+    try {
+      return Color(inputBackground).isLight() ? '#0e181b' : '#ffffff';
+    } catch {
+      return dark ? '#ffffff' : '#0e181b';
+    }
+  })();
+  const textSecondary = '#4f8596';
+  const primary = '#116a88';
+  const profileImageUri =
+    user?.profileImage && user.profileImage !== '' ? user.profileImage : NO_PROFILE_IMAGE;
+  const safeProfileImageUri = profileImageUri || 'https://via.placeholder.com/72';
+  const isActionBlocked = isImageUploading || isSubmitting;
+
+  useEffect(() => {
+    if (!focusRequestKey || isEditingComment) {
+      return () => undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const input = inputRef.current as unknown as { focus?: () => void } | null;
+      input?.focus?.();
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [focusRequestKey, isEditingComment]);
+
+  useEffect(() => {
+    if (typeof text !== 'string') {
+      return;
+    }
+
+    mentionComposer.hydrate(text, mentions ?? []);
+  }, [mentionComposer.hydrate, mentions, text]);
 
   // const onKeyboardWillShow = (e: KeyboardEvent) => {
   //   setKeyboardHeight(e.endCoordinates.height);
@@ -59,12 +244,149 @@ function CommentField({
   //   }
   // }, []);
 
-  const submitComment = (content?: string) => {
-    if (content || mediaGif) {
-      publishComment(content ?? '');
-      setContent('');
-      setGif(null);
+  const submitComment = async (value?: string) => {
+    if (isSubmittingRef.current || isActionBlocked) {
+      return;
     }
+    if (value || mediaGif || images.length > 0) {
+      isSubmittingRef.current = true;
+      setIsSubmitting(true);
+      try {
+        const publishResult = await publishComment({
+          text: value ?? '',
+          mentionedUserIds: mentionComposer.mentionedUserIds,
+          mentions: mentionComposer.mentions,
+        });
+        if (publishResult) {
+          mentionComposer.reset();
+          setGif(null);
+          if (setImages) {
+            setImages([]);
+          }
+        }
+      } finally {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const processSelectedImage = async (selectedItem: any) => {
+    if (!selectedItem?.path) {
+      return;
+    }
+
+    const filePathRaw = selectedItem.path ?? '';
+    const fileUriRaw =
+      filePathRaw.startsWith('file://') || filePathRaw.startsWith('content://')
+        ? filePathRaw
+        : `file://${filePathRaw}`;
+    const fileNameRaw = selectedItem.filename ?? `image_${Date.now()}.jpg`;
+    const fileName = fileNameRaw.toLowerCase().endsWith('.jpg')
+      ? fileNameRaw
+      : `${fileNameRaw.split('.').slice(0, -1).join('.') || fileNameRaw}.jpg`;
+    const requestId = createUploadImageRequestId();
+    const resultPromise = waitForUploadImageResult(requestId);
+
+    navigation.navigate('UploadImage', {
+      requestId,
+      imageUri: fileUriRaw,
+      fileName,
+      fileSize: typeof selectedItem.size === 'number' ? selectedItem.size : undefined,
+      type: 'image/jpeg',
+      usageContext: 'comment',
+      orientation: resolveEditorExifOrientation({
+        orientation: extractExifOrientation(selectedItem),
+        source: 'react-native-image-crop-picker',
+        platform: Platform.OS,
+      }),
+    });
+
+    const result = await resultPromise;
+    if (result.status !== 'saved' || !result.uri || !setImages) {
+      return;
+    }
+
+    setImages((previous) => [...previous, result.uri]);
+  };
+
+  const chooseImageGallery = async () => {
+    if (!token || !canUseImages || !setImages || isImageUploading || isSubmittingRef.current) {
+      return;
+    }
+    setIsImageUploading(true);
+    try {
+      const pickerSelection = await ImagePicker.openPicker({
+        multiple: false,
+        mediaType: 'photo',
+        compressImageQuality: CLIENT_IMAGE_PICKER_QUALITY,
+        compressImageMaxWidth: CLIENT_IMAGE_MAX_WIDTH,
+        compressImageMaxHeight: CLIENT_IMAGE_MAX_HEIGHT,
+        forceJpg: true,
+        includeExif: true,
+      }).catch(() => null);
+
+      const selectedItem = Array.isArray(pickerSelection) ? pickerSelection[0] : pickerSelection;
+      await processSelectedImage(selectedItem);
+    } finally {
+      setIsImageUploading(false);
+    }
+  };
+
+  const captureImage = async () => {
+    if (!token || !canUseImages || !setImages || isImageUploading || isSubmittingRef.current) {
+      return;
+    }
+    setIsImageUploading(true);
+    try {
+      const selectedItem = await ImagePicker.openCamera({
+        mediaType: 'photo',
+        compressImageQuality: CLIENT_IMAGE_PICKER_QUALITY,
+        compressImageMaxWidth: CLIENT_IMAGE_MAX_WIDTH,
+        compressImageMaxHeight: CLIENT_IMAGE_MAX_HEIGHT,
+        forceJpg: true,
+        includeExif: true,
+      }).catch(() => null);
+
+      await processSelectedImage(selectedItem);
+    } finally {
+      setIsImageUploading(false);
+    }
+  };
+
+  const chooseImageSource = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Choose From Gallery', 'Open Camera'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            chooseImageGallery().catch(() => undefined);
+          }
+          if (buttonIndex === 2) {
+            captureImage().catch(() => undefined);
+          }
+        }
+      );
+      return;
+    }
+    Alert.alert('Add photo', 'Select image source', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Choose From Gallery',
+        onPress: () => {
+          chooseImageGallery().catch(() => undefined);
+        },
+      },
+      {
+        text: 'Open Camera',
+        onPress: () => {
+          captureImage().catch(() => undefined);
+        },
+      },
+    ]);
   };
 
   // const { shouldHandleKeyboardEvents } = useBottomSheetInternal();
@@ -90,115 +412,238 @@ function CommentField({
     <>
       <View
         style={{
-          backgroundColor: Colors.neutral[700],
-          paddingHorizontal: spacing.x24,
-          paddingVertical: spacing.x16,
+          backgroundColor: composerBackground,
+          borderTopWidth: 1,
+          borderTopColor: dividerColor,
+          paddingHorizontal: spacing.x16,
+          paddingTop: spacing.x16,
+          paddingBottom: spacing.x20,
         }}
       >
-        <StyledTextInput
-          placeholder={isEditingComment ? 'Edit Comment' : 'Drop your comment here'}
-          multiline
-          maxLength={600}
-          enforceMaxLength
-          value={content}
-          placeholderTextColor={Colors.neutral[300]}
-          onChangeText={(content: any) => {
-            setContent(content);
-          }}
-          onSubmitEditing={() => {
-            submitComment(content);
-          }}
-          // backgroundColor="transparent"
-          inputWrapperStyle={{
-            borderWidth: 0,
-
-            paddingHorizontal: 0,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-          inputStyle={{
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingVertical: spacing.x5,
-            maxHeight: 80,
-            paddingHorizontal: spacing.x10,
-            marginHorizontal: spacing.x5,
-
-            borderColor: Colors.neutral[600],
-            borderWidth: 1,
-          }}
-          customComponent={isFromBottomField ? BottomSheetTextInput : undefined}
-          leftIcon={
-            <Button
-              text="GIF"
-              btnStyle={{
-                backgroundColor: Colors.neutral[600],
-                justifyContent: 'center',
-                alignItems: 'center',
-
-                paddingHorizontal: spacing.x16,
-                margin: spacing.x5,
-                borderRadius: borderRadius.base,
-              }}
-              onPress={() => {
-                // LoginManager.logOut();
-                // dispatch(logout());
-                // await auth().signOut();
-                try {
-                  GiphyDialog.show();
-                } catch (e) {
-                  console.log(e);
-                }
-              }}
-            />
-          }
-          rightIcon={
-            <View style={{ justifyContent: 'center' }}>
-              {isEditingComment ? (
-                <View style={{ flexDirection: 'row' }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      submitComment(content);
-                    }}
-                  >
-                    <TickCircle color={Colors.primarySapphire.brand} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (setEditingComment) setEditingComment(false);
-                    }}
-                  >
-                    <CloseCircle color={Colors.primarySapphire.brand} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  onPress={() => {
-                    submitComment(content);
+        {replyingToLabel && !isEditingComment ? (
+          <View
+            style={{
+              marginBottom: spacing.x10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <StyledText style={{ color: textSecondary, fontSize: 12, fontWeight: '700' }}>
+              {replyingToLabel}
+            </StyledText>
+            {onCancelReply ? (
+              <Pressable onPress={onCancelReply}>
+                <CloseCircle color={primary} size={18} />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.x10 }}>
+          <FastImage
+            source={{ uri: safeProfileImageUri }}
+            style={{ width: 36, height: 36, borderRadius: borderRadius.max }}
+          />
+          <View style={{ flex: 1, position: 'relative' }}>
+            <MentionInput
+              activeMention={mentionComposer.activeMention}
+              cursorColor={primary}
+              inputComponent={InputComponent}
+              inputRef={inputRef as any}
+              inputRightAccessory={
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.x10,
                   }}
                 >
-                  <Send variant="Bold" size={30} color={Colors.primarySapphire.brand} />
-                </TouchableOpacity>
-              )}
+                  {canUseImages ? (
+                    <Pressable
+                      onPress={chooseImageSource}
+                      disabled={isActionBlocked}
+                      style={{ opacity: isActionBlocked ? 0.5 : 1 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="image-outline"
+                        size={20}
+                        color={textSecondary}
+                      />
+                    </Pressable>
+                  ) : null}
+                  {canUseGiphy ? (
+                    <Pressable
+                      onPress={() => {
+                        if (isActionBlocked) {
+                          return;
+                        }
+                        if (onOpenGifPicker) {
+                          onOpenGifPicker();
+                          return;
+                        }
+                        try {
+                          GiphyDialog.show();
+                        } catch (e) {
+                          console.log(e);
+                        }
+                      }}
+                    >
+                      <GifIcon size={20} color={textSecondary} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              }
+              inputWrapperStyle={{
+                backgroundColor: inputBackground,
+                borderRadius: borderRadius.max,
+              }}
+              inputStyle={{
+                width: '100%',
+                minHeight: 50,
+                maxHeight: 120,
+                color: inputTextColor,
+                backgroundColor: 'transparent',
+                borderRadius: borderRadius.max,
+                paddingVertical: spacing.x16,
+                paddingHorizontal: spacing.x16,
+                paddingRight: spacing.x72,
+                textAlignVertical: 'center',
+                fontSize: 13,
+              }}
+              isError={isMentionError}
+              isLoading={isMentionLoading}
+              mentions={mentionComposer.mentions}
+              multiline
+              onChangeText={mentionComposer.setText}
+              onHandleBackspace={mentionComposer.deleteMentionBeforeCursor}
+              onSelectSuggestion={mentionComposer.selectMention}
+              onSelectionChange={mentionComposer.setSelection}
+              onSubmitEditing={() => {
+                submitComment(content).catch(() => undefined);
+              }}
+              placeholder={
+                isEditingComment ? 'Edit comment...' : (placeholderText ?? 'Add a comment...')
+              }
+              placeholderTextColor={textSecondary}
+              selection={mentionComposer.selection}
+              selectionColor={primary}
+              suggestions={suggestions}
+              suggestionsPlacement={isEditingComment ? 'below' : 'above'}
+              suggestionsContainerStyle={{
+                backgroundColor: composerBackground,
+                borderColor: dividerColor,
+              }}
+              value={content}
+            />
+          </View>
+          {isEditingComment ? (
+            <View style={{ flexDirection: 'row', gap: spacing.x8 }}>
+              <Pressable
+                disabled={isActionBlocked}
+                onPress={() => {
+                  submitComment(content).catch(() => undefined);
+                }}
+                style={{ opacity: isActionBlocked ? 0.5 : 1 }}
+              >
+                <TickCircle color={primary} size={22} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (setEditingComment) setEditingComment(false);
+                }}
+              >
+                <CloseCircle color={primary} size={22} />
+              </Pressable>
             </View>
-          }
-        />
+          ) : (
+            <Pressable
+              disabled={isActionBlocked}
+              onPress={() => {
+                submitComment(content).catch(() => undefined);
+              }}
+              style={{ opacity: isActionBlocked ? 0.5 : 1 }}
+            >
+              <StyledText style={{ color: primary, fontWeight: '700', fontSize: 14 }}>
+                Post
+              </StyledText>
+            </Pressable>
+          )}
+        </View>
       </View>
-      {mediaGif && (
+      {canUseImages && images.length > 0 ? (
+        <ScrollView
+          horizontal
+          style={{
+            height: 100,
+            backgroundColor: isEditingComment ? undefined : Colors.neutral[800],
+          }}
+        >
+          {images.map((imageUrl, index) => (
+            <View
+              key={imageUrl}
+              style={{
+                padding: 10,
+                width: 120,
+                borderRadius: MEDIA_RADIUS,
+              }}
+            >
+              <Pressable
+                style={{
+                  backgroundColor: Colors.primarySapphire.brand,
+                  borderRadius: borderRadius.max,
+                  position: 'absolute',
+                  width: 28,
+                  height: 28,
+                  top: 4,
+                  right: 4,
+                  zIndex: 10,
+                }}
+                onPress={() => {
+                  if (setImages) {
+                    setImages(images.filter((_, imageIndex) => imageIndex !== index));
+                  }
+                }}
+              >
+                <CloseCircle size={28} color="#fff" />
+              </Pressable>
+              <View
+                style={{
+                  width: 100,
+                  height: 80,
+                  borderRadius: MEDIA_RADIUS,
+                  overflow: 'hidden',
+                }}
+              >
+                <FastImage
+                  source={{ uri: imageUrl }}
+                  resizeMode="contain"
+                  style={{
+                    width: 100,
+                    height: 80,
+                    borderRadius: MEDIA_RADIUS,
+                  }}
+                />
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      ) : null}
+      {mediaGif && hasGif && canUseGiphy ? (
         <ScrollView
           style={{
             height: 100,
-            backgroundColor: isEditingComment ? undefined : Colors.neutral[700],
+            backgroundColor: isEditingComment ? undefined : Colors.neutral[800],
           }}
         >
           <View
             style={{
               padding: 10,
               width: 100,
-              borderRadius: borderRadius.base,
+              borderRadius: MEDIA_RADIUS,
+              overflow: 'hidden',
             }}
           >
-            <TouchableOpacity
+            <Pressable
               style={{
                 backgroundColor: Colors.primarySapphire.brand,
                 borderRadius: borderRadius.max,
@@ -214,20 +659,32 @@ function CommentField({
               }}
             >
               <CloseCircle size={30} color="#fff" />
-            </TouchableOpacity>
-            <GiphyMediaView
-              media={mediaGif}
-              resizeMode="cover"
-              style={{
-                aspectRatio: mediaGif.aspectRatio,
-                borderRadius: borderRadius.base,
+            </Pressable>
+            {Platform.OS === 'android' && gifPreviewUrl ? (
+              <FastImage
+                source={{ uri: gifPreviewUrl }}
+                resizeMode="contain"
+                style={{
+                  width: 100,
+                  aspectRatio: safeGifAspectRatio,
+                  borderRadius: MEDIA_RADIUS,
+                }}
+              />
+            ) : (
+              <GiphyMediaView
+                media={mediaGif}
+                resizeMode="contain"
+                style={{
+                  aspectRatio: safeGifAspectRatio,
+                  borderRadius: MEDIA_RADIUS,
 
-                overflow: 'hidden',
-              }}
-            />
+                  overflow: 'hidden',
+                }}
+              />
+            )}
           </View>
         </ScrollView>
-      )}
+      ) : null}
     </>
   );
 }

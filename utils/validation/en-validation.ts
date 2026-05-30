@@ -134,29 +134,14 @@ export const enValidation = {
       message: '^Your Re-enter Password must be at least 6 characters',
     },
   },
-  twitterUsername: {
-    presence: {
-      message: '^Please Enter a Twitter Username',
-    },
-  },
   instagramUsername: {
     presence: {
       message: '^Please Enter a Instagram Username',
     },
   },
-  twitterHandler: {
-    presence: {
-      message: '^Please enter your twitter Handler',
-    },
-  },
   instagramHandler: {
     presence: {
       message: '^Please enter your Instagram Handler',
-    },
-  },
-  twitterTitle: {
-    presence: {
-      message: '^Please enter your twitter Title',
     },
   },
   instagramTitle: {
@@ -167,7 +152,7 @@ export const enValidation = {
 
   bio: {
     presence: {
-      message: '^A Bio is required to be an Influencer.',
+      message: '^A Bio is required to become a Creator.',
     },
   },
   title: {
@@ -180,7 +165,7 @@ export const enValidation = {
     //   message: '^This filed Required!',
     // },
     url: {
-      message: '^Please enter a valid url starting with http/https',
+      message: '^Please enter a valid website link',
     },
   },
 };

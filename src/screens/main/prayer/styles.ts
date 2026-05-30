@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
     justifyContent: 'center',
@@ -31,6 +31,29 @@ export const styles = StyleSheet.create({
     paddingHorizontal: getWidth(5),
     justifyContent: 'space-between',
   },
+  tabBar: {
+    flexDirection: 'row',
+    marginTop: getHeight(1),
+    alignItems: 'stretch',
+    borderRadius: 999,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  liquidCanvasLayer: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    zIndex: 1,
+  },
   btn: {
     backgroundColor: 'blue',
     height: 40,
@@ -46,15 +69,6 @@ export const styles = StyleSheet.create({
     width: getWidth(75),
     borderRadius: 5,
   },
-  tabBar: {
-    flexDirection: 'row',
-    // flexGrow: 1,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-
-    padding: 12,
-    paddingBottom: 5,
-  },
 });
+
+export default styles;

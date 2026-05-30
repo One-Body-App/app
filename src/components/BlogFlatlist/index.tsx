@@ -1,108 +1,125 @@
-import React, { ComponentType, ReactElement, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
+import React, { ComponentType, ReactElement, useCallback, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  Text,
+  View,
+  ListRenderItem,
+} from 'react-native';
 import { useSelector } from 'react-redux';
-import { isObject } from 'lodash';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useTheme } from '@react-navigation/native';
+import { Tabs } from 'react-native-collapsible-tab-view';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import { ArticleType, PostType } from '@/utils/types';
 import ArticleItem from '../listItems/ArticleItem';
 import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
-import { styles as globalStyle } from '@/components/listItems/style';
+import globalStyle from '@/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
+import { ArticleType } from '@/utils/types';
+import { creatorBlogService } from '@/src/services/creatorBlogs';
 
 function BlogFlatlist({
   userId,
   headerItem,
+  emptyText,
+  useTabsFlatList = false,
 }: {
   userId: string;
   headerItem?: ComponentType<any> | ReactElement | null | undefined;
+  emptyText?: string;
+  useTabsFlatList?: boolean;
 }) {
   // const offset = useRef(new Animated.Value(0)).current;
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [page, setPage] = useState<number>(1);
+  const navigation = useNavigation<any>();
+  const pageRef = useRef(1);
+  const isEndOfListRef = useRef(false);
   const [blogs, setBlogs] = useState<any>([]);
   const [show, setShow] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(true);
-  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
-  const [currentPopupItem, setCurrentPopupItem] = useState<PopupItem>();
+  const [currentPopupItem] = useState<PopupItem>();
 
-  const getBlog = async (pageNumber: number) => {
-    try {
-      const res = await ApiCall({
-        route: `user/get-blog-feed/${userId}/${pageNumber}`,
-        verb: 'post',
-        token,
-      });
-
-      if (res?.status == 200) {
-        let blogData = [];
-
-        if (pageNumber == 1) {
-          blogData = res?.response ?? [];
-          setIsEndOfList(false);
-        } else {
-          blogData = [...blogs, ...(res?.response ?? [])];
-          if (res?.response.length < 1) {
-            setIsEndOfList(true);
-          }
-        }
-
-        setBlogs(blogData);
-      } else {
-        console.log('error', res?.response);
-      }
-      setLoadingMore(false);
-
-      setRefreshing(false);
-    } catch (e: any) {
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
-    setPage(pageNumber);
-  };
-
-  useEffect(() => {
-    if (user) {
-      const getData = async () => {
-        await getBlog(page);
-      };
+  const getBlog = useCallback(
+    async (pageNumber: number) => {
       setLoadingMore(true);
-      getData();
-    }
-  }, [page, user]);
+
+      try {
+        const localBlogs =
+          pageNumber === 1 && user && userId === user._id
+            ? await creatorBlogService.listPublishedArticlesForAuthor(user as any)
+            : [];
+        const res = await ApiCall({
+          route: `user/get-blog-feed/${userId}/${pageNumber}`,
+          verb: 'post',
+          token,
+        });
+
+        if (res?.status === 200) {
+          const mergedItems = [...localBlogs, ...(res?.response ?? [])].filter(
+            (item, index, allItems) =>
+              index ===
+              allItems.findIndex((candidate) => String(candidate?.id) === String(item?.id))
+          );
+          if (pageNumber === 1) {
+            isEndOfListRef.current = false;
+            setBlogs(mergedItems);
+          } else if (res?.response.length < 1) {
+            isEndOfListRef.current = true;
+          } else {
+            setBlogs((previousBlogs: ArticleType[]) => [
+              ...previousBlogs,
+              ...(res?.response ?? []),
+            ]);
+          }
+        } else {
+          console.log('error', res?.response);
+        }
+      } catch (e: any) {
+        console.log(e.toString());
+      } finally {
+        setLoadingMore(false);
+        setRefreshing(false);
+        pageRef.current = pageNumber;
+      }
+    },
+    [token, user, userId]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        getBlog(1).then(() => undefined);
+      }
+    }, [getBlog, user])
+  );
   const { colors } = useTheme();
-
-  const showModal = (item: ArticleType) => {
-    if (user) {
-      setCurrentPopupItem({
-        id: item.id,
-        postlink: item.link,
-        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
-        created: item.created,
-        image: item.image,
-        externalLink: item.link,
-        type: PostType.rss,
-
-        userData: {
-          twitterHandler: user?.influencerProfile?.twitterHandler,
-          instagramHandler: user?.influencerProfile?.instagramHandler,
-          name: user?.name,
-          username: user?.username,
-          _id: user?._id,
-          accountType: user?.accountType,
-          profileImage: user?.profileImage,
-        },
-      });
-    }
-    setShow(true);
-  };
+  const ListComponent = useTabsFlatList ? Tabs.FlatList : FlatList;
+  const renderItem: ListRenderItem<ArticleType> = ({ item }) => (
+    <ArticleItem
+      key={`article_${item.id}`}
+      item={item}
+      onPress={
+        !item.link && item.id
+          ? () => {
+              navigation.navigate('SingleRss', { postId: String(item.id) });
+            }
+          : undefined
+      }
+      imageSizeType="contain"
+      blogPostStyle={{
+        marginBottom: spacing.x24,
+        backgroundColor: colors.card,
+      }}
+      blogPostImageStyle={globalStyle.newspostimage}
+    />
+  );
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       {loadingMore ? (
         <ActivityIndicator
           animating={loadingMore}
@@ -117,9 +134,15 @@ function BlogFlatlist({
         currentPopupItem={currentPopupItem}
         height={getHeight(25)}
       />
-      <FlatList
+      <ListComponent
         nestedScrollEnabled
         data={blogs}
+        keyExtractor={(item: ArticleType, index: number) => String(item.id ?? index)}
+        removeClippedSubviews
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        scrollEventThrottle={16}
         ListHeaderComponent={headerItem}
         // onScroll={(e) => {
         //   setScrollPosition(e.nativeEvent.contentOffset.y);
@@ -135,25 +158,22 @@ function BlogFlatlist({
           <RefreshControl
             enabled
             refreshing={refreshing}
-            onRefresh={async () => {
-              setIsEndOfList(false);
+            onRefresh={() => {
+              isEndOfListRef.current = false;
               setRefreshing(true);
-              setPage(1);
+              getBlog(1).then(() => undefined);
             }}
           />
         }
-        ListEmptyComponent={() => {
-          if (loadingMore) {
-            return null;
-          }
-          return (
+        ListEmptyComponent={
+          loadingMore ? null : (
             <View>
               <Text style={{ color: colors.text, textAlign: 'center' }}>
-                No content at the moment
+                {emptyText || 'No content at the moment'}
               </Text>
             </View>
-          );
-        }}
+          )
+        }
         // onScroll={Animated.event(
         //   [{nativeEvent: {contentOffset: {y: offset}}}],
         //   {
@@ -161,46 +181,12 @@ function BlogFlatlist({
         //   },
         // )}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }: any) => (
-          // <TouchableOpacity
-          //   onPress={() => {
-          //     OpenURLButton(item?.link);
-          //   }}
-          // >
-          //   <View style={styles.blogpostview}>
-          //     <Image
-          //       style={styles.blogpostimage}
-          //       resizeMode="cover"
-          //       source={{ uri: item?.image?.url }}
-          //     />
-          //     <Text numberOfLines={2} style={styles.blogpostpara}>
-          //       {isObject(item?.title) ? item?.title?.a.$text : item?.title}
-          //     </Text>
-
-          //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
-          //   </View>
-          // </TouchableOpacity>
-
-          <ArticleItem
-            key={`article_${item.id}`}
-            item={item}
-            imageSizeType="cover"
-            blogPostStyle={{
-              marginBottom: spacing.x24,
-              backgroundColor: colors.card,
-            }}
-            blogPostImageStyle={globalStyle.newspostimage}
-            // blogPostTitleStyle={{
-            //   flexDirection: 'row',
-            //   justifyContent: 'space-between',
-            //   // marginTop: getHeight(1),
-            // }}
-            showModal={showModal}
-          />
-        )}
+        renderItem={renderItem}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
-          if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+          if (!loadingMore && !refreshing && !isEndOfListRef.current) {
+            getBlog(pageRef.current + 1).then(() => undefined);
+          }
         }}
       />
     </View>

@@ -12,7 +12,6 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   untext: { color: 'black', marginTop: 10 },
-  moretweet: { marginBottom: 30, textAlign: 'center', color: 'gray' },
   empview: {
     backgroundColor: 'gray',
     height: 0.3,
@@ -35,7 +34,7 @@ export const styles = StyleSheet.create({
   pictureview: {
     width: '100%',
     height: 200,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
     borderRadius: 10,
   },
   view2: {
@@ -62,7 +61,7 @@ export const styles = StyleSheet.create({
   pictureimg: {
     width: '100%',
     height: 130,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },

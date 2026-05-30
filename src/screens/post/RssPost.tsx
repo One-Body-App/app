@@ -1,118 +1,125 @@
-import { StackScreenProps } from '@react-navigation/stack';
-import { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Keyboard,
-  Platform,
-  SafeAreaView,
-  View,
-  KeyboardEvent,
-  RefreshControl,
-  EmitterSubscription,
-} from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
-import { GiphyMedia } from '@giphy/react-native-sdk';
-import { useToast } from 'react-native-toast-notifications';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import StyledText from '@/components/styled/Text';
+import Header from '@/components/Header';
+import GoBackIcon from '@/components/GoBackIcon';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
+import { creatorBlogService } from '@/src/services/creatorBlogs';
+import type { CreatorBlogRecord } from '@/src/services/creatorBlogs';
 
 import { spacing } from '@/src/styles/spacing';
-import { ArticleType, CommentPost, SocialPost, SocialPostReaction } from '@/utils/types';
-
-import CommentField from '@/components/comments/Field';
-import CommentItem from '@/components/comments/CommentItem';
+import { borderWidth } from '@/src/styles/outlines';
+import { CommentPost, PostType, SocialPost } from '@/utils/types';
 
 import ArticleItem from '@/src/components/listItems/ArticleItem';
-import { styles as globalStyle } from '@/components/listItems/style';
+import globalStyle from '@/components/listItems/style';
 import VideoItem from '../home/watch/VideoItem';
+import CommentThread from '@/components/comments/Thread';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
+import CreatorBlogReader from '@/src/screens/blogs/CreatorBlogReader';
+import { setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+import {
+  deleteOwnedPost,
+  emitFeedItemUnavailable,
+  emitOwnedPostDeleted,
+  getFeedItemUnavailableMessage,
+} from '@/services/ownedPostDeletion';
+import {
+  createPostTelemetryRequestId,
+  trackPostTelemetry,
+  type CanonicalPostTelemetryEventName,
+  type PostTelemetryEventInput,
+} from '@/services/postTelemetry';
 
-type Props = StackScreenProps<MainStackParamList, 'SingleRss'>;
-
-let keyboardWillShowListener: EmitterSubscription;
-let onKeyboardWillHideListener: EmitterSubscription;
+type Props = NativeStackScreenProps<MainStackParamList, 'SingleRss'>;
 function RssPost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();
-  const [comments, setComments] = useState<CommentPost[]>([]);
+  const [localBlog, setLocalBlog] = useState<CreatorBlogRecord | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
-  const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
-  const [editingCommentId, setEditingCommentId] = useState<string>('');
 
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
-  const { colors } = useTheme();
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
+  const { colors, dark } = useTheme();
+  const backNavigationInFlightRef = useRef(false);
+  const unavailableHandledRef = useRef(false);
+  const requestIdRef = useRef(createPostTelemetryRequestId());
+  const resetToHomeFeed = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'MainRoot',
+          params: {
+            screen: 'Main',
+            params: {
+              screen: 'HomeTab',
+              params: {
+                screen: 'Home',
+              },
+            },
+          },
+        } as any,
+      ],
+    });
+  }, [navigation]);
+  const handleBackPress = () => {
+    if (backNavigationInFlightRef.current) {
+      return;
+    }
 
-  const [page, setPage] = useState(1);
-  const [isEndOfList, setIsEndOfList] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const toast = useToast();
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-  const onKeyboardWillShow = (e: KeyboardEvent) => {
-    setKeyboardHeight(e.endCoordinates.height);
+    backNavigationInFlightRef.current = true;
+    setTimeout(() => {
+      backNavigationInFlightRef.current = false;
+    }, 350);
+
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    resetToHomeFeed();
   };
 
-  const [showRefreshIndicator, setShowRefreshIndicator] = useState(false);
+  const getRssPost = useCallback(async () => {
+    setIsLoading(true);
+    setIsNotFound(false);
 
-  const onKeyboardWillHide = () => {
-    setKeyboardHeight(0);
-  };
-
-  const [show, setShow] = useState<boolean>();
-  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
-
-  const commentList = useRef<FlatList>(null);
-
-  const showModal = (item: ArticleType) => {
-    setCurrentPopupItem(item);
-    setShow(true);
-  };
-
-  useEffect(() => {
-    if (!isEditingComment) {
-      if (Platform.OS === 'ios') {
-        // These listeners on ios are a little more snappy but not available on Android
-        // If you want to use this on Android use keyboardDidShow/Hide
-        keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', onKeyboardWillShow);
-        onKeyboardWillHideListener = Keyboard.addListener('keyboardWillHide', onKeyboardWillHide);
+    const handleUnavailablePost = (message?: string) => {
+      if (route.params?.postType !== 'watch' || unavailableHandledRef.current) {
+        return;
       }
 
-      return () => {
-        if (Platform.OS === 'ios') {
-          onKeyboardWillHideListener.remove();
-          onKeyboardWillHideListener.remove();
-          // Keyboard.removeAllListeners('keyboardWillShow');
-
-          // Keyboard.removeAllListeners('keyboardWillHide');
-        }
-      };
-    }
-  }, []);
-
-  const refreshContent = (showRefreshIndicator?: boolean) => {
-    setIsEndOfList(false);
-    setPage(1);
-    getComments(1);
-    setIsRefreshing(true);
-    if (showRefreshIndicator) {
-      setShowRefreshIndicator(true);
-    }
-  };
-
-  useEffect(() => {
-    getComments(page);
-  }, [page]);
-
-  const getRssPost = async () => {
-    setIsLoading(true);
+      unavailableHandledRef.current = true;
+      emitFeedItemUnavailable({
+        type: PostType.watch,
+        id: route.params?.postId ?? '',
+      });
+      Toast.show(message || 'This post is no longer available.', Toast.SHORT);
+      handleBackPress();
+    };
 
     try {
+      const localRecord = await creatorBlogService.getBlogById(route.params?.postId || '');
+      if (localRecord) {
+        setLocalBlog(localRecord);
+        setPost(undefined);
+        setIsLoading(false);
+        return;
+      }
+
       const result = await ApiCall({
         route: `rss/${route.params?.postId}`,
         token,
@@ -127,20 +134,25 @@ function RssPost({ navigation, route }: Props) {
 
       setIsLoading(false);
 
-      if (result.status == 200) {
+      if (result.status === 200) {
         if (result.response) {
+          unavailableHandledRef.current = false;
+          setLocalBlog(null);
           setPost(result.response);
         } else {
           setIsNotFound(true);
+          handleUnavailablePost();
         }
       } else {
         setIsNotFound(true);
+        handleUnavailablePost(getFeedItemUnavailableMessage(result.response));
       }
     } catch (e) {
       setIsLoading(false);
       setIsNotFound(true);
+      handleUnavailablePost();
     }
-  };
+  }, [handleBackPress, route.params?.postId, route.params?.postType, token]);
 
   // useEffect(() => {
   //   if (post) {
@@ -150,241 +162,198 @@ function RssPost({ navigation, route }: Props) {
   //   }
   // }, [post]);
 
-  const getComments = async (page: number) => {
-    setIsLoading(true);
-    try {
-      const result = await ApiCall({
-        route: `comments/rss/${route.params?.postId}?page=${page}`,
-        token,
-
-        verb: 'get',
-      });
-
-      setIsLoading(false);
-      setIsRefreshing(false);
-      let newComments = [];
-      if (result.status == 200) {
-        if (page == 1) {
-          newComments = result?.response.content ?? [];
-
-          setIsEndOfList(false);
-        } else {
-          newComments = [...comments, ...(result?.response.content ?? [])];
-          if (!result?.response.content || result?.response.content.length < 1) {
-            setIsEndOfList(true);
-          }
-        }
-
-        setComments(newComments);
-      }
-    } catch (e) {
-      setIsRefreshing(false);
-      setIsLoading(false);
-    }
-  };
-
-  const publishComment = async (content?: string) => {
-    setIsLoading(true);
-    try {
-      const result = await ApiCall({
-        route: `comments/rss/${route.params?.postId}`,
-        token,
-        verb: 'post',
-        params: {
-          content,
-          gif: mediaGif,
-        },
-      });
-
-      setIsLoading(false);
-
-      if (result.status == 200) {
-        refreshContent();
-        getRssPost();
-        commentList.current?.scrollToEnd();
-      }
-    } catch (e) {
-      setIsLoading(false);
-    }
-  };
-
-  const editComment = async (id: string, content: string) => {
-    try {
-      const res = await ApiCall({
-        route: `comments/rss/${route.params?.postId}/${id}`,
-        verb: 'patch',
-        token,
-        params: {
-          content,
-          gif: mediaGif,
-        },
-      });
-
-      if (res?.status == 200) {
-        toast.show('Comment modified successfully', {
-          id: 'successMessage',
-          type: 'success',
-          placement: 'bottom',
-        });
-        await getComments(1);
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
-  };
-
-  const removeComment = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `comments/rss/${route.params?.postId}/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status == 200) {
-        await getComments(1);
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
-  };
-
   useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
+  }, [token]);
+
+  useMountEffect(() => {
     if (route.params?.postId) {
       getRssPost();
     }
-  }, [route.params?.postId]);
+  });
+
+  const commentType = route.params?.postType === 'watch' ? PostType.watch : PostType.rss;
+  const removeWatchPost = useCallback(
+    async (type: string, id: string) => {
+      const normalizedId = String(id ?? '').trim();
+      if (normalizedId.length < 1) {
+        Toast.show('Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      const result = await deleteOwnedPost({
+        type,
+        id: normalizedId,
+        token: token ?? undefined,
+      });
+
+      if (!result.ok) {
+        Toast.show(result.message || 'Unable to delete this post right now.', Toast.SHORT);
+        return;
+      }
+
+      emitOwnedPostDeleted({
+        type: result.type,
+        id: normalizedId,
+      });
+      handleBackPress();
+    },
+    [handleBackPress, token]
+  );
+
+  const openCommentThread = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      const currentPostId = route.params?.postId;
+      if (!commentId || !currentPostId) {
+        return;
+      }
+
+      navigation.push('SingleRss', {
+        postId: currentPostId,
+        postType: route.params?.postType,
+        threadRootCommentId: commentId,
+        threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+      });
+    },
+    [navigation, route.params?.postId, route.params?.postType]
+  );
+
+  const trackSingleRssTelemetry = useCallback(
+    (
+      eventName: CanonicalPostTelemetryEventName,
+      metadata?: Record<string, unknown>,
+      overrides?: Partial<PostTelemetryEventInput>
+    ) => {
+      const postId = route.params?.postId;
+      if (!postId) {
+        return;
+      }
+
+      const resolvedPostType = route.params?.postType === 'watch' ? 'watch' : 'rss';
+      trackPostTelemetry({
+        postId,
+        postType: resolvedPostType,
+        contentType: route.params?.postType === 'watch' ? 'watch' : (post?.type ?? 'posts'),
+        tags: Array.isArray((post as { tags?: unknown } | undefined)?.tags)
+          ? ((post as { tags?: string[] }).tags ?? [])
+          : [],
+        authorId: post?.userData?._id,
+        userId: currentUser?._id ? String(currentUser._id) : undefined,
+        surface: resolvedPostType === 'watch' ? 'watch' : 'social_feed',
+        surfaceTab: 'detail',
+        entrypoint: resolvedPostType === 'watch' ? 'watch_detail' : 'single_rss',
+        requestId: requestIdRef.current,
+        isOwnPost:
+          Boolean(currentUser?._id) && Boolean(post?.userData?._id)
+            ? String(currentUser._id) === String(post.userData._id)
+            : undefined,
+        isRepost: Boolean((post as { repost?: unknown } | undefined)?.repost),
+        privacyState:
+          (post as { private?: boolean } | undefined)?.private === true ? 'private' : 'public',
+        ...overrides,
+        eventName,
+        metadata,
+      });
+    },
+    [currentUser?._id, post, route.params?.postId, route.params?.postType]
+  );
+
+  let contentNode = (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      {isLoading ? (
+        <ActivityIndicator
+          animating={isLoading}
+          size="small"
+          color={Colors.neutral[200]}
+          style={{ marginRight: spacing.x10 }}
+        />
+      ) : (
+        <StyledText>{isNotFound ? 'Not Found' : 'Loading article...'}</StyledText>
+      )}
+    </View>
+  );
+
+  if (localBlog) {
+    contentNode = <CreatorBlogReader blog={localBlog} />;
+  } else if (post) {
+    const headerNode =
+      route.params?.postType === 'watch' ? (
+        <VideoItem
+          currentIndex={0}
+          item={post}
+          viewHeight={200}
+          width={50}
+          fromSavedPosts={false}
+          removePost={removeWatchPost}
+          onTelemetryEvent={trackSingleRssTelemetry}
+          onShowDismissCard={undefined}
+        />
+      ) : (
+        <ArticleItem
+          item={post}
+          imageSizeType="contain"
+          onTelemetryEvent={trackSingleRssTelemetry}
+          blogPostStyle={{
+            marginHorizontal: 0,
+            marginBottom: 0,
+            borderRadius: 0,
+            borderWidth: 0,
+            borderTopWidth: 0,
+            borderRightWidth: 0,
+            borderLeftWidth: 0,
+            borderBottomColor: Colors.neutral[800],
+            borderBottomWidth: borderWidth.thin,
+            backgroundColor: 'transparent',
+          }}
+          blogPostImageStyle={globalStyle.newspostimage}
+        />
+      );
+
+    contentNode = (
+      <CommentThread
+        type={commentType}
+        postId={route.params?.postId ?? ''}
+        threadRootCommentId={route.params?.threadRootCommentId}
+        threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
+        onOpenCommentThread={openCommentThread}
+        enablePagination
+        onPostRefresh={getRssPost}
+        onTelemetryEvent={trackSingleRssTelemetry}
+        scrollToEndOnPublish
+        headerContainerStyle={{
+          paddingHorizontal: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          borderBottomWidth: 0,
+        }}
+        header={headerNode}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1, top: -1 * keyboardHeight }}>
-        {post ? (
-          <>
-            <View style={{ flexGrow: 1 }}>
-              <FlatList
-                ref={commentList}
-                data={comments}
-                refreshing={isRefreshing}
-                style={{ flex: 1 }}
-                onEndReachedThreshold={0.8}
-                onEndReached={() => {
-                  if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-                }}
-                ListHeaderComponent={() => {
-                  if (route.params?.postType === 'watch')
-                    return (
-                      <VideoItem
-                        currentIndex={0}
-                        item={post}
-                        viewHeight={200}
-                        width={50}
-                        fromSavedPosts={false}
-                        onShowDismissCard={undefined}
-                      />
-                    );
-                  return (
-                    <ArticleItem
-                      item={post}
-                      imageSizeType="contain"
-                      blogPostStyle={{
-                        marginBottom: spacing.x24,
-                        backgroundColor: colors.card,
-                      }}
-                      blogPostImageStyle={globalStyle.newspostimage}
-                      // blogPostTitleStyle={{
-                      //   flexDirection: 'row',
-                      //   justifyContent: 'space-between',
-                      //   // marginTop: getHeight(1),
-                      // }}
-                      showModal={showModal}
-                    />
-                  );
-                }}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={isRefreshing && showRefreshIndicator}
-                    onRefresh={() => {
-                      refreshContent(true);
-                    }}
-                  />
-                }
-                ListEmptyComponent={() => {
-                  if (isLoading) {
-                    return <ActivityIndicator />;
-                  }
-
-                  return null;
-                }}
-                renderItem={({ item }) => {
-                  let myReaction: SocialPostReaction | undefined;
-
-                  item.reactions?.forEach((reaction: SocialPostReaction) => {
-                    if (reaction.userId == user?._id) {
-                      myReaction = reaction;
-                    }
-                  });
-
-                  return (
-                    <CommentItem
-                      removePost={removeComment}
-                      editCommentAction={editComment}
-                      onPress={() => {
-                        if (post?.userData._id && post.userData._id != user?._id) {
-                          // navigation.navigate('UserProfile', {
-                          //   id: post?.userData._id,
-                          // });
-                        }
-                      }}
-                      setEditingComment={(isEditingComment: boolean) => {
-                        if (isEditingComment) setGif(item.gif ?? null);
-                        setIsEditingComment(isEditingComment);
-                        if (item.commentId) setEditingCommentId(item.commentId);
-                      }}
-                      postData={{
-                        id: item.commentId,
-                        content: item.content,
-                        reactions: item.reactions,
-                        myReaction,
-                        edited: item.edited,
-                        gif:
-                          isEditingComment && editingCommentId == item.commentId
-                            ? mediaGif
-                            : item.gif,
-                      }}
-                      userData={item.userData}
-                    />
-                  );
-                }}
+      {Platform.OS === 'android' ? (
+        <>
+          <StatusBar
+            barStyle={dark ? 'light-content' : 'dark-content'}
+            backgroundColor={colors.background}
+          />
+          <Header
+            title={localBlog ? 'Article' : 'Comment'}
+            hideBorder
+            leftView={
+              <GoBackIcon
+                color={dark ? colors.text : Colors.primary.brand}
+                goBack={handleBackPress}
               />
-            </View>
-            {!isEditingComment ? (
-              <View style={{ flex: 0 }}>
-                <CommentField
-                  mediaGif={mediaGif}
-                  setGif={setGif}
-                  publishComment={publishComment}
-                  isEditingComment={false}
-                />
-              </View>
-            ) : null}
-          </>
-        ) : (
-          // eslint-disable-next-line react/jsx-no-useless-fragment
-          <>
-            {isLoading ? (
-              <ActivityIndicator
-                animating={isLoading}
-                size="small"
-                color={Colors.neutral[200]}
-                style={{ marginRight: spacing.x10 }}
-              />
-            ) : (
-              // eslint-disable-next-line react/jsx-no-useless-fragment
-              <>{isNotFound ? <StyledText>Not Found</StyledText> : null}</>
-            )}
-          </>
-        )}
-      </View>
+            }
+            RightView={<View style={{ width: 20 }} />}
+          />
+        </>
+      ) : null}
+      {contentNode}
     </SafeAreaView>
   );
 }

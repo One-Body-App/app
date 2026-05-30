@@ -1,36 +1,19 @@
-import React, { useState } from 'react';
-import {
-  Text,
-  View,
-  Touchable,
-  StatusBar,
-  ScrollView,
-  Image,
-  FlatList,
-  TouchableOpacity,
-} from 'react-native';
+import React from 'react';
+import { Text, View, ScrollView, Pressable } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/components/Header';
 import { styles } from './styles';
 
-function PrivacyPolicy({ navigation }) {
+function PrivacyPolicy({ navigation }: { navigation: any }) {
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent
-      />
-
       <Header
         title="Privacy Policy"
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back-outline" size={20} />
-          </TouchableOpacity>
+          </Pressable>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
       />

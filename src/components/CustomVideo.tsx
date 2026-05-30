@@ -1,8 +1,6 @@
-import React, { forwardRef, useRef, useImperativeHandle } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import Video, { OnLoadData } from 'react-native-video';
-
-const { width: screenWidth } = Dimensions.get('window');
+import React, { useRef, useImperativeHandle } from 'react';
+import { View, StyleSheet } from 'react-native';
+import Video, { OnLoadData, OnProgressData } from 'react-native-video';
 
 type CustomVideoProps = {
   source: { uri: string };
@@ -15,25 +13,29 @@ type CustomVideoProps = {
   style?: any;
   onEnd?: () => void;
   onLoad?: (data: OnLoadData) => void;
+  onProgress?: (data: OnProgressData) => void;
 };
 
-const CustomVideo = forwardRef<Video, CustomVideoProps>((props, ref) => {
+type VideoRef = React.ElementRef<typeof Video>;
+
+function CustomVideo({ ref, ...props }: CustomVideoProps & { ref?: React.Ref<VideoRef> }) {
   const {
     source,
     paused = false,
     repeat = true,
     resizeMode = 'contain',
-    controls = true,
+    controls = false,
     muted = false,
     poster,
     style,
     onEnd,
     onLoad,
+    onProgress,
   } = props;
 
-  const videoRef = useRef<Video>(null);
+  const videoRef = useRef<VideoRef>(null);
 
-  useImperativeHandle(ref, () => videoRef.current as Video);
+  useImperativeHandle(ref, () => videoRef.current as VideoRef);
 
   return (
     <View style={[styles.container, style]}>
@@ -47,19 +49,19 @@ const CustomVideo = forwardRef<Video, CustomVideoProps>((props, ref) => {
         muted={muted}
         controls={controls}
         poster={poster}
-        posterResizeMode="cover"
+        posterResizeMode={resizeMode}
         onEnd={onEnd}
         onLoad={onLoad}
+        onProgress={onProgress}
       />
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   container: {
-    width: screenWidth,
-    aspectRatio: 16 / 9,
-    backgroundColor: '#000',
+    width: '100%',
+    height: '100%',
     overflow: 'hidden',
   },
 });

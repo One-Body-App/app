@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -112,3 +112,5 @@ export const styles = StyleSheet.create({
   },
   btnText: { color: 'white', fontSize: getFontSize(2.5) },
 });
+
+export default styles;

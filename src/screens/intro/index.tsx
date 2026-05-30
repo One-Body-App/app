@@ -1,20 +1,21 @@
-import React, { useEffect, useRef } from 'react';
-import { StackScreenProps } from '@react-navigation/stack';
+import { Image } from 'expo-image';
+import React, { useRef } from 'react';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   View,
   Animated,
   Easing,
   InteractionManager,
   StyleSheet,
-  Image,
   useWindowDimensions,
-  StatusBar,
   Platform,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Color from 'color';
+import FastImage from '@/components/primitives/FastImage';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import getCachedIntroAvatars from '@/src/services/introAvatars';
 import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -37,6 +38,9 @@ const CONTENT_MAX_WIDTH = 720;
 const HERO_MAX_WIDTH = 520;
 const BUTTONS_MAX_WIDTH = 520;
 
+// Stagger offset (ms) between each avatar's pulse so they breathe independently
+const PULSE_STAGGER_MS = 750;
+
 const ASSETS = {
   logogroup: logogroupImg,
   logogroupDark: logogroupDarkImg,
@@ -48,7 +52,14 @@ const ASSETS = {
   discoverIcon: discoverIconImg,
 };
 
-type Props = StackScreenProps<MainStackParamList, 'Intro'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Intro'>;
+
+const INTRO_AVATAR_FALLBACKS = [
+  ASSETS.avatar1,
+  ASSETS.avatar2,
+  ASSETS.avatar3,
+  ASSETS.avatar4,
+] as const;
 
 function IntroScreen({ navigation }: Props) {
   const { colors, dark } = useTheme();
@@ -61,18 +72,76 @@ function IntroScreen({ navigation }: Props) {
   const textAnim = useRef(new Animated.Value(0)).current;
   const primaryBtnAnim = useRef(new Animated.Value(0)).current;
   const secondaryBtnAnim = useRef(new Animated.Value(0)).current;
-  const hasAnimated = useRef(false);
-
   // 2. Continuous Loop Animations (Solar System)
   const loopAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (hasAnimated.current) {
-      return undefined;
-    }
-    const task = InteractionManager.runAfterInteractions(() => {
-      hasAnimated.current = true;
+  // 3. Per-avatar fade-in (triggered when real URL loads)
+  const avatarFade0 = useRef(new Animated.Value(1)).current;
+  const avatarFade1 = useRef(new Animated.Value(1)).current;
+  const avatarFade2 = useRef(new Animated.Value(1)).current;
+  const avatarFade3 = useRef(new Animated.Value(1)).current;
+  const avatarFades = [avatarFade0, avatarFade1, avatarFade2, avatarFade3];
 
+  // 4. Per-avatar pulse (slow breathing scale, staggered)
+  const avatarPulse0 = useRef(new Animated.Value(1)).current;
+  const avatarPulse1 = useRef(new Animated.Value(1)).current;
+  const avatarPulse2 = useRef(new Animated.Value(1)).current;
+  const avatarPulse3 = useRef(new Animated.Value(1)).current;
+  const avatarPulses = [avatarPulse0, avatarPulse1, avatarPulse2, avatarPulse3];
+  const pulseTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const [avatarUrls, setAvatarUrls] = React.useState<(string | null)[]>([null, null, null, null]);
+  const [avatarLoadErrors, setAvatarLoadErrors] = React.useState([false, false, false, false]);
+
+  useMountEffect(() => {
+    let isMounted = true;
+
+    getCachedIntroAvatars()
+      .then((urls) => {
+        if (!isMounted) return;
+
+        // For each slot that now has a real URL, cross-fade from current image to new one
+        urls.forEach((url, i) => {
+          if (url) {
+            avatarFades[i].setValue(0);
+            Animated.timing(avatarFades[i], {
+              toValue: 1,
+              duration: 600,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: true,
+            }).start();
+          }
+        });
+        setAvatarLoadErrors([false, false, false, false]);
+        setAvatarUrls(urls);
+      })
+      .catch(() => {}); // fallback state [null,null,null,null] already set
+
+    return () => {
+      isMounted = false;
+    };
+  });
+
+  const handleAvatarLoadError = React.useCallback((index: number) => {
+    setAvatarLoadErrors((prev) => {
+      if (prev[index]) return prev;
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+  }, []);
+
+  const getAvatarSource = React.useCallback(
+    (index: number) =>
+      avatarUrls[index] && !avatarLoadErrors[index]
+        ? { uri: avatarUrls[index] as string }
+        : INTRO_AVATAR_FALLBACKS[index],
+    [avatarLoadErrors, avatarUrls]
+  );
+
+  useMountEffect(() => {
+    const pulseLoops: Animated.CompositeAnimation[] = [];
+    const task = InteractionManager.runAfterInteractions(() => {
       const sweepAndWobble = (anim: Animated.Value) =>
         Animated.sequence([
           Animated.timing(anim, {
@@ -121,9 +190,42 @@ function IntroScreen({ navigation }: Props) {
           useNativeDriver: true,
         })
       ).start();
+
+      // Start staggered per-avatar pulse (slow breathe: 1.0 -> 1.08 -> 1.0)
+      avatarPulses.forEach((pulse, i) => {
+        const timeoutId = setTimeout(() => {
+          const loop = Animated.loop(
+            Animated.sequence([
+              Animated.timing(pulse, {
+                toValue: 1.08,
+                duration: 1800,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+              }),
+              Animated.timing(pulse, {
+                toValue: 1,
+                duration: 1800,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+              }),
+            ])
+          );
+          pulseLoops.push(loop);
+          loop.start();
+        }, i * PULSE_STAGGER_MS);
+
+        // Stagger each avatar's pulse start so they breathe independently
+        pulseTimeoutsRef.current.push(timeoutId);
+      });
     });
-    return () => task.cancel();
-  }, [orbitAnim, textAnim, loopAnim, primaryBtnAnim, secondaryBtnAnim]);
+    return () => {
+      task.cancel();
+      pulseTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      pulseTimeoutsRef.current = [];
+      pulseLoops.forEach((loop) => loop.stop());
+      avatarPulses.forEach((pulse) => pulse.stopAnimation());
+    };
+  });
 
   // --- Interpolations ---
 
@@ -210,7 +312,6 @@ function IntroScreen({ navigation }: Props) {
 
   const sunStyle = {
     backgroundColor: dark ? colors.card : '#fff',
-    shadowColor: Colors.primary.brand,
   };
   const glassBorderColor = dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.35)';
   const glassBackground = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
@@ -219,335 +320,361 @@ function IntroScreen({ navigation }: Props) {
   const primaryGlassFill = Color(Colors.primarySapphire.brand).alpha(0.75).rgb().string();
 
   return (
-    <>
-      <StatusBar
-        backgroundColor={dark ? colors.background : Colors.main.white}
-        barStyle={dark ? 'light-content' : 'dark-content'}
-      />
-
-      <UserStepsLayout backgroundColor={colors.background}>
-        <View
+    <UserStepsLayout backgroundColor={colors.background}>
+      <View
+        style={{
+          flexGrow: 1,
+          flexShrink: 0,
+          flexBasis: 'auto',
+          alignItems: isTablet ? 'center' : undefined,
+        }}
+      >
+        {/* --- ANIMATED SOLAR SYSTEM CONTAINER --- */}
+        <Animated.View
           style={{
             flexGrow: 1,
             flexShrink: 0,
-            flexBasis: 'auto',
-            alignItems: isTablet ? 'center' : undefined,
+            flexBasis: 300,
+            marginTop: spacing.x32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: 350, // Enlarged hero height to contain larger orbit
+            width: isTablet ? '100%' : undefined,
+            maxWidth: isTablet ? HERO_MAX_WIDTH : undefined,
+            ...orbitEntryStyle,
           }}
         >
-          {/* --- ANIMATED SOLAR SYSTEM CONTAINER --- */}
-          <Animated.View
-            style={{
-              flexGrow: 1,
-              flexShrink: 0,
-              flexBasis: 300,
-              marginTop: spacing.x32,
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 350, // Enlarged hero height to contain larger orbit
-              width: isTablet ? '100%' : undefined,
-              maxWidth: isTablet ? HERO_MAX_WIDTH : undefined,
-              ...orbitEntryStyle,
-            }}
-          >
-            <View style={styles.solarSystem}>
-              {/* 1. Static Rings (The Water Ripples) */}
-              <View style={[styles.ring, styles.ringOuter, ringStyles.outer]} />
-              <View style={[styles.ring, styles.ringMiddle, ringStyles.middle]} />
-              <View style={[styles.ring, styles.ringInner, ringStyles.inner]} />
+          <View style={styles.solarSystem}>
+            {/* 1. Static Rings (The Water Ripples) */}
+            <View style={[styles.ring, styles.ringOuter, ringStyles.outer]} />
+            <View style={[styles.ring, styles.ringMiddle, ringStyles.middle]} />
+            <View style={[styles.ring, styles.ringInner, ringStyles.inner]} />
 
-              {/* 2. Central Sun (The Logo) */}
-              <View style={[styles.sunContainer, sunStyle]}>
-                <FastImage
-                  source={dark ? ASSETS.logogroupDark : ASSETS.logogroup}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              </View>
-
-              {/* 3. Outer Orbit Track (Clockwise) */}
-              <Animated.View
-                style={[
-                  styles.orbitTrack,
-                  styles.trackOuter,
-                  { transform: [{ rotate: rotateCW }] },
-                ]}
-              >
-                {/* Avatar 1 (Top Right) */}
-                <Animated.View
-                  style={[
-                    styles.planetParams,
-                    { top: 0, right: '20%', transform: [{ rotate: counterRotateCW }] },
-                  ]}
-                >
-                  <FastImage source={ASSETS.avatar1} style={styles.avatarLarge} />
-                </Animated.View>
-
-                {/* Avatar 2 (Bottom Left) */}
-                <Animated.View
-                  style={[
-                    styles.planetParams,
-                    { bottom: '10%', left: '20%', transform: [{ rotate: counterRotateCW }] },
-                  ]}
-                >
-                  <FastImage source={ASSETS.avatar2} style={styles.avatarMedium} />
-                </Animated.View>
-
-                {/* Discover Icon (Far Right) */}
-                <Animated.View
-                  style={[
-                    styles.planetParams,
-                    { top: '50%', right: -15, transform: [{ rotate: counterRotateCW }] },
-                  ]}
-                >
-                  <View style={styles.iconBubble}>
-                    <Image source={ASSETS.discoverIcon} style={styles.iconSmall} />
-                  </View>
-                </Animated.View>
-              </Animated.View>
-
-              {/* 4. Inner Orbit Track (Counter-Clockwise) */}
-              <Animated.View
-                style={[
-                  styles.orbitTrack,
-                  styles.trackInner,
-                  { transform: [{ rotate: rotateCCW }] },
-                ]}
-              >
-                {/* Avatar 3 (Top Left) */}
-                <Animated.View
-                  style={[
-                    styles.planetParams,
-                    { top: '15%', left: 0, transform: [{ rotate: counterRotateCCW }] },
-                  ]}
-                >
-                  <FastImage source={ASSETS.avatar3} style={styles.avatarMedium} />
-                </Animated.View>
-
-                {/* Search Icon (Bottom Right) */}
-                <Animated.View
-                  style={[
-                    styles.planetParams,
-                    { bottom: '20%', right: 0, transform: [{ rotate: counterRotateCCW }] },
-                  ]}
-                >
-                  <View style={styles.iconBubble}>
-                    <Image source={ASSETS.searchIcon} style={styles.iconSmall} />
-                  </View>
-                </Animated.View>
-
-                {/* Avatar 4 (Bottom Center) */}
-                <Animated.View
-                  style={[
-                    styles.planetParams,
-                    { bottom: -15, left: '50%', transform: [{ rotate: counterRotateCCW }] },
-                  ]}
-                >
-                  <FastImage source={ASSETS.avatar4} style={styles.avatarSmall} />
-                </Animated.View>
-              </Animated.View>
+            {/* 2. Central Sun (The Logo) */}
+            <View style={[styles.sunContainer, sunStyle]}>
+              <FastImage
+                source={dark ? ASSETS.logogroupDark : ASSETS.logogroup}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
-          </Animated.View>
-          {/* --- END ANIMATION --- */}
 
+            {/* 3. Outer Orbit Track (Clockwise) */}
+            <Animated.View
+              style={[styles.orbitTrack, styles.trackOuter, { transform: [{ rotate: rotateCW }] }]}
+            >
+              {/* Avatar 1 (Top Right) */}
+              <Animated.View
+                style={[
+                  styles.planetParams,
+                  {
+                    top: 0,
+                    right: '20%',
+                    transform: [{ rotate: counterRotateCW }, { scale: avatarPulses[0] }],
+                    opacity: avatarFades[0],
+                  },
+                ]}
+              >
+                <FastImage
+                  source={getAvatarSource(0)}
+                  style={styles.avatarLarge}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(0)}
+                />
+              </Animated.View>
+
+              {/* Avatar 2 (Bottom Left) */}
+              <Animated.View
+                style={[
+                  styles.planetParams,
+                  {
+                    bottom: '10%',
+                    left: '20%',
+                    transform: [{ rotate: counterRotateCW }, { scale: avatarPulses[1] }],
+                    opacity: avatarFades[1],
+                  },
+                ]}
+              >
+                <FastImage
+                  source={getAvatarSource(1)}
+                  style={styles.avatarMedium}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(1)}
+                />
+              </Animated.View>
+
+              {/* Discover Icon (Far Right) */}
+              <Animated.View
+                style={[
+                  styles.planetParams,
+                  { top: '50%', right: -15, transform: [{ rotate: counterRotateCW }] },
+                ]}
+              >
+                <View style={styles.iconBubble}>
+                  <Image source={ASSETS.discoverIcon} style={styles.iconSmall} />
+                </View>
+              </Animated.View>
+            </Animated.View>
+
+            {/* 4. Inner Orbit Track (Counter-Clockwise) */}
+            <Animated.View
+              style={[styles.orbitTrack, styles.trackInner, { transform: [{ rotate: rotateCCW }] }]}
+            >
+              {/* Avatar 3 (Top Left) */}
+              <Animated.View
+                style={[
+                  styles.planetParams,
+                  {
+                    top: '15%',
+                    left: 0,
+                    transform: [{ rotate: counterRotateCCW }, { scale: avatarPulses[2] }],
+                    opacity: avatarFades[2],
+                  },
+                ]}
+              >
+                <FastImage
+                  source={getAvatarSource(2)}
+                  style={styles.avatarMedium}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(2)}
+                />
+              </Animated.View>
+
+              {/* Search Icon (Bottom Right) */}
+              <Animated.View
+                style={[
+                  styles.planetParams,
+                  { bottom: '20%', right: 0, transform: [{ rotate: counterRotateCCW }] },
+                ]}
+              >
+                <View style={styles.iconBubble}>
+                  <Image source={ASSETS.searchIcon} style={styles.iconSmall} />
+                </View>
+              </Animated.View>
+
+              {/* Avatar 4 (Bottom Center) */}
+              <Animated.View
+                style={[
+                  styles.planetParams,
+                  {
+                    bottom: -15,
+                    left: '50%',
+                    transform: [{ rotate: counterRotateCCW }, { scale: avatarPulses[3] }],
+                    opacity: avatarFades[3],
+                  },
+                ]}
+              >
+                <FastImage
+                  source={getAvatarSource(3)}
+                  style={styles.avatarSmall}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => handleAvatarLoadError(3)}
+                />
+              </Animated.View>
+            </Animated.View>
+          </View>
+        </Animated.View>
+        {/* --- END ANIMATION --- */}
+
+        <View
+          style={{
+            flexGrow: 1,
+            flexBasis: 400,
+            width: isTablet ? '100%' : undefined,
+            maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
+          }}
+        >
           <View
             style={{
-              flexGrow: 1,
-              flexBasis: 400,
-              width: isTablet ? '100%' : undefined,
-              maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
+              paddingTop: 60,
+              justifyContent: 'space-between',
+              flex: 1,
+              flexDirection: 'column',
+              flexShrink: 0,
             }}
           >
-            <View
-              style={{
-                paddingTop: 60,
-                justifyContent: 'space-between',
-                flex: 1,
-                flexDirection: 'column',
-                flexShrink: 0,
-              }}
-            >
-              <View style={{ flex: 1, paddingBottom: 40 }}>
-                <View style={{ flex: 1 }}>
-                  <Animated.View
-                    style={[{ flexDirection: 'row', justifyContent: 'center' }, textPopStyle]}
-                  >
-                    <StyledText
-                      style={[
-                        header.h2,
-                        { color: dark ? '#f6f6f6' : Colors.primary.brand, fontWeight: 'bold' },
-                      ]}
-                    >
-                      Welcome to{' '}
-                    </StyledText>
-                    <StyledText
-                      style={[
-                        header.h2,
-                        {
-                          color: dark ? '#12d2d9' : Colors.primarySapphire.brand,
-                          fontWeight: 'bold',
-                        },
-                      ]}
-                    >
-                      One Body
-                    </StyledText>
-                  </Animated.View>
-
-                  <Animated.View style={[{ marginHorizontal: 25 }, textPopStyle]}>
-                    <StyledText
-                      style={[
-                        subheader.M,
-                        {
-                          color: dark ? '#f6f6f6' : Colors.primary.brand,
-                          textAlign: 'center',
-                          marginTop: 10,
-                        },
-                      ]}
-                    >
-                      Join the global community of believers. Discover Christian creators, find
-                      local Churches, and unite in Prayer with the Body of Christ worldwide.
-                    </StyledText>
-                  </Animated.View>
-                </View>
-
-                <View
-                  style={{
-                    marginHorizontal: spacing.x20,
-                    marginTop: spacing.x20,
-                    ...(isTablet
-                      ? { width: '100%', maxWidth: BUTTONS_MAX_WIDTH, alignSelf: 'center' }
-                      : {}),
-                  }}
+            <View style={{ flex: 1, paddingBottom: 40 }}>
+              <View style={{ flex: 1 }}>
+                <Animated.View
+                  style={[{ flexDirection: 'row', justifyContent: 'center' }, textPopStyle]}
                 >
-                  <Animated.View
+                  <StyledText
                     style={[
+                      header.h2,
                       {
-                        shadowColor: Colors.primary.brand,
-                        shadowOpacity: 0.125,
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowRadius: 10,
-                        elevation: 4,
+                        color: dark ? '#f6f6f6' : Colors.primary.brand,
+                        fontWeight: 'bold',
+                        fontFamily: 'Rubik-Bold',
                       },
-                      buttonWobble(primaryBtnAnim),
                     ]}
                   >
-                    {isIos ? (
-                      <View
-                        style={{
-                          width: '100%',
-                          alignSelf: 'stretch',
-                          borderRadius: glassRadius,
-                          overflow: 'hidden',
-                          borderWidth: 1,
-                          borderColor: glassBorderColor,
-                          backgroundColor: glassBackground,
-                          marginBottom: 15,
-                        }}
-                      >
-                        <BlurView
-                          blurType={dark ? 'dark' : 'light'}
-                          blurAmount={18}
-                          reducedTransparencyFallbackColor={
-                            dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-                          }
-                          style={StyleSheet.absoluteFillObject}
-                        />
-                        <Button
-                          btnStyle={[
-                            button.primary,
-                            { flex: 1, backgroundColor: primaryGlassFill },
-                          ]}
-                          onPress={() => {
-                            HapticService.trigger();
-                            navigation.navigate('AccountType');
-                          }}
-                          text="Join the Family"
-                          btnTextStyle={{ color: 'white' }}
-                        />
-                      </View>
-                    ) : (
+                    Welcome to{' '}
+                  </StyledText>
+                  <StyledText
+                    style={[
+                      header.h2,
+                      {
+                        color: dark ? '#12d2d9' : Colors.primarySapphire.brand,
+                        fontWeight: 'bold',
+                        fontFamily: 'Rubik-Bold',
+                      },
+                    ]}
+                  >
+                    One Body
+                  </StyledText>
+                </Animated.View>
+
+                <Animated.View style={[{ marginHorizontal: 25 }, textPopStyle]}>
+                  <StyledText
+                    style={[
+                      subheader.M,
+                      {
+                        color: dark ? '#f6f6f6' : Colors.primary.brand,
+                        textAlign: 'center',
+                        marginTop: 10,
+                        fontFamily: 'OpenSans-Regular',
+                      },
+                    ]}
+                  >
+                    Join the global community of believers. Discover Christian creators, find local
+                    Churches, and unite in Prayer with the Body of Christ worldwide.
+                  </StyledText>
+                </Animated.View>
+              </View>
+
+              <View
+                style={{
+                  marginHorizontal: spacing.x20,
+                  marginTop: spacing.x20,
+                  ...(isTablet
+                    ? { width: '100%', maxWidth: BUTTONS_MAX_WIDTH, alignSelf: 'center' }
+                    : {}),
+                }}
+              >
+                <Animated.View
+                  style={[
+                    {
+                      boxShadow: '0 6px 10px rgba(18, 107, 135, 0.125)',
+                    },
+                    buttonWobble(primaryBtnAnim),
+                  ]}
+                >
+                  {isIos ? (
+                    <View
+                      style={{
+                        width: '100%',
+                        alignSelf: 'stretch',
+                        borderRadius: glassRadius,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: glassBorderColor,
+                        backgroundColor: glassBackground,
+                        marginBottom: 15,
+                      }}
+                    >
+                      <BlurView
+                        blurType={dark ? 'dark' : 'light'}
+                        blurAmount={18}
+                        reducedTransparencyFallbackColor={
+                          dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+                        }
+                        style={StyleSheet.absoluteFillObject}
+                      />
                       <Button
-                        btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
+                        btnStyle={[button.primary, { flex: 1, backgroundColor: primaryGlassFill }]}
                         onPress={() => {
                           HapticService.trigger();
                           navigation.navigate('AccountType');
                         }}
                         text="Join the Family"
-                        btnTextStyle={{ color: 'white' }}
+                        btnTextStyle={{ color: 'white', fontFamily: 'Rubik-Medium' }}
                       />
-                    )}
-                  </Animated.View>
+                    </View>
+                  ) : (
+                    <Button
+                      btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
+                      onPress={() => {
+                        HapticService.trigger();
+                        navigation.navigate('AccountType');
+                      }}
+                      text="Join the Family"
+                      btnTextStyle={{ color: 'white', fontFamily: 'Rubik-Medium' }}
+                    />
+                  )}
+                </Animated.View>
 
-                  <Animated.View
-                    style={[
-                      {
-                        shadowColor: Colors.primary.brand,
-                        shadowOpacity: 0.1,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowRadius: 8,
-                        elevation: 3,
-                      },
-                      buttonWobble(secondaryBtnAnim),
-                    ]}
-                  >
-                    {isIos ? (
-                      <View
-                        style={{
-                          width: '100%',
-                          alignSelf: 'stretch',
-                          borderRadius: glassRadius,
-                          overflow: 'hidden',
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          backgroundColor: glassBackground,
-                        }}
-                      >
-                        <BlurView
-                          blurType={dark ? 'dark' : 'light'}
-                          blurAmount={18}
-                          reducedTransparencyFallbackColor={
-                            dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-                          }
-                          style={StyleSheet.absoluteFillObject}
-                        />
-                        <Button
-                          btnStyle={[
-                            button.outline,
-                            {
-                              flex: 1,
-                              backgroundColor: 'transparent',
-                              borderColor: colors.border,
-                            },
-                          ]}
-                          onPress={() => {
-                            HapticService.trigger();
-                            navigation.navigate('Login');
-                          }}
-                          text="I have an account"
-                          btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
-                        />
-                      </View>
-                    ) : (
+                <Animated.View
+                  style={[
+                    {
+                      boxShadow: '0 4px 8px rgba(18, 107, 135, 0.1)',
+                    },
+                    buttonWobble(secondaryBtnAnim),
+                  ]}
+                >
+                  {isIos ? (
+                    <View
+                      style={{
+                        width: '100%',
+                        alignSelf: 'stretch',
+                        borderRadius: glassRadius,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: glassBackground,
+                      }}
+                    >
+                      <BlurView
+                        blurType={dark ? 'dark' : 'light'}
+                        blurAmount={18}
+                        reducedTransparencyFallbackColor={
+                          dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+                        }
+                        style={StyleSheet.absoluteFillObject}
+                      />
                       <Button
                         btnStyle={[
                           button.outline,
-                          { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
+                          {
+                            flex: 1,
+                            backgroundColor: 'transparent',
+                            borderColor: colors.border,
+                          },
                         ]}
                         onPress={() => {
                           HapticService.trigger();
                           navigation.navigate('Login');
                         }}
                         text="I have an account"
-                        btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
+                        btnTextStyle={{
+                          color: dark ? '#f6f6f6' : Colors.primary.brand,
+                          fontFamily: 'Rubik-Medium',
+                        }}
                       />
-                    )}
-                  </Animated.View>
-                </View>
+                    </View>
+                  ) : (
+                    <Button
+                      btnStyle={[
+                        button.outline,
+                        { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
+                      ]}
+                      onPress={() => {
+                        HapticService.trigger();
+                        navigation.navigate('Login');
+                      }}
+                      text="I have an account"
+                      btnTextStyle={{
+                        color: dark ? '#f6f6f6' : Colors.primary.brand,
+                        fontFamily: 'Rubik-Medium',
+                      }}
+                    />
+                  )}
+                </Animated.View>
               </View>
             </View>
           </View>
         </View>
-      </UserStepsLayout>
-    </>
+      </View>
+    </UserStepsLayout>
   );
 }
 
@@ -592,12 +719,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-    // Shadow
-    shadowColor: '#126b87',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    boxShadow: '0 4px 8px rgba(18, 107, 135, 0.15)',
   },
   logoImage: {
     width: 180,

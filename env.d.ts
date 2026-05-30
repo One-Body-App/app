@@ -14,9 +14,14 @@ declare module 'react-native-config' {
     NO_PROFILE_IMAGE: string;
     NO_POST_IMAGE_URL: string;
 
-    TWITTER_CLIENT_ID: string;
     GIPHY_KEY_IOS: string;
     GIPHY_KEY_ANDROID: string;
+    MAPBOX_PUBLIC_TOKEN: string;
+    METRO_HOST?: string;
+    METRO_PORT?: string;
+    ENABLE_NATIVE_CHAT?: string;
+    CHAT_SOCKET_NAMESPACE?: string;
+    ZOE_CHAT_URL?: string;
 
     MUX_TOKEN_ID: string;
     MUX_SECRET_KEY: string;

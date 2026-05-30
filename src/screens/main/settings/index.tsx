@@ -1,17 +1,7 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Linking,
-  TouchableOpacity,
-  Alert,
-  Platform,
-  ScrollView,
-  Image,
-  Switch,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Pressable, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import {
   Key,
@@ -24,10 +14,9 @@ import {
   UserRemove,
 } from 'iconsax-react-native';
 import Feather from '@react-native-vector-icons/feather';
-import Icon from '@react-native-vector-icons/ant-design';
 import { useToast } from 'react-native-toast-notifications';
 import DeviceInfo from 'react-native-device-info';
-import { styles } from './styles';
+import styles from './styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { borderRadius } from '@/src/styles/outlines';
@@ -37,234 +26,262 @@ import { Colors, Typography } from '@/src/styles';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
+import { setProfile } from '@/src/redux/actions/AuthActions';
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+} from '@/src/services/notification/pushNotificationService';
+import {
+  isSecureMessagePreviewEnabled,
+  setSecureMessagePreviewEnabled,
+} from '@/src/services/chat/backgroundHandler';
+import { getCreatorMenuLabel, getCreatorMenuState } from '@/src/utils/creatorApplication';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
+type NotificationSwitchState = {
+  pushNotificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  subscribedToNewsletter: boolean;
+  tagNotificationsEnabled: boolean;
+  allowDirectMessages: boolean;
+};
 
 function Settings({ navigation }: Props) {
   const appVersion = DeviceInfo.getVersion();
 
-  const GOOGLE_PACKAGE_NAME = '';
-  const APPLE_STORE_ID = '';
-
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const userData = useSelector((state: RootState) => state.auth.userData);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [subscribedToNewsletter, setSubscribedToNewsletter] = React.useState(false);
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false);
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(false);
   const dispatch = useDispatch();
   const toast = useToast();
-
+  const isLoadedRef = React.useRef(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [notificationSwitch, setNotificationSwitch] = React.useState<NotificationSwitchState>({
+    pushNotificationsEnabled: false,
+    emailNotificationsEnabled: false,
+    subscribedToNewsletter: false,
+    tagNotificationsEnabled: true,
+    allowDirectMessages: true,
+  });
+  const [securePreviewEnabled, setSecurePreviewEnabledState] = React.useState(false);
+  const [isSecurePreviewLoading, setIsSecurePreviewLoading] = React.useState(true);
 
-  const getUserProfile = async () => {
-    // const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
-    //   id: 'loadig',
-    //   placement: 'top',
-    //   style: {
-    //     backgroundColor: colors.background,
-    //   },
-    // });
-    try {
-      const res = await ApiCall({
-        route: 'user/my-profile',
-        token,
-        verb: 'get',
-      });
+  const { colors } = useTheme();
+  const creatorStatus = userProfile?.influencerProfile?.influencerStatus;
+  const creatorMenuState = getCreatorMenuState(creatorStatus);
+  const creatorMenuLabel = getCreatorMenuLabel(creatorStatus);
+  const creatorMenuDescription =
+    creatorMenuState === 'settings'
+      ? 'Update your creator profile settings'
+      : 'Apply to share your content on One Body';
 
-      if (res?.status == 200) {
-        // dispatch(setProfile({ token, ...res.response }));
-        setEmailNotificationsEnabled(res.response?.emailNotificationsEnabled ?? false);
-        setPushNotificationsEnabled(res.response?.pushNotificationsEnabled ?? false);
-        setSubscribedToNewsletter(res.response?.subscribedToNewsletter ?? false);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-        // setIsLoaded(true);
-        // toast.hide(toastId);
-      } else {
-        // toast.hide(toastId);
-      }
-    } catch (e) {
-      // toast.hide(toastId);
-    }
-  };
+      const getUserProfile = async () => {
+        try {
+          const res = await ApiCall({
+            route: 'user/my-profile',
+            token,
+            verb: 'get',
+          });
 
-  useEffect(() => {
-    getUserProfile();
-  }, []);
+          if (!isActive || res?.status !== 200) {
+            return;
+          }
 
-  const updateNotifications = async (
-    pushNotificationsEnabled: boolean,
-    subscribedToNewsletter: boolean,
-    emailNotificationsEnabled: boolean
-  ) => {
-    const toastId = 'loading';
-    toast.hide(toastId);
-    toast.hide('successMessage');
-    toast.show(<ActivityIndicator color={colors.text} />, {
-      id: toastId,
+          dispatch(setProfile({ token, ...res.response }));
+          setNotificationSwitch({
+            pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
+            emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
+            subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
+            tagNotificationsEnabled: res.response?.tagNotificationsEnabled ?? true,
+            allowDirectMessages: res.response?.allowDirectMessages ?? true,
+          });
+          isLoadedRef.current = true;
+        } catch {
+          if (isActive) {
+            isLoadedRef.current = true;
+          }
+        }
+      };
+
+      const loadSecurePreviewPreference = async () => {
+        try {
+          const enabled = await isSecureMessagePreviewEnabled();
+          if (!isActive) {
+            return;
+          }
+
+          setSecurePreviewEnabledState(enabled);
+        } finally {
+          if (isActive) {
+            setIsSecurePreviewLoading(false);
+          }
+        }
+      };
+
+      getUserProfile();
+      loadSecurePreviewPreference();
+
+      return () => {
+        isActive = false;
+      };
+    }, [dispatch, token])
+  );
+
+  const showSavingToast = useCallback(() => {
+    toast.hide('loading');
+    return toast.show(<ActivityIndicator color={colors.text} />, {
+      id: 'loadingB',
       placement: 'top',
       style: {
         backgroundColor: colors.background,
       },
     });
-    setIsLoading(true);
-    try {
-      const notifications = {
-        pushNotificationsEnabled,
-        subscribedToNewsletter,
-        emailNotificationsEnabled,
-      };
+  }, [colors.background, colors.text, toast]);
 
-      const res = await ApiCall({
-        params: notifications,
-        route: `user/set-notifications`,
-        token,
-        verb: 'patch',
-      });
+  const updateNotifications = useCallback(
+    async (
+      nextNotificationSwitch: NotificationSwitchState,
+      previousNotificationSwitch: NotificationSwitchState
+    ) => {
+      const toastId = showSavingToast();
+      setIsLoading(true);
 
-      if (res?.status == 200) {
+      try {
+        const notifications = {
+          pushNotificationsEnabled: nextNotificationSwitch.pushNotificationsEnabled,
+          subscribedToNewsletter: nextNotificationSwitch.subscribedToNewsletter,
+          emailNotificationsEnabled: nextNotificationSwitch.emailNotificationsEnabled,
+          tagNotificationsEnabled: nextNotificationSwitch.tagNotificationsEnabled,
+          allowDirectMessages: nextNotificationSwitch.allowDirectMessages,
+        };
+
+        const res = await ApiCall({
+          params: notifications,
+          route: 'user/set-notifications',
+          token,
+          verb: 'patch',
+        });
+
+        if (res?.status !== 200) {
+          setNotificationSwitch(previousNotificationSwitch);
+          return;
+        }
+
         dispatch(setUserDataNotifications({ notifications }));
 
+        if (
+          nextNotificationSwitch.pushNotificationsEnabled !==
+          previousNotificationSwitch.pushNotificationsEnabled
+        ) {
+          if (nextNotificationSwitch.pushNotificationsEnabled) {
+            await enablePushNotifications(token, true);
+          } else {
+            await disablePushNotifications(token);
+          }
+        }
+
         toast.show('Notifications Settings Updated Successfully', {
-          id: 'successMessage',
           type: 'success',
           placement: 'top',
         });
+      } catch {
+        setNotificationSwitch(previousNotificationSwitch);
+      } finally {
+        toast.hide(toastId);
+        setIsLoading(false);
       }
-      toast.hide(toastId);
-      setIsLoading(false);
-    } catch (e) {
-      toast.hide(toastId);
-      setIsLoading(false);
-    }
-  };
+    },
+    [dispatch, showSavingToast, toast, token]
+  );
 
-  const startRatingCounter = () => {
-    Alert.alert(
-      'Rate us',
-      'Would you like to share your review with us?',
+  const updateSecurePreview = useCallback(
+    async (enabled: boolean) => {
+      setSecurePreviewEnabledState(enabled);
 
-      [
-        { text: 'Sure', onPress: () => openStore() },
-        {
-          text: 'No Thanks!',
+      try {
+        await setSecureMessagePreviewEnabled(enabled);
+        toast.hide('securePreviewMessage');
+        toast.show(
+          enabled ? 'Secure lock-screen previews enabled' : 'Secure lock-screen previews disabled',
+          {
+            id: 'securePreviewMessage',
+            type: 'normal',
+            placement: 'top',
+          }
+        );
+      } catch {
+        const fallback = await isSecureMessagePreviewEnabled();
+        setSecurePreviewEnabledState(fallback);
+      }
+    },
+    [toast]
+  );
 
-          onPress: () => console.log('No Thanks Pressed'),
-          style: 'cancel',
-        },
-      ],
-      { cancelable: false }
-    );
-  };
-  const openStore = () => {
-    // This is the main trick
-    if (Platform.OS != 'ios') {
-      Linking.openURL(`market://details?id=${GOOGLE_PACKAGE_NAME}`).catch((err) =>
-        // alert('Please check for Google Play Store')
-        Alert.alert('Please check for Google Play Store')
-      );
-    } else {
-      Linking.openURL(`itms://itunes.apple.com/in/app/apple-store/${APPLE_STORE_ID}`).catch((err) =>
-        // alert('Please check for the App Store' + err)
-        Alert.alert('Please check for the App Store')
-      );
-    }
-  };
+  const renderNotificationRow = (
+    key: keyof NotificationSwitchState,
+    label: string,
+    description: string,
+    Icon: React.ComponentType<{ color: string; size: number }>,
+    marginBottom: number
+  ) => (
+    <View key={key} style={{ flexDirection: 'row', marginBottom }}>
+      <View style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}>
+        <View
+          style={{
+            borderRadius: borderRadius.max,
+            backgroundColor: Colors.neutral[800],
+            padding: 6,
+          }}
+        >
+          <Icon color={Colors.primary.brand} size={18} />
+        </View>
+      </View>
+      <View style={{ flex: 1 }}>
+        <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+          {label}
+        </StyledText>
+        <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+          {description}
+        </StyledText>
+      </View>
+      <View style={{ paddingLeft: spacing.x10, alignItems: 'flex-end' }}>
+        <Switch
+          disabled={isLoading}
+          value={notificationSwitch[key]}
+          onValueChange={(nextValue) => {
+            const previousNotificationSwitch = notificationSwitch;
+            const nextNotificationSwitch = {
+              ...notificationSwitch,
+              [key]: nextValue,
+            };
 
-  const time = new Date().getTime() / 1000;
-  let showInfluencerNotification = false;
+            setNotificationSwitch(nextNotificationSwitch);
+            if (!isLoadedRef.current || isLoading) {
+              return;
+            }
 
-  if (
-    userProfile?.influencerProfile?.instagramId &&
-    userProfile?.influencerProfile?.instagramTokenExpirationReal &&
-    userProfile?.influencerProfile?.instagramTokenExpirationReal < time &&
-    !showInfluencerNotification
-  ) {
-    showInfluencerNotification =
-      userProfile?.influencerProfile?.instagramTokenExpirationReal < time;
-  }
-
-  if (
-    userProfile?.influencerProfile?.twitterId &&
-    userProfile?.influencerProfile?.twitterTokenExpirationReal &&
-    userProfile?.influencerProfile?.twitterTokenExpirationReal < time &&
-    !showInfluencerNotification
-  ) {
-    showInfluencerNotification = userProfile?.influencerProfile?.twitterTokenExpirationReal < time;
-  }
-
-  const { colors, dark } = useTheme();
+            updateNotifications(nextNotificationSwitch, previousNotificationSwitch);
+          }}
+        />
+      </View>
+    </View>
+  );
 
   return (
     <View
       style={{
         flex: 1,
         marginHorizontal: spacing.x24,
-        paddingVertical: spacing.x16,
+        paddingBottom: spacing.x16,
       }}
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        {false && userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
-          <TouchableOpacity
-            style={[
-              styles.settingsCard,
-              {
-                padding: 0,
-                paddingTop: spacing.x24,
-                paddingBottom: spacing.x24,
-                paddingLeft: spacing.x24,
-                backgroundColor: '#D9D1FA',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-              },
-            ]}
-            onPress={() => {
-              navigation.navigate('InfluencerStepOne');
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <StyledText style={[Typography.body.x4M, { color: Colors.primary[300], flex: 1 }]}>
-                Get more from your account. Apply to become an influencer
-              </StyledText>
-            </View>
-            <View style={{ flex: 1, flexDirection: 'column' }}>
-              <View style={{ flexDirection: 'row', flex: 1 }}>
-                <View style={{ flex: 1 }} />
-                <View
-                  style={{
-                    backgroundColor: Colors.primarySapphire.brand,
-                    paddingVertical: spacing.x5,
-                    flex: 1,
-                    borderStartStartRadius: borderRadius.base,
-                    borderBottomStartRadius: borderRadius.base,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'row',
-                  }}
-                >
-                  <StyledText style={[Typography.body.x2M, { color: 'white' }]}>Start</StyledText>
-                  <Icon name="right" style={{ marginLeft: 10 }} color="white" />
-                </View>
-              </View>
-              <View style={{ flex: 1, paddingHorizontal: spacing.x24 }}>
-                <Image
-                  resizeMode="contain"
-                  resizeMethod="scale"
-                  style={{
-                    width: '100%',
-                    aspectRatio: 1.77,
-                    height: null,
-                  }}
-                  // eslint-disable-next-line global-require
-                  source={require('@/assets/images/influencerIntro.png')}
-                />
-              </View>
-            </View>
-          </TouchableOpacity>
-        ) : null}
         <View style={{ flex: 3 }}>
-          {userData?.tokenResult.signInProvider == 'password' ? (
+          {userData?.tokenResult.signInProvider === 'password' ? (
             <View
               style={[
                 styles.settingsCard,
@@ -283,8 +300,8 @@ function Settings({ navigation }: Props) {
                   Security
                 </StyledText>
               </View>
-              {userData?.tokenResult.signInProvider == 'password' ? (
-                <TouchableOpacity
+              {userData?.tokenResult.signInProvider === 'password' ? (
+                <Pressable
                   onPress={() =>
                     navigation.navigate('ConfirmLogin', {
                       toScreen: 'EmailChange',
@@ -318,10 +335,10 @@ function Settings({ navigation }: Props) {
                       Change to a new email
                     </StyledText>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ) : null}
-              {userData?.tokenResult.signInProvider == 'password' ? (
-                <TouchableOpacity
+              {userData?.tokenResult.signInProvider === 'password' ? (
+                <Pressable
                   onPress={
                     () => {
                       navigation.navigate('ConfirmLogin', {
@@ -358,7 +375,7 @@ function Settings({ navigation }: Props) {
                       Change your password
                     </StyledText>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ) : null}
             </View>
           ) : null}
@@ -381,13 +398,23 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
-              onPress={
-                () => {}
-                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
+            {renderNotificationRow(
+              'tagNotificationsEnabled',
+              'Tagged',
+              'Notify me when I am tagged in a post',
+              NotificationStatus,
+              spacing.x16
+            )}
+
+            {renderNotificationRow(
+              'pushNotificationsEnabled',
+              'Push Notifications',
+              'Send notifications to phone',
+              NotificationStatus,
+              spacing.x16
+            )}
+
+            <View style={{ flexDirection: 'row', marginBottom: spacing.x16 }}>
               <View
                 style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
               >
@@ -398,86 +425,71 @@ function Settings({ navigation }: Props) {
                     padding: 6,
                   }}
                 >
-                  <NotificationStatus color={Colors.primary.brand} size={18} />
+                  <Feather name="lock" color={Colors.primary.brand} size={18} />
                 </View>
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Push Notifications
+                  Secure Lock-Screen Preview
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Send notifications to phone
+                  Show message text on lock screen
                 </StyledText>
               </View>
-              <View
-                style={{
-                  paddingLeft: spacing.x10,
-                  flex: 1,
-                  alignItems: 'flex-end',
-                }}
-              >
+              <View style={{ paddingLeft: spacing.x10, alignItems: 'flex-end' }}>
                 <Switch
-                  disabled={isLoading}
-                  value={pushNotificationsEnabled}
-                  onValueChange={(value) => {
-                    setPushNotificationsEnabled(value);
-                    updateNotifications(value, subscribedToNewsletter, emailNotificationsEnabled);
-                  }}
+                  disabled={isLoading || isSecurePreviewLoading}
+                  value={securePreviewEnabled}
+                  onValueChange={updateSecurePreview}
                 />
               </View>
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              onPress={
-                () => {}
-                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
-                <View
-                  style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
-                  }}
-                >
-                  <SmsNotification color={Colors.primary.brand} size={18} />
-                </View>
-              </View>
-              <View>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Email Notifications
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Send notifications to email
-                </StyledText>
-              </View>
-              <View
-                style={{
-                  paddingLeft: spacing.x10,
-                  flex: 1,
-                  alignItems: 'flex-end',
-                }}
-              >
-                <Switch
-                  disabled={isLoading}
-                  value={emailNotificationsEnabled}
-                  onValueChange={(value) => {
-                    setEmailNotificationsEnabled(value);
-                    updateNotifications(pushNotificationsEnabled, subscribedToNewsletter, value);
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
+            {renderNotificationRow(
+              'emailNotificationsEnabled',
+              'Email Notifications',
+              'Send notifications to email',
+              SmsNotification,
+              spacing.x16
+            )}
 
-            <TouchableOpacity
-              onPress={
-                () => {}
-                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
+            {renderNotificationRow(
+              'allowDirectMessages',
+              'Allow Direct Messages',
+              'Let connected users send you messages',
+              Sms,
+              spacing.x16
+            )}
+
+            {renderNotificationRow(
+              'subscribedToNewsletter',
+              'Subscribe to Newsletter',
+              'Be updated with One Body',
+              Note1,
+              0
+            )}
+          </View>
+          <View
+            style={[
+              styles.settingsCard,
+              {
+                backgroundColor: colors.card,
+              },
+            ]}
+          >
+            <View>
+              <StyledText
+                style={[
+                  Typography.header.h3,
+                  { textTransform: 'uppercase', marginBottom: spacing.x16 },
+                ]}
+              >
+                Privacy
+              </StyledText>
+            </View>
+
+            <Pressable
+              onPress={() => navigation.navigate('PrivacySettings')}
               style={{ flexDirection: 'row' }}
             >
               <View
@@ -490,90 +502,73 @@ function Settings({ navigation }: Props) {
                     padding: 6,
                   }}
                 >
-                  <Note1 color={Colors.primary.brand} size={18} />
+                  <Feather name="lock" color={Colors.primary.brand} size={18} />
                 </View>
               </View>
               <View>
                 <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Subscribe to Newsletter
+                  Privacy Settings
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Be updated with One Body
+                  Control who can tag and interact with you
                 </StyledText>
               </View>
+            </Pressable>
+          </View>
+          <View
+            style={[
+              styles.settingsCard,
+              {
+                backgroundColor: colors.card,
+              },
+            ]}
+          >
+            <View>
+              <StyledText
+                style={[
+                  Typography.header.h3,
+                  { textTransform: 'uppercase', marginBottom: spacing.x16 },
+                ]}
+              >
+                Creator
+              </StyledText>
+            </View>
+
+            <Pressable
+              onPress={() => {
+                navigation.navigate(
+                  creatorMenuState === 'settings' ? 'InfluencerSettings' : 'InfluencerStepOne'
+                );
+              }}
+              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
+            >
               <View
                 style={{
-                  paddingLeft: spacing.x10,
-                  flex: 1,
-                  alignItems: 'flex-end',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: spacing.x24,
                 }}
-              >
-                <Switch
-                  disabled={isLoading}
-                  value={subscribedToNewsletter}
-                  onValueChange={(value) => {
-                    setSubscribedToNewsletter(value);
-                    updateNotifications(pushNotificationsEnabled, value, emailNotificationsEnabled);
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
-          </View>
-          {userProfile?.influencerProfile?.influencerStatus == 'approved' ||
-          userProfile?.influencerProfile?.influencerStatus == 'pending' ? (
-            <View
-              style={[
-                styles.settingsCard,
-                {
-                  backgroundColor: colors.card,
-                },
-              ]}
-            >
-              <View>
-                <StyledText
-                  style={[
-                    Typography.header.h3,
-                    { textTransform: 'uppercase', marginBottom: spacing.x16 },
-                  ]}
-                >
-                  Influencer
-                </StyledText>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => {
-                  navigation.navigate('InfluencerSettings');
-                }}
-                style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
               >
                 <View
                   style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: spacing.x24,
+                    borderRadius: borderRadius.max,
+                    backgroundColor: Colors.neutral[800],
+                    padding: 6,
                   }}
                 >
-                  <View
-                    style={{
-                      borderRadius: borderRadius.max,
-                      backgroundColor: Colors.neutral[800],
-                      padding: 6,
-                    }}
-                  >
-                    <Setting color={Colors.primary.brand} size={18} />
-                  </View>
+                  <Setting color={Colors.primary.brand} size={18} />
                 </View>
-                <View>
-                  <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                    Influencer Settings
-                  </StyledText>
-                  <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                    Update your influencer profile settings
-                  </StyledText>
-                </View>
-              </TouchableOpacity>
-            </View>
-          ) : null}
+              </View>
+              <View>
+                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                  {creatorMenuLabel}
+                </StyledText>
+                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                  {creatorMenuDescription}
+                </StyledText>
+              </View>
+            </Pressable>
+          </View>
           <View
             style={[
               styles.settingsCard,
@@ -593,7 +588,7 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => navigation.navigate('RemoveAccount')}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -615,7 +610,7 @@ function Settings({ navigation }: Props) {
                   Remove Account
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <View
             style={[
@@ -636,7 +631,7 @@ function Settings({ navigation }: Props) {
               </StyledText>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => OpenURLButton('https://onebodyapp.com')}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -661,9 +656,9 @@ function Settings({ navigation }: Props) {
                   Who we are
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -688,9 +683,9 @@ function Settings({ navigation }: Props) {
                   How we collect and use data
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -715,9 +710,9 @@ function Settings({ navigation }: Props) {
                   Terms of using One Body
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            {/* <TouchableOpacity
+            {/* <Pressable
               onPress={() =>
                 navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
               }
@@ -744,9 +739,9 @@ function Settings({ navigation }: Props) {
                   Ensure your safety on One Body
                 </StyledText>
               </View>
-            </TouchableOpacity> */}
+            </Pressable> */}
 
-            <TouchableOpacity onPress={() => {}} style={{ flexDirection: 'row' }}>
+            <Pressable onPress={() => {}} style={{ flexDirection: 'row' }}>
               <View
                 style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
               >
@@ -768,7 +763,7 @@ function Settings({ navigation }: Props) {
                   {appVersion}
                 </StyledText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </ScrollView>

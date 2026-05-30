@@ -1,7 +1,9 @@
-import { getApp, getApps, initializeApp } from '@react-native-firebase/app';
+import { getApp, getApps } from '@react-native-firebase/app';
 
-// Initialize once and reuse to avoid deprecated namespaced calls.
-const firebaseApp = getApps().length ? getApp() : initializeApp();
+type FirebaseAppType = ReturnType<typeof getApp>;
+
+// Reuse existing initialized app (native Firebase bootstrap).
+const firebaseApp: FirebaseAppType = getApps().length ? getApp() : getApp();
 
 export const getFirebaseApp = () => firebaseApp;
 

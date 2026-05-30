@@ -1,14 +1,14 @@
 import React, { useRef } from 'react';
-import { View, TouchableOpacity, ScrollView, Platform, Share } from 'react-native';
+import { View, Pressable, ScrollView, Platform, Share } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import LinearGradient from 'react-native-linear-gradient';
-import FastImage from 'react-native-fast-image';
 import { Link1 } from 'iconsax-react-native';
 import { ShareAndroid, ShareIos } from 'iconoir-react-native';
 // import Clipboard from '@react-native-clipboard/clipboard';
 import { useToast } from 'react-native-toast-notifications';
+import FastImage from '@/components/primitives/FastImage';
 import { styles } from './styles';
 
 import { Colors } from '@/src/styles';
@@ -108,7 +108,7 @@ function InviteFriend() {
               },
             ]}
           >
-            <TouchableOpacity
+            <Pressable
               style={{
                 flex: 1,
                 alignItems: 'center',
@@ -134,8 +134,8 @@ function InviteFriend() {
                 <Link1 color={Colors.neutral[300]} />
               </View>
               <StyledText style={{ textAlign: 'center' }}>Copy invite link</StyledText>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={{
                 flex: 1,
                 alignItems: 'center',
@@ -144,8 +144,8 @@ function InviteFriend() {
               onPress={async () => {
                 await Share.share({
                   title: `${userProfile?.name} invites You to join them on One Body`,
-                  url: Platform.OS == 'ios' && shareUrl ? shareUrl : '',
-                  message: Platform.OS == 'android' && shareUrl ? shareUrl : '',
+                  url: Platform.OS === 'ios' && shareUrl ? shareUrl : '',
+                  message: Platform.OS === 'android' && shareUrl ? shareUrl : '',
                 });
               }}
             >
@@ -158,14 +158,14 @@ function InviteFriend() {
                   marginBottom: spacing.x10,
                 }}
               >
-                {Platform.OS == 'android' ? (
+                {Platform.OS === 'android' ? (
                   <ShareAndroid color={Colors.neutral[300]} height={25} width={25} />
                 ) : (
                   <ShareIos color={Colors.neutral[300]} height={25} width={25} />
                 )}
               </View>
               <StyledText style={{ textAlign: 'center' }}>Share invite link</StyledText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </ScrollView>
       </LinearGradient>

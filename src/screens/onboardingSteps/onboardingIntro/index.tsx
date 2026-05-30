@@ -1,289 +1,146 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  SafeAreaView,
-  Platform,
-  ScrollView,
-  Animated,
-  Easing,
-  StatusBar,
-  TouchableOpacity,
-} from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import PropTypes from 'prop-types';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
-import FastImage from 'react-native-fast-image';
-import { useTheme, CommonActions } from '@react-navigation/native';
-import { BlurView } from '@react-native-community/blur';
-import Ionicons from '@react-native-vector-icons/ionicons';
-
+import LottieView from 'lottie-react-native';
+import { useTheme } from '@react-navigation/native';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import type { OnboardingStackParamList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { OnboardingStackParamList } from '@/src/navigator/types';
-import StyledText from '@/components/styled/Text';
-import Button from '@/components/Button';
-import { Colors, Typography } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
-import { spacing } from '@/src/styles/spacing';
-import { HapticService } from '@/src/services/haptic';
+// eslint-disable-next-line import/extensions
+import onboardingIntroAnimation from '../../../assets/animations/onboarding-intro.json';
 
-const introImage = require('@/assets/images/onboarding_intro.png');
+// One Body Color Palette
+const COLORS = {
+  background: '#e6eaec', // Gray 100
+  textPrimary: '#032f3c', // Black
+  textSecondary: '#4f6d77', // Gray 700
+  button: '#126b87', // Primary Dark
+  buttonText: '#ffffff',
+  accent: '#12d2d9', // Info Brand Accent (for subtle highlights)
+};
 
-const AnimatedFastImage = Animated.createAnimatedComponent(FastImage);
-
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 
 function OnboardingIntro({ navigation }: Props) {
-  const authState = useSelector((state: RootState) => state.auth);
+  const accountType = useSelector((state: RootState) => state.auth.getProfileData?.accountType);
+  const animationRef = useRef<React.ElementRef<typeof LottieView>>(null);
   const { dark } = useTheme();
-  const isIos = Platform.OS === 'ios';
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const spinAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Gentle breathing pulse – longer & subtler in 2026 style
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.04, // very gentle amplitude
-          duration: 3200,
-          easing: Easing.bezier(0.4, 0, 0.2, 1), // smooth natural in/out
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 3200,
-          easing: Easing.bezier(0.4, 0, 0.2, 1),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    // Very slow elegant rotation of background layer
-    const spinLoop = Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 18000, // slower = more premium/calm
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-
-    pulseLoop.start();
-    spinLoop.start();
-
-    return () => {
-      pulseLoop.stop();
-      spinLoop.stop();
-    };
-  }, [pulseAnim, spinAnim]);
-
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+  useMountEffect(() => {
+    animationRef.current?.play();
   });
 
-  const handleNext = () => {
-    HapticService.trigger('impactMedium');
-    if (authState.getProfileData?.accountType === 'individual') {
-      navigation.push('OnboardingDateOfBirth');
+  const handleGetStarted = () => {
+    if (accountType === 'organization') {
+      navigation.replace('OnboardingOrganizationType');
     } else {
-      navigation.push('OnboardingOrganizationType');
+      navigation.replace('OnboardingDateOfBirth');
     }
   };
 
-  const handleBack = () => {
-    HapticService.trigger('impactMedium');
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Intro' }],
-      })
-    );
-  };
-
-  // Theme-aware colors (adjusted to match your original intent)
-  const bgLayerOpacity = 0.15; // even more subtle
-  const textColor = dark ? Colors.main.black : Colors.primary.brand;
-  const headerColor = dark ? Colors.primarySapphire[400] : Colors.primary.brand;
-  const glassBorderColor = dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.35)';
-  const glassBackground = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
-  const glassRadius =
-    typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
-
   return (
-    <>
-      {Platform.OS === 'android' && (
-        <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
-      )}
-      <SafeAreaView
-        style={{
-          flex: 1,
-          marginHorizontal: spacing.x24,
-          marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
-        }}
-      >
-        {isIos ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: 80,
-              left: 0,
-              zIndex: 10,
-              borderRadius: 20,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: glassBorderColor,
-              backgroundColor: glassBackground,
-            }}
-          >
-            <BlurView
-              blurType={dark ? 'dark' : 'light'}
-              blurAmount={18}
-              reducedTransparencyFallbackColor={
-                dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-              }
-              style={{
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <TouchableOpacity
-                onPress={handleBack}
-                style={{
-                  width: 40,
-                  height: 40,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="chevron-back" size={24} color="#FFF" />
-              </TouchableOpacity>
-            </BlurView>
-          </View>
-        ) : (
-          <TouchableOpacity
-            onPress={handleBack}
-            style={{
-              position: 'absolute',
-              top: spacing.x32,
-              left: 0,
-              zIndex: 10,
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="chevron-back" size={24} color={headerColor} />
-          </TouchableOpacity>
-        )}
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View
-            style={{
-              flex: 4,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <View
-              style={{
-                width: '100%',
-                aspectRatio: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: spacing.x32,
-              }}
-            >
-              {/* Subtle rotating background layer */}
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  transform: [{ rotate: spin }],
-                }}
-              >
-                <AnimatedFastImage
-                  resizeMode="contain"
-                  style={{ width: '100%', height: '100%', opacity: bgLayerOpacity }}
-                  source={introImage}
-                />
-              </Animated.View>
+    <SafeAreaView style={[styles.container, dark && styles.containerDark]}>
+      {/* 1. The Lottie Animation Container */}
+      <View style={styles.animationContainer}>
+        <LottieView
+          ref={animationRef}
+          source={onboardingIntroAnimation}
+          autoPlay
+          loop
+          style={styles.lottie}
+          resizeMode="contain"
+        />
+      </View>
 
-              {/* Main icon with gentle breathing pulse */}
-              <AnimatedFastImage
-                resizeMode="contain"
-                style={{
-                  width: '70%',
-                  height: '70%',
-                  transform: [{ scale: pulseAnim }],
-                }}
-                source={introImage}
-              />
-            </View>
+      {/* 2. Mission-Aligned Messaging */}
+      <View style={styles.contentContainer}>
+        <Text style={[styles.title, dark && styles.titleDark]}>Let&#39;s Get to Know You</Text>
+        <Text style={[styles.subtitle, dark && styles.subtitleDark]}>
+          This should take about a minute to complete.
+        </Text>
 
-            <StyledText
-              style={[
-                Typography.header.h1,
-                {
-                  color: headerColor,
-                  marginVertical: spacing.x8,
-                },
-              ]}
-            >
-              Let&#39;s Get to Know You
-            </StyledText>
-
-            <StyledText
-              style={{
-                marginHorizontal: spacing.x16,
-                textAlign: 'center',
-                color: textColor,
-              }}
-            >
-              This should only take about a minute to complete.
-            </StyledText>
-          </View>
-
-          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-            {isIos ? (
-              <BlurView
-                blurType={dark ? 'dark' : 'light'}
-                blurAmount={18}
-                reducedTransparencyFallbackColor={
-                  dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-                }
-                style={{
-                  width: '100%',
-                  borderRadius: glassRadius,
-                  overflow: 'hidden',
-                  borderWidth: 1,
-                  borderColor: glassBorderColor,
-                  backgroundColor: glassBackground,
-                }}
-              >
-                <Button
-                  text="Get Started"
-                  btnStyle={[button.primary, { flex: 1, backgroundColor: 'transparent' }]}
-                  onPress={handleNext}
-                  btnTextStyle={{ color: '#FFF' }}
-                />
-              </BlurView>
-            ) : (
-              <Button
-                text="Get Started"
-                btnStyle={[button.primary, { flex: 1 }]}
-                onPress={handleNext}
-                btnTextStyle={{ color: '#FFF' }}
-              />
-            )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
+        {/* 3. Call to Action */}
+        <Pressable style={[styles.button, dark && styles.buttonDark]} onPress={handleGetStarted}>
+          <Text style={styles.buttonText}>Get Started</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  containerDark: {
+    backgroundColor: '#0D0D0D',
+  },
+  animationContainer: {
+    flex: 2, // Takes up top 66% of screen
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  lottie: {
+    width: 300,
+    height: 300,
+  },
+  contentContainer: {
+    flex: 1, // Takes up bottom 33%
+    width: '100%',
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  titleDark: {
+    color: '#f6f6f7',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  subtitleDark: {
+    color: '#b9c7cc',
+  },
+  button: {
+    backgroundColor: COLORS.button,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 50, // Pill shape
+    width: '100%',
+    boxShadow: '0 2px 3.84px rgba(0, 0, 0, 0.25)',
+  },
+  buttonDark: {
+    backgroundColor: '#126b87',
+  },
+  buttonText: {
+    color: COLORS.buttonText,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+});
+
 export default OnboardingIntro;
+
+OnboardingIntro.propTypes = {
+  navigation: PropTypes.shape({
+    replace: PropTypes.func.isRequired,
+  }).isRequired,
+};

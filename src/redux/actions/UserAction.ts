@@ -1,40 +1,40 @@
 import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 
-export const getuserAll = (data) => ({
+export const getuserAll = (data: any) => ({
   type: ACTIONS.Get_ALLUSER,
   data,
 });
 
-export const setUserAll = (data) => ({
+export const setUserAll = (data: any) => ({
   type: ACTIONS.Set_ALLUSER,
   data,
 });
-export const getuserGet = (data) => ({
+export const getuserGet = (data: any) => ({
   type: ACTIONS.GET_User_GET,
   data,
 });
 
-export const setUserIntrest = (data) => ({
+export const setUserIntrest = (data: any) => ({
   type: ACTIONS.SET_User_INTREST,
   data,
 });
 
-export const setUserSubscribe = (data) => ({
+export const setUserSubscribe = (data: any) => ({
   type: ACTIONS.SET_User_SUBSCRIBE,
   data,
 });
 
-export const getUserProfile = (data) => ({
+export const getUserProfile = (data: any) => ({
   type: ACTIONS.GET_FETCH_PROFILE,
   data,
 });
 
-export const setUserProfile = (data) => ({
+export const setUserProfile = (data: any) => ({
   type: ACTIONS.FETCH_PROFILE,
   data,
 });
 
-export const setUserDataNotifications = (data) => ({
+export const setUserDataNotifications = (data: any) => ({
   type: ACTIONS.SET_USER_NOTIFICATIONS,
   data,
 });

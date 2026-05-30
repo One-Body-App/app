@@ -13,3 +13,11 @@ declare module '*.gif';
 declare module '*.bmp';
 declare module '*.tiff';
 declare module '*.webp';
+declare module '*.wav';
+declare module '*.json';
+declare module '*.module.scss' {
+  const classes: Record<string, string>;
+  export default classes;
+}
+
+declare module 'color';

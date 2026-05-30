@@ -12,11 +12,12 @@ def node_require(script)
 
  node_require('react-native/scripts/react_native_pods.rb')
  node_require('react-native-permissions/scripts/setup.rb')
+ node_require('expo/scripts/autolinking.rb')
 
 install! 'cocoapods', :deterministic_uuids => false
 #use_frameworks! :linkage => :dynamic
 use_modular_headers!
-platform :ios, min_ios_version_supported
+platform :ios, '16.4'
 prepare_react_native_project!
 
 production = ENV["PRODUCTION"] == "1"
@@ -28,8 +29,16 @@ if linkage != nil
   $RNFirebaseAsStaticFramework = true
 end
 
+target 'OneBodyNotificationServiceExtension' do
+  inherit! :search_paths
+end
+
 
 target 'onebody' do
+  use_expo_modules!
+  # Mapbox iOS downloads can use RNMAPBOX_MAPS_DOWNLOAD_TOKEN from your shell env.
+  # Example: export RNMAPBOX_MAPS_DOWNLOAD_TOKEN=sk.***
+
   setup_permissions([
     # 'AppTrackingTransparency',
     # 'Bluetooth',
@@ -63,6 +72,7 @@ target 'onebody' do
 
   pod 'rn-fetch-blob',
       :path => '../node_modules/rn-fetch-blob'
+  pod 'Mux-Upload-SDK'
 
   pod 'SDWebImageWebPCoder'
   pod 'libwebp', '1.3.2', :source => 'https://cdn.cocoapods.org/'
@@ -77,6 +87,7 @@ target 'onebody' do
   pod 'FirebaseAppCheckInterop'
   pod 'FirebaseCoreExtension'
   pod 'RecaptchaInterop'
+  pod 'RecaptchaEnterprise'
 
   # ✅ updated version
   #pod 'fmt', '~> 8.1.1'     ✅ resolves char8_t crash
@@ -102,12 +113,23 @@ target 'onebody' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    $RNMapboxMaps.post_install(installer) if defined?($RNMapboxMaps) && $RNMapboxMaps
+
+    envfiles = {
+      'Debug' => '.env.local',
+      'Release' => '.env.local',
+    }
 
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
+        if target.name == 'react-native-config'
+          config.build_settings['ENVFILE'] = envfiles[config.name] || '.env.local'
+        end
+
         config.build_settings['ENABLE_BITCODE'] = 'NO'
         config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
         config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         current_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
         minimum_target = min_ios_version_supported
         if current_target.to_f < minimum_target.to_f
@@ -118,6 +140,19 @@ target 'onebody' do
       # Fix Xcode 15+ warnings about script phases not specifying outputs
       target.build_phases.each do |phase|
         if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+          if target.name == 'ReactCodegen' && phase.name == '[CP-User] Generate Specs'
+            script = phase.shell_script || ''
+            script = script.gsub(
+              /export RCT_SCRIPT_RN_DIR="[^"]*"/,
+              'export RCT_SCRIPT_RN_DIR="$RCT_SCRIPT_POD_INSTALLATION_ROOT/../node_modules/react-native"'
+            )
+            script = script.gsub(
+              /export RCT_SCRIPT_APP_PATH="[^"]*"/,
+              'export RCT_SCRIPT_APP_PATH="$RCT_SCRIPT_POD_INSTALLATION_ROOT/.."'
+            )
+            phase.shell_script = script
+          end
+
           # Skip phases that already have outputs
           next if phase.output_paths && !phase.output_paths.empty?
 
@@ -132,6 +167,7 @@ target 'onebody' do
         end
       end
     end
+
   end
 
 
@@ -142,6 +178,7 @@ target 'onebody' do
   'FirebaseCoreExtension',
   'GoogleUtilities',
   'RecaptchaInterop',
+  'RecaptchaEnterprise',
   'FirebaseCoreInternal',
   'FirebaseInstallations',
   'GoogleDataTransport',
@@ -151,6 +188,7 @@ target 'onebody' do
 ]
 
   pre_install do |installer|
+    $RNMapboxMaps.pre_install(installer) if defined?($RNMapboxMaps) && $RNMapboxMaps
     installer.pod_targets.each do |pod|
       if static_frameworks.include?(pod.name)
         puts "Configuring #{pod.name} as static framework"
@@ -167,4 +205,36 @@ target 'onebody' do
     end
   end
 
+end
+
+post_integrate do |_installer|
+  user_project = Xcodeproj::Project.open(File.join(__dir__, 'onebody.xcodeproj'))
+  app_target = user_project.targets.find { |t| t.name == 'onebody' }
+  next unless app_target
+
+  rnfb_phase = app_target.build_phases.find do |phase|
+    phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase) &&
+      phase.name == '[CP-User] [RNFB] Core Configuration'
+  end
+  next unless rnfb_phase
+
+  rnfb_phase.input_paths = []
+  rnfb_phase.input_file_list_paths = []
+  rnfb_phase.output_paths = []
+  rnfb_phase.output_file_list_paths = []
+
+  # Keep RNFB off the built app Info.plist to avoid Xcode dependency cycles
+  # when app extensions are embedded.
+  script = rnfb_phase.shell_script || ''
+  script = script.gsub(
+    '_TARGET_PLIST="${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}"',
+    '_TARGET_PLIST="${SRCROOT}/onebody/Info.plist"'
+  )
+  script = script.gsub(
+    '_DSYM_PLIST="${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist"',
+    '_DSYM_PLIST=""'
+  )
+  rnfb_phase.shell_script = script
+
+  user_project.save
 end

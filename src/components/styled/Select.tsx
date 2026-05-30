@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { ScrollView, Pressable, View, ViewStyle, TextStyle } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -27,6 +28,12 @@ interface Props {
   wrapperStyle?: ViewStyle;
   hideSearch?: boolean;
   showAllWithoutSearch?: boolean;
+  btnStyle?: ViewStyle;
+  btnTextStyle?: TextStyle;
+  wrapperBtnStyle?: ViewStyle;
+  wrapperViewBtnStyle?: ViewStyle;
+  rightIcon?: ReactNode;
+  leftIcon?: ReactNode;
 }
 
 export default function StyledSelect({
@@ -39,59 +46,66 @@ export default function StyledSelect({
   wrapperStyle,
   hideSearch,
   showAllWithoutSearch,
+  btnStyle,
+  btnTextStyle,
+  wrapperBtnStyle,
+  wrapperViewBtnStyle,
+  rightIcon,
+  leftIcon,
 }: Props) {
   const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [searchedItems, setSearchedItems] = useState<SelectedItem[]>(
-    hideSearch || showAllWithoutSearch ? items : []
-  );
-  useEffect(() => {
-    setSearchText('');
-
+  const searchedItems = useMemo(() => {
     if (hideSearch || showAllWithoutSearch) {
-      setSearchedItems(items);
+      return items;
     }
-  }, [items, hideSearch, showAllWithoutSearch]);
 
-  useEffect(() => {
-    let values = items;
-    if (searchText != '') {
-      values = items.filter(
-        (item) => item.text.toLowerCase().indexOf(searchText.toLowerCase()) > -1
-      );
-      setSearchedItems(values);
-    } else {
-      setSearchedItems(hideSearch || showAllWithoutSearch ? items : []);
+    const normalizedSearchText = searchText.trim().toLowerCase();
+    if (!normalizedSearchText) {
+      return [];
     }
-  }, [searchText]);
+
+    return items.filter((item) => item.text.toLowerCase().includes(normalizedSearchText));
+  }, [hideSearch, items, searchText, showAllWithoutSearch]);
 
   return (
     <View style={wrapperStyle}>
       {label ? <StyledText style={{ marginBottom: spacing.x10 }}>{label}</StyledText> : null}
       <Button
         text={btnText}
-        btnStyle={{
-          flex: 1,
-          backgroundColor: Colors.neutral[700],
-          borderColor: Colors.neutral[800],
-          borderRadius: borderRadius.xs,
-
-          // ...styles.btn3,
-          // backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
-        }}
-        wrapperBtnStyle={{
-          justifyContent: 'space-between',
-          paddingHorizontal: spacing.x10,
-          paddingVertical: spacing.x16,
-        }}
-        btnTextStyle={{
-          textTransform: 'capitalize',
-          color: selectedItem ? Colors.neutral[200] : Colors.neutral[300],
-        }}
-        rightIcon={<Ionicons name="chevron-down" color={Colors.neutral[200]} />}
+        leftIcon={leftIcon}
+        btnStyle={[
+          {
+            flex: 1,
+            backgroundColor: Colors.neutral[700],
+            borderColor: Colors.neutral[800],
+            borderRadius: borderRadius.xs,
+          },
+          btnStyle,
+        ]}
+        wrapperBtnStyle={[
+          {
+            justifyContent: 'space-between',
+            paddingHorizontal: spacing.x10,
+            paddingVertical: spacing.x16,
+          },
+          wrapperBtnStyle,
+        ]}
+        wrapperViewBtnStyle={wrapperViewBtnStyle}
+        btnTextStyle={[
+          {
+            textTransform: 'capitalize',
+            color: selectedItem ? Colors.neutral[200] : Colors.neutral[300],
+          },
+          btnTextStyle,
+        ]}
+        rightIcon={rightIcon ?? <Ionicons name="chevron-down" color={Colors.neutral[200]} />}
         // btnTextStyle={styles.btnText3}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          setSearchText('');
+          setModalVisible(true);
+        }}
       />
 
       <CustomModal
@@ -136,7 +150,7 @@ export default function StyledSelect({
                 {modalTitle}
               </StyledText>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   // setModalVisible(false);
                   setModalVisible(false);
@@ -147,7 +161,7 @@ export default function StyledSelect({
                   size={18}
                   color={dark ? colors.text : Colors.primary.brand}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
             {!hideSearch ? (
               <View style={{ flex: 1 }}>
@@ -194,14 +208,14 @@ export default function StyledSelect({
               ) : null}
               {searchedItems.map((item, index) => {
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       onChange(item.value);
 
                       setModalVisible(false);
                     }}
                     // style={styles.listItem2}
-                    key={index}
+                    key={item.value}
                     style={{
                       padding: spacing.x16,
                       flexDirection: 'row',
@@ -224,7 +238,7 @@ export default function StyledSelect({
                     {selectedItem == item.value ? (
                       <MaterialCommunityIcons name="check" size={15} color={Colors.neutral[200]} />
                     ) : null}
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </ScrollView>

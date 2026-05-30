@@ -1,10 +1,17 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { View, Animated, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import React, { useState, useMemo, useRef } from 'react';
+import {
+  View,
+  Animated,
+  StyleSheet,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  useWindowDimensions,
+} from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
-import { StackScreenProps } from '@react-navigation/stack';
-import { useToast } from 'react-native-toast-notifications';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
@@ -12,28 +19,35 @@ import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
 import { preloadSoundEffect, playSoundEffect } from '@/src/services/soundEffects';
-// eslint-disable-next-line import/extensions
 import pickerClickSound from '../../../assets/sounds/click.wav';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
 
 // Configuration for the Wheel Picker
-const ITEM_HEIGHT = 60; // Height of each year item
+const ITEM_HEIGHT = 90; // Height of each year item
 const VISIBLE_ITEMS = 3; // How many items to see (1 center, 1 above, 1 below)
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 
-function OnboardingDateOfBirth({ navigation, route }: Props) {
+function OnboardingDateOfBirth({ navigation }: Props) {
   const { dark, colors } = useTheme();
+  const { height: windowHeight } = useWindowDimensions();
   const [year, setYear] = useState<string>();
-  const toast = useToast();
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const baseFontSize =
+    typeof Typography.header.h2.fontSize === 'number' ? Typography.header.h2.fontSize : 20;
+  const baseLineHeight =
+    typeof Typography.header.h2.lineHeight === 'number' ? Typography.header.h2.lineHeight : 30;
+  const yearFontSize = baseFontSize * 2;
+  const yearLineHeight = baseLineHeight * 2;
+  const pickerTranslateY = -windowHeight * 0.1;
 
   // Animations
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Generate years dynamically (Min age 16, Max age 90)
+  // Generate years dynamically (Min age 7, Max age 90)
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    const maxYear = currentYear - 16;
+    const maxYear = currentYear - 7;
     const minYear = currentYear - 90;
     const yearList = [];
     for (let i = maxYear; i >= minYear; i--) {
@@ -43,14 +57,15 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
   }, []);
 
   const handleNext = () => {
-    if (year) {
-      navigation.navigate('OnboardingLocation', {
-        ...route.params,
-        dateOfBirth: year,
+    const selectedYear = year ?? years[0];
+
+    if (selectedYear) {
+      ReactNativeHapticFeedback.trigger('impactMedium', {
+        enableVibrateFallback: true,
+        ignoreAndroidSystemSettings: false,
       });
-    } else {
-      toast.show('Year of birth is required', {
-        type: 'danger',
+      navigation.navigate('OnboardingLocation', {
+        dateOfBirth: selectedYear,
       });
     }
   };
@@ -72,7 +87,6 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
         setYear(selectedYear);
 
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log(`📍 Year changed to: ${selectedYear} (index: ${index})`);
         }
 
@@ -87,22 +101,19 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
   });
 
   // Initial selection (set the first year as default)
-  useEffect(() => {
+  useMountEffect(() => {
     // Set initial year to the first item in the list automatically
     if (!year && years.length > 0) {
       setYear(years[0]);
       lastTriggeredIndex.current = 0;
     }
-  }, [years, year]);
 
-  useEffect(() => {
     preloadSoundEffect('pickerClick', pickerClickSound, 0.2).catch(() => {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.warn('🔇 Picker click sound failed to preload');
+        console.warn('Picker click sound failed to preload');
       }
     });
-  }, []);
+  });
 
   const renderItem = ({ item, index }: { item: string; index: number }) => {
     const inputRange = [(index - 1) * ITEM_HEIGHT, index * ITEM_HEIGHT, (index + 1) * ITEM_HEIGHT];
@@ -141,6 +152,8 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
               opacity,
               color: color as any, // Cast to avoid TS issues with Animated colors
               fontWeight: '700',
+              fontSize: yearFontSize,
+              lineHeight: yearLineHeight,
             },
           ]}
         >
@@ -152,20 +165,18 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
 
   return (
     <OnboardingStepsLayout
-      buttonText="Next"
+      buttonText={hasInteracted ? 'Next' : 'Skip'}
       onPress={handleNext}
       onboardingType={AccountType.individual}
       activeStep={1}
-      disabled={!year}
       dontUseScrollView
-      showCustomHeaderOnAndroid
       reasonText={
         <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
-          Your year of birth helps us to understand the type of content you would be most interested
-          in seeing so that we may enhance your One Body experience.{' '}
+          We use this to recommend relevant groups and fellowship opportunities. Your age is{' '}
           <StyledText style={{ fontWeight: 'bold', color: Colors.primary.brand }}>
-            We do NOT publicly display this information.
-          </StyledText>
+            private
+          </StyledText>{' '}
+          and will never be displayed on your profile.
         </StyledText>
       }
     >
@@ -177,7 +188,7 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
               { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
             ]}
           >
-            What is your year of birth?
+            When were you born?
           </StyledText>
           <StyledText
             style={[
@@ -185,12 +196,19 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
               { color: dark ? Colors.main.black : Colors.neutral[300], marginTop: spacing.x8 },
             ]}
           >
-            Swipe to select
+            This helps us curate content relevant to your season of life.
           </StyledText>
         </View>
 
         {/* CENTERED WHEEL PICKER */}
-        <View style={{ flex: 4, justifyContent: 'center', alignItems: 'center' }}>
+        <View
+          style={{
+            flex: 4,
+            justifyContent: 'center',
+            alignItems: 'center',
+            transform: [{ translateY: pickerTranslateY }],
+          }}
+        >
           <View style={{ height: PICKER_HEIGHT, width: '100%' }}>
             {/* Selection Indicator Lines (Optional visuals to frame the center) */}
             <View
@@ -221,6 +239,7 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
               decelerationRate="fast"
               onScroll={handleScroll}
               scrollEventThrottle={16}
+              onScrollBeginDrag={() => setHasInteracted(true)}
               // Padding allows the first and last items to reach the center
               contentContainerStyle={{
                 paddingVertical: ITEM_HEIGHT,

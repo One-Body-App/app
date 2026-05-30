@@ -1,6 +1,6 @@
 import { Platform, StyleSheet } from 'react-native';
 
-export const styles = StyleSheet.create({
+export default StyleSheet.create({
   title: Platform.select({
     ios: {
       fontSize: 17,

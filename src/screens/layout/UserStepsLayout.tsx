@@ -1,5 +1,6 @@
 import { ReactElement } from 'react';
-import { Platform, SafeAreaView, View, ViewStyle } from 'react-native';
+import { Platform, RefreshControlProps, View, ViewStyle } from 'react-native';
+import { Edge, SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -14,8 +15,10 @@ type Props = {
   backgroundColor?: string;
   bottomOffset?: number;
   hideBottomText?: boolean;
-  refreshControl?: React.ReactElement;
+  refreshControl?: ReactElement<RefreshControlProps>;
   showCustomHeaderOnAndroid?: boolean;
+  // iOS: skip the top safe-area inset when the navigation header already consumes it.
+  excludeIosTopSafeArea?: boolean;
 };
 
 export function BottomStepsText() {
@@ -45,12 +48,18 @@ function UserStepsLayout({
   hideBottomText,
   refreshControl,
   showCustomHeaderOnAndroid = false,
+  excludeIosTopSafeArea = false,
 }: Props) {
   const { colors } = useTheme();
   const resolvedBackground = backgroundColor ?? colors.background;
+  const safeAreaEdges: Edge[] | undefined =
+    excludeIosTopSafeArea && Platform.OS === 'ios' ? ['left', 'right', 'bottom'] : undefined;
 
   return (
-    <SafeAreaView style={{ flexGrow: 1, backgroundColor: resolvedBackground }}>
+    <SafeAreaView
+      edges={safeAreaEdges}
+      style={{ flexGrow: 1, backgroundColor: resolvedBackground }}
+    >
       {showCustomHeaderOnAndroid && Platform.OS === 'android' && <CustomHeader showBackButton />}
       <KeyboardAwareScrollView
         bottomOffset={bottomOffset ?? 50}

@@ -1,5 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActionSheetIOS,
+  Alert,
+  Platform,
+  ScrollView,
+  Switch,
+  TextInput,
+  Pressable,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import {
   CameraOptions,
   ImageLibraryOptions,
@@ -8,28 +18,36 @@ import {
   MediaType,
 } from 'react-native-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import FastImage from 'react-native-fast-image';
 import ImagePicker from 'react-native-image-crop-picker';
-import { StackScreenProps } from '@react-navigation/stack';
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
 import { ArrowDown2, Calendar, GalleryEdit } from 'iconsax-react-native';
 import { serialize } from 'object-to-formdata';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import FastImage from '@/components/primitives/FastImage';
 import Button from '@/components/Button';
 
 import { styles } from './styles';
 import { profileUpdate } from '@/src/redux/actions/AuthActions';
-import ImagePickerModal from '@/components/ImagePickerModal';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
+import {
+  AccountType,
+  ChurchType,
+  Interest,
+  OrganizationSize,
+  OrganizationType,
+  Tag,
+} from '@/utils/types';
 
-import MapBox, { MapSuggestion } from '@/components/MapBox';
+import MapBox from '@/components/MapBox';
+import type { MapSuggestion } from '@/components/MapBoxTypes';
 import { spacing } from '@/src/styles/spacing';
 
 import { Colors, Typography } from '@/src/styles';
@@ -46,15 +64,34 @@ import {
   MainDrawerParamsList,
   MyProfileStackParamsList,
 } from '@/src/navigator/types';
-import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
+import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
+import {
+  buildCroppedMediaState,
+  shouldConsumeMediaPickerIntent,
+  shouldOpenHeaderPicker,
+  shouldOpenPhotoPicker,
+} from './mediaHelpers';
+import {
+  buildOrganizationCategoryGroups,
+  getOrganizationCategoryForType,
+} from '@/src/utils/organizationCategories';
 
 type Props = CompositeScreenProps<
-  StackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
+  NativeStackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
   CompositeScreenProps<
     DrawerScreenProps<MainDrawerParamsList, 'Main'>,
     BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
   >
 >;
+
+const interestScrollInsets = { bottom: spacing.x48 };
+const interestScrollAndroidPadding =
+  Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
+const profileDatePickerNow = new Date();
+const profileMinimumBirthDate = new Date(profileDatePickerNow);
+profileMinimumBirthDate.setFullYear(profileDatePickerNow.getFullYear() - 90);
+const profileMaximumBirthDate = new Date(profileDatePickerNow);
+profileMaximumBirthDate.setFullYear(profileDatePickerNow.getFullYear() - 16);
 
 export type LocationDTO = {
   address: string;
@@ -68,6 +105,9 @@ type EditProfileDTO = {
   contactEmail?: string;
   contactName?: string;
   contactPhoneNumber?: string;
+  organizationSize?: OrganizationSize;
+  organizationCategory?: string;
+  organizationSubType?: string;
 
   gender?: string;
   whatIDo?: string;
@@ -89,13 +129,19 @@ type EditProfileDTO = {
   };
 };
 
-function EditProfile({ navigation }: Props) {
+function EditProfile({ navigation, route }: Props) {
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const { width: screenWidth } = useWindowDimensions();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [gender, setGender] = useState(user?.gender);
-  const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
-  const [headerImagePickerModalVisibile, setHeaderImagePickerModalVisibile] = useState(false);
+
+  const devLog = useCallback((...args: any[]) => {
+    if (__DEV__) {
+      console.log(...args);
+    }
+  }, []);
+
+  const [gender] = useState(user?.gender);
   const [imageToUpload, setImageToUpload] = useState('');
   const [imageObject, setImageObject] = useState<{ uri: string; type: string; name: string }>();
 
@@ -106,7 +152,7 @@ function EditProfile({ navigation }: Props) {
     name: string;
   }>();
   const [fullname, setFullName] = useState<string>(
-    user?.accountType == 'individual' ? (user?.name ?? '') : (user?.profile.companyName ?? '')
+    user?.accountType === 'individual' ? (user?.name ?? '') : (user?.profile.companyName ?? '')
   );
 
   const [username, setUsername] = useState<string>(user?.username ?? '');
@@ -114,8 +160,12 @@ function EditProfile({ navigation }: Props) {
   const [isValidWebsite, setIsValidWebsite] = useState<boolean | null>(null);
   const [bio, setBio] = useState<string>(user?.bio ?? '');
   const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
-  const [organizationType, setOrganizationType] = useState<Tag | null>(
-    user?.profile.typeOfOrganization ? user?.profile.typeOfOrganization : null
+  const [selectedOrganizationCategory, setSelectedOrganizationCategory] = useState<string>(
+    user?.profile.organizationCategory ??
+      getOrganizationCategoryForType(user?.profile.typeOfOrganization ?? null)
+  );
+  const [selectedOrganizationTypeId, setSelectedOrganizationTypeId] = useState<string>(
+    user?.profile.typeOfOrganization?._id ?? ''
   );
 
   const [organizationContactName, setOrganizationContactName] = useState<string>(
@@ -129,9 +179,12 @@ function EditProfile({ navigation }: Props) {
   const [organizationContactPhone, setOrganizationContactPhone] = useState<string>(
     user?.profile.contactPhoneNumber ?? ''
   );
+  const [organizationSize, setOrganizationSize] = useState<OrganizationSize | ''>(
+    user?.profile.organizationSize ?? ''
+  );
 
   const [whatIDoList, setWhatIDoList] = useState<Tag[]>([]);
-  const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
+  const [organizationTypes, setOrganizationTypes] = useState<OrganizationType[]>([]);
   const dispatch = useDispatch();
   const [date, setDate] = useState<string>(user?.profile?.dateOfBirth ?? '');
   const [open, setOpen] = useState(false);
@@ -142,18 +195,17 @@ function EditProfile({ navigation }: Props) {
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
   const [churchType, setChurchType] = useState<string>(user?.profile?.churchType ?? '');
   const [citySelector, setCitySelector] = useState<boolean>(false);
-  const [location, setLocation] = useState<LocationDTO | null>(
-    user?.profile.location &&
-      user?.profile.location.coordinates?.lon &&
-      user?.profile.location.coordinates?.lat &&
-      user?.profile.location.address
-      ? {
-          address: user?.profile.location.address,
-          longitude: user?.profile.location.coordinates?.lon,
-          latitude: user?.profile.location.coordinates?.lat,
-        }
-      : null
-  );
+  const [location, setLocation] = useState<LocationDTO | null>(() => {
+    const loc = user?.profile.location;
+    if (loc?.address && loc.coordinates != null) {
+      return {
+        address: loc.address,
+        longitude: loc.coordinates.lon,
+        latitude: loc.coordinates.lat,
+      };
+    }
+    return null;
+  });
   const [newLocation, setNewLocation] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
@@ -168,14 +220,20 @@ function EditProfile({ navigation }: Props) {
   );
 
   const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
+  const organizationSizeOptions: { text: string; value: OrganizationSize }[] = [
+    { text: 'Small', value: 'small' },
+    { text: 'Medium', value: 'medium' },
+    { text: 'Large', value: 'large' },
+    { text: 'Mega', value: 'mega' },
+  ];
 
   const { colors } = useTheme();
 
   useEffect(() => {
-    if (newLocation && latitude && longitude) {
+    if (newLocation) {
       setLocation({
-        longitude,
-        latitude,
+        longitude: longitude ?? 0,
+        latitude: latitude ?? 0,
         address: newLocation.place_name,
       });
     }
@@ -185,7 +243,7 @@ function EditProfile({ navigation }: Props) {
   //   navigation.setOptions({
   //     headerRight: () => (
   //       <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-  //         <TouchableOpacity
+  //         <Pressable
   //           style={{ marginRight: spacing.x16 }}
   //           onPress={() => {
   //             Share.share({
@@ -203,8 +261,8 @@ function EditProfile({ navigation }: Props) {
   //           ) : (
   //             <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
   //           )}
-  //         </TouchableOpacity>
-  //         <TouchableOpacity
+  //         </Pressable>
+  //         <Pressable
   //           onPress={() => {
   //             setShowSettings(true);
   //           }}
@@ -214,13 +272,13 @@ function EditProfile({ navigation }: Props) {
   //             color={Colors.primary.brand}
   //             strokeWidth={0.2}
   //           />
-  //         </TouchableOpacity>
+  //         </Pressable>
   //       </View>
   //     ),
   //   });
   // }, [navigation, user]);
 
-  const getChurchTypes = async () => {
+  const getChurchTypes = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'global/church-type',
@@ -228,95 +286,50 @@ function EditProfile({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setChurchTypes(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
-  const captureImage = async (contentType: MediaType, imageType: 'header' | 'photo') => {
-    const options: CameraOptions = {
-      mediaType: contentType,
-      quality: 0.8,
-      // noData: true,
-    };
-    // let isCameraPermitted = await requestCameraPermission();
-    const isStoragePermitted = await requestExternalWritePermission();
-    if (isStoragePermitted) {
-      const response = await launchCamera(options);
-
-      console.log('Response = ', response);
-
-      if (response.didCancel) {
-        console.log('User cancelled camera picker');
-
-        return;
-      }
-      if (response.errorCode == 'camera_unavailable') {
-        console.log('Camera not available on device');
-
-        return;
-      }
-      if (response.errorCode == 'permission') {
-        console.log('Permission not satisfied');
-
-        return;
-      }
-      if (response.errorCode == 'others') {
-        console.log(response.errorMessage);
-
-        return;
-      }
-      const uri = response?.assets?.at(0)?.uri ?? '';
-      const type = response?.assets?.at(0)?.type ?? '';
-      const name = response?.assets?.at(0)?.fileName ?? '';
-
-      setImageObject({ uri, type, name });
-      setImageToUpload(uri);
-
-      cropimage(uri, imageType);
-    } else {
-      // console.log('no ', isCameraPermitted);
-    }
-  };
-  const getWhatIDo = async () => {
+  const getWhatIDo = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'tags/professions',
         token,
         verb: 'get',
       });
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setWhatIDoList(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error on what i Do -- ', e.toString());
+      devLog('saga error on what i Do -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
-  const getOrganizationTypes = async () => {
+  const getOrganizationTypes = useCallback(async () => {
     try {
       const res = await ApiCall({
-        route: 'tags/organization-types',
+        route: 'global/OrganizationType',
         verb: 'get',
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setOrganizationTypes(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
   const addInterests = async () => {
     try {
@@ -329,107 +342,208 @@ function EditProfile({ navigation }: Props) {
 
       if (res?.status !== 200) {
         dispatch(setLoader(false));
-        console.log('error', res);
+        devLog('error', res);
       }
     } catch (e: any) {
-      console.log(e);
+      devLog(e);
     }
   };
 
-  const chooseImageGallery = async (imageType: 'header' | 'photo') => {
-    const options: ImageLibraryOptions = {
-      mediaType: 'photo',
-
-      // noData: true,
-      selectionLimit: 0.8,
-    };
-    const response = await launchImageLibrary(options);
-
-    if (response.didCancel) {
-      console.log('User cancelled camera picker');
-
-      return;
-    }
-    if (response.errorCode == 'camera_unavailable') {
-      console.log('Camera not available on device');
-
-      return;
-    }
-    if (response.errorCode == 'permission') {
-      console.log('Permission not satisfied');
-
-      return;
-    }
-    if (response.errorCode == 'others') {
-      console.log(response.errorMessage);
-      return;
-    }
-    const uri = response?.assets ? response?.assets[0]?.uri : '';
-    const type = response?.assets ? response?.assets[0]?.type : '';
-    const name = response?.assets ? response?.assets[0]?.fileName : '';
-    // if (imageType == 'photo') {
-    //   setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
-    //   setImageToUpload(uri ?? '');
-    // } else {
-    //   setHeaderImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
-    //   setHeaderImageToUpload(uri ?? '');
-    // }
-
-    cropimage(uri ?? '', imageType);
-  };
-
-  const cropimage = async (uri: string, imageType: 'header' | 'photo') => {
-    try {
-      setTimeout(async () => {
-        const image = await ImagePicker.openCropper({
-          height: imageType == 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
-          width: imageType == 'header' ? Dimensions.get('screen').width : undefined,
-          mediaType: 'photo',
-          cropperCircleOverlay: imageType == 'photo',
-          path: uri,
-          forceJpg: true,
-          maxFiles: 1,
-          compressImageMaxHeight: 150,
-        });
-
-        const MyObject = {
-          uri: image?.path,
-          type: image?.mime,
-        };
-
-        if (imageType == 'photo') {
-          setImageToUpload(image?.path);
-          setImageObject({
-            ...MyObject,
-            name: `profileImage${user?._id}`,
+  const cropimage = useCallback(
+    async (uri: string, imageType: 'header' | 'photo') => {
+      try {
+        setTimeout(async () => {
+          const image = await ImagePicker.openCropper({
+            height: imageType === 'header' ? (screenWidth * 9) / 16 : undefined,
+            width: imageType === 'header' ? screenWidth : undefined,
+            mediaType: 'photo',
+            cropperCircleOverlay: imageType === 'photo',
+            path: uri,
+            forceJpg: true,
+            maxFiles: 1,
+            compressImageMaxWidth: imageType === 'photo' ? 512 : 1280,
+            compressImageMaxHeight: imageType === 'photo' ? 512 : 720,
           });
-          setPickerModalVisibile(false);
-        } else {
-          setHeaderImageToUpload(uri ?? '');
-          setHeaderImageObject({
-            ...MyObject,
-            name: `headerImage${user?._id}`,
+          const croppedMedia = buildCroppedMediaState({
+            image,
+            imageType,
+            userId: user?._id,
           });
-          setHeaderImagePickerModalVisibile(false);
+
+          if (imageType === 'photo') {
+            setImageToUpload(croppedMedia.previewUri);
+            setImageObject(croppedMedia.upload);
+          } else {
+            setHeaderImageToUpload(croppedMedia.previewUri);
+            setHeaderImageObject(croppedMedia.upload);
+          }
+        }, 500);
+      } catch (e) {
+        devLog(e);
+      }
+    },
+    [devLog, screenWidth, user?._id]
+  );
+
+  const captureImage = useCallback(
+    async (contentType: MediaType, imageType: 'header' | 'photo') => {
+      const options: CameraOptions = {
+        mediaType: contentType,
+        quality: 0.8,
+        // noData: true,
+      };
+      // let isCameraPermitted = await requestCameraPermission();
+      const isStoragePermitted = await requestExternalWritePermission();
+      if (isStoragePermitted) {
+        const response = await launchCamera(options);
+
+        devLog('Response = ', response);
+
+        if (response.didCancel) {
+          devLog('User cancelled camera picker');
+
+          return;
         }
-      }, 500);
-    } catch (e) {
-      console.log(e);
-    }
-  };
+        if (response.errorCode === 'camera_unavailable') {
+          devLog('Camera not available on device');
+
+          return;
+        }
+        if (response.errorCode === 'permission') {
+          devLog('Permission not satisfied');
+
+          return;
+        }
+        if (response.errorCode === 'others') {
+          devLog(response.errorMessage);
+
+          return;
+        }
+        const uri = response?.assets?.at(0)?.uri ?? '';
+        const type = response?.assets?.at(0)?.type ?? '';
+        const name = response?.assets?.at(0)?.fileName ?? '';
+
+        setImageObject({ uri, type, name });
+        setImageToUpload(uri);
+
+        cropimage(uri, imageType);
+      } else {
+        // console.log('no ', isCameraPermitted);
+      }
+    },
+    [cropimage, devLog]
+  );
+
+  const chooseImageGallery = useCallback(
+    async (imageType: 'header' | 'photo') => {
+      const options: ImageLibraryOptions = {
+        mediaType: 'photo',
+
+        // noData: true,
+        selectionLimit: 0.8,
+      };
+      const response = await launchImageLibrary(options);
+
+      if (response.didCancel) {
+        devLog('User cancelled camera picker');
+
+        return;
+      }
+      if (response.errorCode === 'camera_unavailable') {
+        devLog('Camera not available on device');
+
+        return;
+      }
+      if (response.errorCode === 'permission') {
+        devLog('Permission not satisfied');
+
+        return;
+      }
+      if (response.errorCode === 'others') {
+        devLog(response.errorMessage);
+        return;
+      }
+      const uri = response?.assets ? response?.assets[0]?.uri : '';
+      // if (imageType == 'photo') {
+      //   setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
+      //   setImageToUpload(uri ?? '');
+      // } else {
+      //   setHeaderImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
+      //   setHeaderImageToUpload(uri ?? '');
+      // }
+
+      cropimage(uri ?? '', imageType);
+    },
+    [cropimage, devLog]
+  );
+
+  const showImageSourceOptions = useCallback(
+    (imageType: 'header' | 'photo') => {
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['Cancel', 'Choose From Gallery', 'Open Camera'],
+            cancelButtonIndex: 0,
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) {
+              chooseImageGallery(imageType).catch(() => undefined);
+            }
+            if (buttonIndex === 2) {
+              captureImage('photo', imageType).catch(() => undefined);
+            }
+          }
+        );
+        return;
+      }
+
+      Alert.alert('Select image source', undefined, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Choose From Gallery',
+          onPress: () => {
+            chooseImageGallery(imageType).catch(() => undefined);
+          },
+        },
+        {
+          text: 'Open Camera',
+          onPress: () => {
+            captureImage('photo', imageType).catch(() => undefined);
+          },
+        },
+      ]);
+    },
+    [captureImage, chooseImageGallery]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const intent = route.params?.openMediaPicker;
+
+      if (shouldOpenPhotoPicker(intent)) {
+        showImageSourceOptions('photo');
+      } else if (shouldOpenHeaderPicker(intent)) {
+        showImageSourceOptions('header');
+      }
+
+      if (shouldConsumeMediaPickerIntent(intent)) {
+        navigation.setParams({ openMediaPicker: undefined });
+      }
+    }, [navigation, route.params?.openMediaPicker, showImageSourceOptions])
+  );
   const go = () => {
     navigation.goBack();
   };
 
   useEffect(() => {
     if (user) {
-      if (user?.accountType == 'individual') {
+      if (user?.accountType === 'individual') {
         getWhatIDo();
       } else {
         getOrganizationTypes();
       }
     }
-  }, [user]);
+  }, [getOrganizationTypes, getWhatIDo, user]);
 
   useEffect(() => {
     if (user && interest) {
@@ -437,14 +551,7 @@ function EditProfile({ navigation }: Props) {
     }
   }, [user, interest]);
 
-  useEffect(() => {
-    if (token) {
-      getChurchTypes();
-      getInterest();
-    }
-  }, [token]);
-
-  const getInterest = async () => {
+  const getInterest = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'tags/interest',
@@ -452,48 +559,142 @@ function EditProfile({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setInterest(res?.response);
         setSearchInterest(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
-  const selectedWhatIDo = whatIDoList.filter((type) => type._id == whatIDo);
+  useEffect(() => {
+    if (token) {
+      getChurchTypes();
+      getInterest();
+    }
+  }, [getChurchTypes, getInterest, token]);
+
+  const selectedWhatIDo = whatIDoList.filter((type) => type._id === whatIDo);
   const selectedWhatIDoName = selectedWhatIDo.length > 0 ? selectedWhatIDo[0].name : '';
+  const organizationCategoryGroups = buildOrganizationCategoryGroups(organizationTypes);
+  const selectedOrganizationCategoryGroup = organizationCategoryGroups.find(
+    (group) => group.value === selectedOrganizationCategory
+  );
+  const selectedOrganizationType =
+    organizationTypes.find((type) => type._id === selectedOrganizationTypeId) ?? null;
+  const selectedOrganizationTypeName =
+    selectedOrganizationType?.organizationType ?? selectedOrganizationType?.name ?? 'Select';
 
-  const selectedChurchType = churchTypes.filter((type) => type.churchType == churchType);
+  const selectedChurchType = churchTypes.filter((type) => type.churchType === churchType);
   const selectedChurchTypeName =
     selectedChurchType.length > 0 ? selectedChurchType[0].churchType : '';
 
   const selectedChurchSubType =
     selectedChurchType.length > 0
       ? selectedChurchType[0].children.filter((item) => {
-          return item.churchType == churchSubType;
+          return item.churchType === churchSubType;
         })
       : [];
 
-  const selectedChurchSubTypeName =
-    churchSubType == 'none'
-      ? 'None'
-      : selectedChurchSubType.length > 0
-        ? selectedChurchSubType[0].churchType
-        : '';
+  let selectedChurchSubTypeName = '';
+  if (churchSubType === 'none') {
+    selectedChurchSubTypeName = 'None';
+  } else if (selectedChurchSubType.length > 0) {
+    selectedChurchSubTypeName = selectedChurchSubType[0].churchType;
+  }
+
+  useEffect(() => {
+    if (user?.accountType !== 'organization' || organizationCategoryGroups.length === 0) {
+      return;
+    }
+
+    const fallbackCategory =
+      user?.profile.organizationCategory ||
+      getOrganizationCategoryForType(user?.profile.typeOfOrganization ?? null) ||
+      organizationCategoryGroups[0]?.value ||
+      '';
+
+    if (!selectedOrganizationCategory) {
+      setSelectedOrganizationCategory(fallbackCategory);
+      return;
+    }
+
+    const categoryExists = organizationCategoryGroups.some(
+      (group) => group.value === selectedOrganizationCategory
+    );
+
+    if (!categoryExists && fallbackCategory) {
+      setSelectedOrganizationCategory(fallbackCategory);
+    }
+  }, [organizationCategoryGroups, selectedOrganizationCategory, user]);
+
+  useEffect(() => {
+    if (user?.accountType !== 'organization' || !selectedOrganizationCategory) {
+      return;
+    }
+
+    const currentGroup = organizationCategoryGroups.find(
+      (group) => group.value === selectedOrganizationCategory
+    );
+
+    if (!currentGroup || currentGroup.subtypes.length === 0) {
+      if (selectedOrganizationTypeId) {
+        setSelectedOrganizationTypeId('');
+      }
+      return;
+    }
+
+    const hasSelectedSubtype = currentGroup.subtypes.some(
+      (item) => item.organizationTypeId === selectedOrganizationTypeId
+    );
+
+    if (hasSelectedSubtype) {
+      return;
+    }
+
+    const savedTypeId = user?.profile.typeOfOrganization?._id;
+    const savedSubtype = user?.profile.organizationSubType;
+    const nextSubtype =
+      currentGroup.subtypes.find(
+        (item) => item.organizationTypeId === savedTypeId || item.label === savedSubtype
+      ) ?? currentGroup.subtypes[0];
+
+    if (nextSubtype?.organizationTypeId) {
+      setSelectedOrganizationTypeId(nextSubtype.organizationTypeId);
+    }
+  }, [organizationCategoryGroups, selectedOrganizationCategory, selectedOrganizationTypeId, user]);
 
   const websiteRef = useRef<TextInput>(null);
   const urlRegex = /^[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/i;
   return (
     <>
-      {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'blue' }}> */}
-      {/* //   <KeyboardAvoidingView
-    //     style={{ flex: 1 }}
-    //     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    //     // keyboardVerticalOffset={120}
-    //   > */}
+      {Platform.OS === 'android' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: 57,
+            paddingHorizontal: spacing.x16,
+            backgroundColor: colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+          }}
+        >
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <MaterialCommunityIcons name="chevron-left" size={30} color={Colors.primary.brand} />
+          </Pressable>
+          <StyledText style={[Typography.header.h3, { marginLeft: spacing.x8 }]}>
+            Edit Profile
+          </StyledText>
+        </View>
+      )}
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View>
           <View style={{ width: '100%', height: 200 }}>
@@ -506,7 +707,7 @@ function EditProfile({ navigation }: Props) {
                 source={{
                   uri: headerImageToUpload,
                 }}
-                resizeMode="cover"
+                resizeMode={FastImage.resizeMode.cover}
               />
             ) : (
               <View
@@ -520,30 +721,25 @@ function EditProfile({ navigation }: Props) {
 
             <View
               style={{
-                alignSelf: 'flex-end',
+                alignItems: 'center',
                 backgroundColor: 'white',
-                borderRadius: borderRadius.button,
-                padding: spacing.x10,
-                marginRight: spacing.x24,
+                borderColor: Colors.neutral[900],
+                borderRadius: 21,
+                borderWidth: borderWidth.base,
+                height: 42,
+                justifyContent: 'center',
                 position: 'absolute',
-                bottom: spacing.x64, // size of the profile image + margin space
-                right: 0,
+                bottom: spacing.x16,
+                right: spacing.x16,
+                width: 42,
               }}
             >
-              <ImagePickerModal
-                visible={headerImagePickerModalVisibile}
-                hideVisible={() => setHeaderImagePickerModalVisibile(false)}
-                galleryImage={() => chooseImageGallery('header')}
-                cameraImage={() => captureImage('photo', 'header')}
-              />
-
-              <TouchableOpacity
-                onPress={() => {
-                  setHeaderImagePickerModalVisibile(true);
-                }}
+              <Pressable
+                onPress={() => showImageSourceOptions('header')}
+                testID="edit-profile-header-image-button"
               >
                 <GalleryEdit size={22} color={Colors.neutral[200]} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View
@@ -553,15 +749,10 @@ function EditProfile({ navigation }: Props) {
                 marginLeft: spacing.x24,
               }}
             >
-              <ImagePickerModal
-                visible={pickerModalVisibile}
-                hideVisible={() => setPickerModalVisibile(false)}
-                galleryImage={() => chooseImageGallery('photo')}
-                cameraImage={() => captureImage('photo', 'photo')}
-              />
-              <TouchableOpacity
-                onPress={() => setPickerModalVisibile(true)}
+              <Pressable
+                onPress={() => showImageSourceOptions('photo')}
                 style={styles.imageContainer}
+                testID="edit-profile-avatar-image-button"
               >
                 <View
                   style={{
@@ -588,7 +779,7 @@ function EditProfile({ navigation }: Props) {
                               user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
                           }
                     }
-                    resizeMode={FastImage.resizeMode.stretch}
+                    resizeMode={FastImage.resizeMode.cover}
                   />
 
                   <View
@@ -623,7 +814,7 @@ function EditProfile({ navigation }: Props) {
                     </StyledText>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -681,15 +872,17 @@ function EditProfile({ navigation }: Props) {
                 />
                 <DatePicker
                   modal
-                  minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
-                  maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+                  minimumDate={profileMinimumBirthDate}
+                  maximumDate={profileMaximumBirthDate}
                   mode="date"
                   androidVariant="nativeAndroid"
                   open={open}
-                  date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
-                  onConfirm={(date) => {
+                  date={
+                    date ? parse(date, 'MM/dd/yyyy', profileDatePickerNow) : profileDatePickerNow
+                  }
+                  onConfirm={(selectedDate) => {
                     setOpen(false);
-                    setDate(format(date, 'MM/dd/yyyy'));
+                    setDate(format(selectedDate, 'MM/dd/yyyy'));
                   }}
                   onCancel={() => {
                     setOpen(false);
@@ -713,30 +906,49 @@ function EditProfile({ navigation }: Props) {
                     setWhatIDo(item);
                   }}
                   wrapperStyle={{ marginTop: spacing.x16 }}
+                  showAllWithoutSearch
                 />
               ) : (
-                <StyledSelect
-                  items={organizationTypes.map((item) => {
-                    return {
-                      text: item.name,
-                      value: item._id,
-                    };
-                  })}
-                  label="Type"
-                  selectedItem={organizationType?._id}
-                  btnText={!organizationType ? 'Select' : organizationType.name}
-                  modalTitle="Select one"
-                  onChange={(_id) => {
-                    const newOrganizationType = organizationTypes.filter((item) => item._id == _id);
+                <>
+                  <StyledSelect
+                    items={organizationCategoryGroups.map((item) => {
+                      return {
+                        text: item.label,
+                        value: item.value,
+                      };
+                    })}
+                    label="Category"
+                    selectedItem={selectedOrganizationCategory}
+                    btnText={selectedOrganizationCategory || 'Select'}
+                    modalTitle="Select organization category"
+                    onChange={(value) => {
+                      setSelectedOrganizationCategory(value);
+                      setSelectedOrganizationTypeId('');
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x16 }}
+                    showAllWithoutSearch
+                  />
 
-                    if (newOrganizationType && newOrganizationType.length > 0) {
-                      setOrganizationType(newOrganizationType[0]);
-                    }
-                  }}
-                  wrapperStyle={{ marginTop: spacing.x16 }}
-                />
+                  <StyledSelect
+                    items={(selectedOrganizationCategoryGroup?.subtypes ?? []).map((item) => {
+                      return {
+                        text: item.label,
+                        value: item.organizationTypeId,
+                      };
+                    })}
+                    label="Subtype"
+                    selectedItem={selectedOrganizationTypeId}
+                    btnText={selectedOrganizationTypeName}
+                    modalTitle="Select organization subtype"
+                    onChange={(value) => {
+                      setSelectedOrganizationTypeId(value);
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x16 }}
+                    showAllWithoutSearch
+                  />
+                </>
               )}
-              {user?.isInfluencer == true || user?.accountType == 'organization' ? (
+              {user?.isInfluencer === true || user?.accountType === 'organization' ? (
                 <StyledTextInput
                   multiline
                   numberOfLines={3}
@@ -821,7 +1033,7 @@ function EditProfile({ navigation }: Props) {
                     paddingTop: spacing.x10,
                   }}
                 >
-                  <StyledText style={[{ color: Colors.neutral.brand }]}>
+                  <StyledText style={{ color: Colors.neutral.brand }}>
                     Make your location public
                   </StyledText>
 
@@ -870,105 +1082,7 @@ function EditProfile({ navigation }: Props) {
               ) : null}
             </View>
 
-            {user?.accountType == 'individual' ? (
-              <View
-                style={[
-                  styles.inputGroup,
-                  { backgroundColor: colors.card, marginTop: spacing.x32 },
-                ]}
-              >
-                <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
-                  Church Details
-                </StyledText>
-                <StyledSelect
-                  items={churchTypes.map((item) => {
-                    return {
-                      text: item.churchType,
-                      value: item.churchType,
-                    };
-                  })}
-                  label="Denomination"
-                  selectedItem={churchType}
-                  btnText={selectedChurchTypeName == '' ? 'Select' : selectedChurchTypeName}
-                  modalTitle="Select your Denomination"
-                  onChange={(item) => {
-                    setChurchType(item);
-                    setSubChurchType('');
-                  }}
-                  wrapperStyle={{ marginTop: spacing.x24 }}
-                />
-
-                {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
-                  <StyledSelect
-                    wrapperStyle={{ marginTop: spacing.x24 }}
-                    items={[
-                      {
-                        text: 'None',
-                        value: 'none',
-                      },
-                      ...selectedChurchType[0].children.map((item) => {
-                        return {
-                          text: item.churchType,
-                          value: item.churchType,
-                        };
-                      }),
-                    ]}
-                    label="Sub Denomination or Association"
-                    btnText={selectedChurchSubTypeName == '' ? 'Select' : selectedChurchSubTypeName}
-                    onChange={(item) => {
-                      setSubChurchType(item);
-                    }}
-                    modalTitle="Select church sub Denomination"
-                  />
-                ) : null}
-
-                <View
-                  style={{
-                    justifyContent: 'center',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingTop: spacing.x10,
-                  }}
-                >
-                  <StyledText style={[{ color: Colors.neutral.brand }]}>
-                    Make your denomination public
-                  </StyledText>
-
-                  <View
-                    style={{
-                      paddingLeft: spacing.x10,
-                      flex: 1,
-                      alignItems: 'flex-end',
-                    }}
-                  >
-                    <Switch
-                      value={isPublicChurchTypeEnabled}
-                      onValueChange={(value) => {
-                        setIsPublicChurchTypeEnabled(value);
-                      }}
-                    />
-                  </View>
-                </View>
-
-                <StyledSelect
-                  wrapperStyle={{ marginTop: spacing.x24 }}
-                  items={oftenChurchOptions.map((item) => {
-                    return {
-                      text: item,
-                      value: item,
-                    };
-                  })}
-                  label="Church attendence"
-                  btnText={oftenChurch == '' ? 'Select' : oftenChurch}
-                  onChange={(item) => {
-                    setOftenChurch(item);
-                  }}
-                  modalTitle="Select Church Attendence"
-                />
-              </View>
-            ) : null}
-
-            {user?.accountType == 'organization' ? (
+            {user?.accountType === 'organization' ? (
               <View
                 style={[
                   styles.inputGroup,
@@ -1000,6 +1114,26 @@ function EditProfile({ navigation }: Props) {
                   value={organizationContactPhone}
                   label="Phone Number"
                   placeholder="Contact phone number"
+                />
+
+                <StyledSelect
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                  items={organizationSizeOptions.map((item) => ({
+                    text: item.text,
+                    value: item.value,
+                  }))}
+                  label="Organization Size"
+                  btnText={
+                    organizationSize
+                      ? organizationSizeOptions.find((item) => item.value === organizationSize)
+                          ?.text || 'Select'
+                      : 'Select'
+                  }
+                  selectedItem={organizationSize}
+                  onChange={(item) => setOrganizationSize(item)}
+                  modalTitle="Select Organization Size"
+                  hideSearch
+                  showAllWithoutSearch
                 />
               </View>
             ) : null}
@@ -1048,10 +1182,12 @@ function EditProfile({ navigation }: Props) {
                   <ScrollView
                     contentContainerStyle={{
                       marginTop: spacing.x24,
-                      paddingBottom: spacing.x48,
+                      ...interestScrollAndroidPadding,
                       flexDirection: searchInterest.length < 1 ? 'column' : 'row',
                       flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
                     }}
+                    contentInset={interestScrollInsets}
+                    scrollIndicatorInsets={interestScrollInsets}
                   >
                     {searchInterest.length < 1 ? (
                       <StyledText
@@ -1060,16 +1196,14 @@ function EditProfile({ navigation }: Props) {
                         No Search Results
                       </StyledText>
                     ) : null}
-                    {searchInterest.map((item, index) => {
+                    {searchInterest.map((item) => {
                       return (
-                        <TouchableOpacity
-                          key={index}
+                        <Pressable
+                          key={item?._id ?? item?.name}
                           onPress={() =>
                             selectedInterest.includes(item?._id)
                               ? setSelectedInterest(
-                                  selectedInterest.filter(function (item2) {
-                                    return item2 !== item?._id;
-                                  })
+                                  selectedInterest.filter((selectedId) => selectedId !== item?._id)
                                 )
                               : setSelectedInterest([...selectedInterest, item?._id])
                           }
@@ -1095,7 +1229,7 @@ function EditProfile({ navigation }: Props) {
                           >
                             {item?.name}
                           </StyledText>
-                        </TouchableOpacity>
+                        </Pressable>
                       );
                     })}
                   </ScrollView>
@@ -1111,7 +1245,6 @@ function EditProfile({ navigation }: Props) {
                 <View style={styles.socialIcon}>
                   <Instagram />
                   <Blog />
-                  <Twitter />
                 </View>
               </View>
             ) : null} */}
@@ -1120,7 +1253,7 @@ function EditProfile({ navigation }: Props) {
           >
             <Button
               text="SAVE"
-              disabled={website != '' && isValidWebsite === false}
+              disabled={website !== '' && isValidWebsite === false}
               onPress={async () => {
                 let validWebsite = null;
 
@@ -1133,25 +1266,34 @@ function EditProfile({ navigation }: Props) {
                 if (!website || (website && validWebsite === true)) {
                   const data: EditProfileDTO = {
                     churchType,
-                    churchSubType: churchSubType == 'none' ? '' : churchSubType,
+                    churchSubType: churchSubType === 'none' ? '' : churchSubType,
                     isChurchTypePublic: isPublicChurchTypeEnabled,
                     isLocationPublic: isPublicLocationEnabled,
                   };
 
-                  if (fullname && user?.accountType == 'individual') data.name = fullname;
-                  if (fullname && user?.accountType == 'organization') data.companyName = fullname;
+                  if (fullname && user?.accountType === 'individual') data.name = fullname;
+                  if (fullname && user?.accountType === 'organization') data.companyName = fullname;
 
-                  if (organizationContactEmail && user?.accountType == 'organization')
+                  if (organizationContactEmail && user?.accountType === 'organization')
                     data.contactEmail = organizationContactEmail;
-                  if (organizationContactName && user?.accountType == 'organization')
+                  if (organizationContactName && user?.accountType === 'organization')
                     data.contactName = organizationContactName;
-                  if (organizationContactPhone && user?.accountType == 'organization')
+                  if (organizationContactPhone && user?.accountType === 'organization')
                     data.contactPhoneNumber = organizationContactPhone;
+                  if (organizationSize && user?.accountType === 'organization')
+                    data.organizationSize = organizationSize;
+                  if (selectedOrganizationCategory && user?.accountType === 'organization')
+                    data.organizationCategory = selectedOrganizationCategory;
 
                   if (gender) data.gender = gender;
                   if (whatIDo) data.whatIDo = whatIDo;
-                  if (organizationType && organizationType._id)
-                    data.typeOfOrganization = organizationType?._id;
+                  if (selectedOrganizationType && selectedOrganizationType._id) {
+                    data.typeOfOrganization = selectedOrganizationType._id;
+                    data.organizationSubType =
+                      selectedOrganizationType.organizationType ||
+                      selectedOrganizationType.name ||
+                      '';
+                  }
                   if (website) data.website = website;
                   if (imageObject) data.photo = imageObject;
                   if (headerImageObject) data.headerImage = headerImageObject;
@@ -1171,7 +1313,7 @@ function EditProfile({ navigation }: Props) {
 
                   if (selectedInterest.length > 0) await addInterests();
 
-                  if (user?.accountType == AccountType.individual) {
+                  if (user?.accountType === AccountType.individual) {
                     dispatch(
                       profileUpdate({
                         data: serialize(data),

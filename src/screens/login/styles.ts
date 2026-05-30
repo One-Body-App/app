@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { appColor } from '../../constants';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -13,14 +13,7 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-end',
     height: getHeight(6),
     overflow: 'hidden',
-    shadowColor: '#126BB7',
-    shadowOffset: {
-      width: 0,
-      height: 20,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 0,
+    boxShadow: '0 20px 20px rgba(18, 107, 183, 0.1)',
   },
   tabItem: {
     flex: 1,
@@ -52,12 +45,8 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     alignItems: 'center',
-    shadowColor: '#126BB7',
-    shadowOffset: {
-      width: 0,
-      height: 25,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    boxShadow: '0 25px 20px rgba(18, 107, 183, 0.1)',
   },
 });
+
+export default styles;

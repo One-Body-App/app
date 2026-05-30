@@ -31,6 +31,16 @@ local.properties
 *.iml
 *.hprof
 
+# Agents
+AGENTS.md 
+agents.md 
+CLAUDE.md 
+claude.md
+MEMORY.md 
+memory.md
+README.md 
+
+
 # node.js
 #
 node_modules/
@@ -87,6 +97,9 @@ android/app/release/*
 .cxx/
 *.keystore
 !debug.keystore
+
+.git-credentials
+
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*

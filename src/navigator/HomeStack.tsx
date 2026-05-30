@@ -1,22 +1,17 @@
-/* eslint-disable react/no-unstable-nested-components */
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Notification } from 'iconsax-react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { Platform, Pressable } from 'react-native';
 import Home, { FeedTypes } from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
-import { Colors } from '../styles';
-
-import Logo from '@/assets/icons/logo.svg';
-import LogoWhite from '@/assets/icons/logo_white.svg';
-import mainPageOptions from './global';
-import Watch from '../screens/home/watch';
-import { fontSize } from '../styles/typography';
+import NotificationSettings from '../screens/main/notificationSettings';
+import * as Colors from '../styles/colors';
+import { spacing } from '../styles/spacing';
+import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
 function HomeStack() {
@@ -27,10 +22,18 @@ function HomeStack() {
       screenOptions={() => {
         return {
           // drawerType,
+          gestureEnabled: false,
+          fullScreenGestureEnabled: false,
+          ...STANDARD_STACK_ANIMATION_OPTIONS,
+          statusBarStyle: dark ? 'light' : 'dark',
+          statusBarColor: Platform.OS === 'android' && dark ? '#0D0D0D' : 'transparent',
+          statusBarTranslucent: true,
           headerTintColor: dark ? colors.text : Colors.primary.brand,
+          headerTransparent: false,
+          headerShadowVisible: false,
 
           drawerActiveBackgroundColor: Colors.neutral[600],
-          drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
+          drawerActiveTintColor: dark ? '#ffffff' : '#126b87',
         };
       }}
     >
@@ -38,99 +41,21 @@ function HomeStack() {
         name="Home"
         component={Home}
         initialParams={{
-          selectedTab: FeedTypes.Connected,
+          selectedTab: FeedTypes.ForYou,
         }}
-        options={({ navigation }) => {
-          return {
-            ...mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Home'),
-            title: 'Home',
-            headerTitleAlign: 'center',
-            headerTitle: () => {
-              return (
-                <View style={{ height: 28, width: 28 }}>
-                  {dark ? (
-                    <LogoWhite style={{ height: 28, width: 28 }} />
-                  ) : (
-                    <Logo style={{ height: 28, width: 28 }} />
-                  )}
-                </View>
-              );
-            },
-            headerRight: () => (
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate('MainRoot', {
-                      screen: 'Main',
-                      params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
-                    });
-                  }}
-                >
-                  <Notification
-                    size={24}
-                    style={{ height: 24, width: 24 }}
-                    color={Colors.primary.brand}
-                    strokeWidth={0.2}
-                  />
-                </TouchableOpacity>
-                {/* <TouchableOpacity onPress={() => {}}>
-                            <Message
-                              style={{ height: 24, width: 24 }}
-                              stroke={Colors.primary.brand}
-                              strokeWidth={0.2}
-                            />
-                          </TouchableOpacity> */}
-              </View>
-            ),
-          };
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="Notifications"
         component={Notifications}
-        options={{ presentation: 'modal', headerShown: true, headerTitle: 'Notifications' }}
-      />
-      <Stack.Screen
-        name="WatchPortal"
-        component={Watch}
         options={{
-          presentation: 'card',
-          headerShown: true,
-          headerTintColor: '#fff',
-          headerTransparent: true,
-
-          headerBackTitleVisible: false,
-          title: 'Watch',
-          headerTitle: (props) => (
-            <Text
-              {...props}
-              style={{
-                fontWeight: 'bold',
-                color: 'white',
-                fontSize: fontSize.x4.fontSize,
-                textShadowColor: 'rgba(0,0,0,0.3)',
-                textShadowRadius: 1,
-                textShadowOffset: {
-                  width: 1,
-                  height: 1,
-                },
-              }}
-            />
-          ),
-
-          // headerStyle: {
-          //   backgroundColor: 'rgba(0,0,0,0.06)',
-          // },
-          headerBackground: () => (
-            <LinearGradient
-              colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0)']}
-              locations={[0.8, 1]}
-              style={[StyleSheet.absoluteFill, { flex: 1 }]}
-            />
-          ),
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+          headerShown: false,
         }}
       />
-
       <Stack.Screen
         name="UserProfile"
         component={UserProfile}
@@ -138,8 +63,37 @@ function HomeStack() {
           headerBackTitleVisible: false,
           headerStyle: { backgroundColor: colors.background },
           title: '',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+          contentStyle: { backgroundColor: colors.background },
         }}
+      />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettings}
+        options={({ navigation }) => ({
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+          title: 'Notification Settings',
+          headerShadowVisible: false,
+          headerBackTitleVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: dark ? colors.text : Colors.primary.brand,
+          headerTitleAlign: Platform.OS === 'android' ? 'left' : 'center',
+          headerTitleStyle: { color: dark ? colors.text : Colors.primary.brand },
+          headerLeftContainerStyle: { paddingLeft: spacing.x8 },
+          headerRightContainerStyle: { paddingRight: spacing.x8 },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={28}
+                color={dark ? colors.text : Colors.primary.brand}
+              />
+            </Pressable>
+          ),
+        })}
       />
     </Stack.Navigator>
   );

@@ -1,41 +1,252 @@
+import { Image } from 'expo-image';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Animated,
   Platform,
-  ScrollView,
   StyleProp,
-  TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-design-icons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
+import FastImage from '@/components/primitives/FastImage';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
+import { HapticService } from '@/src/services/haptic';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
+import { PostType, PostUserData, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
 import StyledText from '../styled/Text';
-import { fontSize } from '@/src/styles/typography';
+import { fontSize, fontWeight } from '@/src/styles/typography';
 import { timeSince } from '@/utils/ResponsiveFun';
 import OptionsModal from '../listItems/OptionsModal';
 import CommentField from './Field';
+
+const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => {
+  if (!media || typeof media !== 'object') {
+    return undefined;
+  }
+
+  const mediaRecord = media as unknown as Record<string, unknown>;
+  const directUrl = mediaRecord.url;
+  if (typeof directUrl === 'string' && directUrl.startsWith('http')) {
+    return directUrl;
+  }
+
+  const images = mediaRecord.images as Record<string, unknown> | undefined;
+  if (!images || typeof images !== 'object') {
+    return undefined;
+  }
+
+  const renditionKeys = [
+    'original',
+    'fixed_width',
+    'fixed_height',
+    'downsized',
+    'preview_gif',
+    'fixed_width_small',
+  ];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const renditionKey of renditionKeys) {
+    const rendition = images[renditionKey] as Record<string, unknown> | undefined;
+    if (!rendition || typeof rendition !== 'object') {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    const renditionUrl = rendition.url;
+    if (typeof renditionUrl === 'string' && renditionUrl.startsWith('http')) {
+      return renditionUrl;
+    }
+  }
+
+  return undefined;
+};
+
+const MEDIA_RADIUS = 12;
+const REACTION_BAR_SCALE = 1;
+const REACTION_BAR_OFFSET_X = 0;
+const REACTION_BAR_OFFSET_Y = 44;
+const REACTION_BAR_SCALE_FACTOR = 4 / 3;
+const REACTION_BAR_WIDTH = Math.round(280 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_ICON_SIZE = Math.round(22 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_HORIZONTAL_MARGIN = Math.round(spacing.x5 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_VERTICAL_PADDING = Math.round(spacing.x8 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_HORIZONTAL_PADDING = Math.round(spacing.x10 * REACTION_BAR_SCALE_FACTOR);
+
+type AnimatedReaction = {
+  id: string;
+  iconUrl: string;
+};
+
+type ReactionBarRef = {
+  showReactions: () => void;
+  dismissReactions: () => void;
+};
+
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.0.2/assets/72x72';
+const REACTION_ICON_URLS: Record<string, string> = {
+  pray: `${TWEMOJI_BASE}/1f64f.png`,
+  praise: `${TWEMOJI_BASE}/1f64c.png`,
+  like: `${TWEMOJI_BASE}/1f44d.png`,
+  love: `${TWEMOJI_BASE}/2764.png`,
+  haha: `${TWEMOJI_BASE}/1f602.png`,
+  wow: `${TWEMOJI_BASE}/1f632.png`,
+  sad: `${TWEMOJI_BASE}/1f622.png`,
+  angry: `${TWEMOJI_BASE}/1f621.png`,
+};
+
+const REACTION_BAR_ITEMS: AnimatedReaction[] = [
+  { id: 'pray', iconUrl: REACTION_ICON_URLS.pray },
+  { id: 'praise', iconUrl: REACTION_ICON_URLS.praise },
+  { id: 'like', iconUrl: REACTION_ICON_URLS.like },
+  { id: 'love', iconUrl: REACTION_ICON_URLS.love },
+  { id: 'haha', iconUrl: REACTION_ICON_URLS.haha },
+  { id: 'wow', iconUrl: REACTION_ICON_URLS.wow },
+  { id: 'sad', iconUrl: REACTION_ICON_URLS.sad },
+  { id: 'angry', iconUrl: REACTION_ICON_URLS.angry },
+];
+
+type InlineReactionBarProps = {
+  onDismiss: () => void;
+  onReactionSelect: (reaction: AnimatedReaction) => void;
+  ref?: React.Ref<ReactionBarRef>;
+};
+
+function InlineReactionBar({ onDismiss, onReactionSelect, ref }: InlineReactionBarProps) {
+  const scale = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const [visible, setVisible] = useState(false);
+
+  const showReactions = useCallback(() => {
+    setVisible(true);
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 22,
+        bounciness: 8,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacity, scale]);
+
+  const dismissReactions = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(scale, {
+        toValue: 0,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setVisible(false);
+      onDismiss();
+    });
+  }, [onDismiss, opacity, scale]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      showReactions,
+      dismissReactions,
+    }),
+    [dismissReactions, showReactions]
+  );
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <Animated.View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#ffffff',
+        borderRadius: borderRadius.max,
+        paddingVertical: REACTION_BAR_VERTICAL_PADDING,
+        paddingHorizontal: REACTION_BAR_HORIZONTAL_PADDING,
+        minWidth: REACTION_BAR_WIDTH,
+        transform: [{ scale }],
+        opacity,
+        boxShadow: '0 3px 4px rgba(0, 0, 0, 0.2)',
+      }}
+    >
+      {REACTION_BAR_ITEMS.map((reaction) => (
+        <Pressable
+          key={reaction.id}
+          onPress={() => {
+            onReactionSelect(reaction);
+            dismissReactions();
+          }}
+          style={{ marginHorizontal: REACTION_BAR_HORIZONTAL_MARGIN }}
+        >
+          <Image
+            source={{ uri: reaction.iconUrl }}
+            style={{ width: REACTION_BAR_ICON_SIZE, height: REACTION_BAR_ICON_SIZE }}
+          />
+        </Pressable>
+      ))}
+    </Animated.View>
+  );
+}
+
+const mapReactionIdToType = (reactionId: string): SocialPostReactionType => {
+  switch (reactionId) {
+    case 'pray':
+      return SocialPostReactionType.praying;
+    case 'praise':
+      return SocialPostReactionType.happy;
+    case 'haha':
+    case 'wow':
+      return SocialPostReactionType.happy;
+    case 'sad':
+    case 'angry':
+      return SocialPostReactionType.praying;
+    case 'like':
+    case 'love':
+    default:
+      return SocialPostReactionType.love;
+  }
+};
+
+const getFallbackReactionIdFromType = (type?: SocialPostReactionType): string | undefined => {
+  if (!type) {
+    return undefined;
+  }
+  if (type === SocialPostReactionType.praying) {
+    return 'pray';
+  }
+  if (type === SocialPostReactionType.happy) {
+    return 'praise';
+  }
+  return 'love';
+};
 
 interface BaseItemProps {
   style?: StyleProp<ViewStyle>;
   onPress: Function;
   created?: Date;
-  updated?: Date;
-  edited?: boolean;
   source?: string;
-  fromSavedPosts?: boolean;
   postData: {
     id?: string;
+    objectId?: string;
+    objectType?: string;
     content?: string;
     image?: {
       url: string;
@@ -50,48 +261,172 @@ interface BaseItemProps {
     locationName?: string;
     edited?: boolean;
     gif?: GiphyMedia | null;
+    images?: string[];
   };
   userData: PostUserData;
 
   isApprovedInfluencer?: boolean;
 
-  onShowDismissCard?: (e?: boolean) => void;
-  isScrollEnable?: boolean;
-  index?: number;
-  parentRefreshContent?: Function;
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   editCommentAction?: (postId: string, content: string) => void;
   setEditingComment: (isEditingComment: boolean) => void;
+  isPrivate?: boolean;
+  useBrandDarkTheme?: boolean;
+  allowMedia?: boolean;
+  allowImageAttachments?: boolean;
+  setThreadImages?: React.Dispatch<React.SetStateAction<string[]>>;
+  onOpenGifPicker?: () => void;
+  onReplyPress?: () => void;
+  onReactPress?: (type?: SocialPostReactionType) => void;
+  isReacting?: boolean;
 }
 
 function CommentItem({
   style,
   onPress,
   created,
-  updated,
-  edited,
   source,
   userData,
   isApprovedInfluencer,
   postData,
-  parentRefreshContent,
-  onShowDismissCard,
   removePost,
   editPost,
   editCommentAction,
   setEditingComment,
+  isPrivate,
+  useBrandDarkTheme,
+  allowMedia,
+  allowImageAttachments,
+  setThreadImages,
+  onOpenGifPicker,
+  onReplyPress,
+  onReactPress,
+  isReacting,
 }: BaseItemProps) {
   const [showOptions, setShowOptions] = useState(false);
-  const { colors } = useTheme();
+  const [isReactionBarVisible, setIsReactionBarVisible] = useState(false);
+  const [selectedReactionId, setSelectedReactionId] = useState<string | undefined>(undefined);
+  const { colors, dark } = useTheme();
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(postData.gif ?? null);
-
+  const reactionBarRef = useRef<ReactionBarRef>(null);
+  const reactionIconScale = useRef(new Animated.Value(1)).current;
+  const safeUserData = userData ?? ({} as PostUserData);
+  const profileImageUri =
+    safeUserData.profileImage && safeUserData.profileImage !== ''
+      ? safeUserData.profileImage
+      : NO_PROFILE_IMAGE;
+  const safeProfileImageUri = profileImageUri || 'https://via.placeholder.com/72';
+  const gifAspectRatioRaw = postData.gif?.aspectRatio;
+  const gifAspectRatio = Number(gifAspectRatioRaw);
+  const safeGifAspectRatio =
+    Number.isFinite(gifAspectRatio) && gifAspectRatio > 0 ? gifAspectRatio : 1;
+  const hasGif = Boolean(postData.gif?.id || postData.gif?.url);
+  const canUseGiphy = allowMedia ?? Platform.OS !== 'android';
+  const gifPreviewUrl = extractGifPreviewUrl(postData.gif);
+  const reactionCount = postData.reactions?.length ?? 0;
+  const { myReaction } = postData;
+  const textMain = dark ? '#ffffff' : '#0e181b';
+  const textSecondary = '#4f8596';
+  let bubbleColor = '#f2f4f5';
+  if (dark && useBrandDarkTheme) {
+    bubbleColor = colors.card;
+  } else if (dark) {
+    bubbleColor = '#1a2c32';
+  }
+  const actionColor = textSecondary;
+  let handleValue: string | undefined;
+  if (source === 'instagram' && safeUserData?.instagramHandler) {
+    handleValue = safeUserData.instagramHandler;
+  } else if (safeUserData?.username) {
+    handleValue = safeUserData.username;
+  }
+  const handleText = handleValue ? `@${handleValue}` : '';
+  const hasHandle = Boolean(handleValue);
   const editComment = (status: boolean) => {
     setIsEditingComment(status);
     setEditingComment(status);
   };
+
+  const dismissReactionBar = () => {
+    reactionBarRef.current?.dismissReactions();
+  };
+
+  const showReactionBar = () => {
+    HapticService.trigger('impactMedium');
+    setIsReactionBarVisible(true);
+    requestAnimationFrame(() => {
+      reactionBarRef.current?.showReactions();
+    });
+  };
+
+  const triggerReactionSelectionAnimation = () => {
+    reactionIconScale.stopAnimation();
+    reactionIconScale.setValue(0.9);
+    Animated.sequence([
+      Animated.spring(reactionIconScale, {
+        toValue: 1.22,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 9,
+      }),
+      Animated.spring(reactionIconScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 7,
+      }),
+    ]).start();
+  };
+
+  const handleAnimatedReactionSelect = (reaction: AnimatedReaction) => {
+    HapticService.trigger('impactMedium');
+    triggerReactionSelectionAnimation();
+    const selectedType = mapReactionIdToType(reaction.id);
+    if (myReaction?.type === selectedType) {
+      setSelectedReactionId(undefined);
+      onReactPress?.(undefined);
+      return;
+    }
+    setSelectedReactionId(reaction.id);
+    onReactPress?.(selectedType);
+  };
+
+  useEffect(() => {
+    const fallbackReactionId = getFallbackReactionIdFromType(myReaction?.type);
+    setSelectedReactionId((currentReactionId) => {
+      if (!fallbackReactionId) {
+        return undefined;
+      }
+      if (currentReactionId && mapReactionIdToType(currentReactionId) === myReaction?.type) {
+        return currentReactionId;
+      }
+      return fallbackReactionId;
+    });
+  }, [myReaction?.type]);
+
+  const selectedReactionIconUrl =
+    selectedReactionId &&
+    Object.prototype.hasOwnProperty.call(REACTION_ICON_URLS, selectedReactionId)
+      ? REACTION_ICON_URLS[selectedReactionId as keyof typeof REACTION_ICON_URLS]
+      : undefined;
+  const reactionIcon = (() => {
+    if (isReacting) {
+      return <ActivityIndicator size="small" color={actionColor} />;
+    }
+    if (selectedReactionIconUrl) {
+      return <Image source={{ uri: selectedReactionIconUrl }} style={{ width: 16, height: 16 }} />;
+    }
+    return (
+      <MaterialIcons
+        name={myReaction ? 'favorite' : 'favorite-border'}
+        size={16}
+        color={myReaction ? '#e04b4b' : actionColor}
+      />
+    );
+  })();
 
   useEffect(() => {
     if (postData.gif) {
@@ -100,20 +435,14 @@ function CommentItem({
   }, [postData]);
 
   return (
-    <View
-      style={[
-        {
-          flexGrow: 1,
-          padding: spacing.x16,
-        },
-        style,
-      ]}
-    >
+    <View style={[{ flexGrow: 1, paddingHorizontal: spacing.x16 }, style]}>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: spacing.x10,
+          gap: spacing.x13,
+          paddingTop: spacing.x8,
+          paddingBottom: spacing.x20,
         }}
       >
         <View
@@ -123,29 +452,26 @@ function CommentItem({
             alignItems: 'center',
           }}
         >
-          {userData.profileIcon && !userData.profileImage ? (
+          {safeUserData.profileIcon && !safeUserData.profileImage ? (
             <View
               style={{
                 borderRadius: borderRadius.max,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderColor: safeUserData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
                 padding: spacing.x5,
               }}
             >
-              {userData.profileIcon}
+              {safeUserData.profileIcon}
             </View>
           ) : (
             <FastImage
               source={{
-                uri: userData.profileImage != '' ? userData.profileImage : NO_PROFILE_IMAGE,
+                uri: safeProfileImageUri,
               }}
               style={{
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 borderRadius: borderRadius.max,
-                // marginBottom: 5,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                borderWidth: borderWidth.thin,
               }}
               resizeMode="contain"
             />
@@ -154,118 +480,151 @@ function CommentItem({
         <View
           style={{
             flexGrow: 1,
-            backgroundColor: Colors.neutral[800],
-            padding: spacing.x10,
-            borderRadius: borderRadius.small,
           }}
         >
-          {userData ? (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <TouchableOpacity
-                onPress={() => {
-                  // navigation.navigate('UserProfile', {
-                  //   id: userData?._id,
-                  // });
-                  onPress();
-                }}
+          {safeUserData ? (
+            <Pressable
+              onPress={() => {
+                onPress();
+              }}
+              style={{ flexGrow: 1 }}
+            >
+              <View
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'flex-start',
-                  alignItems: 'center',
-                  flexGrow: 1,
-                  flex: 1,
+                  backgroundColor: bubbleColor,
+                  paddingHorizontal: spacing.x13,
+                  paddingVertical: spacing.x10,
+                  borderRadius: borderRadius.large,
+                  borderTopLeftRadius: spacing.x5,
                 }}
               >
-                <View style={{ flexDirection: 'column' }}>
-                  <View style={{ flexDirection: 'row' }}>
-                    <StyledText
-                      style={{
-                        color: Colors.neutral.brand,
-                        alignItems: 'center',
-                        ...fontSize.x1,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {userData?.name}
-                    </StyledText>
-                    {isApprovedInfluencer ? (
-                      <Icon
-                        name="check-decagram"
-                        size={20}
-                        style={{ marginLeft: spacing.x8 }}
-                        color={Colors.primarySapphire.brand}
-                      />
-                    ) : null}
-                  </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <StyledText
-                    numberOfLines={2}
                     style={{
-                      color: Colors.neutral[300],
-                      alignItems: 'center',
+                      color: textMain,
+                      ...fontSize.x2,
+                      ...fontWeight.semibold,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {safeUserData?.name ?? 'Unknown'}
+                  </StyledText>
+                  {isApprovedInfluencer ? (
+                    <Icon
+                      name="check-decagram"
+                      size={18}
+                      style={{ marginLeft: spacing.x5 }}
+                      color={Colors.primarySapphire.brand}
+                    />
+                  ) : null}
+                  <View style={{ flex: 1 }} />
+                  <StyledText
+                    style={{
+                      color: textSecondary,
+                      fontSize: 12,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {created ? `${timeSince(created)} ago` : ''}
+                  </StyledText>
+                  {!isEditingComment ? (
+                    <Pressable
+                      onPress={() => {
+                        setShowOptions(true);
+                      }}
+                      style={{ marginLeft: spacing.x8 }}
+                    >
+                      <FontAwesomeIcon icon={faEllipsisVertical} color={textSecondary} />
+                    </Pressable>
+                  ) : null}
+                </View>
+                {hasHandle && !isEditingComment ? (
+                  <StyledText
+                    numberOfLines={1}
+                    style={{
+                      marginTop: spacing.x5,
+                      color: textSecondary,
                       ...fontSize.x1,
                     }}
                   >
-                    {(source == 'twitter' && userData?.twitterHandler) ||
-                    (source == 'instagram' && userData?.instagramHandler) ||
-                    userData?.username
-                      ? `@${
-                          source == 'twitter'
-                            ? userData?.twitterHandler
-                            : source == 'instagram'
-                              ? userData?.instagramHandler
-                              : userData?.username
-                        }`
-                      : ''}
-
-                    {created ? (
-                      <>
-                        {(source == 'twitter' && userData?.twitterHandler) ||
-                        (source == 'instagram' && userData?.instagramHandler) ||
-                        userData?.username
-                          ? ` • `
-                          : ''}
-                        <StyledText
-                          style={[
-                            fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
-                          ]}
-                        >
-                          {timeSince(created)} ago
-                        </StyledText>
-                      </>
-                    ) : null}
-                    {edited && updated ? (
-                      <>
-                        {' '}
-                        • {' Edited '}
-                        <StyledText
-                          style={[
-                            fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
-                          ]}
-                        >
-                          {timeSince(updated)} ago
-                        </StyledText>
-                      </>
-                    ) : null}
+                    {handleText}
                   </StyledText>
-                </View>
-              </TouchableOpacity>
-              {!isEditingComment ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowOptions(true);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faEllipsisVertical} color={colors.text} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
+                ) : null}
+                {!isEditingComment && postData.content ? (
+                  <StyledText
+                    style={{
+                      marginTop: spacing.x5,
+                      color: textMain,
+                      ...fontSize.x2,
+                      lineHeight: 18,
+                    }}
+                  >
+                    {postData.content}
+                  </StyledText>
+                ) : null}
+                {!isEditingComment && postData.gif && hasGif && canUseGiphy ? (
+                  <View
+                    style={{
+                      marginTop: spacing.x8,
+                      borderRadius: MEDIA_RADIUS,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {Platform.OS === 'android' && gifPreviewUrl ? (
+                      <FastImage
+                        source={{ uri: gifPreviewUrl }}
+                        resizeMode="contain"
+                        style={{
+                          width: '100%',
+                          aspectRatio: safeGifAspectRatio,
+                          borderRadius: MEDIA_RADIUS,
+                        }}
+                      />
+                    ) : (
+                      <GiphyMediaView
+                        media={postData.gif}
+                        resizeMode="contain"
+                        style={{
+                          aspectRatio: safeGifAspectRatio,
+                          borderRadius: MEDIA_RADIUS,
+                        }}
+                      />
+                    )}
+                  </View>
+                ) : null}
+                {!isEditingComment &&
+                allowImageAttachments &&
+                (postData.images?.length ?? 0) > 0 ? (
+                  <View style={{ marginTop: spacing.x8, gap: spacing.x8 }}>
+                    {(postData.images ?? []).map((imageUrl) => (
+                      <View
+                        key={imageUrl}
+                        style={{
+                          borderRadius: MEDIA_RADIUS,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <FastImage
+                          source={{ uri: imageUrl }}
+                          style={{
+                            width: '100%',
+                            height: 180,
+                            borderRadius: MEDIA_RADIUS,
+                          }}
+                          resizeMode="contain"
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            </Pressable>
           ) : null}
           {isEditingComment ? (
             <View
               style={{
-                height: 200,
+                minHeight: 140,
+                marginTop: spacing.x10,
               }}
             >
               {isLoading ? (
@@ -279,13 +638,27 @@ function CommentItem({
                   isEditingComment={isEditingComment}
                   setEditingComment={editComment}
                   text={postData.content}
-                  publishComment={async (value: string) => {
+                  useBrandDarkTheme={useBrandDarkTheme}
+                  allowMedia={allowMedia}
+                  allowImageAttachments={allowImageAttachments}
+                  mediaImages={postData.images ?? []}
+                  setImages={setThreadImages}
+                  onOpenGifPicker={onOpenGifPicker}
+                  publishComment={async ({
+                    text: value,
+                  }: {
+                    text: string;
+                    mentionedUserIds: string[];
+                  }) => {
                     if (editCommentAction && postData.id) {
                       setIsLoading(true);
                       await editCommentAction(postData.id, value);
                       editComment(false);
                       setIsLoading(false);
+                      return true;
                     }
+
+                    return false;
                   }}
                 />
               )}
@@ -293,31 +666,106 @@ function CommentItem({
           ) : (
             // eslint-disable-next-line react/jsx-no-useless-fragment
             <>
-              {postData.content ? (
-                <StyledText style={{ marginVertical: spacing.x10 }}>{postData.content}</StyledText>
-              ) : null}
-            </>
-          )}
-          {!isEditingComment && postData.gif && (
-            <View
-              style={{
-                padding: 10,
-                // height: 100,
-                // width: 100,
-                borderRadius: borderRadius.small,
-              }}
-            >
-              <GiphyMediaView
-                media={postData.gif}
-                resizeMode="cover"
+              <View
                 style={{
-                  aspectRatio: postData.gif.aspectRatio,
-                  borderRadius: borderRadius.small,
-
-                  overflow: 'hidden',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  position: 'relative',
+                  marginTop: spacing.x8,
+                  marginLeft: spacing.x5,
+                  gap: spacing.x16,
                 }}
-              />
-            </View>
+              >
+                {onReactPress ? (
+                  <View style={{ position: 'relative' }}>
+                    <Pressable
+                      onLongPress={showReactionBar}
+                      onPress={() => {
+                        dismissReactionBar();
+                        if (myReaction) {
+                          setSelectedReactionId(undefined);
+                          onReactPress(undefined);
+                          return;
+                        }
+                        setSelectedReactionId('love');
+                        onReactPress(SocialPostReactionType.love);
+                      }}
+                      delayLongPress={180}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Animated.View style={{ transform: [{ scale: reactionIconScale }] }}>
+                          {reactionIcon}
+                        </Animated.View>
+                        <StyledText
+                          style={{
+                            marginLeft: spacing.x5,
+                            color: actionColor,
+                            fontSize: 12,
+                            fontWeight: '700',
+                          }}
+                        >
+                          {reactionCount}
+                        </StyledText>
+                      </View>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {selectedReactionIconUrl ? (
+                      <Image
+                        source={{ uri: selectedReactionIconUrl }}
+                        style={{ width: 16, height: 16 }}
+                      />
+                    ) : (
+                      <MaterialIcons name="favorite" size={16} color="#e04b4b" />
+                    )}
+                    <StyledText
+                      style={{
+                        marginLeft: spacing.x5,
+                        color: actionColor,
+                        fontSize: 12,
+                        fontWeight: '700',
+                      }}
+                    >
+                      {reactionCount}
+                    </StyledText>
+                  </View>
+                )}
+                <Pressable disabled={!onReplyPress} onPress={onReplyPress}>
+                  <StyledText
+                    style={{
+                      color: actionColor,
+                      fontSize: 12,
+                      fontWeight: '700',
+                      opacity: onReplyPress ? 1 : 0.6,
+                    }}
+                  >
+                    Reply
+                  </StyledText>
+                </Pressable>
+                {onReactPress && isReactionBarVisible ? (
+                  <View
+                    pointerEvents="box-none"
+                    style={{
+                      position: 'absolute',
+                      left: REACTION_BAR_OFFSET_X,
+                      bottom: REACTION_BAR_OFFSET_Y,
+                      zIndex: 20,
+                      elevation: 20,
+                      transform: [{ scale: REACTION_BAR_SCALE }],
+                    }}
+                  >
+                    <InlineReactionBar
+                      ref={reactionBarRef}
+                      onReactionSelect={handleAnimatedReactionSelect}
+                      onDismiss={() => {
+                        setIsReactionBarVisible(false);
+                      }}
+                    />
+                  </View>
+                ) : null}
+              </View>
+            </>
           )}
         </View>
       </View>
@@ -325,10 +773,9 @@ function CommentItem({
       <OptionsModal
         show={showOptions ?? false}
         setShow={setShowOptions}
-        currentPopupItem={{ ...postData, type: PostType.comment, userData, created }}
-        onProfilePress={onPress}
+        currentPopupItem={{ ...postData, type: PostType.comment, userData: safeUserData, created }}
         removePost={removePost}
-        hideShare
+        isPrivate={isPrivate}
         hideSavePost
         editPost={
           editPost ||

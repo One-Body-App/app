@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, View, TextInput, Pressable, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Toast from 'react-native-simple-toast';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import { setLoader, setPrayers } from '@/src/redux/actions/GeneralActions';
-import { styles } from './styles';
+import styles from './styles';
 import { ApiCall } from '@/src/services/api';
 import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
 import Send from '@/assets/svg/Send.svg';
@@ -22,7 +22,7 @@ function PrayerInputHome({ color }: { color: string }) {
   const [prayer, setPrayer] = useState('');
   const [error, seterror] = React.useState<string | null>();
 
-  const ValidatePrayer = () => {
+  const validatePrayer = () => {
     if (prayer != null && payerType != null) {
       if (prayer.length <= 150 && prayer !== '') {
         seterror(null);
@@ -31,7 +31,7 @@ function PrayerInputHome({ color }: { color: string }) {
         seterror('prayer text must be within 1 to 150.');
       }
     } else {
-      if (prayer == null && prayer == '') {
+      if (prayer == null && prayer === '') {
         seterror('prayer required!');
       }
       if (payerType == null) {
@@ -43,7 +43,7 @@ function PrayerInputHome({ color }: { color: string }) {
 
   const createPrayer = async () => {
     dispatch(setLoader(true));
-    if (payerType == 'answer') {
+    if (payerType === 'answer') {
       dispatch(setLoader(true));
       try {
         const res: any = await ApiCall({
@@ -88,7 +88,7 @@ function PrayerInputHome({ color }: { color: string }) {
           verb: 'post',
         });
 
-        if (res?.status == '200') {
+        if (res?.status === '200') {
           dispatch(setLoader(false));
           setPrayerTypeShow(false);
           setPrayerType(null);
@@ -159,7 +159,9 @@ function PrayerInputHome({ color }: { color: string }) {
           // onPressIn={() => setPrayerTypeShow(true)}
           onFocus={() => setPrayerTypeShow(true)}
           onChangeText={(e) => {
-            prayer.length < 150 ? setPrayer(e) : null;
+            if (prayer.length < 150) {
+              setPrayer(e);
+            }
             seterror(null);
           }}
           multiline
@@ -171,15 +173,15 @@ function PrayerInputHome({ color }: { color: string }) {
           }}
         />
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => {
-            ValidatePrayer();
+            validatePrayer();
           }}
           style={styles.Button}
         >
           <Send height={getHeight(2)} width={getWidth(10)} />
           {/* <Ionicons name="send" size={20} color="#032F3C" /> */}
-        </TouchableOpacity>
+        </Pressable>
       </View>
       {prayer !== '' && error == null ? (
         <StyledText

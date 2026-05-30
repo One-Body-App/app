@@ -1,5 +1,7 @@
 export const ACTIONS: Record<string, string> = {
   LOGOUT: 'LOGOUT',
+  LOGOUT_COMPLETE: 'LOGOUT_COMPLETE',
+  CLEAR_AUTH_STATE: 'CLEAR_AUTH_STATE',
   LOGIN: 'LOGIN',
   LOGIN_SOCIAL: 'LOGIN_SOCIAL',
   FETCH_LOGIN_DATA: 'FETCH_LOGIN_DATA',
@@ -80,6 +82,13 @@ export const SendVerificationEmail = {
   REQUEST: 'send_verification_email_request',
   SUCCESS: 'send_verification_email_success',
   FAILED: 'send_verification_email_failed',
+};
+
+export const VerifyEmailToken = {
+  REQUEST: 'verify_email_token_request',
+  SUCCESS: 'verify_email_token_success',
+  FAILED: 'verify_email_token_failed',
+  RESET: 'verify_email_token_reset',
 };
 
 // Badge Types

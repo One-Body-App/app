@@ -1,5 +1,5 @@
 // --------------- LIBRARIES ---------------
-import { put, takeEvery, takeLatest } from 'redux-saga/effects';
+import { call, put, select, takeEvery, takeLatest } from 'redux-saga/effects';
 import { Alert } from 'react-native';
 import { setAccountType, setLoader } from '../actions/GeneralActions';
 
@@ -13,10 +13,12 @@ import {
   GetProfile,
   SignUp,
   SendVerificationEmail,
+  VerifyEmailToken,
 } from '../action-types';
 
 // --------------- ACTIONS ---------------
 import {
+  completeLogout,
   setLoginData,
   getProfile,
   setProfile,
@@ -24,10 +26,80 @@ import {
   setUserBadges,
   signUp,
   sendVerificationEmail,
+  verifyEmailToken,
 } from '../actions/AuthActions';
 import { AccountType, ResponseGenerator } from '@/utils/types';
+import { clearAuthTokens, getValidAccessToken, saveAuthTokens } from '@/services/authTokens';
+import { disablePushNotifications } from '@/src/services/notification/pushNotificationService';
+import { disconnectChatSocket } from '@/src/services/chat/socketClient';
+import { signOutSocialProviders } from '@/services/socialAuth';
+import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
+import { RootState } from '../reducers/rootReducer';
+import { shouldAcceptProfileResult } from '@/src/utils/authFlow';
 
-function* updateProfileRequest(params: {
+const resolveProfileUpdateErrorMessage = (response: unknown) => {
+  if (typeof response === 'string' && response.trim()) {
+    return response;
+  }
+
+  if (Array.isArray((response as { message?: unknown } | null)?.message)) {
+    return (response as { message: string[] }).message.join(', ');
+  }
+
+  if (typeof (response as { message?: unknown } | null)?.message === 'string') {
+    return (response as { message: string }).message;
+  }
+
+  return 'An error occurred during profile update';
+};
+
+const buildUpdatedProfilePayload = (
+  response: any,
+  token?: string,
+  accountType?: AccountType | 'organization'
+) => {
+  const updatedProfile = response?.userFind ?? response?.user ?? response;
+  if (!updatedProfile || typeof updatedProfile !== 'object') {
+    return null;
+  }
+
+  return {
+    token,
+    ...updatedProfile,
+    accountType: updatedProfile.accountType ?? accountType,
+    isProfileCompleted: resolveProfileCompleted(updatedProfile),
+  };
+};
+
+const buildVerifiedProfilePayload = (params: {
+  authToken: string;
+  getProfileData?: Record<string, any> | null;
+  userProfile?: Record<string, any> | null;
+  fallbackAccountType?: string | null;
+  prefillEmail?: string;
+}) => {
+  const currentProfile = (params.getProfileData ?? params.userProfile ?? {}) as Record<string, any>;
+
+  return {
+    ...currentProfile,
+    token: params.authToken,
+    email: currentProfile.email ?? params.prefillEmail?.trim().toLowerCase(),
+    emailVerified: true,
+    isProfileCompleted: currentProfile.isProfileCompleted === true,
+    accountType: currentProfile.accountType ?? params.fallbackAccountType ?? 'individual',
+  };
+};
+
+const getVerifyEmailTokenFailureMessage = (response: any) =>
+  typeof response?.message === 'string'
+    ? response.message
+    : 'This verification link is invalid or expired. Request a new email and try again.';
+
+const getVerifyEmailTokenExceptionMessage = (error: any) =>
+  error?.message ??
+  'We could not verify this email link right now. Please request a new verification email.';
+
+export function* updateProfileRequest(params: {
   data: {
     token: string;
     accountType: AccountType;
@@ -48,23 +120,38 @@ function* updateProfileRequest(params: {
     });
 
     if (res?.status == 200) {
+      const updatedProfile = buildUpdatedProfilePayload(
+        res?.response,
+        params.data.token,
+        params.data.accountType
+      );
+
+      if (updatedProfile) {
+        yield put(setProfile(updatedProfile));
+        yield put(getProfile.Success(updatedProfile));
+        yield put(setLoader(false));
+        if (params.data.go) {
+          params.data.go();
+        }
+        return;
+      }
+
       yield put(
         getProfile.Request({ token: params.data.token, accountType: params.data.accountType })
       );
 
-      // yield put(setLoader(false));
       if (params.data.go) {
         params.data.go();
       }
     } else {
       yield put(setLoader(false));
-      Alert.alert('Error', 'An error accoured during profile Update', [
+      Alert.alert('Error', resolveProfileUpdateErrorMessage(res?.response), [
         { text: 'Close', onPress: () => console.log('Close Pressed') },
       ]);
     }
   } catch (e) {
     yield put(setLoader(false));
-    Alert.alert('Error', 'An error accoured during profile Update', [
+    Alert.alert('Error', resolveProfileUpdateErrorMessage(e), [
       { text: 'Close', onPress: () => console.log('Close Pressed') },
     ]);
     console.log('saga sign up err --- ', e);
@@ -100,7 +187,7 @@ function* loginSocialRequest(params: {
         yield put(setLoader(false));
       }
       params.data.sendFcm(params.data.data.token);
-      yield put(setLoginData({ token: params.data.data.token }));
+      yield put(setLoginData({ token: params.data.data.token, resetProfile: true }));
     } else {
       params.data.seterror(res?.response?.message);
       yield put(setLoader(false));
@@ -113,20 +200,36 @@ export function* loginSocialSaga() {
   yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
 }
 
-function* updateOrgProfileRequest(params: {
-  data: { data: Record<string, any> | undefined; token: string; go: () => void };
+export function* updateOrgProfileRequest(params: {
+  data: { data: Record<string, any> | undefined; token: string; go?: () => void };
   type: string;
 }) {
   try {
     yield put(setLoader(true));
     const res: ResponseGenerator = yield ApiCall({
-      params: { ...params.data.data, accountType: 'organization' },
+      params: { ...params.data.data },
       route: 'user/update-profile',
       token: params.data.token,
       verb: 'patch',
     });
 
     if (res?.status == 200) {
+      const updatedProfile = buildUpdatedProfilePayload(
+        res?.response,
+        params.data.token,
+        'organization'
+      );
+
+      if (updatedProfile) {
+        yield put(setProfile(updatedProfile));
+        yield put(getProfile.Success(updatedProfile));
+        yield put(setLoader(false));
+        if (params?.data?.go) {
+          params?.data?.go();
+        }
+        return;
+      }
+
       yield put(getProfile.Request({ token: params.data.token, accountType: 'organization' }));
       yield put(setLoader(false));
       if (params?.data?.go) {
@@ -134,13 +237,13 @@ function* updateOrgProfileRequest(params: {
       }
     } else {
       yield put(setLoader(false));
-      Alert.alert('Error', 'An error accoured during profile Update', [
+      Alert.alert('Error', resolveProfileUpdateErrorMessage(res?.response), [
         { text: 'Close', onPress: () => console.log('Close Pressed') },
       ]);
     }
   } catch (e) {
     yield put(setLoader(false));
-    Alert.alert('Error', 'An error accoured during profile Update', [
+    Alert.alert('Error', resolveProfileUpdateErrorMessage(e), [
       { text: 'Close', onPress: () => console.log('Close Pressed') },
     ]);
     console.log('saga sign up err --- ', e);
@@ -230,18 +333,32 @@ export function* RemoveSocialAccountSaga() {
   yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
 }
 
-function* signUpSaga(params: { data: any; token: string; type: string }) {
+function* signUpSaga(params: { data: any; type: string }) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       params: params.data,
-      route: 'user/register',
+      route: 'auth/register',
       verb: 'post',
-      token: params.token,
     });
 
     if (res?.status === 200 && res?.response) {
+      const tokens = (res?.response as any)?.tokens;
+      const accessToken = tokens?.accessToken;
+      if (tokens?.accessToken && tokens?.refreshToken) {
+        try {
+          yield call(saveAuthTokens, tokens);
+        } catch (error: any) {
+          if (__DEV__) {
+            console.warn(
+              'Token persistence failed during signup; continuing with in-memory session',
+              error?.message
+            );
+          }
+        }
+        yield put(setLoginData({ token: accessToken, resetProfile: true }));
+      }
       yield put(setAccountType(''));
-      yield put(signUp.Success(res?.response));
+      yield put(signUp.Success((res?.response as any)?.user ?? res?.response));
     } else {
       const fallbackMessage =
         (res?.response as any)?.message ??
@@ -258,18 +375,23 @@ export function* SignUpSaga() {
   yield takeLatest(SignUp.REQUEST, signUpSaga);
 }
 
-function* sendVerificationEmailSaga(params: { data: any; token: string; type: string }) {
+function* sendVerificationEmailSaga(params: {
+  data: any;
+  token: string | boolean;
+  type: string;
+  allowFalseSuccess?: boolean;
+}) {
   console.log('SEND VERIFICATION EMAIL SAGA', params);
   try {
     const res: ResponseGenerator = yield ApiCall({
-      params: params.data,
+      params: params.data ?? {},
       route: 'auth/sendVerificationEmail',
       verb: 'post',
-      token: params.token,
+      token: params.token ?? true,
     });
 
     console.log('SEND VERIFICATION EMAIL SAGA', res);
-    if (res?.status == 200 && res?.response === true) {
+    if (res?.status == 200 && (res?.response === true || params.allowFalseSuccess)) {
       yield put(sendVerificationEmail.Success(res?.response));
     } else {
       yield put(sendVerificationEmail.Failed(res?.response));
@@ -280,6 +402,146 @@ function* sendVerificationEmailSaga(params: { data: any; token: string; type: st
 }
 export function* SendVerificationEmailSaga() {
   yield takeLatest(SendVerificationEmail.REQUEST, sendVerificationEmailSaga);
+}
+
+export function* verifyEmailTokenSaga(params: {
+  verificationToken?: string;
+  prefillEmail?: string;
+  type: string;
+}) {
+  const verificationToken = params.verificationToken?.trim() ?? '';
+  if (!verificationToken) {
+    return;
+  }
+
+  const authToken: string = yield select((state: RootState) => state.auth.userToken);
+  if (!authToken) {
+    return;
+  }
+
+  try {
+    const [getProfileData, userProfile, fallbackAccountType]: [
+      RootState['auth']['getProfileData'],
+      RootState['auth']['userProfile'],
+      RootState['general']['accountType'],
+    ] = yield select((state: RootState) => [
+      state.auth.getProfileData,
+      state.auth.userProfile,
+      state.general.accountType,
+    ]);
+
+    const res: ResponseGenerator = yield ApiCall({
+      route: 'auth/verify-email',
+      verb: 'post',
+      params: { token: verificationToken },
+    });
+
+    if (res?.status === 200) {
+      yield put(verifyEmailToken.Success(res?.response));
+      yield put(
+        getProfile.Success(
+          buildVerifiedProfilePayload({
+            authToken,
+            getProfileData: getProfileData as Record<string, any> | null | undefined,
+            userProfile: userProfile as Record<string, any> | null | undefined,
+            fallbackAccountType,
+            prefillEmail: params.prefillEmail,
+          })
+        )
+      );
+      yield put(getProfile.Request({ token: authToken }));
+      return;
+    }
+
+    yield put(verifyEmailToken.Failed(getVerifyEmailTokenFailureMessage(res?.response)));
+  } catch (e) {
+    yield put(verifyEmailToken.Failed(getVerifyEmailTokenExceptionMessage(e)));
+  }
+}
+export function* VerifyEmailTokenSaga() {
+  yield takeLatest(VerifyEmailToken.REQUEST, verifyEmailTokenSaga);
+}
+
+export function* logoutSaga(params: {
+  data?: {
+    destination?: 'Intro' | 'Login';
+    revokeServerSession?: boolean;
+    signOutProviders?: boolean;
+  };
+  type: string;
+}) {
+  const destination = params.data?.destination ?? 'Intro';
+  const revokeServerSession = params.data?.revokeServerSession !== false;
+  const shouldSignOutProviders = params.data?.signOutProviders !== false;
+
+  let logoutToken = '';
+
+  try {
+    const reduxToken: string = yield select((state: RootState) => state.auth.userToken);
+
+    try {
+      const managedToken: string | null = yield call(getValidAccessToken);
+      logoutToken = managedToken ?? reduxToken ?? '';
+    } catch (_error) {
+      logoutToken = reduxToken ?? '';
+    }
+
+    try {
+      yield call(disablePushNotifications, logoutToken || undefined);
+    } catch (_error) {
+      // continue with local cleanup
+    }
+
+    try {
+      yield call(disconnectChatSocket);
+    } catch (_error) {
+      // continue with local cleanup
+    }
+
+    if (shouldSignOutProviders) {
+      try {
+        yield call(signOutSocialProviders);
+      } catch (_error) {
+        // continue with local cleanup
+      }
+    }
+
+    if (revokeServerSession && logoutToken) {
+      try {
+        yield call(ApiCall, {
+          route: 'auth/logout',
+          verb: 'post',
+          token: logoutToken,
+          suppressErrorLog: true,
+        });
+      } catch (_error) {
+        // continue with local cleanup
+      }
+    }
+  } finally {
+    try {
+      yield call(clearAuthTokens);
+    } catch (_error) {
+      // continue with auth state reset
+    }
+
+    try {
+      yield call(clearPendingSocialContinuation);
+    } catch (_error) {
+      // continue with auth state reset
+    }
+
+    yield put(
+      completeLogout({
+        destination,
+        completedAt: Date.now(),
+      })
+    );
+  }
+}
+
+export function* LogoutSaga() {
+  yield takeLatest(ACTIONS.LOGOUT, logoutSaga);
 }
 
 function* getBadgesSaga(params: { token: string; type: string }) {
@@ -329,10 +591,34 @@ export function* SetUserBadgesSaga() {
   yield takeEvery(SetUserBadges.REQUEST, setUserBadgesSaga);
 }
 
-function* getProfileSaga(params: { pullSavedData: any; token: string; type: string }) {
+const resolveProfileCompleted = (profile: any) => {
+  const rawValue = profile?.isProfileCompleted;
+  if (rawValue === false || (typeof rawValue === 'string' && rawValue.toLowerCase() === 'false')) {
+    return false;
+  }
+
+  const profileData = profile?.profile;
+  if (!profileData) return false;
+
+  if (profile?.accountType === 'organization') {
+    const hasCompany = !!profileData?.companyName;
+    const hasContactEmail = !!profileData?.contactEmail;
+    const hasContactName = !!profileData?.contactName;
+    const hasOrgType = !!profileData?.typeOfOrganization;
+    return hasCompany && hasContactEmail && hasContactName && hasOrgType;
+  }
+
+  const hasDob = !!profileData?.dateOfBirth;
+  const hasLocation = !!profileData?.location?.address;
+  const hasInterests =
+    Array.isArray(profile?.interests) && profile.interests.filter(Boolean).length > 0;
+
+  return hasDob && hasLocation && hasInterests;
+};
+
+export function* getProfileSaga(params: { pullSavedData: any; token: string; type: string }) {
   try {
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[getProfileSaga] Starting profile fetch', {
         hasToken: !!params.token,
         pullSavedData: params.pullSavedData,
@@ -345,7 +631,6 @@ function* getProfileSaga(params: { pullSavedData: any; token: string; type: stri
     });
 
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[getProfileSaga] Profile fetch response', {
         status: res?.status,
         hasResponse: !!res?.response,
@@ -353,15 +638,54 @@ function* getProfileSaga(params: { pullSavedData: any; token: string; type: stri
       });
     }
 
+    const authState: RootState['auth'] = yield select((state: RootState) => state.auth);
+    const shouldUseProfileResult = shouldAcceptProfileResult({
+      currentToken: authState.userToken,
+      requestToken: params.token,
+      logoutPending: authState.logoutPending,
+      logoutCompletedAt: authState.logoutCompletedAt,
+    });
+
+    if (!shouldUseProfileResult) {
+      if (__DEV__) {
+        console.log('[getProfileSaga] Dropping stale profile response', {
+          requestTokenMatchesCurrent: authState.userToken === params.token,
+          logoutPending: authState.logoutPending,
+          logoutCompletedAt: authState.logoutCompletedAt,
+        });
+      }
+      yield put(setLoader(false));
+      return;
+    }
+
     if (res?.status === 200) {
-      yield put(getProfile.Success({ token: params.token, ...res?.response }));
+      const responseData = res?.response ?? {};
+      yield put(
+        getProfile.Success({
+          token: params.token,
+          ...responseData,
+          isProfileCompleted: resolveProfileCompleted(responseData),
+        })
+      );
     } else {
       yield put(getProfile.Failed(res?.response));
     }
     yield put(setLoader(false));
   } catch (e) {
+    const authState: RootState['auth'] = yield select((state: RootState) => state.auth);
+    const shouldUseProfileError = shouldAcceptProfileResult({
+      currentToken: authState.userToken,
+      requestToken: params.token,
+      logoutPending: authState.logoutPending,
+      logoutCompletedAt: authState.logoutCompletedAt,
+    });
+
+    if (!shouldUseProfileError) {
+      yield put(setLoader(false));
+      return;
+    }
+
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[getProfileSaga] Profile fetch error:', e);
     }
     yield put(getProfile.Failed(e));

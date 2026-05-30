@@ -15,14 +15,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     height: getHeight(6),
     overflow: 'hidden',
-    shadowColor: '#126BB7',
-    shadowOffset: {
-      width: 0,
-      height: 20,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 0,
+    boxShadow: '0 20px 20px rgba(18, 107, 183, 0.1)',
   },
   tabItem: {
     flex: 1,
@@ -42,7 +35,7 @@ const styles = StyleSheet.create({
   },
   selectedTabText: {
     color: 'white',
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Lato-Medium',
     fontSize: getFontSize(2.3),
   },
   TabTex: { color: appColor.SecoundryColor, fontSize: getFontSize(2.3) },
@@ -78,13 +71,13 @@ const styles = StyleSheet.create({
     marginTop: getHeight(7),
     width: getWidth(80),
     textAlign: 'center',
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Lato-Regular',
   },
 
   heading: {
     fontSize: getFontSize(2.7),
     marginTop: getHeight(2),
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Rubik-Medium',
     textAlign: 'center',
 
     color: 'black',
@@ -94,7 +87,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Lato-Regular',
     color: '#032F3C',
   },
   btn: {
@@ -131,7 +124,7 @@ const styles = StyleSheet.create({
   btnText: {
     fontSize: getFontSize(1.8),
 
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Lato-Medium',
   },
   Errorview: { padding: 5, flexDirection: 'row', marginLeft: getWidth(10) },
   errortext: {

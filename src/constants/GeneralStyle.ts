@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { borderRadius } from '../styles/outlines';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 
 const GeneralStyle = StyleSheet.create({
   continer: {

@@ -1,7 +1,17 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import { getAuth, getIdToken } from '@react-native-firebase/auth';
 import { DevSettings } from 'react-native';
 import { BASE_URL } from './constants';
+import { getValidAccessToken, refreshAuthTokens } from './authTokens';
+
+const shouldPreferManagedSessionToken = (route: string) => !route.startsWith('auth/social-login');
+
+const joinUrl = (base: string, route: string) => {
+  if (!base) {
+    return route;
+  }
+
+  return `${base.replace(/\/+$/, '')}/${route.replace(/^\/+/, '')}`;
+};
 
 export const ApiCall = async <T = any>({
   params,
@@ -11,47 +21,36 @@ export const ApiCall = async <T = any>({
   baseurl,
   external,
   isFormUrlEncode,
+  suppressErrorLog = false,
   timeoutMs = 300000,
 }: //
 {
-  params?: Record<string, unknown>;
+  params?: Record<string, unknown> | FormData;
   route: string;
   verb: 'post' | 'get' | 'delete' | 'patch';
-  token?: string;
+  token?: string | boolean;
   baseurl?: string;
   external?: boolean;
   isFormUrlEncode?: boolean;
+  suppressErrorLog?: boolean;
   timeoutMs?: number;
 }): Promise<{ status: number; response: T }> => {
-  try {
-    let tokenToUse = '';
-    if (token !== undefined) {
-      if (typeof token === 'string' && token.length > 0) {
-        tokenToUse = token;
-      } else {
-        const firebaseAuth = getAuth();
-        tokenToUse = firebaseAuth.currentUser ? await getIdToken(firebaseAuth.currentUser) : '';
-      }
-    }
+  let tokenToUse = '';
+  const requestUrl = external ? route : joinUrl(baseurl ?? BASE_URL, route);
 
-    let url = null;
-    if (baseurl) {
-      url = `${baseurl}/${route}`;
-    } else {
-      //
-      // url = `${!external ? `${BASE_URL}/` : ''}${route}`;
-      url = `${!external ? `${BASE_URL}/` : ''}${route}`;
-    }
+  const makeAuthHeader = (value: string) =>
+    value ? { Authorization: `Bearer ${value}` } : undefined;
 
-    const authHeader = tokenToUse ? { Authorization: `Bearer ${tokenToUse}` } : undefined;
+  const executeRequest = async (url: string, authValue?: string) => {
+    const authHeader = makeAuthHeader(authValue ?? tokenToUse);
     let response: AxiosResponse<unknown, unknown> | null = null;
+
     switch (verb) {
       case 'get':
         response = await axios.get(
           url,
           authHeader ? { headers: authHeader, timeout: timeoutMs } : { timeout: timeoutMs }
         );
-
         break;
       case 'post':
         response = await axios.post(
@@ -60,32 +59,37 @@ export const ApiCall = async <T = any>({
           authHeader
             ? {
                 headers: {
-                  'Content-Type': isFormUrlEncode
-                    ? 'multipart/form-data'
-                    : 'application/x-www-form-urlencoded',
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
                   ...authHeader,
                 },
                 timeout: timeoutMs,
               }
-            : { timeout: timeoutMs }
+            : {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                },
+                timeout: timeoutMs,
+              }
         );
         break;
       case 'patch':
         response = await axios.patch(
           url,
-          // isFormUrlEncode ? formData : params,
           params,
           authHeader
             ? {
                 headers: {
-                  'Content-Type': isFormUrlEncode
-                    ? 'multipart/form-data'
-                    : 'application/x-www-form-urlencoded',
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
                   ...authHeader,
                 },
                 timeout: timeoutMs,
               }
-            : { timeout: timeoutMs }
+            : {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                },
+                timeout: timeoutMs,
+              }
         );
         break;
       case 'delete':
@@ -95,16 +99,101 @@ export const ApiCall = async <T = any>({
           timeout: timeoutMs,
         });
         break;
-
       default:
-        return { status: 400, response: 'method not found' as any };
+        response = null;
+    }
+
+    return response;
+  };
+
+  try {
+    if (token !== undefined) {
+      const managedAccessToken = shouldPreferManagedSessionToken(route)
+        ? await getValidAccessToken()
+        : null;
+
+      if (typeof token === 'string' && token.length > 0) {
+        // Most app calls pass Redux token strings. Prefer the managed token source so we don't
+        // keep retrying with stale in-memory tokens after refresh.
+        tokenToUse = managedAccessToken ?? token;
+      } else {
+        tokenToUse = managedAccessToken ?? '';
+      }
+    }
+
+    const response = await executeRequest(requestUrl);
+    if (!response) {
+      return { status: 400, response: 'method not found' as any };
     }
 
     return { status: 200, response: response?.data as T };
   } catch (err: unknown) {
     const axiosError = err as AxiosError;
     const message = axiosError.response?.data ?? axiosError.message ?? err;
-    console.warn('ApiCall error', route, axiosError?.response?.status, message);
+    if (!suppressErrorLog) {
+      console.warn('ApiCall error', route, axiosError?.response?.status, message);
+    }
+
+    const status = axiosError?.response?.status;
+    const isAuthEndpoint = route.startsWith('auth/login') || route.startsWith('auth/register');
+    const isRefreshEndpoint = route.startsWith('auth/refresh');
+    const canRetryWithManagedToken =
+      status === 401 &&
+      token !== undefined &&
+      typeof token === 'string' &&
+      token.length > 0 &&
+      shouldPreferManagedSessionToken(route);
+    const canRetryWithRefresh =
+      status === 401 && token !== undefined && !isRefreshEndpoint && !isAuthEndpoint;
+
+    if (canRetryWithManagedToken) {
+      const managedAccess = await getValidAccessToken();
+      if (managedAccess && managedAccess !== tokenToUse) {
+        try {
+          const managedRetryResponse = await executeRequest(requestUrl, managedAccess);
+          if (managedRetryResponse) {
+            return { status: 200, response: managedRetryResponse.data as T };
+          }
+        } catch (managedRetryErr: unknown) {
+          const managedRetryAxiosError = managedRetryErr as AxiosError;
+          const managedRetryStatus = managedRetryAxiosError?.response?.status ?? 400;
+          const managedRetryMessage =
+            managedRetryAxiosError.response?.data ??
+            managedRetryAxiosError.message ??
+            managedRetryErr;
+          if (!suppressErrorLog) {
+            console.warn(
+              'ApiCall managed-token retry error',
+              route,
+              managedRetryStatus,
+              managedRetryMessage
+            );
+          }
+        }
+      }
+    }
+
+    if (canRetryWithRefresh) {
+      const refreshed = await refreshAuthTokens();
+      const refreshedAccess = refreshed?.accessToken;
+      if (refreshedAccess) {
+        try {
+          const retryResponse = await executeRequest(requestUrl, refreshedAccess);
+          if (retryResponse) {
+            return { status: 200, response: retryResponse.data as T };
+          }
+        } catch (retryErr: unknown) {
+          const retryAxiosError = retryErr as AxiosError;
+          const retryStatus = retryAxiosError?.response?.status ?? 400;
+          const retryMessage =
+            retryAxiosError.response?.data ?? retryAxiosError.message ?? retryErr;
+          if (!suppressErrorLog) {
+            console.warn('ApiCall retry error', route, retryStatus, retryMessage);
+          }
+        }
+      }
+    }
+
     if (
       axiosError?.code === 'ECONNABORTED' ||
       (typeof axiosError?.message === 'string' && axiosError.message.includes('timeout'))
@@ -112,10 +201,18 @@ export const ApiCall = async <T = any>({
       // Reload to recover from a stuck session on timeout
       DevSettings.reload();
     }
-    const status =
+    const resolvedStatus =
       axiosError?.response?.status ?? (axiosError?.code === 'ECONNABORTED' ? 408 : 400);
-    const friendlyMessage = `That was a glitch on our part. Try again! (${status})`;
-    return { status, response: { message: friendlyMessage } as any };
+    const responseData: any = axiosError?.response?.data;
+    let apiMessage: string | null = null;
+    if (typeof responseData?.message === 'string') {
+      apiMessage = responseData.message;
+    } else if (Array.isArray(responseData?.message)) {
+      apiMessage = responseData.message.join(', ');
+    }
+    const friendlyMessage =
+      apiMessage ?? `That was a glitch on our part. Try again! (${resolvedStatus})`;
+    return { status: resolvedStatus, response: { message: friendlyMessage } as any };
   }
 };
 

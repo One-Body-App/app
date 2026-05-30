@@ -1,30 +1,51 @@
-import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useCallback, useState } from 'react';
+import { InteractionManager, Share, StyleSheet, Pressable, View } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import Toast from 'react-native-simple-toast';
-
-import { StackScreenProps } from '@react-navigation/stack';
-import { CompositeScreenProps } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { setLoader } from '@/redux/actions/GeneralActions';
-import { ApiCall } from '@/services/api';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { User } from '@/utils/types';
 
+import ProfileComponent from '@/components/profile/Profile';
+import CustomModal from '@/components/CustomModal';
+import StyledText from '@/components/styled/Text';
+import { setLoader } from '@/redux/actions/GeneralActions';
+import { getProfile } from '@/src/redux/actions/AuthActions';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/services/api';
 import {
   ExploreStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
   PrayerWallStackParamsList,
 } from '@/src/navigator/types';
-import ProfileComponent from '@/components/profile/Profile';
-import { getProfile } from '@/src/redux/actions/AuthActions';
+import { Colors } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
+import { User } from '@/utils/types';
+import { getProfileDisplayName } from '@/components/profile/profileUtils';
+
+function HeaderBackButton({ onPress, color }: { onPress: () => void; color: string }) {
+  return (
+    <Pressable onPress={onPress} style={{ marginLeft: spacing.x10, padding: spacing.x5 }}>
+      <Ionicons name="chevron-back" size={30} color={color} />
+    </Pressable>
+  );
+}
+
+function HeaderMenuButton({ onPress, color }: { onPress: () => void; color: string }) {
+  return (
+    <Pressable onPress={onPress} style={{ marginRight: spacing.x10, padding: spacing.x5 }}>
+      <Ionicons name="ellipsis-vertical" size={22} color={color} />
+    </Pressable>
+  );
+}
 
 type Props = CompositeScreenProps<
-  StackScreenProps<ExploreStackParamsList, 'UserProfile'>,
+  NativeStackScreenProps<ExploreStackParamsList, 'UserProfile'>,
   CompositeScreenProps<
-    StackScreenProps<PrayerWallStackParamsList, 'UserProfile'>,
+    NativeStackScreenProps<PrayerWallStackParamsList, 'UserProfile'>,
     CompositeScreenProps<
       DrawerScreenProps<MainDrawerParamsList, 'Main'>,
       BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
@@ -33,177 +54,164 @@ type Props = CompositeScreenProps<
 >;
 
 function UserProfile({ navigation, route }: Props) {
-  const { id } = route.params;
+  const { id, handle } = route.params;
   const dispatch = useDispatch();
-  const [user, setUser] = useState<User>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const isLoading = useSelector((state: RootState) => state.general.loader);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
-  const [index, setIndex] = React.useState(0);
-  const [routes, setRoutes] = React.useState<{ key: string; title: string }[]>([]);
-  const [scrollPosition, setScrollPosition] = React.useState(0);
-  const [direction, setDirection] = React.useState('');
-  const [relatedUsers, setRelatedUsers] = React.useState<User[] | undefined>();
+  const [user, setUser] = useState<User>();
+  const [relatedUsers, setRelatedUsers] = useState<User[] | undefined>();
+  const [avatarExpansionEnabled, setAvatarExpansionEnabled] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+  const { dark, colors } = useTheme();
+  const headerColor = dark ? colors.text : Colors.primary.brand;
 
-  const updateScrollPosition = (position: number) => {
-    if (
-      (position > scrollPosition || position == scrollPosition) &&
-      scrollPosition - position < 0 &&
-      scrollPosition - position < -45
-    ) {
-      setDirection('down');
-    } else if (
-      position < scrollPosition &&
-      scrollPosition - position > 0 &&
-      scrollPosition - position > 55
-    ) {
-      setDirection('up');
-    }
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      setAvatarExpansionEnabled(false);
+      const interactionTask = InteractionManager.runAfterInteractions(() => {
+        if (isActive) {
+          setAvatarExpansionEnabled(true);
+        }
+      });
 
-    setScrollPosition(position);
-  };
-  useEffect(() => {
-    if (user?.influencerProfile) {
-      const routes = [];
-      if (user?.influencerProfile?.twitterId) {
-        routes.push({ key: 'Twitter', title: 'Twitter' });
+      return () => {
+        isActive = false;
+        interactionTask.cancel();
+        setAvatarExpansionEnabled(false);
+      };
+    }, [handle, id])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const loadProfile = async () => {
+        dispatch(setLoader(true));
+
+        try {
+          let resolvedUserId = id;
+          if (!resolvedUserId && handle) {
+            const userByHandleRes = await ApiCall({
+              route: `user/by-username/${encodeURIComponent(handle)}`,
+              verb: 'get',
+              token,
+            });
+
+            if (userByHandleRes?.status === 200) {
+              resolvedUserId = userByHandleRes.response?._id ?? userByHandleRes.response?.id;
+            }
+          }
+
+          if (!resolvedUserId) {
+            if (isActive) {
+              setUser(undefined);
+              setRelatedUsers(undefined);
+            }
+            return;
+          }
+
+          const [userRes, relatedUsersRes] = await Promise.all([
+            ApiCall({
+              route: `user/${resolvedUserId}`,
+              verb: 'get',
+              token,
+            }),
+            ApiCall({
+              route: `user/get-related-users/${resolvedUserId}/1?itemsPerPage=12`,
+              verb: 'get',
+              token,
+            }),
+          ]);
+
+          if (!isActive) {
+            return;
+          }
+
+          if (userRes?.status === 200) {
+            setUser(userRes.response);
+          }
+
+          if (relatedUsersRes?.status === 200) {
+            setRelatedUsers(relatedUsersRes.response);
+          }
+        } finally {
+          if (isActive) {
+            dispatch(setLoader(false));
+          }
+        }
+      };
+
+      loadProfile().then(() => undefined);
+
+      return () => {
+        isActive = false;
+      };
+    }, [dispatch, handle, id, token])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) {
+        return undefined;
       }
 
-      if (user?.influencerProfile?.rssUrl) {
-        routes.push({ key: 'Blog', title: 'Blog/News' });
-      }
-
-      if (user?.influencerProfile?.instagramId) {
-        routes.push({ key: 'Instagram', title: 'Instagram' });
-      }
-      setRoutes(routes);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    dispatch(setLoader(true));
-    getUser();
-    getRelatedUser();
-  }, [id]);
-
-  useEffect(() => {
-    if (user) {
       navigation.setOptions({
-        title: user.name,
-      });
-    }
-  }, [user]);
-
-  const getUser = async () => {
-    try {
-      const res = await ApiCall({
-        route: `user/${id}`,
-        verb: 'get',
-        token,
-      });
-
-      if (res?.status == 200) {
-        dispatch(setLoader(false));
-        setUser(res?.response);
-      } else {
-        dispatch(setLoader(false));
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
-  };
-
-  const getRelatedUser = async () => {
-    try {
-      const res = await ApiCall({
-        route: `user/get-related-users/${id}/1?itemsPerPage=12`,
-        verb: 'get',
-        token,
+        headerBackTitleVisible: false,
+        headerShadowVisible: false,
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: dark ? colors.text : Colors.primary.brand,
+        headerTitleAlign: 'center',
+        title: getProfileDisplayName(user),
+        headerLeft: () => (
+          <HeaderBackButton onPress={() => navigation.goBack()} color={headerColor} />
+        ),
+        headerRight: () => (
+          <HeaderMenuButton onPress={() => setShowActions(true)} color={headerColor} />
+        ),
       });
 
-      if (res?.status == 200) {
-        dispatch(setLoader(false));
-        setRelatedUsers(res?.response);
-      } else {
-        console.log('error', res?.response);
-        dispatch(setLoader(false));
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
-  };
+      return undefined;
+    }, [colors.background, colors.text, dark, headerColor, navigation, user])
+  );
 
-  const handleUnSubscribe = async (id: string) => {
+  const handleUnSubscribe = async (userId: string) => {
     try {
       const res = await ApiCall({
-        route: `user/unsubscribe/${id}`,
+        route: `user/unsubscribe/${userId}`,
         token,
         verb: 'patch',
       });
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(getProfile.Request({ token }));
-        // Toast.show('unfollowed successfully.', Toast.LONG);
-        // dispatch(getuserAll({ token: token }));
-        // dispatch(getuserGet({ token: token }));
       } else {
         Toast.show('Error unfollowing, please try again later.', Toast.LONG);
       }
-    } catch (e) {
+    } catch (error) {
       Toast.show('Error unfollowing, please try again later.', Toast.LONG);
     }
   };
 
-  const handleSubscribe = async (id: string) => {
+  const handleSubscribe = async (userId: string) => {
     try {
       const res = await ApiCall({
-        route: `user/subscribe/${id}`,
+        route: `user/subscribe/${userId}`,
         token,
         verb: 'patch',
       });
-      if (res?.status == 200) {
-        // dispatch(getuserAll({ token: token }));
-        // dispatch(getuserGet({ token: token }));
+      if (res?.status === 200) {
         dispatch(getProfile.Request({ token }));
-        // Toast.show('Followed successfully.', Toast.LONG);
       } else {
         Toast.show('Error following, please try again later.', Toast.LONG);
       }
-    } catch (e) {
+    } catch (error) {
       Toast.show('Error following, please try again later.', Toast.LONG);
-      console.log('Error subscribing --- ', e);
     }
   };
-  // const OpenConversation = async (id) => {
-  //   // onCreateOrJoin(id);
-  //   dispatch(setLoader(true));
-  //   try {
-  //     const res = await ApiCall({
-  //       params: { receiver: id },
-  //       token: token,
-  //       route: 'chat/new-chat-room',
-  //       verb: 'post',
-  //     });
-
-  //     if (res?.status == 200) {
-  //       dispatch(setLoader(false));
-
-  //       navigation.navigate(
-  //         'conversation',
-  //         res?.data?.receiver
-  //           ? {
-  //               reciver: res?.data?.receiver,
-  //               reciverId: res?.data?._id,
-  //             }
-  //           : { reciver: res?.data?.sender, reciverId: res?.data?._id }
-  //       );
-  //       // navigation.navigate('conversation');
-  //     } else {
-  //       console.log('error', res?.data);
-  //     }
-  //   } catch (e) {
-  //     console.log('chanel create err --- ', e);
-  //   }
-  // };
 
   if (isLoading) {
     return null;
@@ -218,11 +226,46 @@ function UserProfile({ navigation, route }: Props) {
           relatedUsers={relatedUsers}
           handleSubscribe={handleSubscribe}
           handleUnSubscribe={handleUnSubscribe}
+          avatarExpansionEnabled={avatarExpansionEnabled}
+          variant="public"
         />
       ) : (
         <View />
       )}
+
+      <CustomModal modalVisible={showActions} onclose={() => setShowActions(false)}>
+        <View style={[styles.actionSheet, { backgroundColor: colors.background }]}>
+          <Pressable
+            style={styles.actionSheetButton}
+            onPress={async () => {
+              setShowActions(false);
+              await Share.share({
+                title: `Check out ${getProfileDisplayName(user as User)} on One Body`,
+                url: `https://app.onebodyapp.com/profile/${user?.username}`,
+              });
+            }}
+          >
+            <StyledText style={styles.actionSheetText}>Share Profile</StyledText>
+          </Pressable>
+        </View>
+      </CustomModal>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  actionSheet: {
+    minHeight: 160,
+    padding: spacing.x20,
+  },
+  actionSheetButton: {
+    paddingVertical: spacing.x13,
+  },
+  actionSheetText: {
+    color: Colors.neutral.brand,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});
+
 export default UserProfile;

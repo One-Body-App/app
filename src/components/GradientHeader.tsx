@@ -14,15 +14,8 @@ function GradientHeader({ title, left }: Props) {
   return (
     <View
       style={{
-        backgroundColor: 'red',
-        shadowColor: '#126BB7',
-        shadowOffset: {
-          width: 0,
-          height: 20,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 0,
+        backgroundColor: '#032F3C',
+        boxShadow: '0 20px 20px rgba(18, 107, 183, 0.1)',
       }}
     >
       <LinearGradient
@@ -32,32 +25,17 @@ function GradientHeader({ title, left }: Props) {
           height: getHeight(30),
           justifyContent: 'space-around',
           alignItems: 'center',
-
-          shadowColor: '#126BB7',
-          shadowOffset: {
-            width: 0,
-            height: 20,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 20,
-          elevation: 0,
         }}
       >
         {left}
 
-        <Logo
-          height={getHeight(16)}
+        <View
           style={{
-            shadowColor: 'black',
-            shadowOffset: {
-              width: 0,
-              height: 20,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 20,
-            elevation: 0,
+            boxShadow: '0 20px 20px rgba(0, 0, 0, 0.25)',
           }}
-        />
+        >
+          <Logo height={getHeight(16)} />
+        </View>
         <StyledText
           style={{
             color: 'white',

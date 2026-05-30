@@ -6,14 +6,22 @@ import { SearchStackParamsList } from './types';
 import Search from '../screens/main/search';
 import UserProfile from '../screens/main/userProfile';
 import mainPageOptions from './global';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 
 const Stack = createNativeStackNavigator<SearchStackParamsList>();
 
 function SearchStack() {
   const { dark, colors } = useTheme();
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        gestureEnabled: false,
+        fullScreenGestureEnabled: false,
+        statusBarStyle: dark ? 'light' : 'dark',
+        headerTransparent: true,
+        headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
+      }}
+    >
       <Stack.Screen
         name="Search"
         component={Search}

@@ -20,10 +20,30 @@
     },
     "ecmaVersion": "latest",
     "sourceType": "module",
-    "project": ["./tsconfig.json"]
+    "project": ["./tsconfig.eslint.json"]
   },
   "plugins": ["react", "react-native"],
   "rules": {
+    "no-restricted-imports": [
+      "warn",
+      {
+        "paths": [
+          {
+            "name": "react",
+            "importNames": ["useEffect"],
+            "message": "Use useMountEffect for mount/unmount external sync and prefer derived state, handlers, sagas, or navigation lifecycle hooks for everything else."
+          }
+        ]
+      }
+    ],
+    "no-restricted-properties": [
+      "warn",
+      {
+        "object": "React",
+        "property": "useEffect",
+        "message": "Use useMountEffect for mount/unmount external sync and prefer derived state, handlers, sagas, or navigation lifecycle hooks for everything else."
+      }
+    ],
     "import/extensions": [
       "error",
       "never",
@@ -55,7 +75,7 @@
     "@typescript-eslint/default-param-last": "off",
     "react-native/no-inline-styles": "off",
     "import/no-extraneous-dependencies": "off",
-    "no-console": ["warn", { "allow": ["warn", "error"] }]
+    "no-console": "off"
     // [
     //   "error",
     //   {
@@ -69,5 +89,14 @@
     // prevent eslint to complain about the "styles" variable being used before it was defined
     // ignore errors for the react-navigation package
     // "react/prop-types": ["error", { "ignore": ["navigation", "navigation.navigate"] }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/hooks/useMountEffect.ts"],
+      "rules": {
+        "no-restricted-imports": "off",
+        "no-restricted-properties": "off"
+      }
+    }
+  ]
 }

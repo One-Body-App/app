@@ -1,344 +1,259 @@
-import { StyleSheet, TextStyle, ViewStyle } from 'react-native';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { Colors } from '@/src/styles';
+import { StyleSheet } from 'react-native';
 import { spacing } from '@/src/styles/spacing';
+import { containFrame } from '@/src/styles/colors';
 
-const menuItemText: TextStyle = {
-  // color: '#126B87',
-
-  fontSize: 14,
-  textAlign: 'center',
-  fontWeight: '500',
-  textTransform: 'capitalize',
+// BRAND COLORS
+const BRAND = {
+  gray100: '#e6eaec',
+  gray200: '#cdd5d8',
+  gray400: '#9aacb1',
+  gray800: '#355963',
+  primary: '#41899f',
+  primaryDark: '#126b87',
+  primaryBase: '#41899f',
+  accentBase: '#41dbe1',
+  accentDark: '#12d2d9',
+  black: '#032f3c',
+  white: '#FFFFFF',
 };
 
-const menuItem: ViewStyle = {
-  paddingVertical: 10,
-  justifyContent: 'center',
-  alignItems: 'center',
-};
-
-export const styles = StyleSheet.create({
-  continer: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
   },
-  list: {
-    maxHeight: 40,
-  },
-  contentContainer: {
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: getWidth(5),
-    justifyContent: 'space-between',
-    paddingVertical: getHeight(2),
-    // height: getHeight(4),
-  },
-  fab: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    right: getWidth(4),
-    bottom: getHeight(3),
-    shadowColor: '#032f3c',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.37,
-    shadowRadius: 7.49,
 
-    elevation: 12,
-  },
-  requestModel: {
-    opacity: 0.9,
-
-    bottom: 0,
-    left: 0,
-    right: 0,
-    position: 'absolute',
-  },
-  TextInput: {
-    borderWidth: 1,
-    borderRadius: 10,
-    width: '82%',
-    borderColor: '#C4C4C4',
-    paddingLeft: 8,
-    color: 'white',
-    minHeight: getHeight(6),
-    maxHeight: getHeight(16),
-  },
-  propview: {
-    height: getHeight(0.4),
-    marginTop: 4,
-    width: '100%',
-    borderRadius: 5,
-    backgroundColor: '#12D2D9',
-  },
-  prayerTypeView: {
-    flexDirection: 'row',
-    padding: 5,
-    margin: 8,
-    marginBottom: 0,
-    width: '95%',
-    alignSelf: 'center',
-    borderRadius: 8,
-    backgroundColor: 'white',
-
-    justifyContent: 'space-around',
-  },
-  btn: {
-    borderWidth: 1,
-    borderColor: '#5B7279',
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 5,
-    backgroundColor: 'white',
-    borderRadius: 5,
-  },
-  btnSelected: {
-    borderWidth: 1,
-    borderColor: '#126B87',
-    backgroundColor: '#126B87',
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 5,
-
-    borderRadius: 5,
-  },
-  Button: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: getWidth(15),
-    borderRadius: 10,
-    height: getHeight(7),
-    backgroundColor: '#C4C4C4',
-  },
-
-  messageView: {
-    flexDirection: 'row',
-    width: '75%',
-    marginBottom: getHeight(3),
-    alignSelf: 'center',
-    justifyContent: 'center',
-  },
-  messageText: {
-    color: 'white',
-    marginLeft: 8,
-    textAlign: 'justify',
-  },
-  belowbtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  belowbtnView: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 6,
-  },
-  newstitle: {
-    fontSize: getFontSize(3.2),
-    fontWeight: 'bold',
-    padding: 10,
-    paddingBottom: 0,
-  },
-  newsimage: {
-    height: getHeight(40),
-    width: getWidth(65),
-  },
-  newsicon: {
-    alignSelf: 'flex-end',
-    padding: 15,
-  },
-  newstext: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: getFontSize(2.5),
-    width: '85%',
-  },
-  newsview: {
-    padding: 15,
+  // --- New Tab Navigation Styles ---
+  tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  socialposttext: {
-    fontSize: getFontSize(3.2),
-    fontWeight: 'bold',
-    padding: 10,
-    paddingBottom: 0,
-    color: '#126B87',
-  },
-  socialpostfooter: {
-    padding: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // socialpostview: {
-  //   alignSelf: 'center',
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-
-  //   borderRadius: 10,
-  //   // padding: 0,
-  //   flex: 1,
-  //   marginHorizontal: 7,
-  // },
-  NewsToday: {
-    backgroundColor: 'white',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-  },
-  socialpostimage: {
-    height: getHeight(22),
-    width: '100%',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    marginBottom: 5,
-  },
-  newspostimage: {
-    height: getHeight(22),
-    width: '100%',
-
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-  },
-  blogposttext: {
-    fontSize: getFontSize(3.2),
-    fontWeight: 'bold',
-    padding: 10,
-    paddingBottom: 0,
-    color: '#126B87',
-  },
-  blogpostview: {
-    backgroundColor: '#FAFAFA',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: getWidth(45),
-    borderRadius: 10,
-    padding: 10,
-  },
-  blogpostimage: {
-    height: getHeight(18),
-    width: getWidth(42),
-    borderRadius: 40,
-    marginBottom: 5,
-  },
-  blogpostpara: {
-    padding: 2,
-    color: '#032F3C',
-
-    fontWeight: 'bold',
-
-    width: 150,
-  },
-  blogposthour: {
-    padding: 8,
-    color: '#757575',
-    alignSelf: 'stretch',
-  },
-  explorview: {
-    flexDirection: 'row',
-    padding: 25,
-    justifyContent: 'space-between',
-  },
-  explortext: { width: 140, fontWeight: 'bold', color: '#032F3C' },
-  viewtext: {
-    flexDirection: 'row',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: 92,
-  },
-  subscribeview: {
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: getWidth(45),
-    height: getHeight(40),
-    borderRadius: 10,
-    padding: 10,
-    backgroundColor: '#FAFAFA',
-  },
-  subscribeview2: {
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    borderRadius: 10,
-    padding: 10,
-  },
-  subscribetext: {
-    padding: 2,
-    color: '#032F3C',
-    fontWeight: 'bold',
-  },
-  subscribebutton: {
-    backgroundColor: '#032F3C',
-    padding: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    bottom: -30,
-    width: getWidth(43),
-    borderRadius: 10,
-  },
-  subtex: {
-    fontWeight: 'bold',
-    color: '#F6F6F6',
-    letterSpacing: 0.5,
-  },
-  bottomView: {
-    justifyContent: 'flex-end',
-    margin: 0,
-  },
-
-  content2: {
-    backgroundColor: 'white',
-    alignItems: 'center',
-    padding: 13,
-    borderTopRightRadius: 17,
-    borderTopLeftRadius: 17,
-    height: getHeight(45),
-  },
-  headLine: {
-    height: 6,
-    width: 55,
-    borderRadius: 5,
-    backgroundColor: '#EAEAEA',
-    marginBottom: 5,
-  },
-  tabBar: {
-    flexDirection: 'row',
+    paddingHorizontal: spacing.x16,
+    paddingTop: spacing.x5,
+    paddingBottom: spacing.x8,
+    borderBottomWidth: 1,
+    borderBottomColor: BRAND.gray100,
+    backgroundColor: BRAND.white,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'flex-end',
   },
-  menuItem,
-  menuItemText,
-  menuItemSelected: {
-    ...menuItem,
+  tabItemSelected: {},
+  tabLabelUnderline: {
+    paddingBottom: spacing.x8,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabLabelUnderlineSelected: {
+    borderBottomColor: BRAND.primaryDark,
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+    color: BRAND.gray800,
+  },
+  tabTextSelected: {
+    color: BRAND.primaryDark,
+    fontWeight: '700',
+  },
 
-    borderBottomLeftRadius: 1.5,
-    borderBottomRightRadius: 1.5,
-    borderTopRightRadius: 1.5,
-    borderTopLeftRadius: 1.5,
+  // --- "What's on your mind?" Input ---
+  promptContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.x13,
+    marginHorizontal: 7,
+    marginVertical: spacing.x13,
+    marginTop: spacing.x5,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  avatarSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: spacing.x13,
+    backgroundColor: BRAND.gray200,
+  },
+  promptInput: {
+    flex: 1,
+    fontSize: 15,
+    height: 40,
+  },
+  promptIcon: {
+    padding: 8,
+    borderRadius: 20,
+  },
+
+  // --- Discovery Section ---
+  discoveryContainer: {
+    paddingVertical: spacing.x16,
+    marginBottom: spacing.x8,
+  },
+  discoveryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.x16,
+    marginBottom: spacing.x13,
+  },
+  discoveryScrollContent: {
+    paddingHorizontal: spacing.x16,
+  },
+  discoveryCard: {
+    width: 150,
+    padding: spacing.x13,
+    marginRight: spacing.x13,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  discoveryProfileTouch: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  discoveryAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: BRAND.gray200,
+  },
+  discoveryMeta: {
+    fontSize: 11,
+    color: BRAND.gray400,
+    marginBottom: 8,
+  },
+  discoveryConnectButton: {
+    backgroundColor: BRAND.accentBase,
+    paddingVertical: 6,
+    width: '100%',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  discoveryConnectButtonText: {
+    color: BRAND.primaryDark,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  discoverySeeAllCard: {
+    width: 55,
+    marginRight: spacing.x13,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.x16,
+    paddingHorizontal: spacing.x10,
+    backgroundColor: 'rgba(18, 210, 217, 0.08)',
+  },
+  discoverySeeAllText: {
+    color: BRAND.primaryDark,
+    fontSize: 14,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
+  },
+
+  // --- Modern Feed Card ---
+  cardContainer: {
+    marginBottom: spacing.x16,
+    paddingVertical: spacing.x16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.x16,
+    marginBottom: spacing.x13,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  timeAgo: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  caption: {
+    paddingHorizontal: spacing.x16,
+    marginBottom: spacing.x13,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  mediaContainer: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+    backgroundColor: containFrame,
+    marginTop: spacing.x5,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  actionsBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.x16,
+    paddingTop: spacing.x13,
+    marginTop: spacing.x5,
+    borderTopWidth: 1,
+  },
+  actionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  // Loading
+  loading: {
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  endOfFeedContainer: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.x16,
+    paddingTop: spacing.x8,
+    paddingBottom: spacing.x24,
+  },
+  endOfFeedText: {
+    color: BRAND.black,
+    fontSize: 14,
+    fontWeight: '100',
+    textShadowColor: 'rgba(18, 210, 217, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
+
+export default styles;

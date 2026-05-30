@@ -1,9 +1,11 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { Image } from 'expo-image';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
-  TouchableOpacity,
+  Pressable,
   Animated,
   Keyboard,
+  ActivityIndicator,
   TextInput,
   Easing,
   InteractionManager,
@@ -11,44 +13,56 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  createUserWithEmailAndPassword,
-  getAuth,
-  getIdToken,
-  sendEmailVerification,
-} from '@react-native-firebase/auth';
-import { StackScreenProps } from '@react-navigation/stack';
+import { useDispatch } from 'react-redux';
+import { useSSO } from '@clerk/expo';
+import { useSignUp } from '@clerk/expo/legacy';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
-import Toast from 'react-native-simple-toast';
 
 // Styles & Constraints
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { borderRadius } from '@/src/styles/outlines';
 import { button } from '@/src/styles/buttons';
 
 // Logic & Types
-import {
-  sendVerificationEmail as sendVerificationEmailAction,
-  signUp,
-} from '@/src/redux/actions/AuthActions';
+import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
+import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import StyledText from '@/components/styled/Text';
-import SignupButtons from '@/components/SignupButtons';
 import Button from '@/components/Button';
 import StyledTextInput from '@/components/styled/TextInput';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
+import {
+  ensureGoogleSigninConfigured,
+  exchangeSocialToken,
+  getAppleIdToken,
+  getGoogleIdToken,
+} from '@/services/socialAuth';
+import { clearPendingAccountType, savePendingAccountType } from '@/src/services/accountTypeStorage';
+import {
+  clearPendingSocialContinuation,
+  loadPendingSocialContinuation,
+} from '@/src/services/pendingSocialContinuation';
 import { appColor } from '@/src/constants';
+import GeneralStyle from '@/src/constants/GeneralStyle';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import { getValidAccessToken } from '@/src/services/authTokens';
+import { syncClerkUserProfile } from '@/src/services/clerkSync';
+import {
+  getSocialAuthActionLabel,
+  getSocialAuthErrorMessage,
+  isSocialSignupRequiredResponse,
+} from '@/src/utils/socialAuthFlow';
 
 const brandWhite = '#f6f6f7';
+const googleIcon = require('@/assets/icons/google.png');
 
 const initialFormState = {
   username: '',
@@ -63,120 +77,125 @@ const initialFormState = {
   cPasswordError: '',
 };
 
-const InputField = React.forwardRef(
-  (
-    {
-      label,
-      error,
-      rightIcon,
-      wrapperStyle,
-      inputWrapperStyle,
-      isDark,
-      ...props
-    }: {
-      label: string;
-      error?: string;
-      rightIcon?: React.ReactNode;
-      wrapperStyle?: object;
-      inputWrapperStyle?: object;
-      isDark: boolean;
-    } & React.ComponentProps<typeof TextInput>,
-    ref: any
-  ) => {
-    const [focused, setFocused] = useState(false);
-    const {
-      value,
-      placeholder,
-      onFocus,
-      onBlur,
-      autoCapitalize,
-      autoCorrect,
-      keyboardType,
-      secureTextEntry,
-      onChangeText,
-      onSubmitEditing,
-      editable,
-      maxLength,
-      multiline,
-      returnKeyType,
-      textContentType,
-      autoComplete,
-      accessibilityLabel,
-      testID,
-      selectionColor,
-      defaultValue,
-    } = props;
-    const { 200: errorBorderColor } = Colors.errorFeedback;
-    const { 900: neutral900, 600: neutral600 } = Colors.neutral;
-    const hidePlaceholder = focused || !!(value && value.length > 0);
-    let borderColor = isDark ? neutral900 : neutral600;
-    if (focused) {
-      borderColor = appColor.SecoundryColor;
-    }
-    if (error) {
-      borderColor = errorBorderColor;
-    }
+type SignupPalette = {
+  background: string;
+  card: string;
+  cardBorder: string;
+  textMain: string;
+  textSecondary: string;
+  primary: string;
+  divider: string;
+  inputBg: string;
+  inputBorder: string;
+  placeholder: string;
+  errorBorder: string;
+};
 
-    return (
-      <View style={[styles.inputContainer, wrapperStyle]}>
-        <StyledText style={[styles.inputLabel, isDark ? { color: brandWhite } : undefined]}>
-          {label}
-        </StyledText>
-        <StyledTextInput
-          ref={ref}
-          value={value}
-          onFocus={(e) => {
-            setFocused(true);
-            onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setFocused(false);
-            onBlur?.(e);
-          }}
-          placeholder={hidePlaceholder ? '' : placeholder}
-          placeholderTextColor={Colors.neutral[400]}
-          inputWrapperStyle={{
-            borderColor,
-            backgroundColor: isDark ? Colors.neutral[800] : Colors.neutral[700],
-            borderRadius: borderRadius.small,
-            minHeight: 54,
-            ...inputWrapperStyle,
-          }}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={autoCorrect}
-          keyboardType={keyboardType}
-          secureTextEntry={secureTextEntry}
-          onChangeText={onChangeText}
-          onSubmitEditing={onSubmitEditing}
-          editable={editable}
-          maxLength={maxLength}
-          multiline={multiline}
-          returnKeyType={returnKeyType}
-          textContentType={textContentType}
-          autoComplete={autoComplete}
-          accessibilityLabel={accessibilityLabel}
-          testID={testID}
-          selectionColor={selectionColor}
-          rightIcon={rightIcon as any}
-        />
-        {error ? (
-          <StyledText style={{ color: Colors.errorFeedback[200], fontSize: 12, marginTop: 4 }}>
-            {error}
-          </StyledText>
-        ) : null}
-      </View>
-    );
+type InputFieldProps = {
+  label: string;
+  error?: string;
+  rightIcon?: React.ReactNode;
+  wrapperStyle?: object;
+  inputWrapperStyle?: object;
+  palette: SignupPalette;
+  ref?: React.Ref<TextInput>;
+} & React.ComponentProps<typeof TextInput>;
+
+function InputField({
+  label,
+  error,
+  rightIcon,
+  wrapperStyle,
+  inputWrapperStyle,
+  palette,
+  ref,
+  ...props
+}: InputFieldProps) {
+  const [focused, setFocused] = useState(false);
+  const {
+    value,
+    placeholder,
+    onFocus,
+    onBlur,
+    autoCapitalize,
+    autoCorrect,
+    keyboardType,
+    secureTextEntry,
+    onChangeText,
+    onSubmitEditing,
+    editable,
+    maxLength,
+    multiline,
+    returnKeyType,
+    textContentType,
+    autoComplete,
+    accessibilityLabel,
+    testID,
+    selectionColor,
+  } = props;
+  const hidePlaceholder = focused || !!(value && value.length > 0);
+  let borderColor = palette.inputBorder;
+  if (focused) {
+    borderColor = palette.primary;
   }
-);
+  if (error) {
+    borderColor = palette.errorBorder;
+  }
 
-type Props = StackScreenProps<MainStackParamList, 'SignUp'>;
+  return (
+    <View style={[styles.inputContainer, wrapperStyle]}>
+      {error ? <StyledText style={styles.errorText}>{error}</StyledText> : null}
+      <StyledText style={[styles.inputLabel, { color: palette.textMain }]}>{label}</StyledText>
+      <StyledTextInput
+        ref={ref}
+        value={value}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
+        placeholder={hidePlaceholder ? '' : placeholder}
+        placeholderTextColor={palette.placeholder}
+        inputWrapperStyle={{
+          borderColor,
+          backgroundColor: palette.inputBg,
+          borderRadius: 12,
+          minHeight: 54,
+          ...inputWrapperStyle,
+        }}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        keyboardType={keyboardType}
+        secureTextEntry={secureTextEntry}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSubmitEditing}
+        editable={editable}
+        maxLength={maxLength}
+        multiline={multiline}
+        returnKeyType={returnKeyType}
+        textContentType={textContentType}
+        autoComplete={autoComplete}
+        accessibilityLabel={accessibilityLabel}
+        testID={testID}
+        selectionColor={selectionColor}
+        rightIcon={rightIcon as any}
+      />
+    </View>
+  );
+}
+
+type Props = NativeStackScreenProps<MainStackParamList, 'SignUp'>;
 
 function SignupForm({ navigation, route }: Props) {
   const recaptcha = useRef<RecaptchaRef | null>(null);
-  const { accountType } = route.params;
-  const authState = useSelector((state: RootState) => state.auth);
+  const { accountType, continuePendingSocialSignup = false } = route.params;
   const dispatch = useDispatch();
-  const firebaseAuth = getAuth();
+  const { startSSOFlow } = useSSO();
+  const { isLoaded: isSignUpLoaded, signUp: clerkSignUp } = useSignUp();
+  const attemptedPendingSocialSignupRef = useRef(false);
 
   const inputRefs = {
     username: useRef<TextInput>(null),
@@ -195,16 +214,69 @@ function SignupForm({ navigation, route }: Props) {
   };
 
   const [state, setState] = useState(initialFormState);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
 
   const [hidePass, setHidePass] = useState(true);
   const [loading, setIsloading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const [showPasswordHint, setShowPasswordHint] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [signUpToken, setSignUpToken] = useState<string | null>(null);
-  const hasSentVerificationEmailRef = useRef(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const { dark } = useTheme();
+
+  const palette: SignupPalette = {
+    background: Colors.neutral[700],
+    card: dark ? '#0D0D0D' : '#FFFFFF',
+    cardBorder: dark ? 'rgba(255, 255, 255, 0.08)' : '#F2F3F3',
+    textMain: dark ? '#FFFFF7' : '#032F3C',
+    textSecondary: dark ? '#999DA1' : '#5A5C5B',
+    primary: '#126B87',
+    divider: dark ? 'rgba(255, 255, 255, 0.08)' : '#F2F3F3',
+    inputBg: dark ? '#202328' : '#F2F3F3',
+    inputBorder: dark ? 'rgba(255, 255, 255, 0.08)' : '#F2F3F3',
+    placeholder: dark ? '#999DA1' : '#838584',
+    errorBorder: Colors.errorFeedback[200],
+  };
+
+  const normalizeUsername = useCallback((value: string) => {
+    return value?.toLowerCase().trim().replace(/\s+/g, '') ?? '';
+  }, []);
+
+  const generateUsernameSuggestions = useCallback(
+    (rawUsername: string, rawName?: string) => {
+      const base = normalizeUsername(rawUsername);
+      const normalizedName = normalizeUsername(rawName ?? '');
+      const nameBase = normalizedName.length >= 3 ? normalizedName.slice(0, 12) : '';
+
+      const candidates = [
+        `${base}1`,
+        `${base}2`,
+        `${base}3`,
+        nameBase ? `${nameBase}1` : '',
+        nameBase ? `${nameBase}${base.slice(0, 4)}` : '',
+      ].filter(Boolean);
+
+      const unique = Array.from(new Set(candidates)).filter((v) => v.length >= 3);
+      return unique.slice(0, 5);
+    },
+    [normalizeUsername]
+  );
+
+  // Set accountType in Redux when screen loads so social login can access it
+  useMountEffect(() => {
+    if (accountType) {
+      dispatch(setAccountType(accountType));
+      savePendingAccountType(accountType).catch(() => undefined);
+    }
+  });
+
+  useMountEffect(() => {
+    ensureGoogleSigninConfigured();
+  });
+
   const orbitAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
   const fieldsAnim = useRef(new Animated.Value(0)).current;
@@ -224,7 +296,7 @@ function SignupForm({ navigation, route }: Props) {
       !passwordRules.specialChar ||
       !passwordRules.uppercase ||
       state.password !== state.cPassword)
-      ? 'Both passwords must match and meet requirements.'
+      ? 'Passwords must match and meet security standards.'
       : state.cPasswordError;
 
   const isSubmitDisabled =
@@ -248,7 +320,6 @@ function SignupForm({ navigation, route }: Props) {
 
   const onRefresh = () => {
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[Signup] onRefresh triggered - clearing all fields');
     }
     setRefreshing(true);
@@ -260,7 +331,6 @@ function SignupForm({ navigation, route }: Props) {
     setTimeout(() => {
       setRefreshing(false);
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Signup] onRefresh complete');
       }
     }, 400);
@@ -268,44 +338,50 @@ function SignupForm({ navigation, route }: Props) {
 
   const signUpUser = async () => {
     setIsloading(true);
+    setFormError('');
+    setFormSuccess('');
     const { email, password, cPassword, username, name } = state;
-    const emailError = await validator('email', email);
-    const passwordError = await validator('password', password);
-    const cPasswordError = await validator('cPassword', cPassword, { password });
+    const [emailError, passwordError, cPasswordError] = await Promise.all([
+      validator('email', email),
+      validator('password', password),
+      validator('cPassword', cPassword, { password }),
+    ]);
     const usernameError = username ? '' : 'Username is required';
     const nameError = name ? '' : 'Name is required';
 
     if (!emailError && !passwordError && !cPasswordError && !usernameError && !nameError) {
       if (password === cPassword) {
-        const data = { email, name, accountType, userId: '', username };
+        const data = { email };
+        if (__DEV__) {
+          console.log('[SignUp] Validating user email with data:', JSON.stringify(data, null, 2));
+        }
         const userValidation = await ApiCall({
           route: 'user/validateUserInfo',
           params: data,
           verb: 'post',
         });
+        if (__DEV__) {
+          console.log(
+            '[SignUp] Validation response:',
+            userValidation.status,
+            JSON.stringify(userValidation.response, null, 2)
+          );
+        }
 
         if (userValidation.status === 200) {
           recaptcha.current?.open();
         } else {
-          setIsloading(false);
-          if (userValidation.status === 409) {
-            const errorMessage = userValidation.response?.message || '';
-            if (errorMessage.toLowerCase().includes('username')) {
-              setState((prev) => ({
-                ...prev,
-                usernameError: errorMessage,
-              }));
-            } else {
-              setState((prev) => ({
-                ...prev,
-                emailError: 'User already exists. Try again with a different email account!',
-              }));
-            }
+          const rawMessage = (userValidation.response as { message?: unknown })?.message;
+          let responseMessage = '';
+          if (typeof rawMessage === 'string') {
+            responseMessage = rawMessage.trim();
+          } else if (Array.isArray(rawMessage)) {
+            responseMessage = (rawMessage as string[]).join(', ');
           }
-          Toast.show(
-            userValidation.response?.message ??
-              'Unable to validate this account. Please try again.',
-            Toast.SHORT
+          setIsloading(false);
+          setFormError(
+            responseMessage ||
+              'Unable to create account. Please try a different email or reset your password.'
           );
         }
       } else {
@@ -314,25 +390,29 @@ function SignupForm({ navigation, route }: Props) {
           ...prev,
           cPasswordError: 'Both passwords must match.',
         }));
-        Toast.show('Both passwords must match.', Toast.SHORT);
       }
     } else {
       setIsloading(false);
       setState({
         ...state,
-        emailError,
-        passwordError,
-        cPasswordError,
-        usernameError,
-        nameError,
+        emailError: emailError ?? '',
+        passwordError: passwordError ?? '',
+        cPasswordError: cPasswordError ?? '',
+        usernameError: usernameError ?? '',
+        nameError: nameError ?? '',
       });
+      setFormError('Please complete all required fields.');
       Keyboard.dismiss();
-      Toast.show('Please fix the highlighted fields.', Toast.SHORT);
     }
   };
 
   const changeHandler = (type: string, value: string) => {
     const errorField = `${type}Error`;
+    setFormError('');
+    setFormSuccess('');
+    if (type === 'username') {
+      setUsernameSuggestions([]);
+    }
     setState((prev) => ({
       ...prev,
       [type]: value,
@@ -341,35 +421,40 @@ function SignupForm({ navigation, route }: Props) {
   };
 
   const checkUsernameAvailability = async (username: string) => {
-    if (!username || username.length < 3) {
+    const normalized = normalizeUsername(username);
+    if (normalized && normalized !== state.username) {
+      setState((prev) => ({ ...prev, username: normalized }));
+    }
+
+    if (!normalized || normalized.length < 3) {
       setState((prev) => ({
         ...prev,
         usernameError:
-          username.length > 0 && username.length < 3
-            ? 'Username must be at least 3 characters'
+          normalized.length > 0 && normalized.length < 3
+            ? 'Usernames must be at least 3 characters'
             : '',
       }));
+      setUsernameSuggestions([]);
       return;
     }
 
     setIsCheckingUsername(true);
     try {
       const userValidation = await ApiCall({
-        route: 'user/validateUserInfo',
-        params: { username, email: '', name: '', accountType, userId: '' },
+        route: 'user/validateUsername',
+        params: { username: normalized },
         verb: 'post',
       });
 
       if (userValidation.status === 200) {
         setState((prev) => ({ ...prev, usernameError: '' }));
+        setUsernameSuggestions([]);
       } else if (userValidation.status === 409) {
-        const errorMessage = userValidation.response?.message || '';
-        if (errorMessage.toLowerCase().includes('username')) {
-          setState((prev) => ({
-            ...prev,
-            usernameError: 'Sorry, this username is already in use. Please choose another username',
-          }));
-        }
+        setState((prev) => ({
+          ...prev,
+          usernameError: 'This username is already in use. If it belongs to you, please sign in.',
+        }));
+        setUsernameSuggestions(generateUsernameSuggestions(normalized, state.name));
       }
     } catch (error) {
       // Silently fail - validation will happen on submit anyway
@@ -382,79 +467,206 @@ function SignupForm({ navigation, route }: Props) {
     typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
   const createAccountGlassFill = 'rgba(18, 107, 135, 0.75)';
 
-  const onVerify = () => {
+  const onVerify = async () => {
     const { email, password, name, username } = state;
-    const data = { email, name, accountType, userId: '', username, skipVerificationEmail: true };
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = normalizeUsername(username);
 
-    return createUserWithEmailAndPassword(firebaseAuth, email, password)
-      .then(async (user) => {
-        const idToken = await getIdToken(user.user);
-        setSignUpToken(idToken);
-        data.userId = user.user.uid;
-        dispatch(signUp.Request({ data, token: idToken }));
-      })
-      .catch((err) => {
-        Toast.show(err?.message ?? 'Unable to create account. Please try again.', Toast.SHORT);
-        setIsloading(false);
-      });
-  };
-
-  useEffect(() => {
-    if (authState.signUpSuccess) {
-      const handleSignUpSuccess = async () => {
-        if (!hasSentVerificationEmailRef.current) {
-          hasSentVerificationEmailRef.current = true;
-
-          const { currentUser } = firebaseAuth;
-
-          // On iOS, always use backend email to ensure it uses correct domain
-          if (Platform.OS === 'ios') {
-            const firebaseToken =
-              signUpToken ?? (currentUser ? await getIdToken(currentUser) : null);
-            if (firebaseToken) {
-              dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
-            }
-          } else if (currentUser) {
-            // Android: try Firebase first, fallback to backend
-            try {
-              await sendEmailVerification(currentUser);
-            } catch {
-              const firebaseToken = signUpToken ?? (await getIdToken(currentUser));
-              if (firebaseToken) {
-                dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
-              }
-            }
-          }
-        }
-
-        Toast.show('Your account was created successfully. Welcome to the Family!', Toast.SHORT);
-        setIsloading(false);
-
-        // On iOS, AppContent handles navigation to ConfirmLogin automatically
-        // Navigating from here causes a race condition and double-mount
-        if (Platform.OS !== 'ios') {
-          navigation.replace('ConfirmLogin', { toScreen: 'MainRoot' });
-        }
-      };
-
-      handleSignUpSuccess();
+    if (!isSignUpLoaded || !clerkSignUp) {
+      setIsloading(false);
+      setFormError('Authentication is still loading. Please try again.');
+      return;
     }
-    return () => {
-      dispatch(signUp.Reset());
-    };
-  }, [authState.signUpSuccess, dispatch, firebaseAuth, navigation, signUpToken]);
 
-  useEffect(() => {
-    if (authState.signUpSuccess === false && authState.error) {
-      const displayError = Array.isArray(authState.error)
-        ? authState.error.join(', ')
-        : (authState.error ?? 'Unable to create account. Please try again.');
-      Toast.show(displayError, Toast.SHORT);
+    try {
+      await clerkSignUp.create({
+        emailAddress: normalizedEmail,
+        password,
+        unsafeMetadata: {
+          name,
+          username: normalizedUsername,
+          accountType,
+        },
+      });
+      await clerkSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setFormError('');
+      setFormSuccess('Check your inbox for your verification code.');
+      setIsloading(false);
+      navigation.replace('ConfirmLogin', {
+        mode: 'clerk-signup-code',
+        showConfirmationEmailMessage: true,
+        prefillEmail: normalizedEmail,
+        signupName: name.trim(),
+        signupUsername: normalizedUsername,
+        accountType,
+      } as any);
+    } catch (error: any) {
+      const clerkMessage =
+        error?.errors?.[0]?.longMessage ??
+        error?.errors?.[0]?.message ??
+        error?.message ??
+        'Unable to create account. Please try again.';
+      const lower = clerkMessage.toLowerCase();
+      setFormSuccess('');
+      setFormError(
+        lower.includes('identifier') || lower.includes('email')
+          ? 'Unable to create account. Please try a different email or reset your password.'
+          : clerkMessage
+      );
       setIsloading(false);
     }
-  }, [authState.signUpSuccess, authState.error]);
+  };
 
-  useEffect(() => {
+  const completeSocialSignup = useCallback(
+    async (params: {
+      provider: 'google' | 'apple';
+      idToken: string;
+      nonce?: string;
+      details?: {
+        email?: string;
+        displayName?: string;
+        firstName?: string;
+        lastName?: string;
+      };
+    }) => {
+      if (socialLoading) {
+        return;
+      }
+
+      const providerLabel = params.provider === 'google' ? 'Google' : 'Apple';
+      setFormError('');
+      setFormSuccess('');
+      dispatch(setLoader(true));
+      setSocialLoading(true);
+
+      try {
+        if (accountType) {
+          dispatch(setAccountType(accountType));
+          await savePendingAccountType(accountType);
+        }
+
+        const res = await exchangeSocialToken({
+          provider: params.provider,
+          intent: 'signup',
+          idToken: params.idToken,
+          nonce: params.nonce,
+          accountType,
+          details: params.details,
+          createIfMissing: true,
+        });
+
+        if (res.status === 200 && isSocialSignupRequiredResponse(res.response)) {
+          clearPendingSocialContinuation();
+          setFormError('Please choose an account type to continue your social sign-in.');
+          return;
+        }
+
+        if (res.status === 200 && res.response?.mfaRequired) {
+          clearPendingSocialContinuation();
+          setFormError(
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+          );
+          return;
+        }
+
+        if (res.status === 200 && res.response?.tokens?.accessToken) {
+          clearPendingSocialContinuation();
+          if (res.response.isNewUser && accountType) {
+            dispatch(
+              getProfile.Success({
+                token: res.response.tokens.accessToken,
+                email: params.details?.email ?? state.email,
+                emailVerified: true,
+                accountType,
+                isProfileCompleted: false,
+              })
+            );
+          }
+          await clearPendingAccountType();
+          dispatch(
+            setLoginData({
+              token: res.response.tokens.accessToken,
+              resetProfile: true,
+              authMethod: res.response?.authMethod ?? 'social',
+              bypassMandatoryMfaOnboarding: res.response?.bypassMandatoryMfaOnboarding !== false,
+            })
+          );
+          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+          return;
+        }
+
+        setFormError(
+          getSocialAuthErrorMessage(
+            res.response,
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+          )
+        );
+      } catch (e: any) {
+        setFormError(
+          e?.message ??
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+        );
+      } finally {
+        dispatch(setLoader(false));
+        setSocialLoading(false);
+      }
+    },
+    [accountType, dispatch, navigation, socialLoading, state.email]
+  );
+
+  const handleSocialSignup = useCallback(
+    async (provider: 'google' | 'apple') => {
+      if (socialLoading) {
+        return;
+      }
+
+      const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+      setFormError('');
+      setFormSuccess('');
+      dispatch(setLoader(true));
+      setSocialLoading(true);
+
+      try {
+        const { createdSessionId, setActive: activateSsoSession } = await startSSOFlow({
+          strategy: provider === 'google' ? 'oauth_google' : 'oauth_apple',
+          redirectUrl: 'onebodyapp://oauth-native-callback',
+        } as any);
+
+        if (!createdSessionId || !activateSsoSession) {
+          setFormError(
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+          );
+          return;
+        }
+
+        await activateSsoSession({ session: createdSessionId });
+        const [syncResult, accessToken] = await Promise.all([
+          syncClerkUserProfile({
+            accountType,
+          }),
+          getValidAccessToken(),
+          clearPendingAccountType(),
+        ]);
+        clearPendingSocialContinuation();
+        if (accessToken) {
+          dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'social' }));
+          dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
+        }
+        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+      } catch (e: any) {
+        setFormError(
+          e?.message ??
+            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
+        );
+      } finally {
+        dispatch(setLoader(false));
+        setSocialLoading(false);
+      }
+    },
+    [accountType, dispatch, navigation, socialLoading, startSSOFlow]
+  );
+
+  useMountEffect(() => {
     if (hasStartedAnimation.current) {
       return undefined;
     }
@@ -487,10 +699,11 @@ function SignupForm({ navigation, route }: Props) {
     return () => {
       task.cancel();
     };
-  }, [fieldsAnim, orbitAnim, textAnim]);
+  });
 
   useFocusEffect(
     React.useCallback(() => {
+      attemptedPendingSocialSignupRef.current = false;
       setState(initialFormState);
       setHidePass(true);
       setShowPasswordHint(false);
@@ -498,6 +711,28 @@ function SignupForm({ navigation, route }: Props) {
       setIsloading(false);
     }, [])
   );
+
+  useMountEffect(() => {
+    if (!continuePendingSocialSignup || !accountType || attemptedPendingSocialSignupRef.current) {
+      return;
+    }
+
+    attemptedPendingSocialSignupRef.current = true;
+    const pendingSocialContinuation = loadPendingSocialContinuation();
+
+    if (!pendingSocialContinuation) {
+      clearPendingSocialContinuation();
+      setFormError('Your social sign-in session expired. Please try again.');
+      return;
+    }
+
+    completeSocialSignup({
+      provider: pendingSocialContinuation.provider,
+      idToken: pendingSocialContinuation.idToken,
+      nonce: pendingSocialContinuation.nonce,
+      details: pendingSocialContinuation.details,
+    });
+  });
 
   const orbitStyle = {
     transform: [
@@ -546,8 +781,9 @@ function SignupForm({ navigation, route }: Props) {
 
   return (
     <UserStepsLayout
-      backgroundColor={Colors.main.white}
+      backgroundColor={Colors.neutral[700]}
       showCustomHeaderOnAndroid
+      excludeIosTopSafeArea
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -562,28 +798,22 @@ function SignupForm({ navigation, route }: Props) {
           textPopStyle,
         ]}
       >
-        <StyledText
-          style={[Typography.header.h1, { color: dark ? brandWhite : Colors.primary.brand }]}
-        >
-          Create your account details
+        <StyledText style={[styles.headerTitle, { color: palette.textMain }]}>
+          Create your account
         </StyledText>
         {accountType ? (
           <StyledText
-            style={[
-              Typography.subheader.M,
-              { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x5 },
-            ]}
+            style={[styles.headerAccountType, { color: palette.textMain, marginTop: spacing.x5 }]}
           >
-            {accountType.charAt(0).toUpperCase() + accountType.slice(1)}
+            {accountType === 'individual'
+              ? 'Personal Account (Individual)'
+              : 'Ministry Account (Organization)'}
           </StyledText>
         ) : null}
         <StyledText
-          style={[
-            Typography.subheader.R,
-            { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x8 },
-          ]}
+          style={[styles.headerSubtitle, { color: palette.textSecondary, marginTop: spacing.x8 }]}
         >
-          Enter your details so that we can get you setup:
+          Create your profile to start connecting with the Body.
         </StyledText>
       </Animated.View>
 
@@ -591,58 +821,188 @@ function SignupForm({ navigation, route }: Props) {
         style={[
           styles.cardContainer,
           {
-            backgroundColor: Colors.neutral[700],
-            borderColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+            backgroundColor: palette.card,
+            borderColor: palette.cardBorder,
           },
           fieldsPopStyle,
         ]}
       >
-        <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x10 }}
-          onPress={() => navigation.replace('Login')}
+        <Pressable
+          style={styles.signInRow}
+          onPress={async () => {
+            if (continuePendingSocialSignup) {
+              clearPendingSocialContinuation();
+            }
+            await clearPendingAccountType();
+            navigation.replace('Login');
+          }}
         >
-          <StyledText>Already have an account? </StyledText>
-          <StyledText style={{ color: '#41dbe1' }}>Sign in</StyledText>
-        </TouchableOpacity>
+          <StyledText style={{ color: palette.textSecondary }}>Already a member? </StyledText>
+          <StyledText style={{ color: palette.primary }}>Sign in here</StyledText>
+        </Pressable>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x8 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
-          <StyledText
-            style={{ marginHorizontal: 10, color: dark ? brandWhite : Colors.primary.brand }}
-          >
-            Or
-          </StyledText>
-          <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
+          <StyledText style={[styles.orText, { color: palette.textSecondary }]}>or</StyledText>
+          <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
         </View>
 
-        <Animated.View style={[{ marginTop: spacing.x7, alignItems: 'center' }, orbitStyle]}>
-          <SignupButtons
-            socialLogin={() => {}}
-            navigation={navigation}
-            route={route}
-            disabled={!accountType}
-          />
+        <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
+          <View style={styles.socialIconsRow}>
+            <Pressable
+              style={[
+                styles.socialBtn,
+                { borderColor: palette.inputBorder, backgroundColor: palette.card },
+              ]}
+              disabled={socialLoading}
+              onPress={() => handleSocialSignup('google')}
+            >
+              <Image source={googleIcon} style={styles.socialIcon} />
+            </Pressable>
+
+            {Platform.OS === 'ios' ? (
+              <View style={styles.appleSignupButtonContainer}>
+                <AppleButton
+                  buttonStyle={dark ? AppleButton.Style.WHITE : AppleButton.Style.BLACK}
+                  buttonType={
+                    appleAuth.isSignUpButtonSupported
+                      ? AppleButton.Type.SIGN_UP
+                      : AppleButton.Type.CONTINUE
+                  }
+                  cornerRadius={12}
+                  style={styles.appleSignupButton}
+                  testID="signup-apple-button"
+                  onPress={() => handleSocialSignup('apple')}
+                />
+              </View>
+            ) : null}
+          </View>
         </Animated.View>
+        {formSuccess ? (
+          <View
+            style={[
+              GeneralStyle.MessageView,
+              { backgroundColor: Colors.successFeedback.background, marginBottom: spacing.x16 },
+            ]}
+          >
+            <StyledText style={GeneralStyle.successtext}>{formSuccess}</StyledText>
+          </View>
+        ) : null}
+        {formError ? (
+          <View style={{ marginBottom: spacing.x16 }}>
+            <StyledText style={[styles.errorText, { marginBottom: spacing.x8 }]}>
+              {formError}
+            </StyledText>
+            {typeof formError === 'string' && formError.toLowerCase().includes('already in use') ? (
+              <Button
+                text="Sign in to your existing account"
+                onPress={() => navigation.navigate('Login')}
+                btnTextStyle={[Typography.subheader.R, { color: Colors.primary.brand }]}
+                btnStyle={{ backgroundColor: 'transparent' }}
+              />
+            ) : null}
+          </View>
+        ) : null}
 
         <InputField
           ref={inputRefs.username}
-          label="Username"
-          isDark={dark}
-          placeholder={state.username ? '' : 'e.g. onebodyusername'}
+          label="Create a Username"
+          palette={palette}
+          placeholder={state.username ? '' : 'e.g. brother_john'}
           value={state.username}
           error={state.usernameError}
           autoCapitalize="none"
           autoCorrect={false}
-          onChangeText={(username: string) => changeHandler('username', username.trim())}
+          rightIcon={
+            isCheckingUsername ? (
+              <View style={{ justifyContent: 'center', paddingRight: spacing.x8 }}>
+                <ActivityIndicator size="small" color={Colors.primary.brand} />
+              </View>
+            ) : undefined
+          }
+          onChangeText={(username: string) =>
+            changeHandler('username', normalizeUsername(username))
+          }
           onBlur={() => checkUsernameAvailability(state.username)}
           onSubmitEditing={() => inputRefs.name.current?.focus()}
         />
+        {usernameSuggestions.length > 0 ? (
+          <View style={{ marginTop: spacing.x8, marginBottom: spacing.x8 }}>
+            <StyledText
+              allowFontScaling={false}
+              style={[
+                Typography.fontSize.x1,
+                Typography.fontWeight.regular,
+                { lineHeight: 14 },
+                { letterSpacing: 0.1 },
+                { color: Colors.neutral[300] },
+              ]}
+            >
+              Suggested usernames:
+            </StyledText>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginTop: spacing.x5,
+              }}
+            >
+              {usernameSuggestions.map((suggestion) => (
+                <Pressable
+                  key={suggestion}
+                  onPress={() => {
+                    changeHandler('username', suggestion);
+                    checkUsernameAvailability(suggestion);
+                  }}
+                  style={{
+                    minHeight: 28,
+                    paddingHorizontal: spacing.x10,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                    backgroundColor: 'rgba(18, 210, 217, 0.16)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(18, 210, 217, 0.36)',
+                    marginRight: spacing.x5,
+                    marginBottom: spacing.x5,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <StyledText
+                    allowFontScaling={false}
+                    numberOfLines={1}
+                    style={[
+                      Typography.fontSize.x1,
+                      Typography.fontWeight.medium,
+                      { lineHeight: 13 },
+                      { letterSpacing: 0.1 },
+                      { textAlign: 'center' },
+                      { color: Colors.primary.brand },
+                    ]}
+                  >
+                    {suggestion}
+                  </StyledText>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable
+              onPress={() => {
+                navigation.replace('Login');
+              }}
+              style={{ marginTop: spacing.x13 }}
+            >
+              <StyledText style={[Typography.subheader.R, { color: Colors.primary.brand }]}>
+                Belong to you? Sign in to access your profile.
+              </StyledText>
+            </Pressable>
+          </View>
+        ) : null}
 
         <InputField
           ref={inputRefs.name}
-          label="Full Name (Org Name)"
-          isDark={dark}
-          placeholder={state.name ? '' : 'e.g. John Baptist / Johns Seminary Institute'}
+          label={accountType === 'individual' ? 'Display Name' : 'Organization / Ministry Name'}
+          palette={palette}
+          placeholder={state.name ? '' : 'How should we address you?'}
           value={state.name}
           error={state.nameError}
           autoCapitalize="words"
@@ -652,9 +1012,9 @@ function SignupForm({ navigation, route }: Props) {
 
         <InputField
           ref={inputRefs.email}
-          label="Email"
-          isDark={dark}
-          placeholder={state.email ? '' : 'e.g. mypersonalemail@example.com'}
+          label="Email Address"
+          palette={palette}
+          placeholder={state.email ? '' : 'email@example.com'}
           value={state.email}
           error={state.emailError}
           keyboardType="email-address"
@@ -665,9 +1025,9 @@ function SignupForm({ navigation, route }: Props) {
 
         <InputField
           ref={inputRefs.password}
-          label="Password"
-          isDark={dark}
-          placeholder={state.password ? '' : 'e.g. Create a secure password'}
+          label="Create a Password"
+          palette={palette}
+          placeholder={state.password ? '' : 'Enter a secure password'}
           secureTextEntry={hidePass}
           value={state.password}
           error={state.passwordError}
@@ -691,13 +1051,13 @@ function SignupForm({ navigation, route }: Props) {
         {showPasswordHint ? (
           <View style={{ marginBottom: spacing.x16 }}>
             <StyledText style={{ color: dark ? brandWhite : Colors.primary.brand, fontSize: 12 }}>
-              Password must include:
+              Security Requirements:
             </StyledText>
             {[
-              { key: 'sixCharsOrMore', label: 'At least 6 characters' },
-              { key: 'number', label: 'A number' },
-              { key: 'specialChar', label: 'A special character' },
-              { key: 'uppercase', label: 'An uppercase letter' },
+              { key: 'sixCharsOrMore', label: 'Minimum 6 characters' },
+              { key: 'number', label: 'Includes a number' },
+              { key: 'specialChar', label: 'Includes a special character' },
+              { key: 'uppercase', label: 'Includes an uppercase letter' },
             ].map((rule) => {
               const satisfied = passwordRules[rule.key as keyof typeof passwordRules];
               const color = satisfied ? '#1DB954' : '#E35640';
@@ -720,8 +1080,8 @@ function SignupForm({ navigation, route }: Props) {
         <InputField
           ref={inputRefs.cPassword}
           label="Confirm Password"
-          isDark={dark}
-          placeholder={state.cPassword ? '' : 'Repeat your password'}
+          palette={palette}
+          placeholder={state.cPassword ? '' : 'Re-enter password for security'}
           secureTextEntry={hidePass}
           value={state.cPassword}
           error={confirmPasswordError}
@@ -742,7 +1102,7 @@ function SignupForm({ navigation, route }: Props) {
         <Recaptcha
           ref={recaptcha}
           siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
-          baseUrl="http://www.onebodyapp.com"
+          baseUrl="https://www.onebodyapp.com"
           onVerify={onVerify}
           size="invisible"
         />
@@ -773,7 +1133,7 @@ function SignupForm({ navigation, route }: Props) {
               style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
             />
             <Button
-              text="Create account"
+              text="Join"
               btnStyle={[
                 button.primary,
                 {
@@ -790,7 +1150,7 @@ function SignupForm({ navigation, route }: Props) {
           </View>
         ) : (
           <Button
-            text="Create account"
+            text="Join"
             btnStyle={[
               button.primary,
               dropShadow,
@@ -810,7 +1170,7 @@ function SignupForm({ navigation, route }: Props) {
 
         <View style={{ marginTop: spacing.x16 }}>
           <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
-            By creating an account, you agree to our{' '}
+            By joining, you agree to our{' '}
             <StyledText
               style={{
                 color: dark ? appColor.SecoundryColor : Colors.primary.brand,
@@ -818,7 +1178,7 @@ function SignupForm({ navigation, route }: Props) {
               }}
               onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
             >
-              User Agreements
+              Community Standards
             </StyledText>{' '}
             &{' '}
             <StyledText
@@ -845,26 +1205,90 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     marginBottom: spacing.x10,
-    color: Colors.primary.brand,
     fontSize: 14,
   },
   errorText: {
     color: Colors.errorFeedback[200],
     fontSize: 12,
-    marginTop: 4,
+    marginBottom: spacing.x5,
   },
   cardContainer: {
     marginHorizontal: spacing.x16,
     paddingHorizontal: spacing.x16,
-    paddingVertical: spacing.x30,
-    backgroundColor: Colors.main.white,
-    borderRadius: 0,
+    paddingVertical: spacing.x16,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.neutral[800],
     marginBottom: spacing.x60,
-    width: '100%',
+    width: '97%',
     maxWidth: 480,
     alignSelf: 'center',
+  },
+  headerTitle: {
+    fontFamily: 'Rubik',
+    fontWeight: '600',
+    fontSize: 34,
+    lineHeight: 40,
+  },
+  headerAccountType: {
+    fontFamily: 'Lato',
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
+  },
+  headerSubtitle: {
+    fontFamily: 'Lato',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  signInRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: spacing.x10,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.x16,
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  orText: {
+    marginHorizontal: 10,
+    fontFamily: 'Lato',
+    fontSize: 16,
+  },
+  socialIconsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    width: '100%',
+    marginTop: spacing.x8,
+    marginBottom: spacing.x13,
+  },
+  socialBtn: {
+    width: 64,
+    height: 56,
+    borderWidth: 1,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  appleSignupButtonContainer: {
+    width: 220,
+    height: 56,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  appleSignupButton: {
+    width: '100%',
+    height: '100%',
+  },
+  socialIcon: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
   },
 });
 

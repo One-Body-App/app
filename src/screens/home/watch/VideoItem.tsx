@@ -1,129 +1,143 @@
-import { ActivityIndicator, TouchableHighlight, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useState, useEffect, PropsWithChildren, useRef, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-
-import { useToast } from 'react-native-toast-notifications';
-import { GiphyMedia } from '@giphy/react-native-sdk';
 import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
-import {
-  BottomSheetModal,
-  BottomSheetFlatList,
-  BottomSheetFlatListMethods,
-  BottomSheetBackdrop,
-  BottomSheetFooter,
-} from '@gorhom/bottom-sheet';
-import BaseItem from '@/src/components/listItems/BaseItem';
-import StyledText from '@/src/components/styled/Text';
+import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import styles from '@/screens/home/watch/styles';
-import { CommentPost, PostType, SocialPostReaction, WatchPost } from '@/utils/types';
-
-import { Colors, Typography } from '@/src/styles';
+import BottomSheetEntranceGlow from '@/components/BottomSheetEntranceGlow';
+import { navigateToMentionProfile } from '@/components/mentions/navigation';
+import { CommentPost, PostType, WatchPost } from '@/utils/types';
+import { Colors } from '@/src/styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
   HomeStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import CommentItem from '@/src/components/comments/CommentItem';
-import { ApiCall } from '@/src/services/api';
-import CommentField from '@/src/components/comments/Field';
-import { spacing } from '@/src/styles/spacing';
-import CustomVideo from '@/src/components/CustomVideo';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
+import WatchComments from './watchComments';
+import UniversalVideoCard from '@/src/components/video/UniversalVideoCard';
+import { getWatchVideoLayout } from '@/src/components/video/universalVideoLayout';
+import WatchOverlay from './WatchOverlay';
 
 type VideoItemProps = {
   item: WatchPost;
   viewHeight: number;
-  width: number;
+  frameWidth?: number;
+  width?: number;
   currentIndex: number;
   fromSavedPosts: boolean;
   parentRefreshContent?: Function;
+  removePost?: (type: string, postId: string) => void;
   onShowDismissCard?: (e?: boolean) => void;
+  onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
 };
+
 type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<HomeStackParamsList, 'Home'>,
+  NativeStackNavigationProp<HomeStackParamsList, 'Home'>,
   CompositeNavigationProp<
     DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
     BottomTabNavigationProp<MainBottomStackParamsList, 'HomeTab'>
   >
 >;
 
+const SHEET_NAVIGATION_DELAY_MS = 220;
+
 const VideoItem = gestureHandlerRootHOC(
   ({
     item,
     viewHeight,
+    frameWidth,
     width,
     fromSavedPosts,
     parentRefreshContent,
+    removePost,
     onShowDismissCard,
-    currentIndex,
+    onTelemetryEvent,
   }: PropsWithChildren<VideoItemProps>) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
     const [playedTimes, setPlayedTimes] = useState<number>(0);
-
-    const [comments, setComments] = useState<CommentPost[]>([]);
-    const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
-    const [editingCommentId, setEditingCommentId] = useState<string>('');
-    const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
-    const [isEndOfCommentsList, setIsEndOfCommentsList] = useState(false);
-    const [isRefreshing, setIsCommentsRefreshing] = useState(false);
-    const token = useSelector((state: RootState) => state.auth.userToken);
-    const [isEndOfList, setIsEndOfList] = useState(false);
-    const [page, setPage] = useState(1);
-    const [showRefreshIndicator, setShowRefreshIndicator] = useState(false);
+    const [commentCount, setCommentCount] = useState<number>(
+      item.commentNumber ?? item.comments?.length ?? 0
+    );
+    const [commentsOpenKey, setCommentsOpenKey] = useState(0);
+    const [progress, setProgress] = useState(0);
+    const [durationSeconds, setDurationSeconds] = useState<number>(
+      item.durationMs ? item.durationMs / 1000 : Number(item.duration ?? 0)
+    );
+    const viewportWidth = frameWidth ?? width ?? 0;
+    const videoLayout = getWatchVideoLayout(viewportWidth, viewHeight, item);
 
     const navigation = useNavigation<ScreenNavigationProp>();
     const user = useSelector((state: RootState) => state.auth.getProfileData);
-    const toast = useToast();
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-    const commentList = useRef<BottomSheetFlatListMethods>(null);
-    // variables
-    const snapPoints = useMemo(() => ['50%', '85%'], []);
+    const hasPlayedSheetGlowRef = useRef(false);
+    const hasTrackedVideoStartRef = useRef(false);
+    const hasTrackedVideoCompleteRef = useRef(false);
+    const progressMilestonesRef = useRef<Set<number>>(new Set());
+    const [sheetGlowPlayKey, setSheetGlowPlayKey] = useState(0);
+    const snapPoints = useMemo(() => ['75%', '90%'], []);
 
-    // callbacks
+    useEffect(() => {
+      setCommentCount(item.commentNumber ?? item.comments?.length ?? 0);
+    }, [item.commentNumber, item.comments?.length, item.id, item.postId, item._id]);
+
     const handlePresentModalPress = useCallback(() => {
+      if (!hasPlayedSheetGlowRef.current) {
+        hasPlayedSheetGlowRef.current = true;
+        setSheetGlowPlayKey((previous) => previous + 1);
+      }
       bottomSheetModalRef.current?.present();
-      getComments(1);
-    }, []);
+      onShowDismissCard?.(true);
+      setCommentsOpenKey((previous) => previous + 1);
+      onTelemetryEvent?.('post_comment_open', {
+        postType: PostType.watch,
+        origin: 'watch_sheet',
+      });
+    }, [onShowDismissCard, onTelemetryEvent]);
 
-    const handleSheetChanges = useCallback((index: number) => {
-      if (index == -1) {
-        setIsPaused(false);
-      } else if (index > -1) {
-        setIsPaused(true);
-      }
-    }, []);
+    const handleSheetChanges = useCallback(
+      (index: number) => {
+        if (index === -1) {
+          setIsPaused(false);
+          onShowDismissCard?.(false);
+        } else if (index > -1) {
+          setIsPaused(true);
+          onShowDismissCard?.(true);
+        }
+      },
+      [onShowDismissCard]
+    );
 
-    const videRef = useRef</* Video */ any>(null);
-    let myReaction: SocialPostReaction | undefined;
-
-    item.reactions?.forEach((reaction) => {
-      if (reaction.userId === user?._id) {
-        myReaction = reaction;
-      }
-    });
-
-    // useEffect(() => {
-    //   if (currentIndex === activeInScreenIndex) {
-    //     setIsPaused(false);
-    //     setPlayedTimes(0);
-    //     videRef.current?.seek(0);
-    //   } else {
-    //     setIsPaused(true);
-    //   }
-    // }, [activeInScreenIndex, currentIndex]);
+    const videRef = useRef<any>(null);
 
     const onEnd = useCallback(() => {
-      if (!isPaused && playedTimes < 2) {
-        videRef.current?.seek(0);
-        setPlayedTimes(playedTimes + 1);
+      if (!isPaused) {
+        setPlayedTimes((previousPlayedTimes) => {
+          if (previousPlayedTimes >= 2) {
+            return previousPlayedTimes;
+          }
+          videRef.current?.seek(0);
+          return previousPlayedTimes + 1;
+        });
       }
-    }, [playedTimes]);
+      setProgress(1);
+      if (!hasTrackedVideoCompleteRef.current) {
+        hasTrackedVideoCompleteRef.current = true;
+        onTelemetryEvent?.('post_video_complete', {
+          postType: PostType.watch,
+          completionPct: 100,
+        });
+      }
+    }, [isPaused, onTelemetryEvent]);
 
     useEffect(() => {
       if (playedTimes > 2) {
@@ -131,152 +145,76 @@ const VideoItem = gestureHandlerRootHOC(
       }
     }, [playedTimes]);
 
-    const refreshContent = (showRefreshIndicator?: boolean) => {
-      setIsEndOfList(false);
-      setPage(1);
-      getComments(1);
-      setIsCommentsRefreshing(true);
-      if (showRefreshIndicator) {
-        setShowRefreshIndicator(true);
-      }
-    };
-
-    const getComments = async (page: number) => {
+    useEffect(() => {
+      setProgress(0);
+      setDurationSeconds(item.durationMs ? item.durationMs / 1000 : Number(item.duration ?? 0));
       setIsLoading(true);
-      try {
-        const result = await ApiCall({
-          route: `comments/watch/${item.id}?page=${page}`,
-          token,
-
-          verb: 'get',
-        });
-
-        setIsLoading(false);
-        setIsCommentsRefreshing(false);
-        let newComments = [];
-
-        if (result.status == 200) {
-          if (page == 1) {
-            newComments = result?.response.content ?? [];
-
-            setIsEndOfCommentsList(false);
-          } else {
-            newComments = [...comments, ...(result?.response.content ?? [])];
-            if (!result?.response.content || result?.response.content.length < 1) {
-              setIsEndOfCommentsList(true);
-            }
-          }
-
-          setComments(newComments);
-        }
-      } catch (e) {
-        setIsCommentsRefreshing(false);
-        setIsLoading(false);
-      }
-    };
-
-    const publishComment = async (content?: string) => {
-      setIsLoading(true);
-
-      try {
-        const result = await ApiCall({
-          route: `comments/watch/${item.id}`,
-          token,
-          verb: 'post',
-          params: {
-            content,
-            gif: mediaGif,
-          },
-        });
-
-        setIsLoading(false);
-
-        if (result.status == 200) {
-          refreshContent();
-          getComments(1);
-          // commentList.current?.scrollToEnd();
-        }
-      } catch (e) {
-        setIsLoading(false);
-      }
-    };
-
-    const editComment = async (id: string, content: string) => {
-      try {
-        const res = await ApiCall({
-          route: `comments/watch/${item.id}/${id}`,
-          verb: 'patch',
-          token,
-          params: {
-            content,
-            gif: mediaGif,
-          },
-        });
-
-        if (res?.status == 200) {
-          toast.show('Comment modified successfully', {
-            id: 'successMessage',
-            type: 'success',
-            placement: 'bottom',
-          });
-          await getComments(1);
-        }
-      } catch (e: any) {
-        console.log('saga error -- ', e.toString());
-      }
-    };
-
-    const removeComment = async (type: string, id: string) => {
-      try {
-        const res = await ApiCall({
-          route: `comments/watch/${item.id}/${id}`,
-          verb: 'delete',
-          token,
-        });
-
-        if (res?.status == 200) {
-          await getComments(1);
-        }
-      } catch (e: any) {
-        console.log('saga error -- ', e.toString());
-      }
-    };
+      hasTrackedVideoStartRef.current = false;
+      hasTrackedVideoCompleteRef.current = false;
+      progressMilestonesRef.current = new Set();
+    }, [item.duration, item.durationMs, item.id, item.playBackId, item.postId, item._id]);
 
     const renderBackdrop = useCallback(
-      (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={0} appearsOnIndex={1} />,
+      (props: any) => (
+        <BottomSheetBackdrop
+          {...props}
+          appearsOnIndex={0}
+          disappearsOnIndex={-1}
+          opacity={0.72}
+          pressBehavior="close"
+        />
+      ),
       []
     );
 
-    const renderFooter = useCallback(
-      (props: any) => (
-        <BottomSheetFooter {...props} bottomInset={24}>
-          {!isEditingComment ? (
-            <CommentField
-              mediaGif={mediaGif}
-              setGif={setGif}
-              publishComment={publishComment}
-              isEditingComment={false}
-              isFromBottomField
-            />
-          ) : null}
-        </BottomSheetFooter>
-      ),
-      [isEditingComment]
+    const handleOpenCommentThread = useCallback(
+      (comment: CommentPost) => {
+        const commentId = getCommentId(comment);
+        const postId = String(item.id ?? item.postId ?? item._id ?? '');
+        if (!commentId || !postId) {
+          return;
+        }
+
+        setTimeout(() => {
+          navigation.push('SingleRss', {
+            postId,
+            postType: PostType.watch,
+            threadRootCommentId: commentId,
+            threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+          });
+        }, SHEET_NAVIGATION_DELAY_MS);
+      },
+      [item.id, item.postId, item._id, navigation]
+    );
+
+    const handleOpenMentionProfile = useCallback(
+      (handle: string) => {
+        setTimeout(() => {
+          navigateToMentionProfile(navigation, handle);
+        }, SHEET_NAVIGATION_DELAY_MS);
+      },
+      [navigation]
     );
 
     return (
       <View
         style={[
           styles.videoContainer,
-          { height: viewHeight, width, position: 'relative', zIndex: 2 },
+          {
+            height: viewHeight,
+            width: '100%',
+            alignItems: 'center',
+            position: 'relative',
+            zIndex: 2,
+          },
         ]}
       >
         {isLoading ? (
           <View
             style={{
               height: viewHeight,
-              width,
-              backgroundColor: 'transparent',
+              width: viewportWidth,
+              backgroundColor: videoLayout.backgroundColor,
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -284,152 +222,131 @@ const VideoItem = gestureHandlerRootHOC(
             <ActivityIndicator size="large" color={Colors.primary.brand} />
           </View>
         ) : null}
-        <TouchableHighlight
+
+        <Pressable
           onPress={() => {
-            setIsPaused(!isPaused);
+            const nextPaused = !isPaused;
+            setIsPaused(nextPaused);
+            onTelemetryEvent?.(nextPaused ? 'post_video_pause' : 'post_video_start', {
+              postType: PostType.watch,
+            });
           }}
-          style={styles.video}
+          style={{ width: '100%', height: '100%' }}
         >
-          <View style={{ flex: 1 }}>
-            <CustomVideo
-              ref={videRef}
-              source={{ uri: `https://stream.mux.com/${item.playBackId!}.m3u8` }}
-              resizeMode="cover"
-              style={[styles.video, { width, height: viewHeight }]}
-              onLoad={() => {
-                setIsLoading(false);
-              }}
-              paused={isPaused}
-              onEnd={onEnd}
-              poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp`}
-            />
-          </View>
-        </TouchableHighlight>
-        <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
-          <BaseItem
-            reelLayout
-            style={styles.videoInfo}
-            userData={item.userData}
-            edited={item.edited}
-            updated={item.updated}
-            fromSavedPosts={fromSavedPosts}
-            postData={{
-              title: item?.title,
-              id: item.postId ?? item.id ?? item.id,
-              type: PostType.watch,
-              postlink: item.link,
-              reactions: item.reactions ?? [],
-              myReaction,
-              edited: item.edited,
-              comments: item.comments,
-              commentNumber: item.commentNumber,
-            }}
-            parentRefreshContent={parentRefreshContent}
-            created={item?.created}
-            isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
-            onShowDismissCard={onShowDismissCard}
-            index={currentIndex}
-            onPress={() => {
-              if (item.userData._id != user?._id) {
-                navigation.navigate('Main', {
-                  screen: 'HomeTab',
-                  params: {
-                    screen: 'UserProfile',
-                    params: {
-                      id: item?.userData._id,
-                    },
-                  },
+          <UniversalVideoCard
+            context="watch"
+            sourceUri={`https://stream.mux.com/${item.playBackId!}.m3u8`}
+            metadata={item}
+            viewportWidth={viewportWidth}
+            viewportHeight={viewHeight}
+            paused={isPaused}
+            muted={false}
+            repeat={false}
+            controls={false}
+            poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp?width=${Math.round(videoLayout.frameWidth)}&height=${Math.round(videoLayout.frameHeight)}`}
+            videoRef={videRef}
+            onLoad={(loadData) => {
+              setIsLoading(false);
+              const nextDuration = Number(loadData?.duration);
+              if (Number.isFinite(nextDuration) && nextDuration > 0) {
+                setDurationSeconds(nextDuration);
+              }
+              if (!hasTrackedVideoStartRef.current) {
+                hasTrackedVideoStartRef.current = true;
+                onTelemetryEvent?.('post_video_start', {
+                  postType: PostType.watch,
                 });
               }
             }}
-            onCommentsPress={() => {
-              handlePresentModalPress();
+            onProgress={(progressData) => {
+              const currentTime = Number(progressData?.currentTime);
+              if (!Number.isFinite(currentTime) || currentTime < 0) {
+                return;
+              }
+              const effectiveDuration =
+                durationSeconds > 0 ? durationSeconds : Number(progressData?.seekableDuration);
+              if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) {
+                return;
+              }
+              const completionPct = Math.max(
+                0,
+                Math.min((currentTime / effectiveDuration) * 100, 100)
+              );
+              setProgress(Math.max(0, Math.min(currentTime / effectiveDuration, 1)));
+              [25, 50, 75].forEach((milestone) => {
+                if (completionPct >= milestone && !progressMilestonesRef.current.has(milestone)) {
+                  progressMilestonesRef.current.add(milestone);
+                  onTelemetryEvent?.('post_video_progress', {
+                    postType: PostType.watch,
+                    completionPct: milestone,
+                    playbackMs: Math.round(currentTime * 1000),
+                  });
+                }
+              });
             }}
+            onEnd={onEnd}
           >
-            {item.content && (
-              <View>
-                <StyledText style={[styles.videoDescription, { color: 'white' }]}>
-                  {item.content}
-                </StyledText>
-              </View>
-            )}
-          </BaseItem>
-        </LinearGradient>
+            <View style={{ flex: 1 }} />
+          </UniversalVideoCard>
+        </Pressable>
+        <WatchOverlay
+          item={item}
+          commentCount={commentCount}
+          fromSavedPosts={fromSavedPosts}
+          parentRefreshContent={parentRefreshContent}
+          removePost={removePost}
+          progress={progress}
+          onTelemetryEvent={onTelemetryEvent}
+          onCommentsPress={handlePresentModalPress}
+          onProfilePress={() => {
+            if (item.userData._id !== user?._id) {
+              navigation.navigate('Main', {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'UserProfile',
+                  params: {
+                    id: item?.userData._id,
+                  },
+                },
+              });
+            }
+          }}
+        />
 
         <BottomSheetModal
           ref={bottomSheetModalRef}
-          index={1}
+          index={0}
           snapPoints={snapPoints}
           onChange={handleSheetChanges}
           backdropComponent={renderBackdrop}
-          footerComponent={renderFooter}
           keyboardBehavior="extend"
+          enablePanDownToClose
+          backgroundStyle={{
+            backgroundColor: '#032f3c',
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+          }}
+          handleIndicatorStyle={{
+            backgroundColor: 'rgba(230,234,236,0.42)',
+            height: 6,
+            width: 44,
+          }}
         >
-          <BottomSheetFlatList
-            ref={commentList}
-            data={comments}
-            refreshing={isRefreshing && showRefreshIndicator}
-            style={{ flex: 1 }}
-            onEndReachedThreshold={0.8}
-            onEndReached={() => {
-              if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-            }}
-            onRefresh={() => {
-              refreshContent(true);
-            }}
-            ListHeaderComponent={() => {
-              return (
-                <View style={{ paddingHorizontal: spacing.x16 }}>
-                  <StyledText style={[Typography.header.h2]}>Comments</StyledText>
-                </View>
-              );
-            }}
-            ListEmptyComponent={() => {
-              if (isLoading) {
-                return <ActivityIndicator />;
-              }
-
-              return null;
-            }}
-            renderItem={({ item }) => {
-              let myReaction: SocialPostReaction | undefined;
-
-              item.reactions?.forEach((reaction: SocialPostReaction) => {
-                if (reaction.userId == user?._id) {
-                  myReaction = reaction;
-                }
-              });
-
-              return (
-                <CommentItem
-                  removePost={removeComment}
-                  editCommentAction={editComment}
-                  onPress={() => {
-                    // if (post?.userData._id && post.userData._id != user?._id) {
-                    //   // navigation.navigate('UserProfile', {
-                    //   //   id: post?.userData._id,
-                    //   // });
-                    // }
-                  }}
-                  setEditingComment={(isEditingComment: boolean) => {
-                    if (isEditingComment) setGif(item.gif ?? null);
-                    setIsEditingComment(isEditingComment);
-                    if (item.commentId) setEditingCommentId(item.commentId);
-                  }}
-                  postData={{
-                    id: item.commentId,
-                    content: item.content,
-                    reactions: item.reactions,
-                    myReaction,
-                    edited: item.edited,
-                    gif:
-                      isEditingComment && editingCommentId == item.commentId ? mediaGif : item.gif,
-                  }}
-                  userData={item.userData}
-                />
-              );
-            }}
-          />
+          <View style={{ flex: 1 }}>
+            <BottomSheetEntranceGlow playKey={sheetGlowPlayKey} />
+            <WatchComments
+              postId={String(item.id ?? item.postId ?? item._id ?? '')}
+              initialCommentCount={commentCount}
+              sheetOpenKey={commentsOpenKey}
+              onClose={() => {
+                bottomSheetModalRef.current?.dismiss();
+              }}
+              onCountChange={setCommentCount}
+              onOpenCommentThread={handleOpenCommentThread}
+              onOpenMentionProfile={handleOpenMentionProfile}
+              onTelemetryEvent={onTelemetryEvent}
+            />
+          </View>
         </BottomSheetModal>
       </View>
     );

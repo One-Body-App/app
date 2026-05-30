@@ -35,7 +35,7 @@ jobs:
       - name: 'Create key properties'
         run: |
           echo "${{secrets.ANDROID_KEY_PROPERTIES}}" >> android/key.properties
-      - run: yarn install
+      - run: yarn install --immutable
       - run: bundle install
       - run: bundle exec fastlane android prod
         env:

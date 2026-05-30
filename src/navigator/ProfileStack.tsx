@@ -1,33 +1,37 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import EditProfile from '../screens/main/editProfile';
 
 import MyProfile from '../screens/main/myProfile';
 import { MyProfileStackParamsList } from './types';
-import { Colors } from '../styles';
+import * as Colors from '../styles/colors';
 import InviteFriend from '../screens/main/inviteFriend';
-import mainPageOptions from './global';
+import { STANDARD_STACK_ANIMATION_OPTIONS } from './motionPolicy';
 
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 
 function ProfileStack() {
   const { dark, colors } = useTheme();
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="MyProfile"
-        component={MyProfile}
-        options={({ navigation }) =>
-          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Profile')
-        }
-      />
+    <Stack.Navigator
+      screenOptions={{
+        gestureEnabled: false,
+        fullScreenGestureEnabled: false,
+        ...STANDARD_STACK_ANIMATION_OPTIONS,
+        statusBarStyle: dark ? 'light' : 'dark',
+        headerTransparent: false,
+        headerShadowVisible: false,
+      }}
+    >
+      <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
       <Stack.Screen
         name="EditProfile"
         component={EditProfile}
         options={() => {
           return {
-            // headerShown: false,
+            headerShown: Platform.OS !== 'android',
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },
             title: 'Edit Profile',

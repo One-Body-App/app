@@ -1,32 +1,35 @@
-import { ViewStyle } from 'react-native';
-import { borderRadius, borderWidth } from './outlines';
-import { spacing } from './spacing';
+import { ImageStyle, ViewStyle } from 'react-native';
+
+import { Colors } from '@/src/styles';
+import { borderRadius } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
 
 export const card: ViewStyle = {
-  marginTop: spacing.x24,
-
-  padding: spacing.x24,
-  borderRadius: 14,
-  borderWidth: borderWidth.thin,
+  padding: spacing.x16,
+  borderRadius: borderRadius.base,
+  marginBottom: spacing.x10,
+  borderWidth: 1,
+  borderColor: Colors.neutral[800],
+  backgroundColor: Colors.neutral[800],
 };
 
-export const profileImageList = {
+export const profileImageList: ImageStyle = {
   width: 60,
   height: 60,
   borderRadius: borderRadius.max,
-  marginBottom: spacing.x8,
-  // borderColor: Colors.neutral[800],
-  // borderWidth: borderWidth.thin,
-  marginRight: spacing.x8,
+  marginBottom: 5,
+  borderColor: Colors.neutral[800],
+  borderWidth: 1,
+  marginRight: 10,
 };
 
 export const iterestListItem: ViewStyle = {
-  paddingHorizontal: spacing.x10,
-  paddingVertical: spacing.x10,
-  justifyContent: 'center',
-  borderRadius: borderRadius.xs,
-  marginHorizontal: spacing.x8,
-  marginVertical: spacing.x8 / 2,
-
-  // borderWidth: borderWidth.thin,
+  paddingHorizontal: spacing.x16,
+  paddingVertical: spacing.x8,
+  borderRadius: borderRadius.large,
+  marginRight: spacing.x8,
+  marginBottom: spacing.x10,
+  borderWidth: 1,
+  borderColor: Colors.neutral[700],
+  backgroundColor: Colors.neutral[800],
 };

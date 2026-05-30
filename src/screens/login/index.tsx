@@ -1,37 +1,49 @@
-import React from 'react';
-import { ScrollView } from 'react-native';
+import React, { useState } from 'react';
 
-import { StackScreenProps } from '@react-navigation/stack';
-import { useTheme } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import LoginComponent from '@/components/loginComponent';
 
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
 
-type Props = StackScreenProps<MainStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Login'>;
 
-function Login({ route, navigation }: Props) {
-  const loginProviders = ['password', 'google.com', 'facebook.com', 'twitter.com', 'apple'];
-  const { dark, colors } = useTheme();
+const getMfaChallengeKey = (
+  challenge: NonNullable<MainStackParamList['Login']>['initialMfaChallenge']
+) => {
+  if (!challenge) {
+    return 'no-mfa';
+  }
+
+  return [
+    challenge.mfaToken ?? '',
+    challenge.enrollmentRequired ? '1' : '0',
+    challenge.preferredMethod ?? '',
+    challenge.availableMethods?.join(',') ?? '',
+    challenge.emailMasked ?? '',
+    challenge.reason ?? '',
+  ].join('|');
+};
+
+function Login({ route }: Props) {
+  const [isMfaLaunchScreenVisible, setIsMfaLaunchScreenVisible] = useState(false);
+  const clearOnMountKey =
+    route?.params?.action ?? (route?.params?.resetPassword ? 'reset' : undefined);
+  const loginComponentKey = `${clearOnMountKey ?? 'login'}:${getMfaChallengeKey(route?.params?.initialMfaChallenge)}`;
 
   return (
     <UserStepsLayout
-      backgroundColor={dark ? colors.background : Colors.neutral[700]}
-      showCustomHeaderOnAndroid
+      backgroundColor={Colors.neutral[700]}
+      showCustomHeaderOnAndroid={!isMfaLaunchScreenVisible}
+      hideBottomText={isMfaLaunchScreenVisible}
     >
-      <ScrollView
-        keyboardShouldPersistTaps="always"
-        removeClippedSubviews={false}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        <LoginComponent
-          showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
-          enabledLoginProviders={loginProviders}
-          {...route.params}
-        />
-      </ScrollView>
+      <LoginComponent
+        key={loginComponentKey}
+        currentUserEmail={route?.params?.prefillEmail}
+        initialMfaChallenge={route?.params?.initialMfaChallenge}
+        onMfaLaunchScreenChange={setIsMfaLaunchScreenVisible}
+      />
     </UserStepsLayout>
   );
 }

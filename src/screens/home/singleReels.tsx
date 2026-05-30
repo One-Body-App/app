@@ -1,9 +1,19 @@
 // import { StyleSheet } from 'react-native';
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { useImperativeHandle, useRef } from 'react';
 // import muxReactNativeVideo from '@mux/mux-data-react-native-video';
 // import VisibilitySensor from '@svanboxel/visibility-sensor-react-native';
 
-const SingleReels = forwardRef(({ item }: any, parentRef) => {
+type SingleReelsHandle = {
+  play: () => Promise<void>;
+  stop: () => Promise<void>;
+};
+
+type SingleReelsProps = {
+  item: any;
+  ref?: React.Ref<SingleReelsHandle>;
+};
+
+function SingleReels({ item, ref: parentRef }: SingleReelsProps) {
   // const MuxVideo = muxReactNativeVideo(Video);
   // const [paused, setpaused] = useState(true);
   const videoRef = useRef</* VideoRef */ any>(null);
@@ -57,7 +67,7 @@ const SingleReels = forwardRef(({ item }: any, parentRef) => {
   //   >
   //     <MuxVideo
   //       ref={videoRef}
-  //       resizeMode="cover"
+  //       resizeMode="contain"
   //       style={{ flex: 1 }}
   //       // controls
   //       repeat
@@ -81,6 +91,6 @@ const SingleReels = forwardRef(({ item }: any, parentRef) => {
   //   </VisibilitySensor>
   // );
   return null;
-});
+}
 
 export default SingleReels;

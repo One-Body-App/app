@@ -1,194 +1,261 @@
-/* eslint-disable react/jsx-no-useless-fragment */
-import React, { useEffect, useState } from 'react';
-import {
-  Text,
-  View,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
-import Ionicons from '@react-native-vector-icons/ionicons';
-import { useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
-import { useSelector } from 'react-redux';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { styles } from './styles';
-import Logo from '@/assets/svg/LogoBlue.svg';
-import GoBackIcon from '@/components/GoBackIcon';
+import React from 'react';
+import { Platform, Text, View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { ApiCall } from '@/services/api';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepOne'>;
+// --- One Body Brand Palette ---
+const OBPalette = {
+  grays: {
+    100: '#e6eaec',
+    500: '#81979e',
+    black: '#032f3c',
+  },
+  primary: {
+    dark: '#126b87',
+    base: '#41899f',
+    50: '#71a6b7',
+    25: '#a0c4cf',
+    lightest: '#E7F0F3', // Mapped from design for the inner circle
+  },
+};
+
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'InfluencerStepOne'>;
 
 function InfluencerStepOne({ navigation }: Props) {
-  const { colors } = useTheme();
-  const token = useSelector((state: RootState) => state.auth.userToken);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasPendingRequest, setHasPendingRequest] = useState(false);
-
-  const getHasInfluencerProfile = async () => {
-    try {
-      const res = await ApiCall({
-        route: `influencer/has-pending-request`,
-        verb: 'get',
-        token,
-      });
-
-      if (res?.status == 200) {
-        setIsLoading(false);
-
-        if (res.response) {
-          setHasPendingRequest(true);
-        }
-      } else {
-        console.log('error', res?.response);
-      }
-    } catch (e: any) {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    getHasInfluencerProfile();
-  }, []);
-
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.headview}>
-        <GoBackIcon color={colors.text} />
-      </View>
-
-      {isLoading ? (
-        <ScrollView>
-          <ActivityIndicator animating={isLoading} size="large" color="#000" />
-        </ScrollView>
-      ) : (
-        <>
-          {hasPendingRequest ? (
-            <ScrollView>
-              <Text
-                style={{
-                  ...styles.heading,
-
-                  color: colors.text,
-                }}
-              >
-                Apply to be an Influencer
-              </Text>
-              <Text
-                style={{
-                  marginHorizontal: 25,
-                  ...styles.text,
-                }}
-              >
-                You have a pending request. We will get back to you as soon as possible.
-              </Text>
-            </ScrollView>
+    <View style={styles.safeArea}>
+      {/* Header */}
+      <SafeAreaView edges={['top']}>
+        <View style={styles.header}>
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialCommunityIcons name="chevron-left" size={32} color={OBPalette.primary.dark} />
+          </Pressable>
+          {Platform.OS === 'ios' ? (
+            <Text style={styles.headerTitle}>Creator Application</Text>
           ) : (
-            <>
-              <ScrollView>
-                <View style={{ marginHorizontal: 10, marginBottom: 80 }}>
-                  <Logo
-                    height={getHeight(14)}
-                    width={getWidth(40)}
-                    style={{ alignSelf: 'center' }}
-                  />
-
-                  <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 1 of 3</Text>
-                  <Text
-                    style={{
-                      ...styles.heading,
-
-                      color: colors.text,
-                      marginTop: 20,
-                    }}
-                  >
-                    Influencer rules
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontFamily: 'OpenSans-Regular',
-                      color: colors.text,
-                      fontSize: 16,
-                    }}
-                  >
-                    In order for you to become an Influencer on the One Body app, you must meet one
-                    of the following criteria:
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: 'OpenSans-Regular',
-                      color: colors.text,
-                      marginTop: 20,
-                      fontSize: 16,
-                    }}
-                  >
-                    <Text style={{ ...styles.point, color: colors.primary }}>a.</Text> User must be
-                    a Pastor or clergy member in local community. Confirmed through account review
-                    process. *Influencer accounts can be approved through cross-confirmation via
-                    organization confirmation process.
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: 'OpenSans-Regular',
-                      color: colors.text,
-                      marginTop: 20,
-                      fontSize: 16,
-                    }}
-                  >
-                    <Text style={{ ...styles.point, color: colors.primary }}>b.</Text> User must be
-                    a non-clergy public figure with a platform based on Christian values as defined
-                    by One Body. This will require account review.
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: 'OpenSans-Regular',
-                      color: colors.text,
-                      marginTop: 20,
-                      fontSize: 16,
-                    }}
-                  >
-                    <Text style={{ ...styles.point, color: colors.primary }}>c.</Text> Instagram
-                    account must be set to public. Accounts set to private cannot be aggregated.
-                    *RSS must be publicly available for News or Blog publishers.
-                  </Text>
-                </View>
-              </ScrollView>
-              <View style={styles.foter}>
-                <ImageBackground
-                  resizeMode="stretch"
-                  style={styles.backgroundimagestyle}
-                  // eslint-disable-next-line global-require
-                  source={require('@/assets/images/waveBG.png')}
-                >
-                  <View style={{ width: getWidth(10) }} />
-                  <View style={styles.progressBar}>
-                    <View style={styles.progressBarStatus} />
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('InfluencerStepTwo', {})}
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={styles.footerText}>Next</Text>
-                    <Ionicons name="chevron-forward" size={getFontSize(3)} />
-                  </TouchableOpacity>
-                </ImageBackground>
-              </View>
-            </>
+            <View style={styles.headerTitleAndroidWrap}>
+              <Text style={styles.headerTitle}>Creator Application</Text>
+            </View>
           )}
-        </>
-      )}
-    </SafeAreaView>
+          <View style={styles.headerSpacer} />
+        </View>
+      </SafeAreaView>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        contentInsetAdjustmentBehavior="automatic"
+        bounces={false}
+      >
+        {/* Banner with Concentric Circles */}
+        <View style={styles.bannerContainer}>
+          <View style={styles.circleOuter} />
+          <View style={styles.circleMiddle} />
+          <View style={styles.circleInner} />
+          <View style={styles.circleWhite}>
+            <MaterialCommunityIcons
+              name="shield-check-outline"
+              size={32}
+              color={OBPalette.primary.dark}
+            />
+          </View>
+        </View>
+
+        {/* Content Section */}
+        <View style={styles.contentContainer}>
+          <Text style={styles.heading}>Creator Requirements</Text>
+          <Text style={styles.subText}>
+            Please read the necessary requirements for a Creator account on One Body.
+          </Text>
+
+          {/* Requirements Card */}
+          <View style={styles.card}>
+            <Text style={styles.cardText}>
+              In order for you or your Organization to be a Creator, you must meet ONE of the
+              following criteria:
+            </Text>
+
+            <Text style={[styles.cardText, styles.paragraphSpacing]}>
+              A. You must be a Church, Pastor or clergy member in a local community.{' '}
+              <Text style={styles.italic}>Confirmed through account review process.</Text>
+            </Text>
+
+            <Text style={[styles.cardText, styles.paragraphSpacing]}>
+              B. You must be a non-clergy public figure or non-church Christian organization with a
+              platform based on Christian values as defined by One Body.{' '}
+              <Text style={styles.italic}>Confirmed through account review process.</Text>
+            </Text>
+
+            <Text style={[styles.cardText, styles.paragraphSpacing]}>
+              *Your RSS feed must be publicly available. For News or Blog publishers.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Footer / Start Button */}
+      <SafeAreaView edges={['bottom']}>
+        <View style={styles.footer}>
+          <Pressable
+            style={styles.startButton}
+            onPress={() => navigation.navigate('InfluencerStepTwo', {})}
+          >
+            <Text style={styles.startButtonText}>Start</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+  },
+  closeButton: {
+    width: APP_HEADER_SIDE_WIDTH,
+    height: APP_HEADER_ROW_HEIGHT,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  },
+  headerTitle: {
+    fontFamily: 'Rubik-Bold',
+    fontSize: 24,
+    fontWeight: '700',
+    color: OBPalette.grays.black,
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
+  },
+  headerSpacer: {
+    width: APP_HEADER_SIDE_WIDTH,
+    height: APP_HEADER_ROW_HEIGHT,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
+  bannerContainer: {
+    height: 140,
+    backgroundColor: OBPalette.primary.dark,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  circleOuter: {
+    position: 'absolute',
+    width: 375,
+    height: 375,
+    borderRadius: 187.5,
+    backgroundColor: OBPalette.primary.base, // Approximating #89B5C3
+    opacity: 0.8,
+  },
+  circleMiddle: {
+    position: 'absolute',
+    width: 241,
+    height: 241,
+    borderRadius: 120.5,
+    backgroundColor: OBPalette.primary[25],
+  },
+  circleInner: {
+    position: 'absolute',
+    width: 121,
+    height: 121,
+    borderRadius: 60.5,
+    backgroundColor: OBPalette.primary.lightest,
+  },
+  circleWhite: {
+    position: 'absolute',
+    width: 67,
+    height: 67,
+    borderRadius: 33.5,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+  },
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  heading: {
+    fontFamily: 'Rubik-SemiBold',
+    fontSize: 20,
+    fontWeight: '600',
+    color: OBPalette.grays.black,
+    marginBottom: 8,
+  },
+  subText: {
+    fontFamily: 'OpenSans-Regular',
+    fontSize: 14,
+    lineHeight: 21,
+    color: OBPalette.grays[500],
+    marginBottom: 20,
+  },
+  card: {
+    borderWidth: 1,
+    borderColor: OBPalette.grays[100],
+    borderRadius: 14,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  cardText: {
+    fontFamily: 'OpenSans-Regular',
+    fontSize: 16,
+    lineHeight: 24,
+    color: OBPalette.grays.black,
+  },
+  paragraphSpacing: {
+    marginTop: 16,
+  },
+  italic: {
+    fontStyle: 'italic',
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    paddingTop: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  startButton: {
+    backgroundColor: OBPalette.primary.dark,
+    borderRadius: 60,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  startButtonText: {
+    fontFamily: 'OpenSans-SemiBold',
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+});
+
 export default InfluencerStepOne;
