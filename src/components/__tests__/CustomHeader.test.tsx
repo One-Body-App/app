@@ -31,7 +31,7 @@ jest.mock('@react-navigation/native', () => ({
   })),
 }));
 
-jest.mock('react-native-fast-image', () => mockFastImageComponent);
+jest.mock('@/components/primitives/FastImage', () => mockFastImageComponent);
 jest.mock('@react-native-vector-icons/material-design-icons', () => mockMaterialIcon);
 
 describe('CustomHeader', () => {

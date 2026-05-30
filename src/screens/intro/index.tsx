@@ -1,19 +1,19 @@
+import { Image } from 'expo-image';
 import React, { useRef } from 'react';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   View,
   Animated,
   Easing,
   InteractionManager,
   StyleSheet,
-  Image,
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Color from 'color';
+import FastImage from '@/components/primitives/FastImage';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import getCachedIntroAvatars from '@/src/services/introAvatars';
 import { header, subheader } from '@/src/styles/typography';
@@ -52,7 +52,7 @@ const ASSETS = {
   discoverIcon: discoverIconImg,
 };
 
-type Props = StackScreenProps<MainStackParamList, 'Intro'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Intro'>;
 
 const INTRO_AVATAR_FALLBACKS = [
   ASSETS.avatar1,

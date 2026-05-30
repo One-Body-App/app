@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import RNFS from 'react-native-fs';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -31,7 +31,7 @@ import type {
 import { BRAND_COLORS, ServeHeader, useServePalette } from '../shared';
 import { buildApplicationsCsv, buildApplicationsCsvFileName } from './srvapplications.utils';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeApplications'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeApplications'>;
 
 type ApplicantCardTheme = {
   cardBg: string;

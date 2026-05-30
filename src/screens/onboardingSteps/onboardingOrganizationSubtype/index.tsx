@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Pressable, View } from 'react-native';
 
 import { useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -20,7 +20,7 @@ import {
   OrganizationSubtypeOption,
 } from '@/src/utils/organizationCategories';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationSubtype'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationSubtype'>;
 
 function SubtypeCard({
   item,

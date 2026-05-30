@@ -1,7 +1,7 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
-  Image,
   ListRenderItem,
   RefreshControl,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
@@ -45,7 +45,7 @@ import {
   useConnectPalette,
 } from '../shared';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoLanding'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoLanding'>;
 
 function EventItemSeparator() {
   return <View style={{ height: spacing.x13 }} />;

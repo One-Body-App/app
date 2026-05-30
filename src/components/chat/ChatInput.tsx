@@ -1,17 +1,9 @@
+import { Image } from 'expo-image';
 import React, { memo, useCallback, useEffect } from 'react';
-import {
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useNavigation, useTheme } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
 import ImagePicker from 'react-native-image-crop-picker';
 import { GiphyDialog, GiphyDialogEvent } from '@giphy/react-native-sdk';
@@ -120,7 +112,7 @@ function ChatInput({
   placeholder = 'Write your message',
 }: Props) {
   const { colors, dark } = useTheme();
-  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const toast = useToast();
   const primary = '#116a88';
   const textSecondary = dark ? '#7d96a0' : '#4f8596';

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -31,7 +31,7 @@ import {
   OrganizationCategoryKey,
 } from '@/src/utils/organizationCategories';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationType'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationType'>;
 
 type PickerItem = {
   label: string;

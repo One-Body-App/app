@@ -91,7 +91,9 @@ jest.mock('@invertase/react-native-apple-authentication', () => ({
 }));
 
 jest.mock('react-native-recaptcha-that-works', () => {
-  const Recaptcha = mockReact.forwardRef(() => null);
+  function Recaptcha() {
+    return null;
+  }
 
   return {
     __esModule: true,
@@ -171,12 +173,9 @@ jest.mock('react-native-keyboard-controller', () => {
 });
 
 jest.mock('react-native-webview', () => {
-  const MockWebView = mockReact.forwardRef((props, ref) =>
-    mockReact.createElement(mockView, {
-      ...props,
-      ref,
-    })
-  );
+  function MockWebView(props) {
+    return mockReact.createElement(mockView, props);
+  }
 
   return {
     __esModule: true,

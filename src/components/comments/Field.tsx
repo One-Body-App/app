@@ -10,15 +10,15 @@ import {
 } from 'react-native';
 import { CloseCircle, TickCircle } from 'iconsax-react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import FastImage from 'react-native-fast-image';
 import Color from 'color';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { useEffect, useRef, useState } from 'react';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useNavigation, useTheme } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
 import ImagePicker from 'react-native-image-crop-picker';
+import FastImage from '@/components/primitives/FastImage';
 import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
 import type { TaggedMention } from '@/utils/types';
 import { Colors } from '@/src/styles';
@@ -131,7 +131,7 @@ function CommentField({
   onCancelReply,
   focusRequestKey,
 }: Props) {
-  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const { dark, colors } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);

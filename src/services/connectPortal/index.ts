@@ -38,6 +38,12 @@ import type {
 const CONNECT_PORTAL_DRAFTS_STORAGE_KEY = '@onebody/connect-portal/drafts.v2';
 const CACHE_TTL_MS = 30_000;
 const DEFAULT_COORDINATE: Coordinate = [-84.388, 33.749];
+const CONNECT_PORTAL_CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+const CONNECT_PORTAL_NUMBER_FORMATTER = new Intl.NumberFormat('en-US');
 
 type ConnectPortalApiClient = {
   listPublicEvents: () => Promise<ConnectPortalPublishedEvent[]>;
@@ -284,24 +290,24 @@ const normalizeTicketTiers = (value: unknown): TicketTier[] => {
     return [];
   }
 
-  const items = value
-    .map((item, index) => {
-      if (!item || typeof item !== 'object') {
-        return null;
-      }
+  const items = value.flatMap((item, index) => {
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
 
-      const candidate = item as Partial<TicketTier> & {
-        quantity?: string | number;
-        price?: string | number;
-      };
-      return {
+    const candidate = item as Partial<TicketTier> & {
+      quantity?: string | number;
+      price?: string | number;
+    };
+    return [
+      {
         id: candidate.id || `ticket-${index + 1}`,
         name: String(candidate.name || '').trim() || `Ticket ${index + 1}`,
         quantity: String(candidate.quantity || '').trim() || '0',
         price: String(candidate.price || '').trim() || '0.00',
-      };
-    })
-    .filter(Boolean) as TicketTier[];
+      },
+    ];
+  });
 
   return items;
 };
@@ -605,13 +611,19 @@ const createDefaultApiClient = (): ConnectPortalApiClient => {
       const response = await unwrap<any[]>(
         ApiCall({ route: 'connect/events/public', verb: 'get' })
       );
-      return response.map(normalizePublishedEvent).filter(Boolean) as ConnectPortalPublishedEvent[];
+      return response.flatMap((item) => {
+        const event = normalizePublishedEvent(item);
+        return event ? [event] : [];
+      });
     },
     listOrganizerEvents: async () => {
       const response = await unwrap<any[]>(
         ApiCall({ route: 'connect/events/mine', verb: 'get', token: true })
       );
-      return response.map(normalizePublishedEvent).filter(Boolean) as ConnectPortalPublishedEvent[];
+      return response.flatMap((item) => {
+        const event = normalizePublishedEvent(item);
+        return event ? [event] : [];
+      });
     },
     getEvent: async (eventId: string) => {
       const response = await unwrap<any>(
@@ -714,7 +726,10 @@ export const createConnectPortalStorage = (
         return draftsCache;
       }
       draftsCache = sortByUpdatedDesc(
-        parsed.map(normalizeDraft).filter(Boolean) as ConnectPortalEventDraft[]
+        parsed.flatMap((item) => {
+          const draft = normalizeDraft(item);
+          return draft ? [draft] : [];
+        })
       );
       return draftsCache;
     } catch {
@@ -1232,7 +1247,10 @@ const normalizeServeJobRecord = (value: unknown): ConnectServeJobRecord | null =
     title: String(item.title || ''),
     description: String(item.description || ''),
     requirements: Array.isArray(item.requirements)
-      ? item.requirements.map((entry) => String(entry)).filter(Boolean)
+      ? item.requirements.flatMap((entry) => {
+          const requirement = String(entry);
+          return requirement ? [requirement] : [];
+        })
       : [],
     address: String(item.address || ''),
     coordinate: normalizeCoordinate(item.coordinate),
@@ -1256,17 +1274,20 @@ const normalizeServeJobRecord = (value: unknown): ConnectServeJobRecord | null =
 
 const normalizeServeJobRecords = (value: unknown): ConnectServeJobRecord[] =>
   Array.isArray(value)
-    ? (value.map(normalizeServeJobRecord).filter(Boolean) as ConnectServeJobRecord[])
+    ? value.flatMap((item) => {
+        const record = normalizeServeJobRecord(item);
+        return record ? [record] : [];
+      })
     : [];
 
 const sortServeJobsByUpdatedDesc = <T extends { updatedAt: string }>(items: T[]) =>
   [...items].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 
 export const parseConnectServeRequirements = (value: string): string[] =>
-  value
-    .split('\n')
-    .map((entry) => entry.replace(/^[\s•*-]+/, '').trim())
-    .filter(Boolean);
+  value.split('\n').flatMap((entry) => {
+    const requirement = entry.replace(/^[\s•*-]+/, '').trim();
+    return requirement ? [requirement] : [];
+  });
 
 export const formatConnectServeRequirementsText = (requirements: string[]): string =>
   requirements.join('\n');
@@ -1367,8 +1388,10 @@ const buildConnectServeJobDraftUpdateParams = (updates: Partial<ConnectServeJobD
 
   if (updates.requirements !== undefined) {
     params.requirements = updates.requirements
-      .map((entry) => String(entry || '').trim())
-      .filter(Boolean)
+      .flatMap((entry) => {
+        const requirement = String(entry || '').trim();
+        return requirement ? [requirement] : [];
+      })
       .slice(0, 50);
   }
 
@@ -1522,9 +1545,10 @@ export const listConnectServeJobApplications = async (
   }
 
   return Array.isArray(result.response)
-    ? (result.response
-        .map(normalizeServeJobApplicationRecord)
-        .filter(Boolean) as ConnectServeJobApplicationRecord[])
+    ? result.response.flatMap((item) => {
+        const record = normalizeServeJobApplicationRecord(item);
+        return record ? [record] : [];
+      })
     : [];
 };
 
@@ -1609,11 +1633,7 @@ export const getConnectServeCompensationLabel = (
 
   const numericAmount = Number(trimmedAmount);
   const formattedAmount = Number.isFinite(numericAmount)
-    ? new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(numericAmount)
+    ? CONNECT_PORTAL_CURRENCY_FORMATTER.format(numericAmount)
     : trimmedAmount;
 
   let suffix = '';
@@ -1679,7 +1699,10 @@ const normalizePlacesResponse = (value: unknown): ConnectPlacesResponse | null =
 
   const item = value as Partial<ConnectPlacesResponse> & { data?: unknown[] };
   const data = Array.isArray(item.data)
-    ? (item.data.map(normalizePlaceRecord).filter(Boolean) as ConnectPlaceRecord[])
+    ? item.data.flatMap((entry) => {
+        const place = normalizePlaceRecord(entry);
+        return place ? [place] : [];
+      })
     : [];
 
   return {
@@ -1900,14 +1923,10 @@ export const getEventLifecycleState = (
 ) => getLifecycleFilter(record, nowIso);
 
 export const formatConnectPortalCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(Number(amount || 0));
+  CONNECT_PORTAL_CURRENCY_FORMATTER.format(Number(amount || 0));
 
 export const formatConnectPortalNumber = (value: number) =>
-  new Intl.NumberFormat('en-US').format(Number(value || 0));
+  CONNECT_PORTAL_NUMBER_FORMATTER.format(Number(value || 0));
 
 export const formatConnectPortalPercent = (value: number) =>
   `${Math.round(Math.max(0, Math.min(1, Number(value || 0))) * 100)}%`;

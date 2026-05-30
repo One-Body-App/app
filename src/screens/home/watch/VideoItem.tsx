@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useState, useEffect, PropsWithChildren, useRef, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
@@ -41,7 +41,7 @@ type VideoItemProps = {
 };
 
 type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<HomeStackParamsList, 'Home'>,
+  NativeStackNavigationProp<HomeStackParamsList, 'Home'>,
   CompositeNavigationProp<
     DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
     BottomTabNavigationProp<MainBottomStackParamsList, 'HomeTab'>

@@ -5,12 +5,12 @@ import {
 } from '@react-navigation/drawer';
 import { Alert, StyleSheet, Pressable, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LogoutCurve, ProfileAdd, Profile2User, Setting2 } from 'iconsax-react-native';
 import Icon from '@react-native-vector-icons/ant-design';
 import Feather from '@react-native-vector-icons/feather';
 import { useTheme } from '@react-navigation/native';
+import FastImage from '@/components/primitives/FastImage';
 import { RootState } from '../redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import StyledText from '../components/styled/Text';

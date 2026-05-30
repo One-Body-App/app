@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import type { ConnectPortalTicketType } from '@/src/services/connectPortal';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep4'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep4'>;
 
 const isValidExternalEventUrl = (value: string) => {
   const trimmed = value.trim();

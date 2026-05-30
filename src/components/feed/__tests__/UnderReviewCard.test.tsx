@@ -3,7 +3,7 @@ import renderer, { act, type ReactTestInstance, type ReactTestRenderer } from 'r
 import { Pressable } from 'react-native';
 import UnderReviewCard from '../UnderReviewCard';
 
-jest.mock('react-native-fast-image', () => 'FastImage');
+jest.mock('@/components/primitives/FastImage', () => 'FastImage');
 
 jest.mock('@react-native-vector-icons/material-icons', () => 'MaterialIcons');
 

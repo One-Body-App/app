@@ -1,15 +1,15 @@
 import { Edit, Setting2, ProfileAdd, Star1, UserRemove, LogoutCurve } from 'iconsax-react-native';
 import React, { useState } from 'react';
 import { View, Pressable, ScrollView } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import Rate, { AndroidMarket } from 'react-native-rate';
 import Feather from '@react-native-vector-icons/feather';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import AntDesignIcon from '@react-native-vector-icons/ant-design';
 import { useDispatch } from 'react-redux';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import FastImage from '@/components/primitives/FastImage';
 import { MainDrawerParamsList, MyProfileStackParamsList } from '@/src/navigator/types';
 import { User } from '@/utils/types';
 import { spacing } from '@/src/styles/spacing';
@@ -44,11 +44,11 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
   const { colors } = useTheme();
   const navigation = useNavigation<
     | CompositeNavigationProp<
-        StackNavigationProp<MyProfileStackParamsList, 'MyProfile'>,
+        NativeStackNavigationProp<MyProfileStackParamsList, 'MyProfile'>,
         DrawerNavigationProp<MainDrawerParamsList, 'Main'>
       >
     | CompositeNavigationProp<
-        StackNavigationProp<MyProfileStackParamsList, 'EditProfile'>,
+        NativeStackNavigationProp<MyProfileStackParamsList, 'EditProfile'>,
         DrawerNavigationProp<MainDrawerParamsList, 'Main'>
       >
   >();

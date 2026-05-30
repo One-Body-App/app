@@ -1,14 +1,13 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  Dimensions,
   FlatList,
   type ListRenderItemInfo,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -17,6 +16,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import FastImage from '@/components/primitives/FastImage';
 import CustomVideo from '@/src/components/CustomVideo';
 import StyledText from '@/components/styled/Text';
 import { composerDurations } from './composerMotion';
@@ -214,9 +214,10 @@ export default function ComposerCanvas({
   onActiveIndexChange,
 }: ComposerCanvasProps): React.ReactElement {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
+  const windowDimensions = useWindowDimensions();
   const [layout, setLayout] = useState(() => ({
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height * 0.6,
+    width: windowDimensions.width,
+    height: windowDimensions.height * 0.6,
   }));
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<FlatList<MediaItem> | null>(null);

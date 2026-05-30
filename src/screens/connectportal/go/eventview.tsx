@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
-import {
-  Alert,
-  ImageBackground,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  Pressable,
-  View,
-} from 'react-native';
+import { ImageBackground } from 'expo-image';
+import { Alert, Linking, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -22,7 +14,7 @@ import {
 import type { ConnectPortalEventRecord } from '@/src/services/connectPortal';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventView'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoEventView'>;
 const STOCK_EVENT_IMAGE_URI =
   'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80';
 const BASE_HERO_IMAGE_HEIGHT = 320;

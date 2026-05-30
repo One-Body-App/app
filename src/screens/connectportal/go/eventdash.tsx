@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   createConnectPortalDraft,
@@ -24,7 +24,7 @@ import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { useConnectPalette } from '../shared';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventDash'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoEventDash'>;
 
 const HEADER_FONT_FAMILY = 'Rubik-Bold';
 const BODY_FONT_FAMILY = 'OpenSans-Regular';

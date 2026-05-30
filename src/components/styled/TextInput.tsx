@@ -1,4 +1,4 @@
-import { FC, ReactElement, ReactNode, forwardRef } from 'react';
+import { FC, ReactElement, ReactNode, Ref } from 'react';
 import { StyleSheet, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { openSans } from '@/src/styles/typography';
@@ -8,6 +8,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 
 interface Props extends TextInputProps {
+  ref?: Ref<TextInput>;
   label?: string;
   inputStyle?: TextStyle;
   wrapperStyle?: ViewStyle;
@@ -23,8 +24,9 @@ interface Props extends TextInputProps {
   customComponent?: ReactNode | FC;
 }
 
-export default forwardRef<TextInput, Props>((props, ref) => {
+function StyledTextInput(props: Props) {
   const {
+    ref,
     label,
     inputStyle,
     rightIcon,
@@ -133,7 +135,9 @@ export default forwardRef<TextInput, Props>((props, ref) => {
       ) : null}
     </View>
   );
-});
+}
+
+export default StyledTextInput;
 
 const styles = StyleSheet.create({
   input: {

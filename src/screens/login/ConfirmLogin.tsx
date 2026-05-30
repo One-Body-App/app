@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { useSignUp } from '@clerk/expo/legacy';
@@ -21,7 +21,7 @@ import { ApiCall } from '@/src/services/api';
 import { syncClerkUserProfile } from '@/src/services/clerkSync';
 import { getValidAccessToken } from '@/src/services/authTokens';
 
-type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
 function ConfirmLogin({ route, navigation }: Props) {
   const dispatch = useDispatch();

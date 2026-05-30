@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Text, Pressable, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@/components/primitives/FastImage';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import {
   FlatCommentItem,

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
@@ -20,7 +20,7 @@ import {
   type ServePalette,
 } from '../shared';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeHome'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeHome'>;
 
 const STATUS_OPTIONS = ['All', 'Draft', 'Public', 'Private'];
 const OPPORTUNITY_TYPE_OPTIONS = ['All', 'Full time', 'Part time'];

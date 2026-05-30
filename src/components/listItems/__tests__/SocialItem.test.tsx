@@ -51,7 +51,7 @@ jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
 }));
 
-jest.mock('react-native-fast-image', () => mockFastImageComponent);
+jest.mock('@/components/primitives/FastImage', () => mockFastImageComponent);
 
 jest.mock('@/utils/ResponsiveFun', () => ({
   timeSince: jest.fn(() => '2 years'),

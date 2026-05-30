@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
@@ -56,7 +56,7 @@ import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
 import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
 import { useTabBarAnimation } from '@/src/navigator/TabBarAnimationContext';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
 const CONNECT_PORTAL_TAB_BAR_OWNER = 'connect-portal';
 
 function ListItemSeparator() {

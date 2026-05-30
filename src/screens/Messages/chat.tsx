@@ -1,10 +1,10 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
   FlatList,
-  Image,
   Platform,
   Pressable,
   StatusBar,

@@ -5,6 +5,11 @@ import { fetchUserSuggestions, MentionUser } from '@/services/mentions';
 import { normalizeHandle } from './mentionUtils';
 
 type MentionSearchFn = typeof fetchUserSuggestions;
+type MentionSuggestionsState = {
+  suggestions: MentionUser[];
+  isLoading: boolean;
+  isError: boolean;
+};
 
 // eslint-disable-next-line import/prefer-default-export
 export const useMentionSuggestions = ({
@@ -24,9 +29,11 @@ export const useMentionSuggestions = ({
   searchUsers?: MentionSearchFn;
   excludedUserIds?: string[];
 }) => {
-  const [suggestions, setSuggestions] = useState<MentionUser[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
+  const [state, setState] = useState<MentionSuggestionsState>({
+    suggestions: [],
+    isLoading: false,
+    isError: false,
+  });
   const requestIdRef = useRef(0);
   const activeAbortRef = useRef<AbortController | null>(null);
 
@@ -38,9 +45,7 @@ export const useMentionSuggestions = ({
       activeAbortRef.current?.abort();
       activeAbortRef.current = null;
       requestIdRef.current += 1;
-      setSuggestions([]);
-      setIsLoading(false);
-      setIsError(false);
+      setState({ suggestions: [], isLoading: false, isError: false });
       return undefined;
     }
 
@@ -51,8 +56,7 @@ export const useMentionSuggestions = ({
 
       const controller = new AbortController();
       activeAbortRef.current = controller;
-      setIsLoading(true);
-      setIsError(false);
+      setState((current) => ({ ...current, isLoading: true, isError: false }));
 
       searchUsers({
         query: normalizedQuery,
@@ -67,14 +71,16 @@ export const useMentionSuggestions = ({
           }
 
           const excludedIds = new Set(
-            excludedUserIdsKey
-              .split(',')
-              .map((value) => value.trim())
-              .filter(Boolean)
+            excludedUserIdsKey.split(',').flatMap((value) => {
+              const trimmed = value.trim();
+              return trimmed ? [trimmed] : [];
+            })
           );
-          setSuggestions(response.filter((item) => !excludedIds.has(item.id)).slice(0, limit));
-          setIsLoading(false);
-          setIsError(false);
+          setState({
+            suggestions: response.filter((item) => !excludedIds.has(item.id)).slice(0, limit),
+            isLoading: false,
+            isError: false,
+          });
         })
         .catch((error: any) => {
           if (requestIdRef.current !== effectRequestId) {
@@ -82,13 +88,11 @@ export const useMentionSuggestions = ({
           }
 
           if (error?.name === 'AbortError') {
-            setIsLoading(false);
+            setState((current) => ({ ...current, isLoading: false }));
             return;
           }
 
-          setSuggestions([]);
-          setIsLoading(false);
-          setIsError(true);
+          setState({ suggestions: [], isLoading: false, isError: true });
         });
     }, debounceMs);
 
@@ -104,9 +108,5 @@ export const useMentionSuggestions = ({
     activeAbortRef.current = null;
   });
 
-  return {
-    suggestions,
-    isLoading,
-    isError,
-  };
+  return state;
 };

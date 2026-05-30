@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   formatConnectPortalDate,
@@ -17,7 +17,7 @@ import {
 } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Review'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Review'>;
 
 const PUBLISH_ERROR_FALLBACK = 'Unable to publish event. Please try again.';
 

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomModal from '@/src/components/CustomModal';
@@ -25,7 +25,7 @@ import {
 } from '@/src/styles/headerLayout';
 import { validateFields } from '@/utils/validation/validate-fields';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepTwo'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'InfluencerStepTwo'>;
 
 const MAX_BIO_LENGTH = 500;
 const DOMAIN_PATTERN = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:[/?#].*)?$/;

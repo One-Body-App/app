@@ -13,7 +13,7 @@ import {
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
 
 import Toast, { useToast } from 'react-native-toast-notifications';
@@ -44,7 +44,7 @@ import StyledTextInput from '../styled/TextInput';
 import CustomModal from '../CustomModal';
 
 type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<PrayerWallStackParamsList, 'index'>,
+  NativeStackNavigationProp<PrayerWallStackParamsList, 'index'>,
   CompositeNavigationProp<
     DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>

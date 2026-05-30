@@ -57,7 +57,7 @@ jest.mock('@/src/services/api', () => ({
   ApiCall: (...args: unknown[]) => mockApiCall(...args),
 }));
 
-jest.mock('react-native-fast-image', () => {
+jest.mock('@/components/primitives/FastImage', () => {
   // eslint-disable-next-line global-require
   const React = require('react');
   const component = ({

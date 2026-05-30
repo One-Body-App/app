@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -51,7 +51,7 @@ import {
 } from '@/src/screens/post/uploadImageOrientation';
 
 type MaterialCommunityIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-type Props = StackScreenProps<MainStackParamList, 'UploadImage'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'UploadImage'>;
 
 type ToolId = 'crop' | 'filters' | 'adjust' | 'text' | 'stickers';
 type RatioId = 'free' | '9:16' | '3:4' | '1:1';

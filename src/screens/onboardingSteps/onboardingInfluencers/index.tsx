@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Image, Pressable, FlatList, RefreshControl, Platform } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { View, Pressable, FlatList, RefreshControl, Platform } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { serialize } from 'object-to-formdata';
@@ -24,7 +25,7 @@ import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
 const influencerListInsets = { bottom: spacing.x48 };
 const influencerListAndroidPadding =

@@ -1,4 +1,4 @@
-import { unescape } from 'lodash';
+import unescape from 'lodash/unescape';
 import { Linking } from 'react-native';
 
 import Config from 'react-native-config';

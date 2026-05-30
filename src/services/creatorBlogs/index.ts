@@ -117,7 +117,10 @@ export const createCreatorBlogService = (dependencies?: Partial<CreatorBlogDepen
         return [];
       }
 
-      return parsed.map(normalizeBlog).filter(Boolean) as CreatorBlogRecord[];
+      return parsed.flatMap((item) => {
+        const blog = normalizeBlog(item);
+        return blog ? [blog] : [];
+      });
     } catch {
       return [];
     }
@@ -295,7 +298,14 @@ export const createCreatorBlogService = (dependencies?: Partial<CreatorBlogDepen
       status: input.status || 'draft',
       createdAt: existingIndex >= 0 ? blogs[existingIndex].createdAt : now,
       updatedAt: now,
-      publishedAt: existingIndex >= 0 ? blogs[existingIndex].publishedAt : null,
+      publishedAt:
+        input.status === 'published'
+          ? existingIndex >= 0
+            ? blogs[existingIndex].publishedAt || now
+            : now
+          : existingIndex >= 0
+            ? blogs[existingIndex].publishedAt
+            : null,
       readCount: existingIndex >= 0 ? blogs[existingIndex].readCount : 0,
       shareCount: existingIndex >= 0 ? blogs[existingIndex].shareCount : 0,
       commentCount: existingIndex >= 0 ? blogs[existingIndex].commentCount : 0,
@@ -327,24 +337,8 @@ export const createCreatorBlogService = (dependencies?: Partial<CreatorBlogDepen
     }
 
     const saved = await saveDraft(profile, { ...input, status: 'published' });
-    const blogs = await readBlogs();
-    const index = blogs.findIndex((blog) => blog.id === saved.id);
-    if (index < 0) {
-      return { blog: null, validationErrors };
-    }
 
-    const now = resolvedDependencies.now();
-    const nextBlogs = [...blogs];
-    nextBlogs[index] = {
-      ...nextBlogs[index],
-      status: 'published',
-      slug: createSlug(saved.title, saved.id),
-      publishedAt: nextBlogs[index].publishedAt || now,
-      updatedAt: now,
-    };
-    await writeBlogs(nextBlogs);
-
-    return { blog: nextBlogs[index], validationErrors: {} };
+    return { blog: saved, validationErrors: {} };
   };
 
   const archiveBlog = async (blogId: string) => {

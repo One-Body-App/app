@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useMentionComposer } from '@/components/mentions';
@@ -48,7 +48,7 @@ import {
   type ModerationStatus,
 } from './types';
 
-type Props = StackScreenProps<MainStackParamList, 'Post'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Post'>;
 
 const MAX_CAPTION_LENGTH = 300;
 

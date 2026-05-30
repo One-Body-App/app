@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { GiphyMediaView } from '@giphy/react-native-sdk';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@/components/primitives/FastImage';
 import { Colors } from '@/src/styles';
 import { ImageForSlider } from './types';
 

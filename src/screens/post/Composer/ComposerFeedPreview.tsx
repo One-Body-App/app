@@ -1,6 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import FastImage from '@/components/primitives/FastImage';
 import StyledText from '@/components/styled/Text';
 import { composerDurations, composerEasings } from './composerMotion';
 import {

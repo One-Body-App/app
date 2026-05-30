@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { StyleSheet, Pressable, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useSelector } from 'react-redux';
@@ -22,7 +22,7 @@ import { spacing } from '@/src/styles/spacing';
 import SettingsSheet from './SettingsSheet';
 
 type Props = CompositeScreenProps<
-  StackScreenProps<MyProfileStackParamsList, 'MyProfile'>,
+  NativeStackScreenProps<MyProfileStackParamsList, 'MyProfile'>,
   CompositeScreenProps<
     DrawerScreenProps<MainDrawerParamsList, 'Main'>,
     BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>

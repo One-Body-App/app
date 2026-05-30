@@ -1,9 +1,10 @@
+import { Image } from 'expo-image';
 import { memo } from 'react';
-import { Image, Platform, Text, Pressable, View } from 'react-native';
+import { Platform, Text, Pressable, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import FastImage from 'react-native-fast-image';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+import FastImage from '@/components/primitives/FastImage';
 import RepeatIcon from '@/assets/icons/repeat.svg';
 import SendIcon from '@/assets/icons/send.svg';
 import { NO_PROFILE_IMAGE } from '@/services/constants';

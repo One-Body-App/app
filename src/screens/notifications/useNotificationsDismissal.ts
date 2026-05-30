@@ -21,6 +21,7 @@ export function useNotificationsDismissal({
 }) {
   const tabBarAnimationRef = useRef(tabBarAnimation);
   const hasHandledDismissalRef = useRef(false);
+  const runDismissalCleanupRef = useRef<() => void>(() => undefined);
   tabBarAnimationRef.current = tabBarAnimation;
 
   const runDismissalCleanup = useCallback(() => {
@@ -34,6 +35,7 @@ export function useNotificationsDismissal({
       tabBarAnimation: tabBarAnimationRef.current,
     });
   }, [navigation]);
+  runDismissalCleanupRef.current = runDismissalCleanup;
 
   const handleCloseNotifications = useCallback(() => {
     hasHandledDismissalRef.current = true;
@@ -46,7 +48,13 @@ export function useNotificationsDismissal({
   useEffect(() => {
     hasHandledDismissalRef.current = false;
 
-    const subscription = navigation.addListener?.('beforeRemove', runDismissalCleanup);
+    if (!navigation.addListener) {
+      return undefined;
+    }
+
+    const subscription = navigation.addListener('beforeRemove', () => {
+      runDismissalCleanupRef.current();
+    });
 
     return () => {
       if (typeof subscription === 'function') {
@@ -56,7 +64,7 @@ export function useNotificationsDismissal({
 
       subscription?.remove?.();
     };
-  }, [navigation, runDismissalCleanup]);
+  }, [navigation]);
 
   return handleCloseNotifications;
 }

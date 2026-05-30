@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
@@ -21,7 +21,7 @@ import { Colors, Typography } from '@/src/styles';
 import { preloadSoundEffect, playSoundEffect } from '@/src/services/soundEffects';
 import pickerClickSound from '../../../assets/sounds/click.wav';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
 
 // Configuration for the Wheel Picker
 const ITEM_HEIGHT = 90; // Height of each year item

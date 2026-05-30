@@ -1,12 +1,13 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import { Image, Pressable, StyleProp, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import FastImage from 'react-native-fast-image';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
 import { decode } from 'html-entities';
+import FastImage from '@/components/primitives/FastImage';
 
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
@@ -46,7 +47,7 @@ import {
 } from './socialMediaHelpers';
 
 type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
+  NativeStackNavigationProp<ExploreStackParamsList, 'Explore'>,
   CompositeNavigationProp<
     DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
@@ -209,6 +210,40 @@ const buildLinkPreview = (url: string, html: string): LinkPreview => {
     siteName: siteName ? decode(siteName) : undefined,
     imageUrl: absoluteImage,
   };
+};
+
+const fetchLinkPreviewHtml = async (url: string, signal: AbortSignal) => {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'text/html,application/xhtml+xml',
+      Range: `bytes=0-${LINK_PREVIEW_MAX_BYTES - 1}`,
+      'User-Agent': 'Mozilla/5.0 (compatible; OneBodyApp/1.0)',
+    },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error('Preview fetch failed');
+  }
+
+  const resolvedUrl = response.url || url;
+  if (!isSafeHttpUrl(resolvedUrl)) {
+    throw new Error('Unsafe preview redirect');
+  }
+
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+  if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+    throw new Error('Unsupported preview response type');
+  }
+
+  const contentLength = Number(response.headers.get('content-length') ?? '0');
+  if (Number.isFinite(contentLength) && contentLength > LINK_PREVIEW_MAX_BYTES) {
+    throw new Error('Preview response too large');
+  }
+
+  const html = (await response.text()).slice(0, LINK_PREVIEW_MAX_BYTES);
+  return { resolvedUrl, html };
 };
 
 const buildFallbackLinkPreview = (url: string): LinkPreview => ({
@@ -502,39 +537,10 @@ function SocialItem({
         }, LINK_PREVIEW_TIMEOUT_MS);
 
         try {
-          const response = await fetch(safeContentUrl, {
-            method: 'GET',
-            headers: {
-              Accept: 'text/html,application/xhtml+xml',
-              Range: `bytes=0-${LINK_PREVIEW_MAX_BYTES - 1}`,
-              'User-Agent': 'Mozilla/5.0 (compatible; OneBodyApp/1.0)',
-            },
-            signal: controller.signal,
-          });
-
-          if (!response.ok) {
-            throw new Error('Preview fetch failed');
-          }
-
-          const resolvedUrl = response.url || safeContentUrl;
-          if (!isSafeHttpUrl(resolvedUrl)) {
-            throw new Error('Unsafe preview redirect');
-          }
-
-          const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
-          if (
-            !contentType.includes('text/html') &&
-            !contentType.includes('application/xhtml+xml')
-          ) {
-            throw new Error('Unsupported preview response type');
-          }
-
-          const contentLength = Number(response.headers.get('content-length') ?? '0');
-          if (Number.isFinite(contentLength) && contentLength > LINK_PREVIEW_MAX_BYTES) {
-            throw new Error('Preview response too large');
-          }
-
-          const html = (await response.text()).slice(0, LINK_PREVIEW_MAX_BYTES);
+          const { resolvedUrl, html } = await fetchLinkPreviewHtml(
+            safeContentUrl,
+            controller.signal
+          );
           if (!isActive) return;
 
           const nextPreview = buildLinkPreview(resolvedUrl, html);

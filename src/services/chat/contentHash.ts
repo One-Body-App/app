@@ -12,7 +12,12 @@ type HashArgs = {
 const normalizeText = (value?: string) => String(value || '').trimEnd();
 
 const normalizeMediaUrls = (value?: string[]) =>
-  Array.isArray(value) ? value.map((item) => String(item || '').trim()).filter(Boolean) : [];
+  Array.isArray(value)
+    ? value.flatMap((item) => {
+        const trimmed = String(item || '').trim();
+        return trimmed ? [trimmed] : [];
+      })
+    : [];
 
 export const buildChatContentHash = (args: HashArgs) => {
   const payload = JSON.stringify({

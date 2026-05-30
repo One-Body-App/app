@@ -1,6 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { Add, Calendar, Link21, Location, ShieldTick, HomeHashtag } from 'iconsax-react-native';
@@ -8,6 +8,7 @@ import { format, parseISO } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
+import FastImage from '@/components/primitives/FastImage';
 
 import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';

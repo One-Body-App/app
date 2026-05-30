@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { getConnectPortalEventById } from '@/src/services/connectPortal';
 import { useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { borderRadius } from '@/src/styles/outlines';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep7Success'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep7Success'>;
 const GO_EVENT_BUTTON_RADIUS = borderRadius.button;
 
 function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {

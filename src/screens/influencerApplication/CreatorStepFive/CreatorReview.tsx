@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { SettingsStackParamsList } from '@/src/navigator/types';
@@ -18,7 +18,7 @@ import {
   APP_HEADER_TITLE_LINE_HEIGHT,
 } from '@/src/styles/headerLayout';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'CreatorReview'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'CreatorReview'>;
 
 const DEFAULT_APPLICATION_DATA = {
   bio: 'No bio provided.',

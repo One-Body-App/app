@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, Switch, View } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import { Lock1 } from 'iconsax-react-native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,7 +14,7 @@ import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'PrivacySettings'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'PrivacySettings'>;
 
 function PrivacySettings(_props: Props) {
   const dispatch = useDispatch();

@@ -1,8 +1,8 @@
 import React, { ReactNode } from 'react';
 import { View, Pressable, Platform, StyleSheet } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
-import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import FastImage from '@/components/primitives/FastImage';
 import { Colors } from '@/src/styles';
 import {
   APP_HEADER_ANDROID_TITLE_PADDING_LEFT,

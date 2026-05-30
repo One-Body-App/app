@@ -1,14 +1,13 @@
+import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   Animated,
-  Image,
   Platform,
   StyleProp,
   Pressable,
   View,
   ViewStyle,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -16,6 +15,7 @@ import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
+import FastImage from '@/components/primitives/FastImage';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { HapticService } from '@/src/services/haptic';
 import { Colors } from '@/src/styles';

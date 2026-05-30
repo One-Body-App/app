@@ -1,8 +1,8 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Share, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Share, Platform, Pressable, StyleSheet, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import FastImage from 'react-native-fast-image';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -11,6 +11,7 @@ import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import Toast from 'react-native-simple-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import FastImage from '@/components/primitives/FastImage';
 
 import StyledText from '@/src/components/styled/Text';
 import ParsedText from '@/components/mentions/ParsedText';

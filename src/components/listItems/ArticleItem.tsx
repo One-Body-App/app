@@ -1,15 +1,15 @@
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import isObject from 'lodash/isObject';
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleProp, TextStyle, Pressable, View, ViewStyle } from 'react-native';
-import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
+import FastImage, { ImageStyle, ResizeMode } from '@/components/primitives/FastImage';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '../styled/Text';
 import BaseItem from './BaseItem';
@@ -52,7 +52,7 @@ const areArticleItemPropsEqual = (prev: ArticleItemProps, next: ArticleItemProps
 };
 
 type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
+  NativeStackNavigationProp<ExploreStackParamsList, 'Explore'>,
   CompositeNavigationProp<
     DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
@@ -75,11 +75,8 @@ function ArticleItem({
   const { colors, dark } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const navigation = useNavigation<ScreenNavigationProp>();
-  const [itemData, setItemData] = useState(item);
+  const [failedImageUrls, setFailedImageUrls] = useState<ReadonlySet<string>>(() => new Set());
 
-  useLayoutEffect(() => {
-    setItemData(item);
-  }, [item]);
   let myReaction: SocialPostReaction | undefined;
   item.reactions?.forEach((reaction) => {
     if (reaction.userId === user?._id) {
@@ -87,7 +84,9 @@ function ArticleItem({
     }
   });
 
-  const articleId = itemData?.id ?? '';
+  const articleId = item?.id ?? '';
+  const imageUrl = item?.image?.url ?? NO_POST_IMAGE_URL;
+  const displayedImageUrl = failedImageUrls.has(imageUrl) ? NO_POST_IMAGE_URL : imageUrl;
   const rssImageFrameBackgroundColor =
     imageSizeType === 'contain' ? Colors.rssContainFrame : 'transparent';
   const rssNoShadowStyle = {
@@ -110,7 +109,7 @@ function ArticleItem({
   return (
     <BaseItem
       postData={{
-        title: isObject(itemData?.title) ? itemData?.title?.a.$text : itemData?.title,
+        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
 
         id: item.id,
         type: PostType.rss,
@@ -126,14 +125,14 @@ function ArticleItem({
         sourceType: 'rss',
         sourceId: String(item.id ?? ''),
         sourcePreview: {
-          title: isObject(itemData?.title) ? itemData?.title?.a.$text : itemData?.title,
+          title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
           link: item.link,
         },
         originFeedType,
       }}
-      created={itemData?.created}
+      created={item?.created}
       userData={item.userData}
-      isApprovedInfluencer={itemData.userData.isApprovedInfluencer}
+      isApprovedInfluencer={item.userData.isApprovedInfluencer}
       onPress={() => {
         if (item.userData._id !== user?._id) {
           navigation.navigate('Main', {
@@ -157,7 +156,7 @@ function ArticleItem({
           onTelemetryEvent?.('post_open', {
             postType: 'rss',
           });
-          if (itemData?.link) OpenURLButton(itemData?.link);
+          if (item?.link) OpenURLButton(item?.link);
           if (onPress) onPress(item);
         }}
       >
@@ -195,14 +194,15 @@ function ArticleItem({
                 : { width: '100%', height: '100%' }
             }
             resizeMode="cover"
-            source={{ uri: itemData?.image?.url ?? NO_POST_IMAGE_URL }}
+            source={{ uri: displayedImageUrl }}
             onError={() => {
-              // console.log('error', itemData?.image?.url, error);
-              setItemData({
-                ...itemData,
-                image: {
-                  url: NO_POST_IMAGE_URL,
-                },
+              setFailedImageUrls((current) => {
+                if (current.has(imageUrl)) {
+                  return current;
+                }
+                const next = new Set(current);
+                next.add(imageUrl);
+                return next;
               });
             }}
           />
@@ -239,16 +239,14 @@ function ArticleItem({
                   blogPostTitleStyle,
                 ]}
               >
-                {isObject(itemData?.title)
-                  ? decode(itemData?.title?.a.$text)
-                  : decode(itemData?.title)}
+                {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
               </StyledText>
-              {itemData?.description ? (
+              {item?.description ? (
                 <StyledText
                   numberOfLines={2}
                   style={{ color: Colors.neutral['500'], marginTop: 2 }}
                 >
-                  {itemData.description}
+                  {item.description}
                 </StyledText>
               ) : null}
             </View>

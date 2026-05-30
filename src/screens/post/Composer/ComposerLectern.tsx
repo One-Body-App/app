@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Platform,
   Pressable,
@@ -8,12 +8,11 @@ import {
   type TextInput as RNTextInput,
 } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { MentionInput, useMentionSuggestions } from '@/components/mentions';
 import StyledText from '@/components/styled/Text';
-import { composerLecternSpring } from './composerMotion';
 import {
   composerSpace,
   composerType,
@@ -66,11 +65,18 @@ const ToolButton = React.memo(function ToolButton({
   def: LecternToolDef;
   palette: ComposerPalette;
   expanded: boolean;
-  onPress: (event: GestureResponderEvent) => void;
+  onPress: (tool: LecternToolId) => void;
 }) {
+  const handlePress = useCallback(
+    (_event: GestureResponderEvent) => {
+      onPress(def.id);
+    },
+    [def.id, onPress]
+  );
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={`Add ${def.label.toLowerCase()}`}
       style={({ pressed }) => [
@@ -123,44 +129,12 @@ export default function ComposerLectern({
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
   const collapsedHeight = composerSpace.lecternCollapsedHeight;
   const expandedHeight = composerSpace.lecternExpandedHeight;
-  const heightValue = useSharedValue(expanded ? expandedHeight : collapsedHeight);
-
-  React.useEffect(() => {
-    heightValue.value = withSpring(
-      expanded ? expandedHeight : collapsedHeight,
-      composerLecternSpring
-    );
-  }, [collapsedHeight, expanded, expandedHeight, heightValue]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: heightValue.value,
-  }));
-
-  const dragStartHeight = useSharedValue(collapsedHeight);
   const dragGesture = Gesture.Pan()
-    .onBegin(() => {
+    .onEnd((event) => {
       'worklet';
 
-      dragStartHeight.value = heightValue.value;
-    })
-    .onChange((event) => {
-      'worklet';
-
-      const next = Math.min(
-        expandedHeight,
-        Math.max(collapsedHeight, dragStartHeight.value - event.translationY)
-      );
-      heightValue.value = next;
-    })
-    .onEnd(() => {
-      'worklet';
-
-      const midpoint = (expandedHeight + collapsedHeight) / 2;
-      const shouldExpand = heightValue.value >= midpoint;
-      heightValue.value = withSpring(
-        shouldExpand ? expandedHeight : collapsedHeight,
-        composerLecternSpring
-      );
+      const shouldExpand = expanded ? event.translationY < 48 : event.translationY < -24;
+      runOnJS(onExpandedChange)(shouldExpand);
     })
     .runOnJS(false);
 
@@ -179,14 +153,14 @@ export default function ComposerLectern({
   });
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.lectern,
-        animatedStyle,
+        expanded ? styles.lecternExpanded : styles.lecternCollapsed,
         {
           backgroundColor: palette.glass,
           borderColor: palette.glassBorder,
-          shadowColor: palette.shadow,
+          boxShadow: `0 -8px 24px ${palette.shadow}`,
         },
       ]}
     >
@@ -217,7 +191,7 @@ export default function ComposerLectern({
               def={tool}
               palette={palette}
               expanded={expanded}
-              onPress={() => onToolPress(tool.id)}
+              onPress={onToolPress}
             />
           ))}
         </View>
@@ -259,7 +233,7 @@ export default function ComposerLectern({
           </View>
         ) : null}
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -273,10 +247,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: composerSpace.lecternRadius,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 18,
+  },
+  lecternCollapsed: {
+    height: composerSpace.lecternCollapsedHeight,
+  },
+  lecternExpanded: {
+    height: composerSpace.lecternExpandedHeight,
   },
   handleHitArea: {
     alignItems: 'center',

@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
@@ -16,7 +16,7 @@ import { ApiCall } from '@/services/api';
 import StyledSelect from '@/components/styled/Select';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchType'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingChurchType'>;
 
 function OnboardingChurchType({ navigation }: Props) {
   const { dark, colors } = useTheme();

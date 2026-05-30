@@ -51,7 +51,7 @@ jest.mock('react-native-simple-toast', () => ({
   show: jest.fn(),
 }));
 jest.mock('react-native-linear-gradient', () => 'LinearGradient');
-jest.mock('react-native-fast-image', () => 'FastImage');
+jest.mock('@/components/primitives/FastImage', () => 'FastImage');
 
 jest.mock('@/src/components/styled/Text', () => 'StyledText');
 jest.mock('@/src/components/listItems/OptionsModal', () => 'OptionsModal');

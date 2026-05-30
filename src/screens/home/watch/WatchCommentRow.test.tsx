@@ -4,7 +4,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 import WatchCommentRow from './WatchCommentRow';
 
 jest.mock('@react-native-vector-icons/material-design-icons', () => 'MaterialCommunityIcons');
-jest.mock('react-native-fast-image', () => 'FastImage');
+jest.mock('@/components/primitives/FastImage', () => 'FastImage');
 jest.mock('@/services/constants', () => ({
   NO_PROFILE_IMAGE: 'https://example.com/fallback.png',
 }));

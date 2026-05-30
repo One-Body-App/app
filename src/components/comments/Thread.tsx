@@ -16,7 +16,6 @@ import {
   ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import FastImage from 'react-native-fast-image';
 import { useSelector } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +28,7 @@ import {
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
 import { useToast } from 'react-native-toast-notifications';
+import FastImage from '@/components/primitives/FastImage';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import { NO_PROFILE_IMAGE } from '@/services/constants';

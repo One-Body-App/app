@@ -51,10 +51,10 @@ export const estimateReadTimeMinutes = (value: string) => {
 };
 
 export const getParagraphs = (value: string) =>
-  value
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+  value.split(/\n{2,}/).flatMap((paragraph) => {
+    const trimmed = paragraph.trim();
+    return trimmed ? [trimmed] : [];
+  });
 
 export const buildPreviewText = (value: string, paragraphCount: number) =>
   getParagraphs(value).slice(0, paragraphCount).join('\n\n');

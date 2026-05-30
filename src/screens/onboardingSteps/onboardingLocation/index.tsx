@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -12,7 +12,7 @@ import { Colors, Typography } from '@/src/styles';
 import MapBox from '@/components/MapBox';
 import type { MapSuggestion } from '@/components/MapBoxTypes';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
 
 function OnboardingLocation({ navigation, route }: Props) {
   const { dark, colors } = useTheme();

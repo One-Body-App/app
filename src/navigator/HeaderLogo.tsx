@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '@react-navigation/native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@/components/primitives/FastImage';
 
 const logoWhite = require('@/assets/images/logo_header_white.png');
 const logoHeader = require('@/assets/images/logo_header.png');

@@ -12,11 +12,12 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
+  Modal,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useDispatch, useSelector } from 'react-redux';
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { useFocusEffect, useIsFocused, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -96,9 +97,23 @@ const ConnectionRow = React.memo(function ConnectionRow({
   onOpenUser,
   onRemove,
 }: ConnectionRowProps) {
+  const [isImagePreviewVisible, setIsImagePreviewVisible] = useState(false);
+  const imageUri =
+    item?.profileImage && item.profileImage !== ''
+      ? item.profileImage
+      : 'https://cdn.onebodyapp.com/user/no-image.png';
+
   const handleOpenUser = useCallback(() => {
     onOpenUser(item?._id);
   }, [item?._id, onOpenUser]);
+
+  const handleOpenImagePreview = useCallback(() => {
+    setIsImagePreviewVisible(true);
+  }, []);
+
+  const handleCloseImagePreview = useCallback(() => {
+    setIsImagePreviewVisible(false);
+  }, []);
 
   const handleRemove = useCallback(() => {
     if (item?._id) {
@@ -113,16 +128,33 @@ const ConnectionRow = React.memo(function ConnectionRow({
     >
       <View style={styles.listItemContent}>
         <View style={styles.imageWrapper}>
-          <ImageModal
-            resizeMode="cover"
-            style={[profileImageList as any, styles.profileImage]}
-            source={{
-              uri:
-                item?.profileImage && item?.profileImage !== ''
-                  ? item?.profileImage
-                  : 'https://cdn.onebodyapp.com/user/no-image.png',
-            }}
-          />
+          <Pressable
+            accessibilityLabel={`View ${item?.name ?? 'connection'} profile image`}
+            accessibilityRole="imagebutton"
+            hitSlop={8}
+            onPress={handleOpenImagePreview}
+          >
+            <ExpoImage
+              contentFit="cover"
+              style={[profileImageList as any, styles.profileImage]}
+              source={{ uri: imageUri }}
+            />
+          </Pressable>
+
+          <Modal
+            animationType="fade"
+            transparent
+            visible={isImagePreviewVisible}
+            onRequestClose={handleCloseImagePreview}
+          >
+            <Pressable style={styles.imagePreviewBackdrop} onPress={handleCloseImagePreview}>
+              <ExpoImage
+                contentFit="contain"
+                style={styles.imagePreview}
+                source={{ uri: imageUri }}
+              />
+            </Pressable>
+          </Modal>
         </View>
 
         <View style={styles.userInfoWrapper}>
@@ -634,6 +666,17 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: OBPalette.grays[100],
+  },
+  imagePreviewBackdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.86)',
+    padding: 24,
+  },
+  imagePreview: {
+    width: '100%',
+    height: '82%',
   },
   userInfoWrapper: {
     flex: 1,

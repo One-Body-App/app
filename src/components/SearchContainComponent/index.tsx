@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 /* eslint-disable global-require */
 import React, { useCallback } from 'react';
-import { FlatList, Image, Text, Pressable, View } from 'react-native';
+import { FlatList, Text, Pressable, View } from 'react-native';
 import Entypo from '@react-native-vector-icons/entypo';
 import AntDesign from '@react-native-vector-icons/ant-design';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';

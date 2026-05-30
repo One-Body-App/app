@@ -1,8 +1,8 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   Pressable,
   ScrollView,

@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   getConnectServeJobDraftById,
@@ -23,7 +23,7 @@ import type { ConnectServeJobApplicationMethod } from '@/src/services/connectPor
 import { CreateFlowLayout, useCreateFlowPalette } from '../../go/createflow/shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeCreateJobStep2'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeCreateJobStep2'>;
 
 type SelectOption = {
   label: string;
@@ -278,8 +278,11 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
             return;
           }
           try {
-            await persistDraft(2);
-            const publishedJob = await publishConnectServeJobDraft(draftId);
+            const savedDraft = await persistDraft(2);
+            if (!savedDraft) {
+              return;
+            }
+            const publishedJob = await publishConnectServeJobDraft(savedDraft.id);
             await serve.refresh();
             navigation.navigate('ConnectServeApplications', { jobId: publishedJob.id });
           } catch (error) {

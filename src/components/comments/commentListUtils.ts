@@ -91,11 +91,10 @@ export const toSerializableCommentSnapshot = (
   const createdAtIso = toSerializableDate(comment.created);
   const updatedAtIso = toSerializableDate(comment.updated);
   const commentDateIso = toSerializableDate(comment.date);
-  const replies = getCommentReplies(comment)
-    .map((reply) => toSerializableCommentSnapshot(reply))
-    .filter((replySnapshot): replySnapshot is SerializableCommentSnapshot =>
-      Boolean(replySnapshot)
-    );
+  const replies = getCommentReplies(comment).flatMap((reply) => {
+    const replySnapshot = toSerializableCommentSnapshot(reply);
+    return replySnapshot ? [replySnapshot] : [];
+  });
 
   return {
     _id: comment._id ? String(comment._id) : undefined,
@@ -145,9 +144,10 @@ export const fromSerializableCommentSnapshot = (
     fallbackId;
   const dateIso = toSerializableDate(snapshot.date) ?? createdDate.toISOString();
   const normalizedReplies = Array.isArray(snapshot.response)
-    ? snapshot.response
-        .map((replySnapshot) => fromSerializableCommentSnapshot(replySnapshot))
-        .filter((reply): reply is CommentPost => Boolean(reply))
+    ? snapshot.response.flatMap((replySnapshot) => {
+        const reply = fromSerializableCommentSnapshot(replySnapshot);
+        return reply ? [reply] : [];
+      })
     : [];
 
   return {
@@ -375,31 +375,31 @@ export const removeCommentFromTree = (
 ): CommentDeleteResult => {
   let removedCount = 0;
 
-  const comments = nodes
-    .map((node) => {
-      const nodeId = getCommentId(node);
-      if (nodeId === targetId) {
-        removedCount += countCommentsInTree([node]);
-        return null;
-      }
+  const comments = nodes.flatMap((node) => {
+    const nodeId = getCommentId(node);
+    if (nodeId === targetId) {
+      removedCount += countCommentsInTree([node]);
+      return [];
+    }
 
-      const currentReplies = Array.isArray(node.response) ? node.response : [];
-      if (currentReplies.length < 1) {
-        return node;
-      }
+    const currentReplies = Array.isArray(node.response) ? node.response : [];
+    if (currentReplies.length < 1) {
+      return [node];
+    }
 
-      const nested = removeCommentFromTree(currentReplies, targetId);
-      if (nested.removedCount < 1) {
-        return node;
-      }
+    const nested = removeCommentFromTree(currentReplies, targetId);
+    if (nested.removedCount < 1) {
+      return [node];
+    }
 
-      removedCount += nested.removedCount;
-      return {
+    removedCount += nested.removedCount;
+    return [
+      {
         ...node,
         response: nested.comments,
-      };
-    })
-    .filter(Boolean) as CommentPost[];
+      },
+    ];
+  });
 
   return {
     comments,

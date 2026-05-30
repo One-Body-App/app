@@ -4,7 +4,7 @@ import { Text, View, TextInput as TextInputNative } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/components/Button';
 import { styles } from './styles';
@@ -21,7 +21,7 @@ import { spacing } from '@/src/styles/spacing';
 import StyledTextInput from '@/components/styled/TextInput';
 import { MainStackParamList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<MainStackParamList, 'EmailChange'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'EmailChange'>;
 
 function EmailChange({ navigation, route }: Props) {
   const dispatch = useDispatch();

@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-useless-fragment */
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,7 +37,7 @@ import {
   getFeedItemUnavailableMessage,
 } from '@/services/ownedPostDeletion';
 
-type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
+type Props = NativeStackScreenProps<PrayerWallStackParamsList, 'Single'>;
 function SinglePrayer({ navigation, route }: Props) {
   const [prayer, setPrayer] = useState<PrayerPost>();
   const [isLoading, setIsLoading] = useState<boolean>(false);

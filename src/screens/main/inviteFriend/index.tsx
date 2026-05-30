@@ -4,11 +4,11 @@ import QRCode from 'react-native-qrcode-svg';
 import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import LinearGradient from 'react-native-linear-gradient';
-import FastImage from 'react-native-fast-image';
 import { Link1 } from 'iconsax-react-native';
 import { ShareAndroid, ShareIos } from 'iconoir-react-native';
 // import Clipboard from '@react-native-clipboard/clipboard';
 import { useToast } from 'react-native-toast-notifications';
+import FastImage from '@/components/primitives/FastImage';
 import { styles } from './styles';
 
 import { Colors } from '@/src/styles';

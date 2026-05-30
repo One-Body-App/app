@@ -174,10 +174,10 @@ const getGoogleWebClientId = () => {
     return '';
   }
 
-  const clientIds = rawValue
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
+  const clientIds = rawValue.split(',').flatMap((value) => {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  });
 
   if (clientIds.length !== 1) {
     throw new Error(

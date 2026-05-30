@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useMemo, useState } from 'react';
-import { Image, ImageResizeMode, View } from 'react-native';
+import { ImageResizeMode, View } from 'react-native';
 import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { isFeedAvatarPlaceholderUri } from './feedAvatarUtils';

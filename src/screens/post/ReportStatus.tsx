@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CommonActions, useFocusEffect, useTheme } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Platform, StatusBar, Pressable, View } from 'react-native';
@@ -18,7 +18,7 @@ import { body, header } from '@/src/styles/typography';
 // eslint-disable-next-line import/extensions
 import successDoneAnimation from '@/src/assets/animations/successfully-done.json';
 
-type Props = StackScreenProps<MainStackParamList, 'ReportStatus'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'ReportStatus'>;
 
 const COMMUNITY_GUIDELINES_URL =
   'https://app.termly.io/policy-viewer/policy.html?policyUUID=84dd2dd3-ee3f-48f4-a92c-24b637820776';

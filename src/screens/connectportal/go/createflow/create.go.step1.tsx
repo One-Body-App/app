@@ -1,8 +1,8 @@
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
-  Image,
   Platform,
   StyleSheet,
   Text,
@@ -14,7 +14,7 @@ import {
 import ImagePicker from 'react-native-image-crop-picker';
 import { launchImageLibrary, launchCamera as rnLaunchCamera } from 'react-native-image-picker';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   createConnectPortalEditDraftFromPublishedEvent,
@@ -28,7 +28,7 @@ import { CreateFlowLayout, ensureStepOneDraftRecord, useCreateFlowPalette } from
 import EventTypeDropdown, { OTHER_VALUE } from './EventTypeDropdown';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep1'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep1'>;
 const STEP_ONE_RESUME_ERROR =
   'This event is no longer available. Open a saved draft from My Events or start again.';
 

@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
@@ -11,14 +12,13 @@ import {
   Platform,
   StyleSheet,
   RefreshControl,
-  Image,
 } from 'react-native';
 import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch } from 'react-redux';
 import { useSSO } from '@clerk/expo';
 import { useSignUp } from '@clerk/expo/legacy';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
@@ -187,7 +187,7 @@ function InputField({
   );
 }
 
-type Props = StackScreenProps<MainStackParamList, 'SignUp'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'SignUp'>;
 
 function SignupForm({ navigation, route }: Props) {
   const recaptcha = useRef<RecaptchaRef | null>(null);

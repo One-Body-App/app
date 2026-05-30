@@ -1,4 +1,4 @@
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,7 +43,7 @@ import {
   type PostTelemetryEventInput,
 } from '@/services/postTelemetry';
 
-type Props = StackScreenProps<MainStackParamList, 'SingleRss'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'SingleRss'>;
 function RssPost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();
   const [localBlog, setLocalBlog] = useState<CreatorBlogRecord | null>(null);

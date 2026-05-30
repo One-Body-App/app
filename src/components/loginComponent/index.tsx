@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -6,7 +7,6 @@ import {
   ScrollView,
   Pressable,
   View,
-  Image,
   Platform,
   PermissionsAndroid,
 } from 'react-native';

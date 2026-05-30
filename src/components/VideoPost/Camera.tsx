@@ -1,9 +1,9 @@
+import { Image } from 'expo-image';
 import {
   AppState,
   View,
   StyleSheet,
   Pressable,
-  Image,
   ActivityIndicator,
   Platform,
   BackHandler,
@@ -23,7 +23,6 @@ import {
   useCameraDevice,
   useCameraFormat,
 } from 'react-native-vision-camera';
-import FastImage from 'react-native-fast-image';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
 import {
@@ -33,6 +32,7 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FastImage from '@/components/primitives/FastImage';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';

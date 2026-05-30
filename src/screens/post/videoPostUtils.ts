@@ -1,5 +1,5 @@
 import { CommonActions } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   AUDIO_BITRATE,
   resolveSupportedUploadRatioId,
@@ -34,7 +34,7 @@ export const BLOCKED_WATCH_CAPTION_MESSAGE =
 export const UNSUPPORTED_UPLOAD_VIDEO_RATIO_MESSAGE =
   'Only 1:1, 4:3, 16:9, and 9:16 videos can be uploaded to Watch.';
 
-type VideoPostNavigation = StackNavigationProp<MainStackParamList, 'VideoPost'>;
+type VideoPostNavigation = NativeStackNavigationProp<MainStackParamList, 'VideoPost'>;
 
 type QueuePendingWatchUpload = typeof enqueuePendingVideoUpload;
 type ShowQueuedWatchUploadToast = (
@@ -293,7 +293,12 @@ export const buildPendingVideoUploadRecipe = ({
     caption: String(caption ?? ''),
     actorId: actorId ? String(actorId).trim() : undefined,
     mentionedUserIds: Array.from(
-      new Set((mentionedUserIds ?? []).map((value) => String(value || '').trim()).filter(Boolean))
+      new Set(
+        (mentionedUserIds ?? []).flatMap((value) => {
+          const trimmed = String(value || '').trim();
+          return trimmed ? [trimmed] : [];
+        })
+      )
     ),
     mentions: Array.isArray(mentions)
       ? mentions.filter(

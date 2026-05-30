@@ -9,7 +9,7 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Profile, People } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -31,7 +31,7 @@ import { savePendingAccountType } from '@/src/services/accountTypeStorage';
 import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
 import { HapticService } from '@/src/services/haptic';
 
-type Props = StackScreenProps<MainStackParamList, 'AccountType'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'AccountType'>;
 
 const CONTENT_MAX_WIDTH = 720;
 

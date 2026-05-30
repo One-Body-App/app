@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector } from 'react-redux';
 import LottieView from 'lottie-react-native';
 import { useTheme } from '@react-navigation/native';
@@ -22,7 +22,7 @@ const COLORS = {
   accent: '#12d2d9', // Info Brand Accent (for subtle highlights)
 };
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 
 function OnboardingIntro({ navigation }: Props) {
   const accountType = useSelector((state: RootState) => state.auth.getProfileData?.accountType);

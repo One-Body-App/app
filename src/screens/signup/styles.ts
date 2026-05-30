@@ -15,14 +15,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     height: getHeight(6),
     overflow: 'hidden',
-    shadowColor: '#126BB7',
-    shadowOffset: {
-      width: 0,
-      height: 20,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 0,
+    boxShadow: '0 20px 20px rgba(18, 107, 183, 0.1)',
   },
   tabItem: {
     flex: 1,

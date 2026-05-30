@@ -1,9 +1,9 @@
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
-  Image,
   ListRenderItemInfo,
   Platform,
   TextInput as RNTextInput,

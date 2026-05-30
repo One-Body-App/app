@@ -18,9 +18,8 @@ import {
   MediaType,
 } from 'react-native-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import FastImage from 'react-native-fast-image';
 import ImagePicker from 'react-native-image-crop-picker';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
@@ -29,6 +28,7 @@ import { serialize } from 'object-to-formdata';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import FastImage from '@/components/primitives/FastImage';
 import Button from '@/components/Button';
 
 import { styles } from './styles';
@@ -77,7 +77,7 @@ import {
 } from '@/src/utils/organizationCategories';
 
 type Props = CompositeScreenProps<
-  StackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
+  NativeStackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
   CompositeScreenProps<
     DrawerScreenProps<MainDrawerParamsList, 'Main'>,
     BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
@@ -87,6 +87,11 @@ type Props = CompositeScreenProps<
 const interestScrollInsets = { bottom: spacing.x48 };
 const interestScrollAndroidPadding =
   Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
+const profileDatePickerNow = new Date();
+const profileMinimumBirthDate = new Date(profileDatePickerNow);
+profileMinimumBirthDate.setFullYear(profileDatePickerNow.getFullYear() - 90);
+const profileMaximumBirthDate = new Date(profileDatePickerNow);
+profileMaximumBirthDate.setFullYear(profileDatePickerNow.getFullYear() - 16);
 
 export type LocationDTO = {
   address: string;
@@ -867,12 +872,14 @@ function EditProfile({ navigation, route }: Props) {
                 />
                 <DatePicker
                   modal
-                  minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
-                  maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+                  minimumDate={profileMinimumBirthDate}
+                  maximumDate={profileMaximumBirthDate}
                   mode="date"
                   androidVariant="nativeAndroid"
                   open={open}
-                  date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
+                  date={
+                    date ? parse(date, 'MM/dd/yyyy', profileDatePickerNow) : profileDatePickerNow
+                  }
                   onConfirm={(selectedDate) => {
                     setOpen(false);
                     setDate(format(selectedDate, 'MM/dd/yyyy'));

@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomModal from '@/src/components/CustomModal';
@@ -16,7 +16,7 @@ import {
   APP_HEADER_TITLE_LINE_HEIGHT,
 } from '@/src/styles/headerLayout';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepThree'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'InfluencerStepThree'>;
 
 const SOCIAL_DOMAIN_PATTERN = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:[/?#].*)?$/;
 

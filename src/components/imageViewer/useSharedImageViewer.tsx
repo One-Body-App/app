@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import ImageView from 'react-native-image-viewing';
+import FastImage from '@/components/primitives/FastImage';
 
 type ImageViewerSource = {
   uri: string;

@@ -1,11 +1,10 @@
+import { Image, ImageBackground } from 'expo-image';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   ActivityIndicator,
   Easing,
   FlatList,
-  Image,
-  ImageBackground,
   type ListRenderItemInfo,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
@@ -18,7 +17,6 @@ import {
   View,
   type ViewToken,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { BlurView } from '@react-native-community/blur';
 import { useDispatch, useSelector } from 'react-redux';
@@ -28,13 +26,14 @@ import {
   useFocusEffect,
   useTheme,
 } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { differenceInHours, format, parseISO } from 'date-fns';
 import Video from 'react-native-video';
+import FastImage from '@/components/primitives/FastImage';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { getUserProfile } from '@/src/redux/actions/UserAction';
@@ -90,7 +89,7 @@ import {
 } from './TrendingTopicsBubbles.utils';
 
 type Props = CompositeScreenProps<
-  StackScreenProps<ExploreStackParamsList, 'Explore'>,
+  NativeStackScreenProps<ExploreStackParamsList, 'Explore'>,
   CompositeScreenProps<
     DrawerScreenProps<MainDrawerParamsList, 'Main'>,
     BottomTabScreenProps<MainBottomStackParamsList, 'ExploreTab'>
@@ -1944,7 +1943,7 @@ function Explore({ navigation, route }: Props) {
             <View style={{ paddingHorizontal: spacing.x16, marginTop: spacing.x16 }}>
               {goEvents.map((event: any) => {
                 const eventStart = new Date(event.startDate);
-                const hoursUntil = differenceInHours(eventStart, new Date());
+                const hoursUntil = differenceInHours(eventStart.getTime(), Date.now());
                 const isImminent = hoursUntil >= 0 && hoursUntil < 72;
                 return (
                   <Pressable

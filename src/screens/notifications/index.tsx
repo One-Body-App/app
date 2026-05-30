@@ -1,9 +1,9 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Linking,
   Modal,
   Platform,
@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
@@ -51,7 +51,7 @@ import {
 } from './notificationCategories';
 import { useNotificationsDismissal } from './useNotificationsDismissal';
 
-type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
+type Props = NativeStackScreenProps<HomeStackParamsList, 'Notifications'>;
 
 type CategoryKey = NotificationCategoryKey;
 

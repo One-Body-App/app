@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { TextInput, Pressable, View } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -19,7 +19,7 @@ import Button from '@/components/Button';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { borderRadius } from '@/src/styles/outlines';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationInfo'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationInfo'>;
 
 function OnboardingOrganizationInfo({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);

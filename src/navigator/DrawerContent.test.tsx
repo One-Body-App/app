@@ -55,7 +55,7 @@ jest.mock('@react-navigation/native', () => ({
   })),
 }));
 
-jest.mock('react-native-fast-image', () => 'FastImage');
+jest.mock('@/components/primitives/FastImage', () => 'FastImage');
 jest.mock('react-native-fbsdk-next', () => ({
   LoginManager: {
     logOut: jest.fn(),

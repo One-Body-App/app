@@ -93,7 +93,7 @@ jest.mock('@react-native-camera-roll/camera-roll', () => ({
     })),
   },
 }));
-jest.mock('react-native-fast-image', () => {
+jest.mock('@/components/primitives/FastImage', () => {
   const { View: NativeView } = require('react-native');
 
   function MockFastImage(props: any) {

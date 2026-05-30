@@ -5,7 +5,7 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useDispatch } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getAuth, updatePassword } from '@react-native-firebase/auth';
 import Button from '@/components/Button';
 import { validateFields } from '@/utils/validation/validate-fields';
@@ -20,7 +20,7 @@ import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<MainStackParamList, 'PasswordChange'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'PasswordChange'>;
 
 function PasswordChange({ navigation, route }: Props) {
   const dispatch = useDispatch();

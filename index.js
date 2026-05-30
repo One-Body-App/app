@@ -19,8 +19,10 @@ if (typeof process !== 'undefined') {
 const App = require('./App').default;
 
 setBackgroundMessageHandler(getMessaging(), async (remoteMessage) => {
-  const payload = await queueRemoteNotificationPayload(remoteMessage);
-  const handledByChat = await handleBackgroundChatPush(remoteMessage).catch(() => false);
+  const [payload, handledByChat] = await Promise.all([
+    queueRemoteNotificationPayload(remoteMessage),
+    handleBackgroundChatPush(remoteMessage).catch(() => false),
+  ]);
   if (handledByChat) {
     return;
   }

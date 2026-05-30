@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { CommonActions, useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import CustomModal from '@/src/components/CustomModal';
@@ -26,7 +26,7 @@ import {
   APP_HEADER_TITLE_LINE_HEIGHT,
 } from '@/src/styles/headerLayout';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepFour'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'InfluencerStepFour'>;
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 type ContentTypeOption = {

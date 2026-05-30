@@ -1,9 +1,9 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Keyboard,
   LayoutChangeEvent,
   Modal,

@@ -1,8 +1,9 @@
+import { Image } from 'expo-image';
 import React, { useMemo, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import FastImage from '@/components/primitives/FastImage';
 import StyledText from '@/components/styled/Text';
 import {
   composerSpace,

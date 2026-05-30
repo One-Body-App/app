@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { View, Switch, ActivityIndicator, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
 import { useTheme } from '@react-navigation/native';
 import { NotificationStatus, Sms, Note1 } from 'iconsax-react-native';
@@ -19,7 +19,7 @@ import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;
 
 type NotificationSwitchState = {
   pushNotificationsEnabled: boolean;

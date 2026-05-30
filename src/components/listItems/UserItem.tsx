@@ -1,16 +1,16 @@
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import isObject from 'lodash/isObject';
 import React, { useState } from 'react';
-import { Dimensions, Image, StyleProp, TextStyle, Pressable, View, ViewStyle } from 'react-native';
-import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
+import { Dimensions, StyleProp, TextStyle, Pressable, View, ViewStyle } from 'react-native';
 import Entypo from '@react-native-vector-icons/entypo';
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
+import FastImage, { ImageStyle, ResizeMode } from '@/components/primitives/FastImage';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { User, PostType } from '@/utils/types';
@@ -32,7 +32,7 @@ import { ApiCall } from '@/services/api';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 
 type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
+  NativeStackNavigationProp<ExploreStackParamsList, 'Explore'>,
   CompositeNavigationProp<
     DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>

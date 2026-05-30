@@ -3,7 +3,7 @@ import { Animated, Platform, StyleSheet, Pressable, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import StyledText from '@/components/styled/Text';
@@ -44,7 +44,7 @@ import useSpringboardEntry from '@/src/hooks/useSpringboardEntry';
 import { getTabRootSpringboardPreset } from '@/src/navigator/motionPolicy';
 import { useRootTabSwitchReplayToken } from '@/src/navigator/RootTabTransitionContext';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectMap'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectMap'>;
 
 const mapboxAccessToken = String(MAPBOX_PUBLIC_TOKEN ?? '').trim();
 

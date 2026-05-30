@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -10,7 +11,6 @@ import {
   ScrollView,
   StyleSheet,
   Animated,
-  Image,
 } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from '@react-native-vector-icons/material-icons';

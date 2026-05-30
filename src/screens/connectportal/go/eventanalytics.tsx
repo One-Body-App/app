@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   formatConnectPortalDateTime,
@@ -18,7 +18,7 @@ import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventAnalytics'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoEventAnalytics'>;
 
 const SUPPORT_MESSAGES = [
   {

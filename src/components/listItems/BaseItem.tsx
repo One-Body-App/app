@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, {
   ReactNode,
   useCallback,
@@ -6,16 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  Animated,
-  Image,
-  Platform,
-  Share,
-  StyleProp,
-  Pressable,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { Animated, Platform, Share, StyleProp, Pressable, View, ViewStyle } from 'react-native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { Location } from 'iconsax-react-native';

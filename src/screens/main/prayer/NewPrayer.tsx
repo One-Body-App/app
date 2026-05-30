@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,9 +13,9 @@ import { useSelector } from 'react-redux';
 import { ArrowDown2 } from 'iconsax-react-native';
 import { CommonActions, useTheme } from '@react-navigation/native';
 import { serialize } from 'object-to-formdata';
-import FastImage from 'react-native-fast-image';
 import isEmpty from 'lodash/isEmpty';
 import { useToast } from 'react-native-toast-notifications';
+import FastImage from '@/components/primitives/FastImage';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
@@ -35,7 +35,7 @@ import StyledSelect from '@/components/styled/Select';
 import Header from '@/components/Header';
 import GoBackIcon from '@/components/GoBackIcon';
 
-type Props = StackScreenProps<PrayerWallStackParamsList, 'Prayer'>;
+type Props = NativeStackScreenProps<PrayerWallStackParamsList, 'Prayer'>;
 
 function NewPrayer({ navigation, route }: Props) {
   const MAX_CONTENT_LENGHT = 300;

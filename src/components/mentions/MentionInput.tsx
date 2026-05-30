@@ -21,8 +21,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
+import FastImage from '@/components/primitives/FastImage';
 import StyledText from '@/components/styled/Text';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';

@@ -52,7 +52,7 @@ jest.mock('react-native-safe-area-context', () => ({
   })),
 }));
 
-jest.mock('react-native-fast-image', () => 'FastImage');
+jest.mock('@/components/primitives/FastImage', () => 'FastImage');
 jest.mock('react-native-video', () => 'Video');
 jest.mock('@react-native-community/blur', () => ({
   BlurView: 'BlurView',

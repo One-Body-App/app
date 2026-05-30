@@ -1,13 +1,6 @@
+import { Image } from 'expo-image';
 import React, { useLayoutEffect, useMemo, useState } from 'react';
-import {
-  Image,
-  Platform,
-  ScrollView,
-  Share,
-  Pressable,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Platform, ScrollView, Share, Pressable, useWindowDimensions, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import RenderHtml from 'react-native-render-html';

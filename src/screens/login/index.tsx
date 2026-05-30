@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import LoginComponent from '@/components/loginComponent';
 
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
 
-type Props = StackScreenProps<MainStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Login'>;
 
 const getMfaChallengeKey = (
   challenge: NonNullable<MainStackParamList['Login']>['initialMfaChallenge']

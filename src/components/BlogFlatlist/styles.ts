@@ -39,14 +39,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     marginBottom: 5,
 
-    shadowColor: '#0e5469',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 30,
-    elevation: 0,
+    boxShadow: '0 1px 30px rgba(14, 84, 105, 0.3)',
   },
   blogpostpara: {
     padding: 2,

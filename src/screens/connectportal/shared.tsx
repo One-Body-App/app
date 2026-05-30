@@ -1,9 +1,9 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import {
   Animated,
   Easing,
-  Image,
   Keyboard,
   Platform,
   ScrollView,

@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
@@ -29,7 +29,7 @@ import {
   normalizeOwnedPostType,
 } from '@/services/ownedPostDeletion';
 
-type Props = StackScreenProps<MainStackParamList, 'ReportPost'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'ReportPost'>;
 type ReportReason = 'INAPPROPRIATE' | 'HARASSMENT' | 'SPAM' | 'NON_PROTESTANT' | 'OTHER';
 
 type ReportOption = {

@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Switch, Text, TextInput, Pressable, View } from 'rea
 import DatePicker from 'react-native-date-picker';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { format, isValid, parse, parseISO } from 'date-fns';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import MapBox from '@/components/MapBox';
 import { MapBoxTypes, type MapSuggestion } from '@/components/MapBoxTypes';
 import type { Coordinate } from '@/src/screens/connectportal/data';
@@ -16,7 +16,7 @@ import type {
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep2'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep2'>;
 
 type PickerField = 'startDate' | 'endDate' | 'startTime' | 'endTime' | 'recurrenceEndDate';
 

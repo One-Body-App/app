@@ -1,7 +1,7 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { TextInputProps } from 'react-native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import DocumentPicker from 'react-native-document-picker';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
@@ -30,7 +30,7 @@ import {
   type ResumeDraft,
 } from './srvjobpageapply.utils';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeJobApply'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeJobApply'>;
 
 type FieldTheme = {
   text: string;

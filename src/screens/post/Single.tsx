@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -45,7 +45,7 @@ import {
   type PostTelemetryEventInput,
 } from '@/services/postTelemetry';
 
-type Props = StackScreenProps<MainStackParamList, 'SinglePost'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'SinglePost'>;
 
 function SinglePost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import type { ConnectPortalEventDraft, TicketTier } from '@/src/services/connectPortal';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
@@ -13,7 +13,7 @@ import {
 } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep5'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep5'>;
 
 function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();

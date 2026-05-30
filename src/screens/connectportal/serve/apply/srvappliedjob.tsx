@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { ServeHeader, useServePalette, BRAND_COLORS, getServeJobById } from '../shared';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeAppliedJobView'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeAppliedJobView'>;
 
 // Reusable Detail Card Component
 function DetailCard({

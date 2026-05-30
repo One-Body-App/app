@@ -96,13 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     alignItems: 'center',
-    shadowColor: '#126BB7',
-    shadowOffset: {
-      width: 0,
-      height: 25,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    boxShadow: '0 25px 20px rgba(18, 107, 183, 0.1)',
   },
 });
 

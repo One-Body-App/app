@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import {
@@ -14,7 +14,7 @@ import {
   type ServePalette,
 } from '../shared';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeApplied'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeApplied'>;
 
 function AppliedJobCard({
   title,

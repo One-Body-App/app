@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -37,7 +37,7 @@ import {
 } from '@/src/styles/headerLayout';
 import { borderRadius } from '@/src/styles/outlines';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoMyEvents'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoMyEvents'>;
 
 const FILTERS: ConnectPortalMyEventsFilter[] = ['All', 'Active', 'Draft', 'Past'];
 const GO_EVENT_ACCENT = '#126b87';

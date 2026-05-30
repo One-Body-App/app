@@ -2,7 +2,7 @@ import React from 'react';
 import { Animated, Easing, Platform, StyleSheet, Pressable, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 
 import WallComponent from '@/components/prayerWallComponent';
@@ -15,7 +15,7 @@ import StyledText from '@/components/styled/Text';
 import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
 import GlassTabBar from '@/components/GlassTabBar';
 
-type Props = StackScreenProps<PrayerWallStackParamsList, 'index'>;
+type Props = NativeStackScreenProps<PrayerWallStackParamsList, 'index'>;
 type PrayerRoute = {
   key: string;
   title: string;

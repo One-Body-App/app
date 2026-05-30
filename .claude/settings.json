@@ -6,7 +6,13 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(npx eslint *)",
       "Bash(git add *)",
-      "Bash(git -c commit.gpgsign=false commit -m ' *)"
+      "Bash(git -c commit.gpgsign=false commit -m ' *)",
+      "Bash(node -e ' *)",
+      "Bash(ls -la /Users/newuser/Repo/OneBody/landing/.claude 2>/dev/null; ls -la /Users/newuser/Repo/OneBody/app/.claude 2>/dev/null; ls -la /Users/newuser/Repo/OneBody/.claude 2>/dev/null)",
+      "Read(//Users/newuser/Repo/OneBody/.claude/**)",
+      "Bash(cat /Users/newuser/.claude/settings.json 2>/dev/null | head -60)",
+      "Read(//Users/newuser/.claude/**)",
+      "Bash(grep -n \"^html\\\\b\\\\|^body\\\\b\\\\|html,\\\\s*body\\\\|body,\\\\s*html\\\\|html {\\\\|body {\" /Users/newuser/Repo/OneBody/landing/src/styles/styles.css)"
     ]
   }
 }

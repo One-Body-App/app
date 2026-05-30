@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import {
   APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
@@ -24,7 +24,7 @@ import {
   APP_HEADER_SIDE_WIDTH,
 } from '@/src/styles/headerLayout';
 
-type Props = StackScreenProps<SettingsStackParamsList, 'CreatorSuccess'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'CreatorSuccess'>;
 
 const CONFETTI_COUNT = 90;
 const CONFETTI_EXPLOSION_SPEED = 350;

@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CustomModal from '@/src/components/CustomModal';
 import MapBox from '@/components/MapBox';
 import { MapBoxTypes, type MapSuggestion } from '@/components/MapBoxTypes';
@@ -29,7 +29,7 @@ import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import { CreateFlowLayout, useCreateFlowPalette } from '../../go/createflow/shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeCreateJobStep1'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeCreateJobStep1'>;
 
 type SelectOption = {
   label: string;

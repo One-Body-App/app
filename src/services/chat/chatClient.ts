@@ -139,8 +139,10 @@ export const decryptDirectMessageEnvelope = async (args: {
   peerUserId: string;
   token?: string;
 }) => {
-  const myKeys = await getMyChatKeypair();
-  const peerKey = await getPeerPublicKey(args.peerUserId, args.token);
+  const [myKeys, peerKey] = await Promise.all([
+    getMyChatKeypair(),
+    getPeerPublicKey(args.peerUserId, args.token),
+  ]);
 
   return decryptE2EEMessage({
     encryptedPayload: args.message.encryptedPayload,
@@ -209,7 +211,10 @@ export const parseChatMessagePayload = (
         return {
           type: 'images',
           text: typeof parsed.text === 'string' ? parsed.text : '',
-          mediaUrls: parsed.urls.map((item: unknown) => String(item || '').trim()).filter(Boolean),
+          mediaUrls: parsed.urls.flatMap((item: unknown) => {
+            const trimmed = String(item || '').trim();
+            return trimmed ? [trimmed] : [];
+          }),
         };
       }
     }

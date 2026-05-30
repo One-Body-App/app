@@ -61,7 +61,9 @@ export const reorderFeedEntriesForRefresh = <T>(entries: readonly T[], seed: num
   });
 
   const reordered = decorated.map((item) => item.entry);
-  const matchesOriginal = reordered.every((entry, index) => entry === entries[index]);
+  const matchesOriginal =
+    reordered.length === entries.length &&
+    reordered.every((entry, index) => entry === entries[index]);
   if (!matchesOriginal) {
     return reordered;
   }

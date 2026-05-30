@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { View, Pressable, ScrollView, Platform } from 'react-native';
 
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -21,7 +21,7 @@ import StyledTextInput from '@/components/styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
 
 const interestListInsets = { bottom: spacing.x48 };
 const interestListAndroidPadding = Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};

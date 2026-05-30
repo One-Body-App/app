@@ -1,6 +1,5 @@
 import React from 'react';
 import { Platform, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import FastImage from 'react-native-fast-image';
 import { BlurView } from '@react-native-community/blur';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -12,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@react-native-vector-icons/material-design-icons';
+import FastImage from '@/components/primitives/FastImage';
 import { ProfileAvatarAnimationResult, TIMING_CONFIG } from './useProfileAvatarAnimation';
 
 type Props = {

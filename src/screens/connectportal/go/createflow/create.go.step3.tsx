@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep3'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep3'>;
 
 function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();

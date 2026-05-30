@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useLayoutEffect, useRef, useState, memo, useMemo, JSX } from 'react';
 import {
   View,
@@ -8,7 +9,6 @@ import {
   ActivityIndicator,
   ScrollView,
   TextInput,
-  Image,
   ListRenderItem,
   Platform,
   Animated,
@@ -30,9 +30,8 @@ import {
   useFocusEffect,
   useIsFocused,
 } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BlurView } from '@react-native-community/blur';
-import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -979,122 +978,133 @@ function SuggestionsRail({
 // Accepts navigation handlers and data
 interface ModernCardProps {
   item: FeedPost;
-  onPress: () => void;
+  itemIndex: number;
+  onPressItem: (item: FeedPost, index: number) => void;
   onPressProfile?: () => void;
   dark: boolean;
 }
 
-const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCardProps) => {
-  // Normalize Data fields
-  const authorName =
-    item.authorName ||
-    (typeof item.source === 'object' ? item.source.name : item.source) ||
-    item.user?.name ||
-    item.userData?.name ||
-    'One Body User';
+const ModernFeedCard = memo(
+  ({ item, itemIndex, onPressItem, onPressProfile, dark }: ModernCardProps) => {
+    const handlePress = useCallback(() => {
+      onPressItem(item, itemIndex);
+    }, [item, itemIndex, onPressItem]);
 
-  const authorAvatar = resolveFeedAvatarUri(item);
+    // Normalize Data fields
+    const authorName =
+      item.authorName ||
+      (typeof item.source === 'object' ? item.source.name : item.source) ||
+      item.user?.name ||
+      item.userData?.name ||
+      'One Body User';
 
-  const contentText =
-    item.content ||
-    item.body ||
-    (typeof item.title === 'object' ? item.title?.a?.$text : item.title) ||
-    '';
+    const authorAvatar = resolveFeedAvatarUri(item);
 
-  const mediaUrl =
-    item.media?.[0]?.url ||
-    (typeof item.image === 'string' ? item.image : item.image?.url) ||
-    item.imageUrl ||
-    item.mediaUrl ||
-    item.images?.[0];
+    const contentText =
+      item.content ||
+      item.body ||
+      (typeof item.title === 'object' ? item.title?.a?.$text : item.title) ||
+      '';
 
-  const likes = item.likesCount || 0;
-  const comments = item.commentsCount || 0;
+    const mediaUrl =
+      item.media?.[0]?.url ||
+      (typeof item.image === 'string' ? item.image : item.image?.url) ||
+      item.imageUrl ||
+      item.mediaUrl ||
+      item.images?.[0];
 
-  return (
-    <View style={[styles.cardContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}>
-      {/* Header */}
-      <View style={styles.cardHeader}>
-        <Pressable style={styles.userInfo} onPress={onPressProfile}>
-          <FeedAvatar
-            uri={authorAvatar}
-            size={40}
-            style={styles.avatarSmall}
-            fallbackBackgroundColor={dark ? BRAND.cardDark : BRAND.white}
-            fallbackBorderColor={BRAND.primaryDark}
-            fallbackIconColor={BRAND.primaryDark}
-            fallbackIconSize={18}
-          />
-          <View>
-            <StyledText style={[styles.userName, { color: dark ? BRAND.white : BRAND.black }]}>
-              {authorName}
-            </StyledText>
-            <StyledText style={[styles.timeAgo, { color: BRAND.gray400 }]}>2 hours ago</StyledText>
-          </View>
-        </Pressable>
-        <Pressable>
-          <More size={20} color={BRAND.gray400} />
-        </Pressable>
-      </View>
+    const likes = item.likesCount || 0;
+    const comments = item.commentsCount || 0;
 
-      {/* Main Clickable Content Area */}
-      <Pressable onPress={onPress}>
-        {/* Caption */}
-        {contentText ? (
-          <StyledText
-            numberOfLines={4}
-            style={[styles.caption, { color: dark ? BRAND.gray200 : BRAND.black }]}
-          >
-            {contentText}
-          </StyledText>
-        ) : null}
-
-        {/* Media */}
-        {mediaUrl && (
-          <View style={styles.mediaContainer}>
-            <Image source={{ uri: mediaUrl }} resizeMode="cover" style={styles.mediaImage} />
-          </View>
-        )}
-      </Pressable>
-
-      {/* Actions Bar */}
-      <View style={[styles.actionsBar, { borderTopColor: dark ? BRAND.gray800 : BRAND.gray100 }]}>
-        <View style={styles.actionGroup}>
-          <Pressable style={styles.actionButton}>
-            <Heart size={24} color={BRAND.gray400} />
-            <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
-              {likes > 0 ? likes : 'Like'}
-            </StyledText>
+    return (
+      <View
+        style={[styles.cardContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}
+      >
+        {/* Header */}
+        <View style={styles.cardHeader}>
+          <Pressable style={styles.userInfo} onPress={onPressProfile}>
+            <FeedAvatar
+              uri={authorAvatar}
+              size={40}
+              style={styles.avatarSmall}
+              fallbackBackgroundColor={dark ? BRAND.cardDark : BRAND.white}
+              fallbackBorderColor={BRAND.primaryDark}
+              fallbackIconColor={BRAND.primaryDark}
+              fallbackIconSize={18}
+            />
+            <View>
+              <StyledText style={[styles.userName, { color: dark ? BRAND.white : BRAND.black }]}>
+                {authorName}
+              </StyledText>
+              <StyledText style={[styles.timeAgo, { color: BRAND.gray400 }]}>
+                2 hours ago
+              </StyledText>
+            </View>
           </Pressable>
-
-          <Pressable style={styles.actionButton}>
-            <Message size={24} color={BRAND.gray400} />
-            <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
-              {comments > 0 ? comments : 'Reply'}
-            </StyledText>
-          </Pressable>
-
-          <Pressable style={styles.actionButton}>
-            <Send2 size={24} color={BRAND.gray400} />
+          <Pressable>
+            <More size={20} color={BRAND.gray400} />
           </Pressable>
         </View>
 
-        <Pressable>
-          <ArchiveMinus size={24} color={BRAND.gray400} />
+        {/* Main Clickable Content Area */}
+        <Pressable onPress={handlePress}>
+          {/* Caption */}
+          {contentText ? (
+            <StyledText
+              numberOfLines={4}
+              style={[styles.caption, { color: dark ? BRAND.gray200 : BRAND.black }]}
+            >
+              {contentText}
+            </StyledText>
+          ) : null}
+
+          {/* Media */}
+          {mediaUrl && (
+            <View style={styles.mediaContainer}>
+              <Image source={{ uri: mediaUrl }} resizeMode="cover" style={styles.mediaImage} />
+            </View>
+          )}
         </Pressable>
+
+        {/* Actions Bar */}
+        <View style={[styles.actionsBar, { borderTopColor: dark ? BRAND.gray800 : BRAND.gray100 }]}>
+          <View style={styles.actionGroup}>
+            <Pressable style={styles.actionButton}>
+              <Heart size={24} color={BRAND.gray400} />
+              <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
+                {likes > 0 ? likes : 'Like'}
+              </StyledText>
+            </Pressable>
+
+            <Pressable style={styles.actionButton}>
+              <Message size={24} color={BRAND.gray400} />
+              <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
+                {comments > 0 ? comments : 'Reply'}
+              </StyledText>
+            </Pressable>
+
+            <Pressable style={styles.actionButton}>
+              <Send2 size={24} color={BRAND.gray400} />
+            </Pressable>
+          </View>
+
+          <Pressable>
+            <ArchiveMinus size={24} color={BRAND.gray400} />
+          </Pressable>
+        </View>
       </View>
-    </View>
-  );
-});
+    );
+  }
+);
 
 // --- MAIN HOME COMPONENT ---
 type Props = CompositeScreenProps<
-  StackScreenProps<HomeStackParamsList, 'Home'>,
+  NativeStackScreenProps<HomeStackParamsList, 'Home'>,
   CompositeScreenProps<
     DrawerScreenProps<MainDrawerParamsList, 'Main'>,
     CompositeScreenProps<
       DrawerScreenProps<MainBottomStackParamsList, 'HomeTab'>,
-      StackScreenProps<MainStackParamList, 'MainRoot'>
+      NativeStackScreenProps<MainStackParamList, 'MainRoot'>
     >
   >
 >;
@@ -2632,6 +2642,33 @@ function Home({ navigation, route }: Props) {
 
   const navigateToProfile = useCallback(() => {}, []);
 
+  const handleModernFeedCardPress = useCallback(
+    (item: FeedPost, index: number) => {
+      const postId = getFeedPostId(item);
+      if (postId) {
+        trackHomeTelemetryWithPayload(
+          {
+            postId,
+            postType: item.type ?? 'post',
+            contentType:
+              typeof getObjectField(item, 'contentType') === 'string'
+                ? (getObjectField(item, 'contentType') as string)
+                : item.type,
+            tags: normalizeTelemetryTags(getObjectField(item, 'tags')),
+            authorId:
+              'userData' in item && item.userData?._id ? String(item.userData._id) : undefined,
+            isRepost: Boolean(getObjectField(item, 'repost')),
+            privacyState: getObjectField(item, 'private') === true ? 'private' : 'public',
+          },
+          index,
+          'post_open'
+        );
+      }
+      navigateToDetail(item);
+    },
+    [navigateToDetail, trackHomeTelemetryWithPayload]
+  );
+
   const getTelemetryFromRenderEntry = useCallback((entry: RenderFeedEntry) => {
     if (isSuggestionsModuleItem(entry)) {
       return null;
@@ -3026,34 +3063,8 @@ function Home({ navigation, route }: Props) {
           renderedItem = (
             <ModernFeedCard
               item={normalizedWithImage}
-              onPress={() => {
-                const postId = getFeedPostId(normalizedWithImage);
-                if (postId) {
-                  trackHomeTelemetryWithPayload(
-                    {
-                      postId,
-                      postType: normalizedWithImage.type ?? 'post',
-                      contentType:
-                        typeof getObjectField(normalizedWithImage, 'contentType') === 'string'
-                          ? (getObjectField(normalizedWithImage, 'contentType') as string)
-                          : normalizedWithImage.type,
-                      tags: normalizeTelemetryTags(getObjectField(normalizedWithImage, 'tags')),
-                      authorId:
-                        'userData' in normalizedWithImage && normalizedWithImage.userData?._id
-                          ? String(normalizedWithImage.userData._id)
-                          : undefined,
-                      isRepost: Boolean(getObjectField(normalizedWithImage, 'repost')),
-                      privacyState:
-                        getObjectField(normalizedWithImage, 'private') === true
-                          ? 'private'
-                          : 'public',
-                    },
-                    index,
-                    'post_open'
-                  );
-                }
-                navigateToDetail(normalizedWithImage);
-              }}
+              itemIndex={index}
+              onPressItem={handleModernFeedCardPress}
               onPressProfile={navigateToProfile}
               dark={dark}
             />
@@ -3114,6 +3125,7 @@ function Home({ navigation, route }: Props) {
       preserveFeedPositionOnNextFocus,
       navigateToProfile,
       navigateToDetail,
+      handleModernFeedCardPress,
     ]
   );
 

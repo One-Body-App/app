@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Pressable } from 'react-native';
 
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -12,7 +12,7 @@ import { spacing } from '@/src/styles/spacing';
 import { card } from '@/src/styles/items';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 
-type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
+type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
 
 function OnboardingChurchAttend({ navigation, route }: Props) {
   const { dark } = useTheme();

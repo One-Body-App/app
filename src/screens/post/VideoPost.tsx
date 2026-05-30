@@ -14,7 +14,7 @@ import {
   View,
   type EventSubscription,
 } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import RNFS from 'react-native-fs';
@@ -64,7 +64,7 @@ import {
 } from './videoPostUtils';
 import { sanitizeComposerText } from '@/components/composer/composerText';
 
-type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'VideoPost'>;
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
 type ThemePalette = {

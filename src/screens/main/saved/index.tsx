@@ -1,17 +1,17 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   FlatList,
   ScrollView,
   useWindowDimensions,
-  Image,
   Platform,
   Pressable,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -36,9 +36,9 @@ import {
 } from '@/src/navigator/types';
 
 type Props = CompositeScreenProps<
-  StackScreenProps<SettingsStackParamsList, 'Saved'>,
+  NativeStackScreenProps<SettingsStackParamsList, 'Saved'>,
   CompositeScreenProps<
-    StackScreenProps<MainStackParamList, 'ConfirmLogin'>,
+    NativeStackScreenProps<MainStackParamList, 'ConfirmLogin'>,
     DrawerScreenProps<MainDrawerParamsList, 'Main'>
   >
 >;
@@ -52,6 +52,7 @@ enum ContentType {
 const SAPPHIRE = '#126B87';
 const SAPPHIRE_LIGHT = '#E7F0F3';
 const SAPPHIRE_MID = '#5997AB';
+const SAVED_POST_FALLBACK_DATE = new Date();
 
 function SavedEmptyState({ dark }: { dark: boolean }) {
   return (
@@ -341,7 +342,7 @@ function Saved({ navigation }: Props) {
                 <ArticleItem
                   item={{
                     ...item,
-                    created: item.created ?? new Date(),
+                    created: item.created ?? SAVED_POST_FALLBACK_DATE,
                     image: item.image ? { url: item.image } : undefined,
                     userData: user,
                     reactions: [],

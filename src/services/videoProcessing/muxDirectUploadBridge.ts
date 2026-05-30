@@ -456,26 +456,28 @@ export const resumeNativeMuxDirectUploads = async () => {
   const module = getNativeModule();
   const records = await module.resumeCachedUploads();
   logBridge('resume-cached-uploads', { count: records.length });
-  return records
-    .map((record) => normalizeRecord(record))
-    .filter(Boolean)
-    .map((record) => {
-      uploadStateById.set(record!.uploadId, record!);
-      return record!;
-    });
+  return records.flatMap((record) => {
+    const normalizedRecord = normalizeRecord(record);
+    if (!normalizedRecord) {
+      return [];
+    }
+    uploadStateById.set(normalizedRecord.uploadId, normalizedRecord);
+    return [normalizedRecord];
+  });
 };
 
 export const getNativeMuxDirectUploads = async () => {
   const module = getNativeModule();
   const records = await module.getCachedUploads();
   logBridge('get-cached-uploads', { count: records.length });
-  return records
-    .map((record) => normalizeRecord(record))
-    .filter(Boolean)
-    .map((record) => {
-      uploadStateById.set(record!.uploadId, record!);
-      return record!;
-    });
+  return records.flatMap((record) => {
+    const normalizedRecord = normalizeRecord(record);
+    if (!normalizedRecord) {
+      return [];
+    }
+    uploadStateById.set(normalizedRecord.uploadId, normalizedRecord);
+    return [normalizedRecord];
+  });
 };
 
 export const waitForNativeMuxDirectUpload = async (uploadId: string) => {

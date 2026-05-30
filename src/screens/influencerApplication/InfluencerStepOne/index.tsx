@@ -2,7 +2,7 @@ import React from 'react';
 import { Platform, Text, View, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import {
@@ -28,7 +28,7 @@ const OBPalette = {
   },
 };
 
-type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepOne'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'InfluencerStepOne'>;
 
 function InfluencerStepOne({ navigation }: Props) {
   return (

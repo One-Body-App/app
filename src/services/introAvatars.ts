@@ -96,8 +96,7 @@ function padToCount(urls: (string | null)[]): (string | null)[] {
  * Always attempts a network refresh on cold start and falls back to cache when needed.
  */
 export default async function getCachedIntroAvatars(): Promise<(string | null)[]> {
-  const cached = await readCache();
-  const fresh = await fetchFromNetwork();
+  const [cached, fresh] = await Promise.all([readCache(), fetchFromNetwork()]);
   if (fresh && fresh.length > 0) {
     try {
       await persistCache(fresh);

@@ -8,7 +8,14 @@ export type TaggedNotificationPayload = {
 };
 
 const dedupeStringList = (values: string[]) =>
-  Array.from(new Set(values.map((value) => String(value || '').trim()).filter(Boolean)));
+  Array.from(
+    new Set(
+      values.flatMap((value) => {
+        const trimmed = String(value || '').trim();
+        return trimmed ? [trimmed] : [];
+      })
+    )
+  );
 
 export const resolveNewTaggedUserIds = (
   previousUserIds: string[] = [],

@@ -52,15 +52,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.53,
-    shadowRadius: 13.97,
-
-    elevation: 21,
+    boxShadow: '0 10px 13.97px rgba(0, 0, 0, 0.53)',
   },
   header: {
     width: '100%',

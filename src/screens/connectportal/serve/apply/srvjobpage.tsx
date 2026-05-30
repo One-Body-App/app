@@ -11,7 +11,7 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   formatConnectPortalDate,
@@ -20,7 +20,7 @@ import {
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import { ServeHeader, useServePalette, BRAND_COLORS } from '../shared';
 
-type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeJobView'>;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectServeJobView'>;
 
 // Reusable Card Component for Details
 function DetailCard({

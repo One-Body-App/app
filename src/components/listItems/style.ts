@@ -5,14 +5,7 @@ import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 
 const shadowPosts = {
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 0,
-  },
-  shadowOpacity: 0.15,
-  shadowRadius: 5,
-  elevation: 1,
+  boxShadow: '0 0px 5px rgba(0, 0, 0, 0.3)',
 };
 const styles = StyleSheet.create({
   continer: {
@@ -174,14 +167,7 @@ const styles = StyleSheet.create({
     height: getHeight(40),
     width: getWidth(65),
     marginBottom: getHeight(4),
-    shadowColor: '#0e5469',
-    shadowOffset: {
-      width: 0,
-      height: 20,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 0,
+    boxShadow: '0 20px 10px rgba(14, 84, 105, 0.1)',
   },
   newsicon: {
     alignSelf: 'flex-end',

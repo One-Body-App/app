@@ -2,7 +2,7 @@ import React from 'react';
 import { Linking, ScrollView, useColorScheme, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import GeneralStyle from '../../constants/GeneralStyle';
@@ -17,7 +17,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import StyledTextInput from '@/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
-type Props = StackScreenProps<MainStackParamList, 'ForgotPassword'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'ForgotPassword'>;
 
 function ForgotPassword({ route }: Props) {
   const [email, setEmail] = React.useState<string>('');

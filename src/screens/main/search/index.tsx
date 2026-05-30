@@ -12,10 +12,10 @@ import { useSelector } from 'react-redux';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowRight } from 'iconsax-react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@/components/primitives/FastImage';
 
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -40,7 +40,7 @@ import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPoli
 
 // type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
 type Props = CompositeScreenProps<
-  StackScreenProps<HomeStackParamsList, 'Search'>,
+  NativeStackScreenProps<HomeStackParamsList, 'Search'>,
   CompositeScreenProps<
     DrawerScreenProps<MainDrawerParamsList, 'Main'>,
     BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
@@ -479,7 +479,7 @@ function Search() {
                 ) : null}
                 <FlatList
                   data={recentSearches}
-                  contentContainerStyle={{ flex: 1, paddingHorizontal: spacing.x24 }}
+                  contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.x24 }}
                   renderItem={renderRecentSearch}
                   ListEmptyComponent={renderRecentSearchEmpty}
                   removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}

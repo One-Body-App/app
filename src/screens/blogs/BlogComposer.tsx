@@ -1,8 +1,8 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -21,7 +21,7 @@ import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
-import type { StackScreenProps } from '@react-navigation/stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import StyledText from '@/components/styled/Text';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -39,7 +39,7 @@ import type { CreatorBlogInlineFormat } from '@/src/services/creatorBlogs/types'
 import isCreatorBlogEligible from '@/src/utils/creatorBlogAccess';
 import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
-type Props = StackScreenProps<MainStackParamList, 'BlogComposer'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'BlogComposer'>;
 type BlogComposerIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 const editorScrollInsets = { top: spacing.x16, bottom: spacing.x24 };

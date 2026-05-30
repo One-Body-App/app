@@ -1,10 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { InteractionManager, Share, StyleSheet, Pressable, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
@@ -43,9 +43,9 @@ function HeaderMenuButton({ onPress, color }: { onPress: () => void; color: stri
 }
 
 type Props = CompositeScreenProps<
-  StackScreenProps<ExploreStackParamsList, 'UserProfile'>,
+  NativeStackScreenProps<ExploreStackParamsList, 'UserProfile'>,
   CompositeScreenProps<
-    StackScreenProps<PrayerWallStackParamsList, 'UserProfile'>,
+    NativeStackScreenProps<PrayerWallStackParamsList, 'UserProfile'>,
     CompositeScreenProps<
       DrawerScreenProps<MainDrawerParamsList, 'Main'>,
       BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
@@ -65,16 +65,6 @@ function UserProfile({ navigation, route }: Props) {
   const [showActions, setShowActions] = useState(false);
   const { dark, colors } = useTheme();
   const headerColor = dark ? colors.text : Colors.primary.brand;
-
-  const headerLeft = useMemo(
-    () => <HeaderBackButton onPress={() => navigation.goBack()} color={headerColor} />,
-    [headerColor, navigation]
-  );
-
-  const headerRight = useMemo(
-    () => <HeaderMenuButton onPress={() => setShowActions(true)} color={headerColor} />,
-    [headerColor]
-  );
 
   useFocusEffect(
     useCallback(() => {
@@ -177,12 +167,16 @@ function UserProfile({ navigation, route }: Props) {
         headerTintColor: dark ? colors.text : Colors.primary.brand,
         headerTitleAlign: 'center',
         title: getProfileDisplayName(user),
-        headerLeft: () => headerLeft,
-        headerRight: () => headerRight,
+        headerLeft: () => (
+          <HeaderBackButton onPress={() => navigation.goBack()} color={headerColor} />
+        ),
+        headerRight: () => (
+          <HeaderMenuButton onPress={() => setShowActions(true)} color={headerColor} />
+        ),
       });
 
       return undefined;
-    }, [colors.background, colors.text, dark, headerLeft, headerRight, navigation, user])
+    }, [colors.background, colors.text, dark, headerColor, navigation, user])
   );
 
   const handleUnSubscribe = async (userId: string) => {
