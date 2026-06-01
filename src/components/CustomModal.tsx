@@ -19,8 +19,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheetEntranceGlow from './BottomSheetEntranceGlow';
 import { getKeyboardAvoidanceOffset } from './CustomModal.utils';
+
+const SCREEN_HEADER_HEIGHT = 56;
 
 export default function CustomModal({
   modalVisible,
@@ -46,6 +49,8 @@ export default function CustomModal({
   const [glowPlayKey, setGlowPlayKey] = useState(0);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const { height: screenHeight } = useWindowDimensions();
+  const safeAreaInsets = useSafeAreaInsets();
+  const safeAreaTopInset = safeAreaInsets.top + SCREEN_HEADER_HEIGHT;
 
   const handleClose = useCallback(() => {
     if (onclose) {
@@ -77,8 +82,9 @@ export default function CustomModal({
         keyboardHeight: height,
         sheetHeight: sheetHeightRef.current,
         viewportHeight: screenHeight,
+        safeAreaTopInset,
       }),
-    [avoidKeyboard, modalVisible, screenHeight]
+    [avoidKeyboard, modalVisible, screenHeight, safeAreaTopInset]
   );
 
   useEffect(() => {

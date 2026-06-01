@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { cleanupNotificationsDismissal, closeNotifications } from './dismissNotifications';
 
-type NotificationsNavigation = Parameters<typeof cleanupNotificationsDismissal>[0]['navigation'] & {
+type NotificationsNavigation = {
   addListener?: (
     eventName: 'beforeRemove',
     listener: () => void
   ) => void | (() => void) | { remove?: () => void };
+  canGoBack?: () => boolean;
+  goBack?: () => void;
 };
 type NotificationsTabBarAnimation = Parameters<
   typeof cleanupNotificationsDismissal
@@ -19,9 +22,11 @@ export function useNotificationsDismissal({
   navigation: NotificationsNavigation;
   tabBarAnimation: NotificationsTabBarAnimation;
 }) {
+  const navigationRef = useRef(navigation);
   const tabBarAnimationRef = useRef(tabBarAnimation);
   const hasHandledDismissalRef = useRef(false);
   const runDismissalCleanupRef = useRef<() => void>(() => undefined);
+  navigationRef.current = navigation;
   tabBarAnimationRef.current = tabBarAnimation;
 
   const runDismissalCleanup = useCallback(() => {
@@ -31,28 +36,28 @@ export function useNotificationsDismissal({
 
     hasHandledDismissalRef.current = true;
     cleanupNotificationsDismissal({
-      navigation,
+      navigation: navigationRef.current,
       tabBarAnimation: tabBarAnimationRef.current,
     });
-  }, [navigation]);
+  }, []);
   runDismissalCleanupRef.current = runDismissalCleanup;
 
   const handleCloseNotifications = useCallback(() => {
     hasHandledDismissalRef.current = true;
     closeNotifications({
-      navigation,
+      navigation: navigationRef.current,
       tabBarAnimation: tabBarAnimationRef.current,
     });
-  }, [navigation]);
+  }, []);
 
-  useEffect(() => {
+  useMountEffect(() => {
     hasHandledDismissalRef.current = false;
 
-    if (!navigation.addListener) {
+    if (!navigationRef.current.addListener) {
       return undefined;
     }
 
-    const subscription = navigation.addListener('beforeRemove', () => {
+    const subscription = navigationRef.current.addListener('beforeRemove', () => {
       runDismissalCleanupRef.current();
     });
 
@@ -64,7 +69,7 @@ export function useNotificationsDismissal({
 
       subscription?.remove?.();
     };
-  }, [navigation]);
+  });
 
   return handleCloseNotifications;
 }

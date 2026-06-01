@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Animated, InteractionManager } from 'react-native';
+import { Animated, InteractionManager, Pressable } from 'react-native';
 import SignupForm from './index';
 
 const mockDispatch = jest.fn();
@@ -16,6 +16,14 @@ const mockSignUpCreate = jest.fn();
 const mockPrepareEmailAddressVerification = jest.fn();
 const mockGetValidAccessToken = jest.fn();
 const mockSyncClerkUserProfile = jest.fn();
+
+jest.mock('expo-image', () => {
+  const mockReact = jest.requireActual('react');
+  const mockReactNative = jest.requireActual('react-native');
+  return {
+    Image: (props: any) => mockReact.createElement(mockReactNative.View, props),
+  };
+});
 
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
@@ -155,7 +163,12 @@ jest.mock('react-native-recaptcha-that-works', () => {
   const mockReact = jest.requireActual('react');
   return {
     __esModule: true,
-    default: mockReact.forwardRef(() => null),
+    default: mockReact.forwardRef((props: any, ref: any) => {
+      mockReact.useImperativeHandle(ref, () => ({
+        open: () => props.onVerify?.('mock-token'),
+      }));
+      return null;
+    }),
   };
 });
 
@@ -186,6 +199,30 @@ jest.mock('@/src/services/authTokens', () => ({
 jest.mock('@/src/services/clerkSync', () => ({
   syncClerkUserProfile: (params?: unknown) => mockSyncClerkUserProfile(params),
 }));
+
+const fillInput = (
+  renderer: TestRenderer.ReactTestRenderer,
+  testID: string,
+  value: string
+) => {
+  const input = renderer.root.findByProps({ testID }) as TestRenderer.ReactTestInstance;
+  act(() => {
+    input.props.onChangeText(value);
+  });
+};
+
+const pressJoin = async (renderer: TestRenderer.ReactTestRenderer) => {
+  const joinButton = renderer.root
+    .findAllByType(Pressable)
+    .find((node) => node.props.children === 'Join');
+
+  await act(async () => {
+    await joinButton!.props.onPress();
+  });
+  await act(async () => {
+    await Promise.resolve();
+  });
+};
 
 describe('SignupForm social buttons', () => {
   beforeEach(() => {
@@ -239,6 +276,8 @@ describe('SignupForm social buttons', () => {
       status: 200,
       response: { user: { _id: 'user_123' } },
     });
+    const { ApiCall } = jest.requireMock('@/src/services/api') as { ApiCall: jest.Mock };
+    ApiCall.mockResolvedValue({ status: 200, response: { ok: true } });
   });
 
   afterEach(() => {
@@ -288,5 +327,124 @@ describe('SignupForm social buttons', () => {
     );
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
     expect(mockReplace).not.toHaveBeenCalledWith('Login', expect.anything());
+  });
+
+  it('submits individual signup with Clerk canonical first and last name fields', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+    const navigation = {
+      replace: mockReplace,
+      navigate: mockNavigate,
+      reset: mockReset,
+    } as any;
+    const route = {
+      key: 'signup',
+      name: 'SignUp',
+      params: {
+        accountType: 'individual',
+      },
+    } as any;
+
+    act(() => {
+      renderer = TestRenderer.create(<SignupForm navigation={navigation} route={route} />);
+    });
+
+    fillInput(renderer!, 'signup-username-input', 'person.test');
+    fillInput(renderer!, 'signup-first-name-input', 'Person');
+    fillInput(renderer!, 'signup-last-name-input', 'Example');
+    fillInput(renderer!, 'signup-email-input', 'person@example.com');
+    fillInput(renderer!, 'signup-password-input', 'Password1!');
+    fillInput(renderer!, 'signup-confirm-password-input', 'Password1!');
+
+    await pressJoin(renderer!);
+
+    expect(mockSignUpCreate).toHaveBeenCalledWith({
+      emailAddress: 'person@example.com',
+      password: 'Password1!',
+      username: 'person_test',
+      firstName: 'Person',
+      lastName: 'Example',
+      legalAccepted: true,
+      unsafeMetadata: {
+        name: 'Person Example',
+        username: 'person.test',
+        accountType: 'individual',
+      },
+    });
+    expect(mockPrepareEmailAddressVerification).toHaveBeenCalledWith({ strategy: 'email_code' });
+    expect(mockReplace).toHaveBeenCalledWith(
+      'ConfirmLogin',
+      expect.objectContaining({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'person@example.com',
+        signupFirstName: 'Person',
+        signupLastName: 'Example',
+        signupName: 'Person Example',
+        signupUsername: 'person.test',
+        accountType: 'individual',
+      })
+    );
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('submits organization signup with organization profile name and contact Clerk names', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+    const navigation = {
+      replace: mockReplace,
+      navigate: mockNavigate,
+      reset: mockReset,
+    } as any;
+    const route = {
+      key: 'signup',
+      name: 'SignUp',
+      params: {
+        accountType: 'organization',
+      },
+    } as any;
+
+    act(() => {
+      renderer = TestRenderer.create(<SignupForm navigation={navigation} route={route} />);
+    });
+
+    fillInput(renderer!, 'signup-username-input', 'onebodychurch');
+    fillInput(renderer!, 'signup-organization-name-input', 'One Body Church');
+    fillInput(renderer!, 'signup-first-name-input', 'Ministry');
+    fillInput(renderer!, 'signup-last-name-input', 'Admin');
+    fillInput(renderer!, 'signup-email-input', 'admin@example.com');
+    fillInput(renderer!, 'signup-password-input', 'Password1!');
+    fillInput(renderer!, 'signup-confirm-password-input', 'Password1!');
+
+    await pressJoin(renderer!);
+
+    expect(mockSignUpCreate).toHaveBeenCalledWith({
+      emailAddress: 'admin@example.com',
+      password: 'Password1!',
+      username: 'onebodychurch',
+      firstName: 'Ministry',
+      lastName: 'Admin',
+      legalAccepted: true,
+      unsafeMetadata: {
+        name: 'One Body Church',
+        username: 'onebodychurch',
+        accountType: 'organization',
+        organizationName: 'One Body Church',
+      },
+    });
+    expect(mockReplace).toHaveBeenCalledWith(
+      'ConfirmLogin',
+      expect.objectContaining({
+        signupFirstName: 'Ministry',
+        signupLastName: 'Admin',
+        signupName: 'One Body Church',
+        signupUsername: 'onebodychurch',
+        accountType: 'organization',
+      })
+    );
+
+    act(() => {
+      renderer!.unmount();
+    });
   });
 });

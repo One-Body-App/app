@@ -108,6 +108,7 @@ const EMPTY_SNAPSHOT: ConnectPortalCacheSnapshot = {
   drafts: [],
   organizerPublished: [],
   publicPublished: [],
+  goingPublished: [],
   loadedAt: null,
 };
 

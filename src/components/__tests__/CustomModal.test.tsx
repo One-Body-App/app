@@ -60,4 +60,34 @@ describe('getKeyboardAvoidanceOffset', () => {
       })
     ).toBe(0);
   });
+
+  it('reserves room for the status bar and screen header so the sheet never lifts past them', () => {
+    // 932pt viewport, 88% sheet, ~336pt keyboard, ~96pt status bar + header.
+    // Without the inset the sheet would translate up by 932 - 820 = 112pt and
+    // expose space behind the screen header. With the inset the shift is
+    // clamped to 932 - 820 - 96 = 16pt.
+    expect(
+      getKeyboardAvoidanceOffset({
+        avoidKeyboard: true,
+        modalVisible: true,
+        keyboardHeight: 336,
+        sheetHeight: 820,
+        viewportHeight: 932,
+        safeAreaTopInset: 96,
+      })
+    ).toBe(16);
+  });
+
+  it('returns zero when the sheet already fills past the safe area', () => {
+    expect(
+      getKeyboardAvoidanceOffset({
+        avoidKeyboard: true,
+        modalVisible: true,
+        keyboardHeight: 336,
+        sheetHeight: 900,
+        viewportHeight: 932,
+        safeAreaTopInset: 96,
+      })
+    ).toBe(0);
+  });
 });

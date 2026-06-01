@@ -23,6 +23,7 @@ import {
   getConnectServeJobDraftById,
   parseConnectServeRequirements,
   saveConnectServeJobDraft,
+  submitConnectServeRoleSuggestion,
 } from '@/src/services/connectPortal';
 import { CONNECT_DEFAULT_SERVE_ROLE_OPTIONS } from '@/src/services/connectPortal/defaultServeRoles';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
@@ -41,7 +42,8 @@ const VISIBILITY_OPTIONS: SelectOption[] = [
   { label: 'Private', value: 'private' },
 ];
 
-const OTHER_ROLE_VALUE = '__other__';
+const REQUIREMENTS_PLACEHOLDER =
+  'List each responsibility or requirement on its own line — e.g.\n• Lead Sunday worship rehearsals\n• 2+ years on a worship team\n• Background check required';
 
 type RolePickerSheetProps = {
   visible: boolean;
@@ -51,6 +53,7 @@ type RolePickerSheetProps = {
   onClose: () => void;
   onSearchChange: (value: string) => void;
   onSelect: (value: string) => void;
+  onAddCustom: (value: string) => void;
   palette: ReturnType<typeof useCreateFlowPalette>;
 };
 
@@ -62,8 +65,16 @@ function RolePickerSheet({
   onClose,
   onSearchChange,
   onSelect,
+  onAddCustom,
   palette,
 }: RolePickerSheetProps) {
+  const trimmedSearch = searchText.trim();
+  const normalizedSearch = trimmedSearch.toLowerCase();
+  const exactMatch = options.some(
+    (option) => option.value.trim().toLowerCase() === normalizedSearch
+  );
+  const canAddCustom = trimmedSearch.length > 0 && !exactMatch;
+
   return (
     <CustomModal
       modalVisible={visible}
@@ -115,10 +126,10 @@ function RolePickerSheet({
             style={[styles.roleSearchInput, { color: palette.inputText }]}
             value={searchText}
             onChangeText={onSearchChange}
-            placeholder="Search roles"
+            placeholder="Search or add a role"
             placeholderTextColor={palette.inputPlaceholder}
             autoCorrect={false}
-            autoCapitalize="none"
+            autoCapitalize="words"
             returnKeyType="search"
           />
         </View>
@@ -162,10 +173,29 @@ function RolePickerSheet({
           ) : (
             <View style={styles.roleEmptyState}>
               <Text style={[styles.roleEmptyStateText, { color: palette.textSecondary }]}>
-                No roles found.
+                {trimmedSearch ? 'No matching roles yet.' : 'Type to search or add a new role.'}
               </Text>
             </View>
           )}
+
+          {canAddCustom ? (
+            <Pressable
+              testID="role-add-custom"
+              onPress={() => onAddCustom(trimmedSearch)}
+              style={[
+                styles.roleAddCustomButton,
+                {
+                  backgroundColor: palette.cardActiveBg,
+                  borderColor: palette.cardActiveBorder,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons name="plus" size={18} color={palette.accent} />
+              <Text style={[styles.roleAddCustomLabel, { color: palette.accent }]}>
+                Add &ldquo;{trimmedSearch}&rdquo; as a new role
+              </Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       </View>
     </CustomModal>
@@ -241,6 +271,21 @@ const showOptionPicker = (
   );
 };
 
+type RequiredLabelProps = {
+  text: string;
+  color: string;
+  accent: string;
+};
+
+function RequiredLabel({ text, color, accent }: RequiredLabelProps) {
+  return (
+    <Text style={[styles.label, { color }]}>
+      {text}
+      <Text style={{ color: accent }}> *</Text>
+    </Text>
+  );
+}
+
 export default function ServeCreateJobStep1({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
   const { serve } = useConnectPortalData();
@@ -248,7 +293,6 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [selectedRoleValue, setSelectedRoleValue] = useState('');
-  const [customRole, setCustomRole] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [requirementsText, setRequirementsText] = useState('');
@@ -258,6 +302,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
   const [addressPickerVisible, setAddressPickerVisible] = useState(false);
   const [roleSheetVisible, setRoleSheetVisible] = useState(false);
   const [roleSearchText, setRoleSearchText] = useState('');
+  const [customAdditions, setCustomAdditions] = useState<string[]>([]);
 
   const roleOptions = useMemo(() => {
     const seenValues = new Set<string>();
@@ -265,7 +310,9 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
       serve.roleTypeOptions && serve.roleTypeOptions.length > 0
         ? serve.roleTypeOptions
         : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS;
-    const mergedOptions = baseOptions.filter((option) => {
+    const customOptions = customAdditions.map((name) => ({ label: name, value: name }));
+
+    return [...customOptions, ...baseOptions].filter((option) => {
       const normalizedValue = option.value.trim().toLowerCase();
       if (!normalizedValue || seenValues.has(normalizedValue)) {
         return false;
@@ -274,9 +321,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
       seenValues.add(normalizedValue);
       return true;
     });
-
-    return [...mergedOptions, { label: 'Other', value: OTHER_ROLE_VALUE }];
-  }, [serve.roleTypeOptions]);
+  }, [serve.roleTypeOptions, customAdditions]);
 
   const filteredRoleOptions = useMemo(() => {
     const normalizedSearch = roleSearchText.trim().toLowerCase();
@@ -315,17 +360,15 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
 
         setDraftId(draft.id);
         setVisibility(draft.visibility);
-        const matchingRole = roleOptions.find(
-          (option) =>
-            option.value !== OTHER_ROLE_VALUE &&
-            option.value.trim().toLowerCase() === draft.title.trim().toLowerCase()
-        );
-        if (matchingRole) {
-          setSelectedRoleValue(matchingRole.value);
-          setCustomRole('');
-        } else if (draft.title.trim()) {
-          setSelectedRoleValue(OTHER_ROLE_VALUE);
-          setCustomRole(draft.title);
+        const draftTitle = draft.title.trim();
+        if (draftTitle) {
+          setSelectedRoleValue(draftTitle);
+          const isKnown = roleOptions.some(
+            (option) => option.value.trim().toLowerCase() === draftTitle.toLowerCase()
+          );
+          if (!isKnown) {
+            setCustomAdditions((previous) => [draftTitle, ...previous]);
+          }
         }
         setTitle(draft.title);
         setDescription(draft.description);
@@ -410,13 +453,26 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
 
   const handleRoleSelection = (value: string) => {
     setSelectedRoleValue(value);
-    if (value === OTHER_ROLE_VALUE) {
-      setTitle(customRole);
-      closeRoleSheet();
+    setTitle(value);
+    closeRoleSheet();
+  };
+
+  const handleAddCustomRole = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
       return;
     }
 
-    setTitle(value);
+    const isDuplicate = roleOptions.some(
+      (option) => option.value.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (!isDuplicate) {
+      setCustomAdditions((previous) => [trimmed, ...previous]);
+      submitConnectServeRoleSuggestion(trimmed);
+    }
+
+    setSelectedRoleValue(trimmed);
+    setTitle(trimmed);
     closeRoleSheet();
   };
 
@@ -427,8 +483,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
     !address.trim() ||
     !coordinate;
 
-  const isOtherRoleSelected = selectedRoleValue === OTHER_ROLE_VALUE;
-  const roleDisplayValue = isOtherRoleSelected ? customRole : title;
+  const roleDisplayValue = title;
   const roleDisplayColor = roleDisplayValue ? palette.inputText : palette.inputPlaceholder;
 
   return (
@@ -504,7 +559,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Role</Text>
+          <RequiredLabel text="Role" color={palette.textPrimary} accent={palette.accent} />
           <Pressable
             testID="role-picker-trigger"
             style={[
@@ -514,7 +569,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
             onPress={() => setRoleSheetVisible(true)}
           >
             <Text style={[styles.inputButtonText, { color: roleDisplayColor }]}>
-              {roleDisplayValue || (isOtherRoleSelected ? 'Enter a custom role' : 'Choose a role')}
+              {roleDisplayValue || 'Search or add a role'}
             </Text>
             <MaterialCommunityIcons
               name="chevron-down"
@@ -524,31 +579,8 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
           </Pressable>
         </View>
 
-        {isOtherRoleSelected ? (
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: palette.textPrimary }]}>Other Role</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.inputBorder,
-                  color: palette.inputText,
-                },
-              ]}
-              value={customRole}
-              onChangeText={(value) => {
-                setCustomRole(value);
-                setTitle(value);
-              }}
-              placeholder="Enter the role"
-              placeholderTextColor={palette.inputPlaceholder}
-            />
-          </View>
-        ) : null}
-
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Description</Text>
+          <RequiredLabel text="Description" color={palette.textPrimary} accent={palette.accent} />
           <TextInput
             style={[
               styles.textarea,
@@ -560,7 +592,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
             ]}
             value={description}
             onChangeText={setDescription}
-            placeholder="Summarize the responsibilities and who this role is for"
+            placeholder="What will the volunteer or hire do? Share day-to-day work, time commitment, and what success looks like."
             placeholderTextColor={palette.inputPlaceholder}
             multiline
             textAlignVertical="top"
@@ -568,9 +600,11 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>
-            Role & Responsibilities
-          </Text>
+          <RequiredLabel
+            text="Responsibilities & Requirements"
+            color={palette.textPrimary}
+            accent={palette.accent}
+          />
           <TextInput
             style={[
               styles.textarea,
@@ -583,18 +617,18 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
             ]}
             value={requirementsText}
             onChangeText={setRequirementsText}
-            placeholder="Enter one requirement per line"
+            placeholder={REQUIREMENTS_PLACEHOLDER}
             placeholderTextColor={palette.inputPlaceholder}
             multiline
             textAlignVertical="top"
           />
           <Text style={[styles.helperText, { color: palette.textSecondary }]}>
-            One requirement per line. Bullets are optional.
+            One per line. We&apos;ll format these as bullets in the posting.
           </Text>
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Location</Text>
+          <RequiredLabel text="Location" color={palette.textPrimary} accent={palette.accent} />
           <Pressable
             style={[
               styles.inputButton,
@@ -623,6 +657,14 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
             </Text>
           ) : null}
         </View>
+
+        <View style={[styles.disclaimer, { borderTopColor: palette.footerBorder }]}>
+          <Text style={[styles.disclaimerText, { color: palette.textSecondary }]}>
+            One Body is not affiliated with this opportunity and does not employ or vet the
+            organization posting it. By creating this opportunity, you confirm the details are
+            truthful and accurate — misrepresenting an opportunity may result in it being removed.
+          </Text>
+        </View>
       </CreateFlowLayout>
 
       <MapBox
@@ -642,6 +684,7 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
         onClose={closeRoleSheet}
         onSearchChange={setRoleSearchText}
         onSelect={handleRoleSelection}
+        onAddCustom={handleAddCustomRole}
         palette={palette}
       />
     </>
@@ -710,6 +753,17 @@ const styles = StyleSheet.create({
   },
   helperText: {
     marginTop: 8,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: 'OpenSans-Regular',
+  },
+  disclaimer: {
+    marginTop: 8,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  disclaimerText: {
     fontSize: 12,
     lineHeight: 18,
     fontFamily: 'OpenSans-Regular',
@@ -800,14 +854,34 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   roleEmptyState: {
-    minHeight: 120,
+    minHeight: 80,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   roleEmptyStateText: {
     fontSize: 14,
     lineHeight: 20,
     fontFamily: 'OpenSans-Regular',
+    textAlign: 'center',
+  },
+  roleAddCustomButton: {
+    marginTop: 12,
+    marginHorizontal: 4,
+    minHeight: 56,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  roleAddCustomLabel: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: 'Rubik-Medium',
   },
   mapTitle: {
     fontSize: 18,

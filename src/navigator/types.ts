@@ -550,6 +550,8 @@ type ConfirmLoginScreen = {
   apiKey?: string;
   lang?: string;
   prefillEmail?: string;
+  signupFirstName?: string;
+  signupLastName?: string;
   signupName?: string;
   signupUsername?: string;
   accountType?: AccountType | string | null;

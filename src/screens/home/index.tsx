@@ -82,6 +82,9 @@ import GlassTabBar from '@/components/GlassTabBar';
 import HeaderGradientOverlay from '@/components/HeaderGradientOverlay';
 import useSharedImageViewer from '@/components/imageViewer/useSharedImageViewer';
 import { flushFeedTelemetry, setFeedTelemetryAuthToken } from '@/services/feedTelemetry';
+/* sponsored ad injection */
+import InlineAdCard from '@/components/ads/InlineAdCard';
+import useFeedAds, { isInlineAdEntry, type InlineAdEntry } from '@/src/hooks/useFeedAds';
 import {
   deleteOwnedPost,
   emitOwnedPostDeleted,
@@ -187,7 +190,8 @@ type SuggestionsModuleItem = {
   moduleType: SuggestionsModuleType;
   id: string;
 };
-type RenderFeedEntry = FeedEntry | SuggestionsModuleItem;
+/* sponsored ad injection: InlineAdEntry is an additive render-only sentinel */
+type RenderFeedEntry = FeedEntry | SuggestionsModuleItem | InlineAdEntry;
 
 type HomeTelemetryPayload = {
   postId: string;
@@ -505,6 +509,10 @@ const getFeedEntryIdentity = (entry: FeedEntry): string | null => {
 };
 
 const getRenderEntryIdentity = (entry: RenderFeedEntry): string | null => {
+  /* sponsored ad injection */
+  if (isInlineAdEntry(entry)) {
+    return `ad:${entry.adKey}`;
+  }
   if (isSuggestionsModuleItem(entry)) {
     return `suggestion:${entry.moduleType}:${entry.id}`;
   }
@@ -1898,11 +1906,15 @@ function Home({ navigation, route }: Props) {
     };
   }, [feedOptions.type, getSuggestedUsers]);
 
+  /* sponsored ad injection */
+  const { interleaveAds } = useFeedAds();
+
   const feedDataWithSuggestions = useMemo<RenderFeedEntry[]>(() => {
     const isPrimaryFeed =
       feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou;
     if (!isPrimaryFeed) {
-      return feedData;
+      /* sponsored ad injection: also interleave ads on secondary feeds (Read/Watch) */
+      return interleaveAds(feedData, 6) as RenderFeedEntry[];
     }
 
     const moduleType: SuggestionsModuleType =
@@ -1928,8 +1940,9 @@ function Home({ navigation, route }: Props) {
       });
     }
 
-    return withSuggestions;
-  }, [feedData, feedOptions.type, isEndOfList]);
+    /* sponsored ad injection: insert an ad after every 6th feed row */
+    return interleaveAds(withSuggestions, 6) as RenderFeedEntry[];
+  }, [feedData, feedOptions.type, isEndOfList, interleaveAds]);
 
   const getFeedData = useCallback(
     async (type: FeedTypes, pageNumber: number) => {
@@ -2674,6 +2687,10 @@ function Home({ navigation, route }: Props) {
       return null;
     }
 
+    if (isInlineAdEntry(entry)) {
+      return null;
+    }
+
     let unwrapped: FeedPost | PrayerPost | null;
     if ('type' in entry && entry.type === 'tasteBreaker') {
       unwrapped = entry.items?.[0] ?? null;
@@ -2756,6 +2773,10 @@ function Home({ navigation, route }: Props) {
   // --- RENDER ITEM LOGIC (Fixes "Data not generating") ---
   const renderFeedItem = useCallback<ListRenderItem<RenderFeedEntry>>(
     ({ item, index }) => {
+      /* sponsored ad injection */
+      if (isInlineAdEntry(item)) {
+        return <InlineAdCard ad={item.ad} token={token} />;
+      }
       if (isSuggestionsModuleItem(item)) {
         const isPeopleModule = item.moduleType === 'peopleYouMayKnow';
         return (
@@ -3110,6 +3131,7 @@ function Home({ navigation, route }: Props) {
       peopleYouMayKnowUsers,
       suggestedForYouUsers,
       dark,
+      token /* sponsored ad injection */,
       connectingSuggestionIds,
       selectedSuggestionIds,
       handleConnectSuggestion,

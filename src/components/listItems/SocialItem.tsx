@@ -27,6 +27,7 @@ import {
 import { borderWidth } from '@/src/styles/outlines';
 import { Colors } from '@/src/styles';
 import ParsedText from '@/components/mentions/ParsedText';
+import ScriptureText from '@/components/scripture/ScriptureText';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
@@ -918,9 +919,12 @@ function SocialItem({
         >
           {shouldRenderPrimaryText ? (
             <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
-              <ParsedText
+              {/* ScriptureText wraps ParsedText: preserves @-mentions and adds
+                  tappable scripture hyperlinks when scriptureMentions exist. */}
+              <ScriptureText
                 text={primaryTextToRender}
                 mentions={itemData.mentions}
+                scriptureMentions={itemData.scriptureMentions}
                 textStyle={{
                   color: colors.text,
                   marginBottom: spacing.x8,

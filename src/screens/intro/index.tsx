@@ -554,6 +554,12 @@ function IntroScreen({ navigation }: Props) {
                 <Animated.View
                   style={[
                     {
+                      // borderRadius matches the inner button so the boxShadow
+                      // traces the pill instead of dropping a square halo. The
+                      // marginBottom lives on the wrapper (not the inner view)
+                      // so the wrapper's bounding box hugs the visible button.
+                      borderRadius: glassRadius,
+                      marginBottom: 15,
                       boxShadow: '0 6px 10px rgba(18, 107, 135, 0.125)',
                     },
                     buttonWobble(primaryBtnAnim),
@@ -569,7 +575,6 @@ function IntroScreen({ navigation }: Props) {
                         borderWidth: 1,
                         borderColor: glassBorderColor,
                         backgroundColor: glassBackground,
-                        marginBottom: 15,
                       }}
                     >
                       <BlurView
@@ -592,7 +597,7 @@ function IntroScreen({ navigation }: Props) {
                     </View>
                   ) : (
                     <Button
-                      btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
+                      btnStyle={[button.primary, { flex: 1 }]}
                       onPress={() => {
                         HapticService.trigger();
                         navigation.navigate('AccountType');
@@ -606,6 +611,9 @@ function IntroScreen({ navigation }: Props) {
                 <Animated.View
                   style={[
                     {
+                      // Match the pill shape so the shadow doesn't render as
+                      // a square behind the rounded button.
+                      borderRadius: glassRadius,
                       boxShadow: '0 4px 8px rgba(18, 107, 135, 0.1)',
                     },
                     buttonWobble(secondaryBtnAnim),

@@ -22,6 +22,7 @@ import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import {
   createConnectPortalDraft,
   formatConnectPortalDateTime,
+  isApprovedConnectCreator,
   trackConnectPortalEventTelemetry,
   type ConnectQuickChip,
   type ConnectPortalEventRecord,
@@ -160,6 +161,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const [chromeHeight, setChromeHeight] = useState(0);
   const { keyboardHeight, keyboardVisible } = useConnectKeyboardMetrics();
+  const isCreator = isApprovedConnectCreator(currentUser);
   useFocusEffect(
     React.useCallback(() => {
       setActiveTab('Go!');
@@ -315,10 +317,14 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
           activeTab="Go!"
           onTabChange={handleTabChange}
           userAvatarUri={currentUser?.profileImage || NO_PROFILE_IMAGE}
-          onAddPress={async () => {
-            const draft = await createConnectPortalDraft();
-            navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
-          }}
+          onAddPress={
+            isCreator
+              ? async () => {
+                  const draft = await createConnectPortalDraft();
+                  navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+                }
+              : undefined
+          }
           addAccessibilityLabel="Create event"
           headerActionIconName="map"
           headerActionAccessibilityLabel="Switch to map view"
@@ -363,21 +369,23 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
               >
                 <MaterialIcons name="dashboard" size={18} color={palette.activeText} />
                 <StyledText style={[styles.organizerButtonText, { color: palette.textPrimary }]}>
-                  Event Dashboard
+                  {isCreator ? 'Event Dashboard' : 'Going Dashboard'}
                 </StyledText>
               </Pressable>
-              <Pressable
-                style={[
-                  styles.organizerButton,
-                  { backgroundColor: palette.inputBg, borderColor: palette.border },
-                ]}
-                onPress={() => navigation.navigate('ConnectGoMyEvents')}
-              >
-                <MaterialIcons name="event-note" size={18} color={palette.activeText} />
-                <StyledText style={[styles.organizerButtonText, { color: palette.textPrimary }]}>
-                  My Events
-                </StyledText>
-              </Pressable>
+              {isCreator ? (
+                <Pressable
+                  style={[
+                    styles.organizerButton,
+                    { backgroundColor: palette.inputBg, borderColor: palette.border },
+                  ]}
+                  onPress={() => navigation.navigate('ConnectGoMyEvents')}
+                >
+                  <MaterialIcons name="event-note" size={18} color={palette.activeText} />
+                  <StyledText style={[styles.organizerButtonText, { color: palette.textPrimary }]}>
+                    My Events
+                  </StyledText>
+                </Pressable>
+              ) : null}
             </View>
 
             <ConnectPlacesQuickChips
@@ -582,7 +590,7 @@ function GoLandingScreen({ navigation }: Props): React.JSX.Element {
           searchPlaceholder="Search events..."
           tertiaryAction={{
             icon: 'eventManager',
-            accessibilityLabel: 'Open event management',
+            accessibilityLabel: isCreator ? 'Open event management' : 'Open Going dashboard',
             onPress: () => navigation.navigate('ConnectGoEventDash'),
             testID: 'connect-go-event-manager-action',
           }}

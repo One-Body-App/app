@@ -129,6 +129,7 @@ export type ConnectPortalEventRecordBase = {
   viewCount: number;
   openCount: number;
   tags: string[];
+  isGoing?: boolean;
 };
 
 export type ConnectPortalEventDraft = ConnectPortalEventRecordBase & {
@@ -160,6 +161,7 @@ export type ConnectPortalCacheSnapshot = {
   drafts: ConnectPortalEventDraft[];
   organizerPublished: ConnectPortalPublishedEvent[];
   publicPublished: ConnectPortalPublishedEvent[];
+  goingPublished: ConnectPortalPublishedEvent[];
   loadedAt: number | null;
 };
 
@@ -242,7 +244,7 @@ export type ConnectPortalResumeResolution =
 
 export type ConnectPortalTelemetryActivityItem = {
   id: string;
-  eventType: 'publish' | 'detail_open' | 'detail_view' | 'manage_view';
+  eventType: 'publish' | 'detail_open' | 'detail_view' | 'manage_view' | 'going' | 'not_going';
   timestamp: string;
   metadata: Record<string, unknown> | null;
 };
@@ -252,6 +254,8 @@ export type ConnectPortalAnalyticsSummary = {
   openCount: number;
   viewCount: number;
   manageViewCount: number;
+  goingCount?: number;
+  notGoingCount?: number;
   registrationCount: number;
   conversionRate: number;
 };

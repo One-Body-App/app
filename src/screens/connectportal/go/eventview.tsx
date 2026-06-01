@@ -7,8 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   formatConnectPortalDate,
+  formatConnectPortalNumber,
   getConnectPortalEventById,
   getDraftResumeRouteName,
+  setConnectPortalEventGoing,
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import type { ConnectPortalEventRecord } from '@/src/services/connectPortal';
@@ -111,6 +113,7 @@ const getLocationCopy = (eventRecord: ConnectPortalEventRecord | null) => {
 
 function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   const [eventRecord, setEventRecord] = useState<ConnectPortalEventRecord | null>(null);
+  const [goingUpdating, setGoingUpdating] = useState(false);
   const insets = useSafeAreaInsets();
 
   useMountEffect(() => {
@@ -137,9 +140,62 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   const isExternalLinkEvent =
     eventRecord?.status === 'published' && eventRecord.ticketType === 'external';
   const hasExternalLink = isValidExternalLink(eventRecord?.externalEventUrl);
+  const shouldShowExternalLink = isExternalLinkEvent && hasExternalLink;
+  const isGoing = eventRecord?.status === 'published' && eventRecord.isGoing === true;
   const dateAndTimeCopy = getDateAndTimeCopy(eventRecord);
   const locationCopy = getLocationCopy(eventRecord);
   const organizerInitials = getOrganizerInitials(eventRecord?.organizerName);
+
+  const handleExternalLinkPress = async () => {
+    if (!eventRecord?.externalEventUrl) {
+      return;
+    }
+
+    try {
+      await Linking.openURL(eventRecord.externalEventUrl);
+    } catch {
+      Alert.alert('Unable to open link', 'Please try again later.');
+    }
+  };
+
+  const handleToggleGoing = async () => {
+    if (eventRecord?.status !== 'published' || goingUpdating) {
+      return;
+    }
+
+    const previousRecord = eventRecord;
+    const nextGoing = !previousRecord.isGoing;
+    const nextRegistrationCount = Math.max(
+      0,
+      Number(previousRecord.registrationCount || 0) + (nextGoing ? 1 : -1)
+    );
+
+    setGoingUpdating(true);
+    setEventRecord({
+      ...previousRecord,
+      isGoing: nextGoing,
+      registrationCount: nextRegistrationCount,
+    });
+
+    try {
+      const response = await setConnectPortalEventGoing(previousRecord.id, nextGoing);
+      if (response.event) {
+        setEventRecord(response.event);
+        return;
+      }
+
+      setEventRecord({
+        ...previousRecord,
+        isGoing: response.isGoing,
+        registrationCount: response.registrationCount,
+      });
+    } catch {
+      setEventRecord(previousRecord);
+      Alert.alert('Unable to update RSVP', 'Please try again later.');
+    } finally {
+      setGoingUpdating(false);
+    }
+  };
 
   function renderBottomAction() {
     if (eventRecord?.status === 'draft') {
@@ -158,40 +214,37 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
       );
     }
 
-    if (isExternalLinkEvent) {
-      return (
+    return (
+      <>
+        {shouldShowExternalLink ? (
+          <Pressable
+            style={styles.externalLinkButton}
+            testID="connect-event-external-link-action"
+            onPress={handleExternalLinkPress}
+          >
+            <Text style={styles.externalLinkButtonText}>Registration Link</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           style={[
             styles.bottomButton,
             styles.bottomButtonPublished,
-            !hasExternalLink ? styles.bottomButtonDisabled : null,
+            goingUpdating ? styles.bottomButtonDisabled : null,
           ]}
-          disabled={!hasExternalLink}
+          disabled={goingUpdating || eventRecord?.status !== 'published'}
           testID="connect-event-primary-action"
-          onPress={async () => {
-            if (!eventRecord?.externalEventUrl) {
-              return;
-            }
-
-            try {
-              await Linking.openURL(eventRecord.externalEventUrl);
-            } catch {
-              Alert.alert('Unable to open link', 'Please try again later.');
-            }
-          }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isGoing, disabled: goingUpdating }}
+          onPress={handleToggleGoing}
         >
-          <Text style={[styles.bottomButtonText, styles.bottomButtonTextPublished]}>Go!</Text>
+          <Text style={[styles.bottomButtonText, styles.bottomButtonTextPublished]}>
+            {goingUpdating ? 'Saving...' : isGoing ? 'Going' : 'Go!'}
+          </Text>
         </Pressable>
-      );
-    }
-
-    return (
-      <Pressable
-        style={[styles.bottomButton, styles.bottomButtonPublished]}
-        testID="connect-event-primary-action"
-      >
-        <Text style={[styles.bottomButtonText, styles.bottomButtonTextPublished]}>Go!</Text>
-      </Pressable>
+        <Text style={styles.goingCountText}>
+          {formatConnectPortalNumber(eventRecord?.registrationCount ?? 0)} going
+        </Text>
+      </>
     );
   }
 
@@ -247,6 +300,15 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
               <Text style={styles.infoValue}>{locationCopy.primary}</Text>
               <Text style={styles.infoSubvalue}>{locationCopy.secondary}</Text>
             </View>
+
+            {eventRecord?.status === 'published' ? (
+              <View style={styles.infoBlock}>
+                <Text style={styles.infoLabel}>Going</Text>
+                <Text style={styles.infoValue}>
+                  {formatConnectPortalNumber(eventRecord.registrationCount)} attending
+                </Text>
+              </View>
+            ) : null}
 
             <View style={styles.organizerCard}>
               <View style={styles.avatarPlaceholder}>
@@ -413,6 +475,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#F6F7F8',
     borderTopWidth: 1,
     borderTopColor: '#E6EAEC',
+    gap: 8,
+  },
+  externalLinkButton: {
+    minHeight: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#C7D6DB',
+  },
+  externalLinkButtonText: {
+    color: '#032f3c',
+    fontSize: 15,
+    fontWeight: '800',
   },
   bottomButton: {
     minHeight: 54,
@@ -436,6 +513,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontStyle: 'italic',
     letterSpacing: 0.4,
+  },
+  goingCountText: {
+    color: '#4F6D77',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
 

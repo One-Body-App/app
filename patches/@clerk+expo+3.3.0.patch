@@ -1,0 +1,194 @@
+diff --git a/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkAuthExpoView.kt b/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkAuthExpoView.kt
+index ce948f7a..719d7b73 100644
+--- a/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkAuthExpoView.kt
++++ b/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkAuthExpoView.kt
+@@ -170,6 +170,14 @@ class ClerkAuthNativeView(context: Context) : FrameLayout(context) {
+     }
+     reactContext.getJSModule(RCTEventEmitter::class.java)
+       .receiveEvent(id, "onAuthEvent", eventData)
++
++    if (type == "signInCompleted" || type == "signUpCompleted") {
++      ClerkExpoModule.emitAuthStateChange(
++        reactContext,
++        "signedIn",
++        data["sessionId"] as? String
++      )
++    }
+   }
+ 
+   companion object {
+diff --git a/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkExpoModule.kt b/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkExpoModule.kt
+index 7c822cfd..c8f05406 100644
+--- a/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkExpoModule.kt
++++ b/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkExpoModule.kt
+@@ -14,9 +14,11 @@ import com.clerk.api.ui.ClerkTheme
+ import com.facebook.react.bridge.ActivityEventListener
+ import com.facebook.react.bridge.Promise
+ import com.facebook.react.bridge.ReactApplicationContext
++import com.facebook.react.bridge.ReactContext
+ import com.facebook.react.bridge.ReactMethod
+ import com.facebook.react.bridge.ReadableMap
+ import com.facebook.react.bridge.WritableNativeMap
++import com.facebook.react.modules.core.DeviceEventManagerModule
+ import kotlinx.coroutines.CoroutineScope
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.TimeoutCancellationException
+@@ -38,6 +40,7 @@ class ClerkExpoModule(reactContext: ReactApplicationContext) :
+     ActivityEventListener {
+ 
+     companion object {
++        private const val AUTH_STATE_CHANGE_EVENT = "onAuthStateChange"
+         const val CLERK_AUTH_REQUEST_CODE = 9001
+         const val CLERK_PROFILE_REQUEST_CODE = 9002
+ 
+@@ -56,6 +59,21 @@ class ClerkExpoModule(reactContext: ReactApplicationContext) :
+ 
+         // Store publishable key for passing to activities
+         private var publishableKey: String? = null
++        private var authStateListenerCount = 0
++
++        fun emitAuthStateChange(reactContext: ReactContext, type: String, sessionId: String?) {
++            if (authStateListenerCount <= 0) {
++                return
++            }
++
++            val payload = WritableNativeMap().apply {
++                putString("type", type)
++                putString("sessionId", sessionId)
++            }
++            reactContext
++                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
++                .emit(AUTH_STATE_CHANGE_EVENT, payload)
++        }
+     }
+ 
+     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+@@ -66,6 +84,18 @@ class ClerkExpoModule(reactContext: ReactApplicationContext) :
+ 
+     override fun getName(): String = "ClerkExpo"
+ 
++    @ReactMethod
++    override fun addListener(eventName: String) {
++        if (eventName == AUTH_STATE_CHANGE_EVENT) {
++            authStateListenerCount += 1
++        }
++    }
++
++    @ReactMethod
++    override fun removeListeners(count: Double) {
++        authStateListenerCount = (authStateListenerCount - count.toInt()).coerceAtLeast(0)
++    }
++
+     // MARK: - configure
+ 
+     @ReactMethod
+@@ -353,6 +383,7 @@ class ClerkExpoModule(reactContext: ReactApplicationContext) :
+             }
+ 
+             promise.resolve(result)
++            emitAuthStateChange(reactApplicationContext, "signedIn", session?.id)
+         } else {
+             val result = WritableNativeMap()
+             result.putBoolean("cancelled", true)
+@@ -393,6 +424,10 @@ class ClerkExpoModule(reactContext: ReactApplicationContext) :
+         result.putBoolean("dismissed", resultCode == Activity.RESULT_CANCELED)
+ 
+         promise.resolve(result)
++
++        if (session == null) {
++            emitAuthStateChange(reactApplicationContext, "signedOut", null)
++        }
+     }
+ 
+     // MARK: - Theme Loading
+diff --git a/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkUserProfileExpoView.kt b/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkUserProfileExpoView.kt
+index 8d3762a3..6beb5c1f 100644
+--- a/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkUserProfileExpoView.kt
++++ b/node_modules/@clerk/expo/android/src/main/java/expo/modules/clerk/ClerkUserProfileExpoView.kt
+@@ -140,5 +140,13 @@ class ClerkUserProfileNativeView(context: Context) : FrameLayout(context) {
+     }
+     reactContext.getJSModule(RCTEventEmitter::class.java)
+       .receiveEvent(id, "onProfileEvent", eventData)
++
++    if (type == "signedOut") {
++      ClerkExpoModule.emitAuthStateChange(
++        reactContext,
++        "signedOut",
++        data["sessionId"] as? String
++      )
++    }
+   }
+ }
+diff --git a/node_modules/@clerk/expo/dist/specs/NativeClerkModule.d.ts b/node_modules/@clerk/expo/dist/specs/NativeClerkModule.d.ts
+index bb69bc7a..da8f5667 100644
+--- a/node_modules/@clerk/expo/dist/specs/NativeClerkModule.d.ts
++++ b/node_modules/@clerk/expo/dist/specs/NativeClerkModule.d.ts
+@@ -1,13 +1,15 @@
+ import type { TurboModule } from 'react-native';
+ import type { UnsafeObject } from 'react-native/Libraries/Types/CodegenTypesNamespace';
+ export interface Spec extends TurboModule {
++    addListener(eventName: string): void;
+     configure(publishableKey: string, bearerToken: string | null): Promise<void>;
+     presentAuth(options: UnsafeObject): Promise<UnsafeObject>;
+     presentUserProfile(options: UnsafeObject): Promise<UnsafeObject | null>;
+     getSession(): Promise<UnsafeObject | null>;
+     getClientToken(): Promise<string | null>;
++    removeListeners(count: number): void;
+     signOut(): Promise<void>;
+ }
+ declare const _default: Spec | null;
+ export default _default;
+-//# sourceMappingURL=NativeClerkModule.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=NativeClerkModule.d.ts.map
+diff --git a/node_modules/@clerk/expo/ios/ClerkExpoModule.m b/node_modules/@clerk/expo/ios/ClerkExpoModule.m
+index febfe003..c25c056b 100644
+--- a/node_modules/@clerk/expo/ios/ClerkExpoModule.m
++++ b/node_modules/@clerk/expo/ios/ClerkExpoModule.m
+@@ -25,4 +25,7 @@ RCT_EXTERN_METHOD(getClientToken:(RCTPromiseResolveBlock)resolve
+ RCT_EXTERN_METHOD(signOut:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject)
+ 
++RCT_EXTERN_METHOD(addListener:(NSString *)eventName)
++RCT_EXTERN_METHOD(removeListeners:(double)count)
++
+ @end
+diff --git a/node_modules/@clerk/expo/ios/ClerkExpoModule.swift b/node_modules/@clerk/expo/ios/ClerkExpoModule.swift
+index efd1e142..1e9b20aa 100644
+--- a/node_modules/@clerk/expo/ios/ClerkExpoModule.swift
++++ b/node_modules/@clerk/expo/ios/ClerkExpoModule.swift
+@@ -55,6 +55,16 @@ class ClerkExpoModule: RCTEventEmitter {
+     ClerkExpoModule._hasListeners = false
+   }
+ 
++  @objc(addListener:)
++  override func addListener(_ eventName: String!) {
++    super.addListener(eventName)
++  }
++
++  @objc(removeListeners:)
++  override func removeListeners(_ count: Double) {
++    super.removeListeners(count)
++  }
++
+   /// Emits an onAuthStateChange event to JS from anywhere in the native layer.
+   /// Used by inline views (AuthView, UserProfileView) to notify ClerkProvider
+   /// of auth state changes in addition to the view-level onAuthEvent callback.
+diff --git a/node_modules/@clerk/expo/src/specs/NativeClerkModule.ts b/node_modules/@clerk/expo/src/specs/NativeClerkModule.ts
+index 1c38d2c1..0acfbd2c 100644
+--- a/node_modules/@clerk/expo/src/specs/NativeClerkModule.ts
++++ b/node_modules/@clerk/expo/src/specs/NativeClerkModule.ts
+@@ -3,11 +3,13 @@ import { TurboModuleRegistry } from 'react-native';
+ import type { UnsafeObject } from 'react-native/Libraries/Types/CodegenTypesNamespace';
+ 
+ export interface Spec extends TurboModule {
++  addListener(eventName: string): void;
+   configure(publishableKey: string, bearerToken: string | null): Promise<void>;
+   presentAuth(options: UnsafeObject): Promise<UnsafeObject>;
+   presentUserProfile(options: UnsafeObject): Promise<UnsafeObject | null>;
+   getSession(): Promise<UnsafeObject | null>;
+   getClientToken(): Promise<string | null>;
++  removeListeners(count: number): void;
+   signOut(): Promise<void>;
+ }
+ 

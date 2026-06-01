@@ -1,6 +1,13 @@
 import { Image } from 'expo-image';
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Pressable, FlatList, RefreshControl, Platform } from 'react-native';
+import {
+  View,
+  Pressable,
+  FlatList,
+  RefreshControl,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
@@ -30,6 +37,7 @@ type Props = NativeStackScreenProps<OnboardingStackParamList, 'OnboardingInfluen
 const influencerListInsets = { bottom: spacing.x48 };
 const influencerListAndroidPadding =
   Platform.OS === 'android' ? { paddingBottom: spacing.x48 } : {};
+const INFLUENCERS_PAGE_SIZE = 24;
 
 function EmptyInfluencersList() {
   return (
@@ -51,9 +59,12 @@ function OnboardingInfluencers({ route }: Props) {
   const dispatch = useDispatch();
   const [searchText, setSearchText] = useState<string>('');
   const pageRef = useRef(1);
-  const loadingMoreRef = useRef(true);
+  const loadingMoreRef = useRef(false);
   const isEndOfListRef = useRef(false);
+  const requestSequenceRef = useRef(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasLoadedInfluencers, setHasLoadedInfluencers] = useState(false);
 
   const getInfluencerId = useCallback((item?: User) => {
     const raw = item?._id ?? item?.id ?? item?.userId;
@@ -68,41 +79,93 @@ function OnboardingInfluencers({ route }: Props) {
     [getInfluencerId]
   );
 
+  const mergeUniqueInfluencers = useCallback(
+    (previous: User[], incoming: User[]) => {
+      const seenIds = new Set(
+        previous.flatMap((item) => {
+          const influencerId = getInfluencerId(item);
+          return influencerId ? [influencerId] : [];
+        })
+      );
+      const merged = [...previous];
+
+      incoming.forEach((item) => {
+        const influencerId = getInfluencerId(item);
+        if (!influencerId || seenIds.has(influencerId)) {
+          return;
+        }
+        seenIds.add(influencerId);
+        merged.push(item);
+      });
+
+      return merged;
+    },
+    [getInfluencerId]
+  );
+
+  const extractInfluencerResults = useCallback((response: unknown): User[] => {
+    if (Array.isArray(response)) {
+      return response as User[];
+    }
+
+    if (
+      response &&
+      typeof response === 'object' &&
+      Array.isArray((response as { data?: unknown }).data)
+    ) {
+      return (response as { data: User[] }).data;
+    }
+
+    return [];
+  }, []);
+
   const getInfluencers = useCallback(
     async (pageNumber: number, term: string = searchText) => {
+      const requestId = requestSequenceRef.current + 1;
+      requestSequenceRef.current = requestId;
+      const isFirstPage = pageNumber === 1;
+      const normalizedTerm = term.trim();
+
       loadingMoreRef.current = true;
+      if (!isFirstPage) {
+        setIsLoadingMore(true);
+      }
       try {
         const res = await ApiCall({
-          route: `user/get-users-to-subscribe/${pageNumber}?term=${term}&itemsPerPage=12`,
+          route: `user/get-users-to-subscribe/${pageNumber}?term=${encodeURIComponent(
+            normalizedTerm
+          )}&itemsPerPage=${INFLUENCERS_PAGE_SIZE}`,
           verb: 'get',
           token,
         });
 
-        if (res?.status === 200) {
-          const responseData: User[] = Array.isArray(res?.response?.data) ? res.response.data : [];
+        if (requestId === requestSequenceRef.current && res?.status === 200) {
+          const responseData = extractInfluencerResults(res?.response);
+          isEndOfListRef.current = responseData.length < INFLUENCERS_PAGE_SIZE;
+          pageRef.current = pageNumber;
 
-          if (pageNumber === 1) {
+          if (isFirstPage) {
             setInfluencers(responseData);
-            isEndOfListRef.current = false;
           } else {
-            if (responseData.length < 1) {
-              isEndOfListRef.current = true;
-            }
-            setInfluencers((prev) => [...prev, ...responseData]);
+            setInfluencers((prev) => mergeUniqueInfluencers(prev, responseData));
           }
-        } else if (__DEV__) {
+        } else if (requestId === requestSequenceRef.current && __DEV__) {
           console.log('error', res?.response);
         }
-        loadingMoreRef.current = false;
-        setIsRefreshing(false);
       } catch (e: any) {
-        if (__DEV__) {
+        if (requestId === requestSequenceRef.current && __DEV__) {
           console.log('saga error -- ', e.toString());
         }
-        loadingMoreRef.current = false;
+      } finally {
+        if (requestId === requestSequenceRef.current) {
+          loadingMoreRef.current = false;
+          setIsLoadingMore(false);
+          setIsRefreshing(false);
+          setHasLoadedInfluencers(true);
+        }
       }
     },
-    [searchText, token]
+    [extractInfluencerResults, mergeUniqueInfluencers, searchText, token]
   );
 
   const addFollowing = async () => {
@@ -157,7 +220,9 @@ function OnboardingInfluencers({ route }: Props) {
                 })
               );
             } else {
-              setselectedInfluencers([...selectedInfluencers, influencerId]);
+              setselectedInfluencers((previous) =>
+                previous.includes(influencerId) ? previous : [...previous, influencerId]
+              );
             }
           }}
           style={{
@@ -331,7 +396,7 @@ function OnboardingInfluencers({ route }: Props) {
               clearButtonMode="always"
               onChangeText={(text) => {
                 setSearchText(text);
-                pageRef.current = 1;
+                isEndOfListRef.current = false;
                 getInfluencers(1, text);
               }}
               value={searchText}
@@ -362,7 +427,7 @@ function OnboardingInfluencers({ route }: Props) {
                   refreshing={isRefreshing}
                   onRefresh={() => {
                     setIsRefreshing(true);
-                    pageRef.current = 1;
+                    isEndOfListRef.current = false;
                     // setSearchChannelsToFollow([]);
                     // dispatch(getuserAll({ token: token }));
                     getInfluencers(1);
@@ -375,7 +440,6 @@ function OnboardingInfluencers({ route }: Props) {
               onEndReached={() => {
                 if (!loadingMoreRef.current && !isRefreshing && !isEndOfListRef.current) {
                   const nextPage = pageRef.current + 1;
-                  pageRef.current = nextPage;
                   getInfluencers(nextPage);
                 }
               }}
@@ -390,7 +454,17 @@ function OnboardingInfluencers({ route }: Props) {
               scrollIndicatorInsets={influencerListInsets}
               numColumns={3}
               renderItem={renderInfluencerItem}
-              ListEmptyComponent={EmptyInfluencersList}
+              ListEmptyComponent={hasLoadedInfluencers ? EmptyInfluencersList : null}
+              ListFooterComponent={
+                isLoadingMore ? (
+                  <ActivityIndicator
+                    animating
+                    size="small"
+                    color={dark ? Colors.primarySapphire[400] : Colors.primary.brand}
+                    style={{ marginVertical: spacing.x16 }}
+                  />
+                ) : null
+              }
               removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
               initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
               maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}

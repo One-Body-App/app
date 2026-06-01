@@ -69,6 +69,10 @@ const initialFormState = {
   usernameError: '',
   name: '',
   nameError: '',
+  firstName: '',
+  firstNameError: '',
+  lastName: '',
+  lastNameError: '',
   email: '',
   emailError: '',
   password: '',
@@ -200,6 +204,8 @@ function SignupForm({ navigation, route }: Props) {
   const inputRefs = {
     username: useRef<TextInput>(null),
     name: useRef<TextInput>(null),
+    firstName: useRef<TextInput>(null),
+    lastName: useRef<TextInput>(null),
     email: useRef<TextInput>(null),
     password: useRef<TextInput>(null),
     cPassword: useRef<TextInput>(null),
@@ -240,10 +246,22 @@ function SignupForm({ navigation, route }: Props) {
     placeholder: dark ? '#999DA1' : '#838584',
     errorBorder: Colors.errorFeedback[200],
   };
+  const isOrganizationSignup = accountType === 'organization';
+  const signupFirstName = state.firstName.trim();
+  const signupLastName = state.lastName.trim();
+  const organizationName = state.name.trim();
+  const signupName = isOrganizationSignup
+    ? organizationName
+    : [signupFirstName, signupLastName].filter(Boolean).join(' ');
 
   const normalizeUsername = useCallback((value: string) => {
     return value?.toLowerCase().trim().replace(/\s+/g, '') ?? '';
   }, []);
+
+  const normalizeClerkUsername = useCallback(
+    (value: string) => normalizeUsername(value).replace(/[^a-z0-9_-]+/g, '_'),
+    [normalizeUsername]
+  );
 
   const generateUsernameSuggestions = useCallback(
     (rawUsername: string, rawName?: string) => {
@@ -305,13 +323,17 @@ function SignupForm({ navigation, route }: Props) {
     !state.password ||
     !state.cPassword ||
     !state.username ||
-    !state.name ||
+    !signupFirstName ||
+    !signupLastName ||
+    (isOrganizationSignup && !organizationName) ||
     !accountType ||
     state.emailError !== '' ||
     state.passwordError !== '' ||
     state.cPasswordError !== '' ||
     state.usernameError !== '' ||
     state.nameError !== '' ||
+    state.firstNameError !== '' ||
+    state.lastNameError !== '' ||
     state.password !== state.cPassword ||
     !passwordRules.sixCharsOrMore ||
     !passwordRules.number ||
@@ -340,16 +362,35 @@ function SignupForm({ navigation, route }: Props) {
     setIsloading(true);
     setFormError('');
     setFormSuccess('');
-    const { email, password, cPassword, username, name } = state;
+    const { email, password, cPassword, username } = state;
     const [emailError, passwordError, cPasswordError] = await Promise.all([
       validator('email', email),
       validator('password', password),
       validator('cPassword', cPassword, { password }),
     ]);
     const usernameError = username ? '' : 'Username is required';
-    const nameError = name ? '' : 'Name is required';
+    const firstNameError = signupFirstName
+      ? ''
+      : isOrganizationSignup
+        ? 'Contact first name is required'
+        : 'First name is required';
+    const lastNameError = signupLastName
+      ? ''
+      : isOrganizationSignup
+        ? 'Contact last name is required'
+        : 'Last name is required';
+    const nameError =
+      isOrganizationSignup && !organizationName ? 'Organization name is required' : '';
 
-    if (!emailError && !passwordError && !cPasswordError && !usernameError && !nameError) {
+    if (
+      !emailError &&
+      !passwordError &&
+      !cPasswordError &&
+      !usernameError &&
+      !nameError &&
+      !firstNameError &&
+      !lastNameError
+    ) {
       if (password === cPassword) {
         const data = { email };
         if (__DEV__) {
@@ -400,6 +441,8 @@ function SignupForm({ navigation, route }: Props) {
         cPasswordError: cPasswordError ?? '',
         usernameError: usernameError ?? '',
         nameError: nameError ?? '',
+        firstNameError,
+        lastNameError,
       });
       setFormError('Please complete all required fields.');
       Keyboard.dismiss();
@@ -454,7 +497,7 @@ function SignupForm({ navigation, route }: Props) {
           ...prev,
           usernameError: 'This username is already in use. If it belongs to you, please sign in.',
         }));
-        setUsernameSuggestions(generateUsernameSuggestions(normalized, state.name));
+        setUsernameSuggestions(generateUsernameSuggestions(normalized, signupName));
       }
     } catch (error) {
       // Silently fail - validation will happen on submit anyway
@@ -468,9 +511,16 @@ function SignupForm({ navigation, route }: Props) {
   const createAccountGlassFill = 'rgba(18, 107, 135, 0.75)';
 
   const onVerify = async () => {
-    const { email, password, name, username } = state;
+    const { email, password, username } = state;
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedUsername = normalizeUsername(username);
+    const clerkUsername = normalizeClerkUsername(username);
+    const metadata = {
+      name: signupName,
+      username: normalizedUsername,
+      accountType,
+      ...(isOrganizationSignup ? { organizationName } : {}),
+    };
 
     if (!isSignUpLoaded || !clerkSignUp) {
       setIsloading(false);
@@ -482,11 +532,11 @@ function SignupForm({ navigation, route }: Props) {
       await clerkSignUp.create({
         emailAddress: normalizedEmail,
         password,
-        unsafeMetadata: {
-          name,
-          username: normalizedUsername,
-          accountType,
-        },
+        username: clerkUsername,
+        firstName: signupFirstName,
+        lastName: signupLastName,
+        legalAccepted: true,
+        unsafeMetadata: metadata,
       });
       await clerkSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setFormError('');
@@ -496,7 +546,9 @@ function SignupForm({ navigation, route }: Props) {
         mode: 'clerk-signup-code',
         showConfirmationEmailMessage: true,
         prefillEmail: normalizedEmail,
-        signupName: name.trim(),
+        signupFirstName,
+        signupLastName,
+        signupName,
         signupUsername: normalizedUsername,
         accountType,
       } as any);
@@ -924,7 +976,12 @@ function SignupForm({ navigation, route }: Props) {
             changeHandler('username', normalizeUsername(username))
           }
           onBlur={() => checkUsernameAvailability(state.username)}
-          onSubmitEditing={() => inputRefs.name.current?.focus()}
+          onSubmitEditing={() =>
+            isOrganizationSignup
+              ? inputRefs.name.current?.focus()
+              : inputRefs.firstName.current?.focus()
+          }
+          testID="signup-username-input"
         />
         {usernameSuggestions.length > 0 ? (
           <View style={{ marginTop: spacing.x8, marginBottom: spacing.x8 }}>
@@ -998,16 +1055,47 @@ function SignupForm({ navigation, route }: Props) {
           </View>
         ) : null}
 
+        {isOrganizationSignup ? (
+          <InputField
+            ref={inputRefs.name}
+            label="Organization / Ministry Name"
+            palette={palette}
+            placeholder={state.name ? '' : 'e.g. One Body Church'}
+            value={state.name}
+            error={state.nameError}
+            autoCapitalize="words"
+            onChangeText={(name: string) => changeHandler('name', name)}
+            onSubmitEditing={() => inputRefs.firstName.current?.focus()}
+            testID="signup-organization-name-input"
+          />
+        ) : null}
+
         <InputField
-          ref={inputRefs.name}
-          label={accountType === 'individual' ? 'Display Name' : 'Organization / Ministry Name'}
+          ref={inputRefs.firstName}
+          label={isOrganizationSignup ? 'Contact First Name' : 'First Name'}
           palette={palette}
-          placeholder={state.name ? '' : 'How should we address you?'}
-          value={state.name}
-          error={state.nameError}
+          placeholder={state.firstName ? '' : 'First name'}
+          value={state.firstName}
+          error={state.firstNameError}
           autoCapitalize="words"
-          onChangeText={(name: string) => changeHandler('name', name)}
+          textContentType="givenName"
+          onChangeText={(firstName: string) => changeHandler('firstName', firstName)}
+          onSubmitEditing={() => inputRefs.lastName.current?.focus()}
+          testID="signup-first-name-input"
+        />
+
+        <InputField
+          ref={inputRefs.lastName}
+          label={isOrganizationSignup ? 'Contact Last Name' : 'Last Name'}
+          palette={palette}
+          placeholder={state.lastName ? '' : 'Last name'}
+          value={state.lastName}
+          error={state.lastNameError}
+          autoCapitalize="words"
+          textContentType="familyName"
+          onChangeText={(lastName: string) => changeHandler('lastName', lastName)}
           onSubmitEditing={() => inputRefs.email.current?.focus()}
+          testID="signup-last-name-input"
         />
 
         <InputField
@@ -1021,6 +1109,7 @@ function SignupForm({ navigation, route }: Props) {
           autoCapitalize="none"
           onChangeText={(email: string) => changeHandler('email', email.trim())}
           onSubmitEditing={() => inputRefs.password.current?.focus()}
+          testID="signup-email-input"
         />
 
         <InputField
@@ -1038,6 +1127,7 @@ function SignupForm({ navigation, route }: Props) {
           }}
           onChangeText={(password: string) => changeHandler('password', password)}
           onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
+          testID="signup-password-input"
           rightIcon={
             <MaterialCommunityIcons
               name={hidePass ? 'eye-outline' : 'eye-off-outline'}
@@ -1088,6 +1178,7 @@ function SignupForm({ navigation, route }: Props) {
           autoCapitalize="none"
           onChangeText={(cPassword: string) => changeHandler('cPassword', cPassword)}
           onSubmitEditing={signUpUser}
+          testID="signup-confirm-password-input"
           rightIcon={
             <MaterialCommunityIcons
               name={hidePass ? 'eye-outline' : 'eye-off-outline'}

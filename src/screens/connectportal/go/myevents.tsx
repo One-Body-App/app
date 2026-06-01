@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { useSelector } from 'react-redux';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   createConnectPortalDraft,
@@ -22,12 +23,14 @@ import {
   getConnectPortalDraftByPublishedEventId,
   getDraftResumeRouteName,
   getEventLifecycleState,
+  isApprovedConnectCreator,
 } from '@/src/services/connectPortal';
 import type {
   ConnectPortalEventRecord,
   ConnectPortalMyEventsFilter,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useConnectPalette } from '../shared';
 import {
   CONNECT_HEADER_ANDROID_TITLE_PADDING_LEFT,
@@ -50,6 +53,8 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const { snapshot, refresh } = useConnectPortalData();
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
+  const isCreator = isApprovedConnectCreator(currentUser);
   const palette = useConnectPalette();
 
   const events = useMemo<ConnectPortalEventRecord[]>(() => {
@@ -91,6 +96,38 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
   }, [events, searchQuery]);
 
   const primaryBtnTextColor = '#FFFFFF';
+
+  if (!isCreator) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBackground }]}>
+        <View style={styles.container}>
+          <View style={[styles.header, { backgroundColor: palette.screenBackground }]}>
+            <Pressable
+              style={styles.headerBackButton}
+              onPress={() => navigation.navigate('ConnectGoEventDash')}
+            >
+              <MaterialIcons name="chevron-left" size={32} color={GO_EVENT_ACCENT} />
+            </Pressable>
+            <View style={styles.headerCenter}>
+              <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>My Events</Text>
+              <Text style={[styles.headerSubtitle, { color: palette.textSecondary }]}>
+                Creator access required
+              </Text>
+            </View>
+            <View style={styles.headerBackButton} />
+          </View>
+          <View style={styles.searchWrap}>
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>
+                Approved creators can create and manage Go! events. Your Going list is available
+                from the Go! Dashboard.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBackground }]}>

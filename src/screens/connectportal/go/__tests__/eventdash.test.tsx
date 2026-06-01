@@ -4,6 +4,11 @@ import TestRenderer, { act } from 'react-test-renderer';
 import EventDashboardScreen from '../eventdash';
 
 const mockRefresh = jest.fn();
+let mockCurrentUser: any = {
+  influencerProfile: {
+    influencerStatus: 'approved',
+  },
+};
 
 jest.mock('@react-navigation/native', () => ({
   useFocusEffect: jest.fn(),
@@ -51,6 +56,20 @@ jest.mock('@/src/services/connectPortal', () => ({
   getEventCapacityLabel: jest.fn(() => '12 of 100 registered'),
   getEventLifecycleState: jest.fn((item: { lifecycle?: string }) => item.lifecycle ?? 'Active'),
   getEventProgressRatio: jest.fn(() => 0.42),
+  isApprovedConnectCreator: jest.fn(
+    (user: any) => user?.influencerProfile?.influencerStatus === 'approved'
+  ),
+  setConnectPortalEventGoing: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('react-redux', () => ({
+  useSelector: jest.fn((selector: any) =>
+    selector({
+      auth: {
+        getProfileData: mockCurrentUser,
+      },
+    })
+  ),
 }));
 
 jest.mock('@/src/services/connectPortal/provider', () => ({
@@ -72,6 +91,21 @@ jest.mock('@/src/services/connectPortal/provider', () => ({
       drafts: [
         {
           id: 'draft-1',
+        },
+      ],
+      publicPublished: [],
+      goingPublished: [
+        {
+          id: 'going-1',
+          title: 'Going Worship Night',
+          category: 'Worship',
+          venueName: 'Sanctuary',
+          address: '100 Church St',
+          registrationCount: 8,
+          viewCount: 12,
+          openCount: 4,
+          lifecycle: 'Active',
+          isGoing: true,
         },
       ],
     },
@@ -100,6 +134,14 @@ function flattenText(children: React.ReactNode): string {
 }
 
 describe('EventDashboardScreen', () => {
+  beforeEach(() => {
+    mockCurrentUser = {
+      influencerProfile: {
+        influencerStatus: 'approved',
+      },
+    };
+  });
+
   it('renders the event management dashboard copy and actions', () => {
     const navigation = {
       canGoBack: jest.fn(() => true),
@@ -127,5 +169,36 @@ describe('EventDashboardScreen', () => {
     expect(textValues).toContain('View all');
     expect(textValues).toContain('Manage Event');
     expect(textValues.filter((value) => value === 'Analytics')).toHaveLength(2);
+  });
+
+  it('renders the Going dashboard for non-creators', () => {
+    mockCurrentUser = {
+      influencerProfile: {
+        influencerStatus: 'pending',
+      },
+    };
+    const navigation = {
+      canGoBack: jest.fn(() => true),
+      goBack: jest.fn(),
+      navigate: jest.fn(),
+    };
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<EventDashboardScreen navigation={navigation as any} />);
+    });
+
+    const textValues = renderer.root
+      .findAllByType(Text)
+      .map((node) => flattenText(node.props.children))
+      .filter(Boolean);
+
+    expect(textValues).toContain('Going');
+    expect(textValues).toContain('Going Worship Night');
+    expect(textValues).toContain('View Event');
+    expect(textValues).toContain('Not Going');
+    expect(textValues).not.toContain('New Event');
+    expect(textValues).not.toContain('Start the seven-step event flow.');
   });
 });

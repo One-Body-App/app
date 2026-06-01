@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { useSignUp } from '@clerk/expo/legacy';
+import Toast from 'react-native-simple-toast';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
@@ -23,6 +24,143 @@ import { getValidAccessToken } from '@/src/services/authTokens';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
+const ALREADY_VERIFIED_SIGN_IN_MESSAGE = 'Your email is already verified. Sign in to continue.';
+
+const getClerkErrorValues = (error: any) => {
+  const clerkErrors = Array.isArray(error?.errors) ? error.errors : [];
+  return [
+    error?.code,
+    error?.message,
+    ...clerkErrors.flatMap((clerkError: any) => [
+      clerkError?.code,
+      clerkError?.message,
+      clerkError?.longMessage,
+    ]),
+  ].filter((value): value is string => typeof value === 'string');
+};
+
+const getClerkErrorMessage = (error: any, fallback: string) =>
+  error?.errors?.[0]?.longMessage ?? error?.errors?.[0]?.message ?? error?.message ?? fallback;
+
+const isAlreadyVerifiedClerkError = (error: any) =>
+  getClerkErrorValues(error).some((value) => {
+    const normalized = value.toLowerCase().replace(/[_-]+/g, ' ');
+    return normalized.includes('already') && normalized.includes('verified');
+  });
+
+const getCreatedSessionId = (value: any) => {
+  const sessionId = value?.createdSessionId;
+  return typeof sessionId === 'string' && sessionId.trim() ? sessionId : undefined;
+};
+
+const normalizeClerkMissingField = (field: string) =>
+  field
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+const normalizeClerkUsername = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9_-]+/g, '_');
+
+const getClerkMissingFields = (value: any) => {
+  const fields =
+    value?.missingFields ??
+    value?.missing_fields ??
+    value?.missingRequirements ??
+    value?.missing_requirements;
+
+  return Array.isArray(fields)
+    ? fields.filter((field): field is string => typeof field === 'string')
+    : [];
+};
+
+const clerkMissingFieldLabel = (field: string) => {
+  const normalized = normalizeClerkMissingField(field);
+  if (normalized === 'first_name') {
+    return 'first name';
+  }
+  if (normalized === 'last_name') {
+    return 'last name';
+  }
+  if (normalized === 'legal_accepted') {
+    return 'terms acceptance';
+  }
+  return normalized.replace(/_/g, ' ') || field;
+};
+
+const getClerkMissingRequirementsMessage = (fields: string[]) => {
+  const labels = fields.map(clerkMissingFieldLabel);
+  if (labels.length === 0) {
+    return 'Additional profile information is required before continuing.';
+  }
+  const labelList = labels.join(', ');
+  return `Clerk needs ${labelList} before continuing. Please go back and complete sign up again.`;
+};
+
+const getClerkMissingRequirementsUpdate = (
+  missingFields: string[],
+  routeParams: Props['route']['params'] | undefined
+) => {
+  const requestedFields = new Set(
+    (missingFields.length
+      ? missingFields
+      : ['first_name', 'last_name', 'username', 'legal_accepted']
+    ).map(normalizeClerkMissingField)
+  );
+  const update: {
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    legalAccepted?: boolean;
+  } = {};
+
+  const firstName = routeParams?.signupFirstName?.trim();
+  const lastName = routeParams?.signupLastName?.trim();
+  const username = routeParams?.signupUsername?.trim();
+  const clerkUsername = username ? normalizeClerkUsername(username) : undefined;
+
+  if (requestedFields.has('first_name') && firstName) {
+    update.firstName = firstName;
+  }
+  if (requestedFields.has('last_name') && lastName) {
+    update.lastName = lastName;
+  }
+  if (requestedFields.has('username') && clerkUsername) {
+    update.username = clerkUsername;
+  }
+  if (requestedFields.has('legal_accepted')) {
+    update.legalAccepted = true;
+  }
+
+  return update;
+};
+
+const getUnpatchedClerkMissingFields = (
+  missingFields: string[],
+  update: ReturnType<typeof getClerkMissingRequirementsUpdate>
+) =>
+  missingFields.filter((field) => {
+    const normalized = normalizeClerkMissingField(field);
+    if (normalized === 'first_name') {
+      return !update.firstName;
+    }
+    if (normalized === 'last_name') {
+      return !update.lastName;
+    }
+    if (normalized === 'username') {
+      return !update.username;
+    }
+    if (normalized === 'legal_accepted') {
+      return update.legalAccepted !== true;
+    }
+    return true;
+  });
+
 function ConfirmLogin({ route, navigation }: Props) {
   const dispatch = useDispatch();
   const { isLoaded: isSignUpLoaded, signUp, setActive } = useSignUp();
@@ -36,6 +174,10 @@ function ConfirmLogin({ route, navigation }: Props) {
   const [clerkError, setClerkError] = useState('');
   const [isSubmittingCode, setIsSubmittingCode] = useState(false);
   const isClerkSignupCode = route?.params?.mode === 'clerk-signup-code';
+  const normalizedResendEmail = useMemo(
+    () => resendTargetEmail.trim().toLowerCase(),
+    [resendTargetEmail]
+  );
 
   const palette = useMemo(
     () => ({
@@ -92,46 +234,53 @@ function ConfirmLogin({ route, navigation }: Props) {
       await ApiCall({
         route: 'auth/sendVerificationEmail/public',
         verb: 'post',
-        params: { email: resendTargetEmail.trim().toLowerCase() },
+        params: { email: normalizedResendEmail },
       });
     } finally {
       setTimeout(() => setIsResending(false), 800);
     }
-  }, [dispatch, isClerkSignupCode, isSignUpLoaded, resendTargetEmail, signUp, token]);
+  }, [
+    dispatch,
+    isClerkSignupCode,
+    isSignUpLoaded,
+    normalizedResendEmail,
+    resendTargetEmail,
+    signUp,
+    token,
+  ]);
 
   const refreshProfile = useCallback(async () => {
     if (token) {
       await syncClerkUserProfile({
-        email: resendTargetEmail.trim().toLowerCase() || undefined,
+        email: normalizedResendEmail || undefined,
       }).catch(() => undefined);
       dispatch(getProfile.Request({ token }));
     }
-  }, [dispatch, resendTargetEmail, token]);
+  }, [dispatch, normalizedResendEmail, token]);
 
-  const verifyClerkSignupCode = useCallback(async () => {
-    const code = verificationCode.trim();
-    if (!isSignUpLoaded || !signUp || !setActive) {
-      setClerkError('Authentication is still loading. Please try again.');
-      return;
-    }
-    if (!code) {
-      setClerkError('Enter the verification code from your email.');
-      return;
-    }
+  const returnToLoginForVerifiedSignup = useCallback(() => {
+    Toast.show(ALREADY_VERIFIED_SIGN_IN_MESSAGE, Toast.LONG);
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Login' as any,
+          params: normalizedResendEmail ? { prefillEmail: normalizedResendEmail } : undefined,
+        } as any,
+      ],
+    });
+  }, [navigation, normalizedResendEmail]);
 
-    setClerkError('');
-    setIsSubmittingCode(true);
-    try {
-      const result = await signUp.attemptEmailAddressVerification({ code });
-      if (result.status !== 'complete' || !result.createdSessionId) {
-        setClerkError('Additional verification is required before continuing.');
-        return;
+  const completeClerkSignupSession = useCallback(
+    async (createdSessionId: string) => {
+      if (!setActive) {
+        throw new Error('Authentication is still loading. Please try again.');
       }
 
-      await setActive({ session: result.createdSessionId });
+      await setActive({ session: createdSessionId });
       const [syncResult, accessToken] = await Promise.all([
         syncClerkUserProfile({
-          email: resendTargetEmail.trim().toLowerCase() || undefined,
+          email: normalizedResendEmail || undefined,
           name: route?.params?.signupName,
           username: route?.params?.signupUsername,
           accountType: route?.params?.accountType as any,
@@ -145,25 +294,133 @@ function ConfirmLogin({ route, navigation }: Props) {
       dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'password' }));
       dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
       navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-    } catch (error: any) {
+    },
+    [
+      dispatch,
+      navigation,
+      normalizedResendEmail,
+      route?.params?.accountType,
+      route?.params?.signupName,
+      route?.params?.signupUsername,
+      setActive,
+    ]
+  );
+
+  const completeOrPatchClerkSignup = useCallback(
+    async (result: any) => {
+      if (result?.status === 'complete') {
+        const createdSessionId = getCreatedSessionId(result) ?? getCreatedSessionId(signUp);
+        if (createdSessionId) {
+          await completeClerkSignupSession(createdSessionId);
+        } else {
+          returnToLoginForVerifiedSignup();
+        }
+        return;
+      }
+
+      if (result?.status !== 'missing_requirements') {
+        setClerkError('Additional verification is required before continuing.');
+        return;
+      }
+
+      const missingFields = getClerkMissingFields(result);
+      const update = getClerkMissingRequirementsUpdate(missingFields, route?.params);
+      const unpatchedFields = getUnpatchedClerkMissingFields(missingFields, update);
+
+      if (__DEV__) {
+        console.log('[ConfirmLogin] Clerk signup missing requirements', {
+          missingFields,
+          patchFields: Object.keys(update),
+        });
+      }
+
+      if (unpatchedFields.length > 0 || Object.keys(update).length === 0) {
+        setClerkError(
+          getClerkMissingRequirementsMessage(
+            unpatchedFields.length > 0 ? unpatchedFields : missingFields
+          )
+        );
+        return;
+      }
+
+      if (typeof signUp?.update !== 'function') {
+        setClerkError('Additional profile information is required before continuing.');
+        return;
+      }
+
+      const updateResult = await signUp.update(update);
+      if (updateResult?.status === 'complete') {
+        const updatedSessionId = getCreatedSessionId(updateResult) ?? getCreatedSessionId(signUp);
+        if (updatedSessionId) {
+          await completeClerkSignupSession(updatedSessionId);
+        } else {
+          returnToLoginForVerifiedSignup();
+        }
+        return;
+      }
+
+      const remainingFields = getClerkMissingFields(updateResult);
       setClerkError(
-        error?.errors?.[0]?.longMessage ??
-          error?.errors?.[0]?.message ??
-          error?.message ??
-          'Unable to verify this code. Please try again.'
+        getClerkMissingRequirementsMessage(
+          remainingFields.length > 0 ? remainingFields : missingFields
+        )
       );
+    },
+    [completeClerkSignupSession, returnToLoginForVerifiedSignup, route?.params, signUp]
+  );
+
+  const verifyClerkSignupCode = useCallback(async () => {
+    const code = verificationCode.trim();
+    if (!isSignUpLoaded || !signUp) {
+      setClerkError('Authentication is still loading. Please try again.');
+      return;
+    }
+    const existingSessionId = getCreatedSessionId(signUp);
+    if (signUp.status !== 'complete' && !code) {
+      setClerkError('Enter the verification code from your email.');
+      return;
+    }
+
+    setClerkError('');
+    setIsSubmittingCode(true);
+    try {
+      if (signUp.status === 'complete') {
+        if (existingSessionId) {
+          await completeClerkSignupSession(existingSessionId);
+        } else {
+          returnToLoginForVerifiedSignup();
+        }
+        return;
+      }
+
+      const result = await signUp.attemptEmailAddressVerification({ code });
+      await completeOrPatchClerkSignup(result);
+    } catch (error: any) {
+      if (isAlreadyVerifiedClerkError(error)) {
+        const completedSessionId = getCreatedSessionId(signUp);
+        if (completedSessionId) {
+          try {
+            await completeClerkSignupSession(completedSessionId);
+          } catch (sessionError: any) {
+            setClerkError(
+              getClerkErrorMessage(sessionError, 'Unable to start a Clerk session. Please sign in.')
+            );
+          }
+        } else {
+          returnToLoginForVerifiedSignup();
+        }
+        return;
+      }
+
+      setClerkError(getClerkErrorMessage(error, 'Unable to verify this code. Please try again.'));
     } finally {
       setIsSubmittingCode(false);
     }
   }, [
-    dispatch,
+    completeOrPatchClerkSignup,
+    completeClerkSignupSession,
     isSignUpLoaded,
-    navigation,
-    resendTargetEmail,
-    route?.params?.accountType,
-    route?.params?.signupName,
-    route?.params?.signupUsername,
-    setActive,
+    returnToLoginForVerifiedSignup,
     signUp,
     verificationCode,
   ]);

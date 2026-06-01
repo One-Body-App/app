@@ -1,13 +1,14 @@
 /* eslint-disable global-require */
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, TextInput } from 'react-native';
+import { Text } from 'react-native';
 import ServeCreateJobStep1 from '../srvstep1';
 
 const mockCreateFlowLayout = jest.fn();
 const mockCreateConnectServeJobDraft = jest.fn();
 const mockSaveConnectServeJobDraft = jest.fn();
 const mockGetConnectServeJobDraftById = jest.fn();
+const mockSubmitConnectServeRoleSuggestion = jest.fn();
 const mockUseConnectPortalData = jest.fn(() => ({}));
 
 jest.mock('@/components/MapBox', () => {
@@ -30,6 +31,8 @@ jest.mock('@/src/services/connectPortal', () => ({
   createConnectServeJobDraft: (...args: any[]) => mockCreateConnectServeJobDraft(...args),
   saveConnectServeJobDraft: (...args: any[]) => mockSaveConnectServeJobDraft(...args),
   getConnectServeJobDraftById: (...args: any[]) => mockGetConnectServeJobDraftById(...args),
+  submitConnectServeRoleSuggestion: (...args: any[]) =>
+    mockSubmitConnectServeRoleSuggestion(...args),
   formatConnectServeRequirementsText: jest.fn(() => ''),
   parseConnectServeRequirements: jest.fn((value: string) =>
     value
@@ -90,6 +93,7 @@ describe('ServeCreateJobStep1', () => {
     mockCreateConnectServeJobDraft.mockReset();
     mockSaveConnectServeJobDraft.mockReset();
     mockGetConnectServeJobDraftById.mockReset();
+    mockSubmitConnectServeRoleSuggestion.mockReset();
     mockUseConnectPortalData.mockReturnValue({
       serve: {
         refresh: jest.fn(),
@@ -124,7 +128,6 @@ describe('ServeCreateJobStep1', () => {
     expect(texts).toContain('Interim Pastor');
     expect(texts).toContain('Drummer');
     expect(texts).toContain('Church Administrator');
-    expect(texts).toContain('Other');
     expect(texts).not.toContain('Full time');
     expect(texts).not.toContain('Part time');
     expect(texts).not.toContain('Contract');
@@ -162,13 +165,16 @@ describe('ServeCreateJobStep1', () => {
     expect(texts).not.toContain('Interim Pastor');
   });
 
-  it('shows a custom role input when Other is selected', () => {
-    let testRenderer: TestRenderer.ReactTestRenderer;
+  it('adds a custom role from the search empty state and submits a suggestion', async () => {
+    mockCreateConnectServeJobDraft.mockResolvedValue({ id: 'serve-draft-custom-add' });
+    mockSaveConnectServeJobDraft.mockResolvedValue({ id: 'serve-draft-custom-add' });
+    const navigation = { navigate: jest.fn() };
 
+    let testRenderer: TestRenderer.ReactTestRenderer;
     act(() => {
       testRenderer = TestRenderer.create(
         <ServeCreateJobStep1
-          navigation={{ navigate: jest.fn() } as any}
+          navigation={navigation as any}
           route={
             { key: 'serve-step-1', name: 'ConnectServeCreateJobStep1', params: undefined } as any
           }
@@ -181,13 +187,23 @@ describe('ServeCreateJobStep1', () => {
     });
 
     act(() => {
-      testRenderer!.root.findByProps({ testID: `role-option-__other__` }).props.onPress();
+      testRenderer!.root.findByProps({ testID: 'role-search-input' }).props.onChangeText('janitor');
     });
 
-    const customRoleInput = testRenderer!.root
-      .findAllByType(TextInput)
-      .find((input) => input.props.placeholder === 'Enter the role');
-    expect(customRoleInput).toBeDefined();
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-add-custom' }).props.onPress();
+    });
+
+    expect(mockSubmitConnectServeRoleSuggestion).toHaveBeenCalledWith('janitor');
+
+    const layoutProps = mockCreateFlowLayout.mock.calls.at(-1)?.[0] as any;
+    await act(async () => {
+      await layoutProps.onSave();
+    });
+
+    expect(mockCreateConnectServeJobDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'janitor' })
+    );
   });
 
   it('does not create a draft on mount when opening a new opportunity', () => {
@@ -291,7 +307,7 @@ describe('ServeCreateJobStep1', () => {
     );
   });
 
-  it('maps custom draft titles back to Other', async () => {
+  it('shows custom draft titles as a selectable option in the picker', async () => {
     mockGetConnectServeJobDraftById.mockResolvedValue({
       id: 'serve-draft-custom',
       visibility: 'public',
@@ -318,10 +334,20 @@ describe('ServeCreateJobStep1', () => {
       );
     });
 
-    const customRoleInput = testRenderer!.root
-      .findAllByType(TextInput)
-      .find((input) => input.props.placeholder === 'Enter the role');
-    expect(customRoleInput?.props.value).toBe('Liturgical Arts Coordinator');
+    const triggerText = testRenderer!.root
+      .findByProps({ testID: 'role-picker-trigger' })
+      .findAllByType(Text)[0];
+    expect(triggerText.props.children).toBe('Liturgical Arts Coordinator');
+
+    act(() => {
+      testRenderer!.root.findByProps({ testID: 'role-picker-trigger' }).props.onPress();
+    });
+
+    expect(
+      testRenderer!.root
+        .findAllByType(Text)
+        .some((node) => node.props.children === 'Liturgical Arts Coordinator')
+    ).toBe(true);
   });
 
   it('keeps the next step disabled until the location includes a coordinate', async () => {

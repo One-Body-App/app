@@ -16,6 +16,7 @@ import getDeviceLocation from '@/src/services/deviceLocation';
 import {
   createConnectPortalDraft,
   formatConnectPortalDateTime,
+  isApprovedConnectCreator,
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import { filterConnectGoEvents } from '@/src/services/connectPortal/goEventFilters';
@@ -271,6 +272,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const mapbox = useMemo(() => resolveMapboxModule(), []);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
+  const isCreator = isApprovedConnectCreator(currentUser);
   const {
     snapshot,
     refresh,
@@ -339,7 +341,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       return goEventRecords.map((eventRecord) => ({
         id: eventRecord.id,
         title: eventRecord.title,
-        subtitle: `${eventRecord.startDate || 'Date TBD'}${eventRecord.startTime ? ` • ${eventRecord.startTime}` : ''}`,
+        subtitle: formatConnectPortalDateTime(eventRecord),
         address: eventRecord.address || eventRecord.venueName || 'Location TBD',
         coordinate: eventRecord.coordinate || DEFAULT_CENTER,
         type: 'event' as const,
@@ -403,6 +405,10 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
 
   const handleAddPress = useCallback(() => {
     if (activeTab === 'Go!') {
+      if (!isCreator) {
+        navigation.navigate('ConnectGoEventDash');
+        return;
+      }
       createConnectPortalDraft().then((draft) => {
         navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
       });
@@ -411,7 +417,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     if (activeTab === 'Serve') {
       navigation.navigate('ConnectServeCreateJobStep1');
     }
-  }, [activeTab, navigation]);
+  }, [activeTab, isCreator, navigation]);
 
   const onChangeTab = (tab: typeof activeTab) => {
     clearSelection();
@@ -685,7 +691,9 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           onTabChange={onChangeTab}
           userAvatarUri={currentUser?.profileImage}
           overlay
-          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
+          onAddPress={
+            activeTab === 'Serve' || (activeTab === 'Go!' && isCreator) ? handleAddPress : undefined
+          }
           addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
         />
       </Animated.View>
@@ -711,7 +719,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
             if (activeTab === 'Go!') {
               return {
                 icon: 'eventManager' as const,
-                accessibilityLabel: 'Open event management',
+                accessibilityLabel: isCreator ? 'Open event management' : 'Open Going dashboard',
                 onPress: () => navigation.navigate('ConnectGoEventDash'),
                 testID: 'connect-go-event-manager-action',
               };

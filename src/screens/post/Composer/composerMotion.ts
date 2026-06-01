@@ -1,4 +1,4 @@
-import { Easing } from 'react-native';
+import { Easing } from 'react-native-reanimated';
 
 // The cinema easing matches the web's WatchLightbox + FeedVideoCard so the same
 // quality of motion carries across surfaces.

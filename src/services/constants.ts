@@ -7,8 +7,9 @@ import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { sha256 } from 'js-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
+import { normalizeApiBaseUrl } from './apiBaseUrl';
 
-export const BASE_URL = Config.BASE_URL ?? '';
+export const BASE_URL = normalizeApiBaseUrl(Config.BASE_URL);
 export const { PRIVACY_POLICY_URL } = Config;
 export const { TERMS_CONDITIONS_URL } = Config;
 export const { GOOGLE_LOGIN_CLIENT_ID } = Config;

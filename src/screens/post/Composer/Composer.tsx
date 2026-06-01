@@ -7,6 +7,7 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
+  Text,
   type TextInput as RNTextInput,
   View,
 } from 'react-native';
@@ -19,6 +20,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useMentionComposer } from '@/components/mentions';
 import { sanitizeComposerText } from '@/components/composer/composerText';
+import { hasLikelyScripture } from '@/services/scripture';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
 import isCreatorBlogEligible from '@/src/utils/creatorBlogAccess';
@@ -52,7 +54,10 @@ type Props = NativeStackScreenProps<MainStackParamList, 'Post'>;
 
 const MAX_CAPTION_LENGTH = 300;
 
-type ToastOptions = { type?: 'success' | 'danger' | 'warning'; placement?: 'bottom' | 'top' };
+type ToastOptions = {
+  type?: 'success' | 'danger' | 'warning';
+  placement?: 'bottom' | 'top';
+};
 
 const decisionToStatus: Record<string, ModerationStatus> = {
   safe: 'safe',
@@ -114,7 +119,11 @@ function ComposerCanvasRemoveButton({
       accessibilityLabel="Remove this media"
       style={({ pressed }) => [
         styles.removeButton,
-        { backgroundColor: paletteBg, borderColor: paletteBorder, opacity: pressed ? 0.7 : 1 },
+        {
+          backgroundColor: paletteBg,
+          borderColor: paletteBorder,
+          opacity: pressed ? 0.7 : 1,
+        },
       ]}
     >
       <View style={[styles.removeButtonIcon, { backgroundColor: paletteAccent }]}>
@@ -261,7 +270,10 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     const action = await new Promise<'library' | 'camera' | null>((resolve) => {
       if (Platform.OS === 'ios') {
         ActionSheetIOS.showActionSheetWithOptions(
-          { options: ['Cancel', 'Choose From Library', 'Open Camera'], cancelButtonIndex: 0 },
+          {
+            options: ['Cancel', 'Choose From Library', 'Open Camera'],
+            cancelButtonIndex: 0,
+          },
           (buttonIndex) => {
             resolve(buttonIndex === 1 ? 'library' : buttonIndex === 2 ? 'camera' : null);
           }
@@ -307,7 +319,9 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           showToast('Verse picker coming soon.', { type: 'warning' });
           break;
         case 'place':
-          showToast('Tap the map pin on the existing composer for now.', { type: 'warning' });
+          showToast('Tap the map pin on the existing composer for now.', {
+            type: 'warning',
+          });
           break;
         case 'writer':
           navigation.navigate('BlogComposer');
@@ -365,7 +379,9 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     try {
       const outcome = await submitComposerDraft({ draft, token });
       if (outcome.status === 'ok') {
-        showToast(outcome.message ?? 'Posted to your feed.', { type: 'success' });
+        showToast(outcome.message ?? 'Posted to your feed.', {
+          type: 'success',
+        });
       } else if (outcome.status === 'pending_review') {
         showToast(
           outcome.message ??
@@ -390,6 +406,15 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     }
   }, [draft, isSubmitting, mentionComposer, navigation, showToast, token]);
 
+  // Scripture detection chip: derived from the caption (cheap regex, no
+  // network). Dismissable; the server does the authoritative parse on submit.
+  const scriptureDetected = useMemo(
+    () => hasLikelyScripture(mentionComposer.text),
+    [mentionComposer.text]
+  );
+  const [scriptureChipDismissed, setScriptureChipDismissed] = useState(false);
+  const showScriptureChip = scriptureDetected && !scriptureChipDismissed;
+
   const characterCount = draft.caption.length;
   const canSubmit =
     !isSubmitting &&
@@ -403,10 +428,22 @@ export default function Composer({ navigation }: Props): React.ReactElement {
 
   const tools = useMemo(
     () => [
-      { id: 'photo' as LecternToolId, label: 'Photo', icon: 'photo-library' as const },
-      { id: 'video' as LecternToolId, label: 'Video', icon: 'videocam' as const },
+      {
+        id: 'photo' as LecternToolId,
+        label: 'Photo',
+        icon: 'photo-library' as const,
+      },
+      {
+        id: 'video' as LecternToolId,
+        label: 'Video',
+        icon: 'videocam' as const,
+      },
       { id: 'gif' as LecternToolId, label: 'GIF', icon: 'gif-box' as const },
-      { id: 'verse' as LecternToolId, label: 'Verse', icon: 'menu-book' as const },
+      {
+        id: 'verse' as LecternToolId,
+        label: 'Verse',
+        icon: 'menu-book' as const,
+      },
       { id: 'place' as LecternToolId, label: 'Place', icon: 'place' as const },
       {
         id: 'writer' as LecternToolId,
@@ -503,6 +540,22 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           />
         </KeyboardAvoidingView>
 
+        {/* Scripture detection chip — spell-check / "rewrite with AI" style. */}
+        {showScriptureChip ? (
+          <View style={styles.scriptureChipRow}>
+            <Pressable
+              style={styles.scriptureChip}
+              onPress={() => captionInputRef.current?.focus()}
+            >
+              <View style={styles.scriptureChipDot} />
+              <Text style={styles.scriptureChipText}>Scripture detected</Text>
+            </Pressable>
+            <Pressable hitSlop={8} onPress={() => setScriptureChipDismissed(true)}>
+              <Text style={styles.scriptureChipDismiss}>×</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <ComposerFeedPreview
           scheme={scheme}
           visible={previewMode !== 'closed'}
@@ -534,6 +587,42 @@ const styles = StyleSheet.create({
     left: composerSpace.lg,
     right: composerSpace.lg,
     bottom: composerSpace.lg,
+  },
+  // Scripture detection chip (brand colors: #41899f / #41dbe1).
+  scriptureChipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: composerSpace.lg,
+    paddingTop: 8,
+  },
+  scriptureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(65,137,159,0.35)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  scriptureChipDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#41dbe1',
+  },
+  scriptureChipText: {
+    color: '#41899f',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  scriptureChipDismiss: {
+    color: '#41899f',
+    fontSize: 16,
+    opacity: 0.6,
+    paddingHorizontal: 2,
   },
   removeDock: {
     position: 'absolute',

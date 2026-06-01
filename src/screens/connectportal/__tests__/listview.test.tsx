@@ -45,6 +45,9 @@ jest.mock('@/src/services/connectPortal', () => ({
   createConnectPortalDraft: jest.fn(),
   createConnectServeJobDraft: jest.fn(),
   formatConnectPortalDateTime: jest.fn(() => 'May 1 at 7:00 PM'),
+  isApprovedConnectCreator: jest.fn(
+    (user: any) => user?.influencerProfile?.influencerStatus === 'approved'
+  ),
   trackConnectPortalEventTelemetry: jest.fn(() => Promise.resolve()),
 }));
 
@@ -121,6 +124,9 @@ function createPortalData(activeTab: MockTab): any {
   return {
     snapshot: {
       publicPublished: [],
+      organizerPublished: [],
+      goingPublished: [],
+      drafts: [],
     },
     refresh: jest.fn(),
     activeTab,
@@ -186,12 +192,29 @@ function createPortalData(activeTab: MockTab): any {
 }
 
 describe('ListViewScreen', () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+  });
+
   beforeEach(() => {
     mockSearchBar.mockClear();
     mockChips.mockClear();
     mockFilterSheet.mockClear();
     mockChrome.mockClear();
-    mockUseSelector.mockReturnValue({ profileImage: '' });
+    mockUseSelector.mockReturnValue({
+      profileImage: '',
+      influencerProfile: { influencerStatus: 'approved' },
+    });
+  });
+
+  afterEach(() => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
   });
 
   it('passes the Serve manager action and routes to my jobs', () => {

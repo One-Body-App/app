@@ -8,11 +8,17 @@ const mockDispatch = jest.fn();
 const mockApiCall: jest.Mock<Promise<any>, [unknown?]> = jest.fn();
 const mockAttemptEmailAddressVerification = jest.fn();
 const mockPrepareEmailAddressVerification = jest.fn();
+const mockSignUpUpdate = jest.fn();
 const mockSetActive = jest.fn();
 const mockGetValidAccessToken = jest.fn();
 const mockSyncClerkUserProfile = jest.fn();
 const mockNavigationReset = jest.fn();
+const mockToastShow = jest.fn();
 const mockNativeText = Text;
+const mockSignUpState = {
+  status: undefined as string | undefined,
+  createdSessionId: undefined as string | undefined,
+};
 const mockAuthState = {
   userToken: '',
   verifyEmailTokenPending: false,
@@ -52,11 +58,26 @@ jest.mock('@clerk/expo/legacy', () => ({
   useSignUp: () => ({
     isLoaded: true,
     signUp: {
+      get status() {
+        return mockSignUpState.status;
+      },
+      get createdSessionId() {
+        return mockSignUpState.createdSessionId;
+      },
       attemptEmailAddressVerification: mockAttemptEmailAddressVerification,
       prepareEmailAddressVerification: mockPrepareEmailAddressVerification,
+      update: mockSignUpUpdate,
     },
     setActive: mockSetActive,
   }),
+}));
+
+jest.mock('react-native-simple-toast', () => ({
+  __esModule: true,
+  default: {
+    LONG: 1,
+    show: (...args: unknown[]) => mockToastShow(...args),
+  },
 }));
 
 jest.mock('@/src/redux/actions/AuthActions', () => ({
@@ -124,11 +145,17 @@ describe('ConfirmLogin', () => {
     mockAuthState.verifyEmailTokenPending = false;
     mockAuthState.verifyEmailTokenError = null;
     mockGeneralState.accountType = null;
+    mockSignUpState.status = undefined;
+    mockSignUpState.createdSessionId = undefined;
     mockAttemptEmailAddressVerification.mockResolvedValue({
       status: 'complete',
       createdSessionId: 'sess_123',
     });
     mockPrepareEmailAddressVerification.mockResolvedValue({});
+    mockSignUpUpdate.mockResolvedValue({
+      status: 'complete',
+      createdSessionId: 'sess_updated',
+    });
     mockSetActive.mockResolvedValue({});
     mockSyncClerkUserProfile.mockResolvedValue({
       status: 200,
@@ -274,7 +301,7 @@ describe('ConfirmLogin', () => {
         mode: 'clerk-signup-code',
         prefillEmail: 'person@example.com',
         signupName: 'Person Example',
-        signupUsername: 'person',
+        signupUsername: 'person.test',
         accountType: 'individual',
       });
     });
@@ -297,7 +324,7 @@ describe('ConfirmLogin', () => {
     expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({
       email: 'person@example.com',
       name: 'Person Example',
-      username: 'person',
+      username: 'person.test',
       accountType: 'individual',
     });
     expect(mockDispatch).toHaveBeenCalledWith({
@@ -310,6 +337,217 @@ describe('ConfirmLogin', () => {
     expect(mockNavigationReset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'MainRoot' }],
+    });
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('completes an already-complete Clerk signup session without resubmitting the code', async () => {
+    mockSignUpState.status = 'complete';
+    mockSignUpState.createdSessionId = 'sess_existing';
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'person@example.com',
+      });
+    });
+
+    const verifyButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Verify code');
+
+    await act(async () => {
+      await verifyButton!.props.onPress();
+    });
+
+    expect(mockAttemptEmailAddressVerification).not.toHaveBeenCalled();
+    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_existing' });
+    expect(mockNavigationReset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'MainRoot' }],
+    });
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('recovers from Clerk already-verified errors when the signup session exists', async () => {
+    mockSignUpState.createdSessionId = 'sess_existing';
+    mockAttemptEmailAddressVerification.mockRejectedValue({
+      errors: [{ message: 'This verification has already been verified.' }],
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'person@example.com',
+      });
+    });
+
+    const codeInput = renderer!.root.findByType(TextInput);
+    act(() => {
+      codeInput.props.onChangeText('123456');
+    });
+
+    const verifyButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Verify code');
+
+    await act(async () => {
+      await verifyButton!.props.onPress();
+    });
+
+    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_existing' });
+    expect(readAllText(renderer!)).not.toContain('This verification has already been verified.');
+    expect(mockNavigationReset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'MainRoot' }],
+    });
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('patches Clerk missing signup requirements and activates the completed session', async () => {
+    mockAttemptEmailAddressVerification.mockResolvedValue({
+      status: 'missing_requirements',
+      missingFields: ['first_name', 'last_name', 'username', 'legal_accepted'],
+    });
+    mockSignUpUpdate.mockResolvedValue({
+      status: 'complete',
+      createdSessionId: 'sess_patched',
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'person@example.com',
+        signupFirstName: 'Person',
+        signupLastName: 'Example',
+        signupName: 'Person Example',
+        signupUsername: 'person.test',
+        accountType: 'individual',
+      });
+    });
+
+    const codeInput = renderer!.root.findByType(TextInput);
+    act(() => {
+      codeInput.props.onChangeText('123456');
+    });
+
+    const verifyButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Verify code');
+
+    await act(async () => {
+      await verifyButton!.props.onPress();
+    });
+
+    expect(mockSignUpUpdate).toHaveBeenCalledWith({
+      firstName: 'Person',
+      lastName: 'Example',
+      username: 'person_test',
+      legalAccepted: true,
+    });
+    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_patched' });
+    expect(mockNavigationReset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'MainRoot' }],
+    });
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('shows a clear missing-fields message when Clerk requirements cannot be patched', async () => {
+    mockAttemptEmailAddressVerification.mockResolvedValue({
+      status: 'missing_requirements',
+      missingFields: ['first_name', 'last_name'],
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'person@example.com',
+      });
+    });
+
+    const codeInput = renderer!.root.findByType(TextInput);
+    act(() => {
+      codeInput.props.onChangeText('123456');
+    });
+
+    const verifyButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Verify code');
+
+    await act(async () => {
+      await verifyButton!.props.onPress();
+    });
+
+    expect(mockSignUpUpdate).not.toHaveBeenCalled();
+    expect(mockSetActive).not.toHaveBeenCalled();
+    expect(readAllText(renderer!)).toContain('Clerk needs first name, last name');
+
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
+  it('routes to login when Clerk says the verification is already complete without a session', async () => {
+    mockAttemptEmailAddressVerification.mockRejectedValue({
+      errors: [{ code: 'verification_already_verified' }],
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = renderScreen({
+        mode: 'clerk-signup-code',
+        prefillEmail: 'Person@Example.com ',
+      });
+    });
+
+    const codeInput = renderer!.root.findByType(TextInput);
+    act(() => {
+      codeInput.props.onChangeText('123456');
+    });
+
+    const verifyButton = renderer!.root
+      .findAllByType(mockButton)
+      .find((node) => node.props.text === 'Verify code');
+
+    await act(async () => {
+      await verifyButton!.props.onPress();
+    });
+
+    expect(mockSetActive).not.toHaveBeenCalled();
+    expect(mockToastShow).toHaveBeenCalledWith(
+      'Your email is already verified. Sign in to continue.',
+      1
+    );
+    expect(mockNavigationReset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [
+        {
+          name: 'Login',
+          params: { prefillEmail: 'person@example.com' },
+        },
+      ],
     });
 
     act(() => {

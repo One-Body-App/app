@@ -6,6 +6,15 @@ import EventViewScreen from '../eventview';
 const mockGetConnectPortalEventById = jest.fn();
 const mockGetDraftResumeRouteName = jest.fn(() => 'ConnectGoCreateStep6Review');
 const mockTrackConnectPortalEventTelemetry = jest.fn(() => Promise.resolve());
+let mockMountEffectHasRun = false;
+const mockSetConnectPortalEventGoing = jest.fn(() =>
+  Promise.resolve({
+    event: null,
+    isGoing: true,
+    registrationCount: 5,
+    changed: true,
+  })
+);
 const mockFormatConnectPortalDate = jest.fn((value: string) => {
   const dateMap: Record<string, string> = {
     '2026-04-01': 'Apr 1, 2026',
@@ -16,6 +25,13 @@ const mockFormatConnectPortalDate = jest.fn((value: string) => {
 });
 
 jest.mock('@react-native-vector-icons/ionicons', () => 'Ionicons');
+jest.mock('expo-image', () => {
+  const ReactNative = jest.requireActual('react-native');
+
+  return {
+    ImageBackground: ReactNative.ImageBackground,
+  };
+});
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: jest.fn(() => ({
     top: 28,
@@ -27,13 +43,22 @@ jest.mock('react-native-safe-area-context', () => ({
 
 jest.mock('@/src/services/connectPortal', () => ({
   formatConnectPortalDate: (value: string) => mockFormatConnectPortalDate(value),
+  formatConnectPortalNumber: (value: number) => String(value),
   getConnectPortalEventById: (...args: unknown[]) => mockGetConnectPortalEventById(...args),
   getDraftResumeRouteName: (...args: unknown[]) => mockGetDraftResumeRouteName(...args),
+  setConnectPortalEventGoing: (...args: unknown[]) => mockSetConnectPortalEventGoing(...args),
   trackConnectPortalEventTelemetry: (...args: unknown[]) =>
     mockTrackConnectPortalEventTelemetry(...args),
 }));
 
-jest.mock('@/src/hooks/useMountEffect', () => (callback: () => void) => callback());
+jest.mock('@/src/hooks/useMountEffect', () => (callback: () => void) => {
+  if (mockMountEffectHasRun) {
+    return undefined;
+  }
+
+  mockMountEffectHasRun = true;
+  return callback();
+});
 
 function flattenText(children: React.ReactNode): string {
   if (Array.isArray(children)) {
@@ -92,6 +117,7 @@ function createEventRecord(overrides: Partial<any> = {}) {
     viewCount: 0,
     openCount: 0,
     tags: ['Event', 'Live'],
+    isGoing: false,
     ...overrides,
   };
 }
@@ -124,6 +150,13 @@ async function renderScreen(recordOverrides: Partial<any> = {}) {
 describe('EventViewScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockMountEffectHasRun = false;
+    mockSetConnectPortalEventGoing.mockResolvedValue({
+      event: null,
+      isGoing: true,
+      registrationCount: 5,
+      changed: true,
+    });
   });
 
   it('uses photoUri for the hero image, renders Go!, and shows a chevron back button', async () => {
@@ -162,9 +195,37 @@ describe('EventViewScreen', () => {
       .filter(Boolean);
 
     expect(textValues).toContain('Go!');
+    expect(textValues).toContain('0 going');
     expect(textValues).not.toContain('Back');
     expect(textValues).not.toContain('Open Event Link');
     expect(textValues).not.toContain('Register Now');
+  });
+
+  it('toggles the Go button into a Going state and updates the count', async () => {
+    const { renderer } = await renderScreen({
+      registrationCount: 4,
+      isGoing: false,
+    });
+
+    const action = renderer.root.findByProps({ testID: 'connect-event-primary-action' });
+
+    await act(async () => {
+      await action.props.onPress();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockSetConnectPortalEventGoing).toHaveBeenCalledWith('event-1', true);
+
+    const textValues = renderer.root
+      .findAllByType(Text)
+      .map((node) => flattenText(node.props.children))
+      .filter(Boolean);
+
+    expect(textValues).toContain('Going');
+    expect(textValues).toContain('5 going');
   });
 
   it('keeps the draft resume action for draft records', async () => {

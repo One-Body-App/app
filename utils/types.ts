@@ -35,6 +35,17 @@ export type Badge = {
   badge: string;
 };
 
+export type ScriptureMention = {
+  reference: string;
+  book: string;
+  bookName: string;
+  chapter: number;
+  verse: number;
+  verseEnd: number;
+  startIndex: number;
+  endIndex: number;
+};
+
 export type TaggedMention = {
   userId: string;
   username: string;
@@ -276,6 +287,7 @@ export interface SocialPost {
   content: string;
   mentionedUserIds?: string[];
   mentions?: TaggedMention[];
+  scriptureMentions?: ScriptureMention[];
   date: string;
   source: 'instagram';
   handler: string;

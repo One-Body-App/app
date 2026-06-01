@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSelector } from 'react-redux';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   createConnectPortalDraft,
@@ -19,8 +20,11 @@ import {
   getEventCapacityLabel,
   getEventLifecycleState,
   getEventProgressRatio,
+  isApprovedConnectCreator,
+  setConnectPortalEventGoing,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { useConnectPalette } from '../shared';
 
@@ -262,14 +266,35 @@ function createStyles(dark: boolean, palette: ReturnType<typeof useConnectPalett
       fontSize: 15,
       fontFamily: HEADER_FONT_FAMILY,
     },
+    emptyCard: {
+      borderRadius: 20,
+      backgroundColor: palette.inputBg,
+      borderWidth: 1,
+      borderColor: palette.border,
+      padding: 22,
+      gap: 8,
+    },
+    emptyTitle: {
+      color: palette.textPrimary,
+      fontSize: 20,
+      fontFamily: HEADER_FONT_FAMILY,
+    },
+    emptyBody: {
+      color: palette.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+      fontFamily: BODY_FONT_FAMILY,
+    },
   });
 }
 
 function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const { snapshot, refresh } = useConnectPortalData();
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const { dark } = useTheme();
   const palette = useConnectPalette();
+  const isCreator = isApprovedConnectCreator(currentUser);
 
   const summary = useMemo(
     () => ({
@@ -297,6 +322,17 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
     [snapshot.drafts, snapshot.organizerPublished]
   );
 
+  const goingSummary = useMemo(
+    () => ({
+      goingEvents: snapshot.goingPublished,
+      onlineEvents: snapshot.goingPublished.filter((item) => item.isOnline),
+      upcomingEvents: snapshot.goingPublished.filter(
+        (item) => getEventLifecycleState(item) === 'Active'
+      ),
+    }),
+    [snapshot.goingPublished]
+  );
+
   useFocusEffect(
     useCallback(() => {
       refresh();
@@ -308,6 +344,7 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
   const featuredEvent = summary?.featuredEvent ?? null;
   const activeEvents = summary?.activeEvents ?? [];
   const draftEvents = summary?.draftEvents ?? [];
+  const { goingEvents } = goingSummary;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -359,122 +396,204 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
             />
           }
         >
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>REGISTRATIONS</Text>
-              <Text style={styles.statValue}>
-                {formatConnectPortalNumber(summary?.totalRegistrations ?? 0)}
-              </Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>VIEWS</Text>
-              <Text style={styles.statValue}>
-                {formatConnectPortalNumber(summary?.totalViews ?? 0)}
-              </Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>OPENS</Text>
-              <Text style={styles.statValue}>
-                {formatConnectPortalNumber(summary?.totalOpens ?? 0)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.quickActions}>
-            <Pressable
-              style={[styles.actionCard, styles.actionCardPrimary]}
-              onPress={async () => {
-                const draft = await createConnectPortalDraft();
-                navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
-              }}
-            >
-              <Text style={styles.actionPrimaryTitle}>New Event</Text>
-              <Text style={styles.actionPrimaryBody}>Start the seven-step event flow.</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('ConnectGoMyEvents')}
-            >
-              <Text style={styles.actionSecondaryTitle}>My Events</Text>
-              <Text style={styles.actionSecondaryBody}>
-                Drafts, active events, and event history.
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('ConnectGoMyEvents', { initialFilter: 'Draft' })}
-            >
-              <Text style={styles.actionSecondaryTitle}>Drafts</Text>
-              <Text style={styles.actionSecondaryBody}>
-                {draftEvents.length} saved draft{draftEvents.length === 1 ? '' : 's'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.actionCard}
-              disabled={!featuredEvent}
-              onPress={() => {
-                if (featuredEvent) {
-                  navigation.navigate('ConnectGoEventAnalytics', { eventId: featuredEvent.id });
-                }
-              }}
-            >
-              <Text style={styles.actionSecondaryTitle}>Analytics</Text>
-              <Text style={styles.actionSecondaryBody}>
-                {featuredEvent ? 'Open the featured event report.' : 'No event selected yet.'}
-              </Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Events</Text>
-            <Pressable onPress={() => navigation.navigate('ConnectGoMyEvents')}>
-              <Text style={styles.sectionLink}>View all</Text>
-            </Pressable>
-          </View>
-
-          {activeEvents.slice(0, 3).map((eventRecord) => {
-            const progressPercent = Math.round(getEventProgressRatio(eventRecord) * 100);
-            return (
-              <View key={eventRecord.id} style={styles.eventCard}>
-                <Text style={styles.eventCategory}>{eventRecord.category}</Text>
-                <Text style={styles.eventTitle}>{eventRecord.title}</Text>
-                <Text style={styles.eventMeta}>{formatConnectPortalDateTime(eventRecord)}</Text>
-                <Text style={styles.eventMeta}>{eventRecord.venueName || eventRecord.address}</Text>
-
-                <View style={styles.progressBlock}>
-                  <View style={styles.progressHeaderRow}>
-                    <Text style={styles.progressText}>{getEventCapacityLabel(eventRecord)}</Text>
-                    <Text style={styles.progressText}>{progressPercent}%</Text>
-                  </View>
-                  <View style={styles.progressTrack}>
-                    <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-                  </View>
+          {isCreator ? (
+            <>
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>REGISTRATIONS</Text>
+                  <Text style={styles.statValue}>
+                    {formatConnectPortalNumber(summary?.totalRegistrations ?? 0)}
+                  </Text>
                 </View>
-
-                <View style={styles.eventActions}>
-                  <Pressable
-                    style={styles.eventActionPrimary}
-                    onPress={() =>
-                      navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
-                    }
-                  >
-                    <Text style={styles.eventActionPrimaryText}>Manage Event</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.eventActionSecondary}
-                    onPress={() =>
-                      navigation.navigate('ConnectGoEventAnalytics', { eventId: eventRecord.id })
-                    }
-                  >
-                    <Text style={styles.eventActionSecondaryText}>Analytics</Text>
-                  </Pressable>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>VIEWS</Text>
+                  <Text style={styles.statValue}>
+                    {formatConnectPortalNumber(summary?.totalViews ?? 0)}
+                  </Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>OPENS</Text>
+                  <Text style={styles.statValue}>
+                    {formatConnectPortalNumber(summary?.totalOpens ?? 0)}
+                  </Text>
                 </View>
               </View>
-            );
-          })}
+
+              <View style={styles.quickActions}>
+                <Pressable
+                  style={[styles.actionCard, styles.actionCardPrimary]}
+                  onPress={async () => {
+                    const draft = await createConnectPortalDraft();
+                    navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+                  }}
+                >
+                  <Text style={styles.actionPrimaryTitle}>New Event</Text>
+                  <Text style={styles.actionPrimaryBody}>Start the seven-step event flow.</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.actionCard}
+                  onPress={() => navigation.navigate('ConnectGoMyEvents')}
+                >
+                  <Text style={styles.actionSecondaryTitle}>My Events</Text>
+                  <Text style={styles.actionSecondaryBody}>
+                    Drafts, active events, and event history.
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.actionCard}
+                  onPress={() =>
+                    navigation.navigate('ConnectGoMyEvents', { initialFilter: 'Draft' })
+                  }
+                >
+                  <Text style={styles.actionSecondaryTitle}>Drafts</Text>
+                  <Text style={styles.actionSecondaryBody}>
+                    {draftEvents.length} saved draft{draftEvents.length === 1 ? '' : 's'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.actionCard}
+                  disabled={!featuredEvent}
+                  onPress={() => {
+                    if (featuredEvent) {
+                      navigation.navigate('ConnectGoEventAnalytics', { eventId: featuredEvent.id });
+                    }
+                  }}
+                >
+                  <Text style={styles.actionSecondaryTitle}>Analytics</Text>
+                  <Text style={styles.actionSecondaryBody}>
+                    {featuredEvent ? 'Open the featured event report.' : 'No event selected yet.'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Active Events</Text>
+                <Pressable onPress={() => navigation.navigate('ConnectGoMyEvents')}>
+                  <Text style={styles.sectionLink}>View all</Text>
+                </Pressable>
+              </View>
+
+              {activeEvents.slice(0, 3).map((eventRecord) => {
+                const progressPercent = Math.round(getEventProgressRatio(eventRecord) * 100);
+                return (
+                  <View key={eventRecord.id} style={styles.eventCard}>
+                    <Text style={styles.eventCategory}>{eventRecord.category}</Text>
+                    <Text style={styles.eventTitle}>{eventRecord.title}</Text>
+                    <Text style={styles.eventMeta}>{formatConnectPortalDateTime(eventRecord)}</Text>
+                    <Text style={styles.eventMeta}>
+                      {eventRecord.venueName || eventRecord.address}
+                    </Text>
+
+                    <View style={styles.progressBlock}>
+                      <View style={styles.progressHeaderRow}>
+                        <Text style={styles.progressText}>
+                          {getEventCapacityLabel(eventRecord)}
+                        </Text>
+                        <Text style={styles.progressText}>{progressPercent}%</Text>
+                      </View>
+                      <View style={styles.progressTrack}>
+                        <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+                      </View>
+                    </View>
+
+                    <View style={styles.eventActions}>
+                      <Pressable
+                        style={styles.eventActionPrimary}
+                        onPress={() =>
+                          navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
+                        }
+                      >
+                        <Text style={styles.eventActionPrimaryText}>Manage Event</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.eventActionSecondary}
+                        onPress={() =>
+                          navigation.navigate('ConnectGoEventAnalytics', {
+                            eventId: eventRecord.id,
+                          })
+                        }
+                      >
+                        <Text style={styles.eventActionSecondaryText}>Analytics</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          ) : (
+            <>
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>GOING</Text>
+                  <Text style={styles.statValue}>
+                    {formatConnectPortalNumber(goingEvents.length)}
+                  </Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>UPCOMING</Text>
+                  <Text style={styles.statValue}>
+                    {formatConnectPortalNumber(goingSummary.upcomingEvents.length)}
+                  </Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>ONLINE</Text>
+                  <Text style={styles.statValue}>
+                    {formatConnectPortalNumber(goingSummary.onlineEvents.length)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Going</Text>
+                <Pressable onPress={() => refresh(true)}>
+                  <Text style={styles.sectionLink}>Refresh</Text>
+                </Pressable>
+              </View>
+
+              {goingEvents.length < 1 ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyTitle}>No events yet</Text>
+                  <Text style={styles.emptyBody}>Tap Go! on an event to add it to this list.</Text>
+                </View>
+              ) : (
+                goingEvents.map((eventRecord) => (
+                  <View key={eventRecord.id} style={styles.eventCard}>
+                    <Text style={styles.eventCategory}>{eventRecord.category}</Text>
+                    <Text style={styles.eventTitle}>{eventRecord.title}</Text>
+                    <Text style={styles.eventMeta}>{formatConnectPortalDateTime(eventRecord)}</Text>
+                    <Text style={styles.eventMeta}>
+                      {eventRecord.isOnline
+                        ? 'Online Event'
+                        : eventRecord.venueName || eventRecord.address || 'Location TBD'}
+                    </Text>
+
+                    <View style={styles.eventActions}>
+                      <Pressable
+                        style={styles.eventActionPrimary}
+                        onPress={() =>
+                          navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
+                        }
+                      >
+                        <Text style={styles.eventActionPrimaryText}>View Event</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.eventActionSecondary}
+                        onPress={async () => {
+                          await setConnectPortalEventGoing(eventRecord.id, false);
+                          await refresh(true);
+                        }}
+                      >
+                        <Text style={styles.eventActionSecondaryText}>Not Going</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
+              )}
+            </>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>

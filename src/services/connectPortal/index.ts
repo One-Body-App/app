@@ -48,9 +48,19 @@ const CONNECT_PORTAL_NUMBER_FORMATTER = new Intl.NumberFormat('en-US');
 type ConnectPortalApiClient = {
   listPublicEvents: () => Promise<ConnectPortalPublishedEvent[]>;
   listOrganizerEvents: () => Promise<ConnectPortalPublishedEvent[]>;
+  listGoingEvents: () => Promise<ConnectPortalPublishedEvent[]>;
   getEvent: (eventId: string) => Promise<ConnectPortalPublishedEvent | null>;
   getEventAnalytics: (eventId: string) => Promise<ConnectPortalAnalyticsResponse>;
   publishEvent: (payload: Record<string, unknown>) => Promise<ConnectPortalPublishedEvent | null>;
+  setEventGoing: (
+    eventId: string,
+    going: boolean
+  ) => Promise<{
+    event: ConnectPortalPublishedEvent | null;
+    isGoing: boolean;
+    registrationCount: number;
+    changed?: boolean;
+  }>;
   trackEventTelemetry: (
     eventId: string,
     eventType: 'publish' | 'detail_open' | 'detail_view' | 'manage_view',
@@ -127,6 +137,7 @@ const createSeededPublishedEvent = (
     tags: overrides.tags || ['Event', 'Live'],
     ownerUserId: overrides.ownerUserId,
     isLive: overrides.isLive ?? true,
+    isGoing: overrides.isGoing ?? false,
   };
 };
 
@@ -375,6 +386,7 @@ const normalizeDraft = (value: unknown): ConnectPortalEventDraft | null => {
     viewCount: Number(item.viewCount || 0),
     openCount: Number(item.openCount || 0),
     tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag)) : ['Draft'],
+    isGoing: item.isGoing === true,
   };
 };
 
@@ -459,6 +471,7 @@ const normalizePublishedEvent = (value: unknown): ConnectPortalPublishedEvent | 
     tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag)) : ['Event', 'Live'],
     ownerUserId: typeof item.ownerUserId === 'string' ? item.ownerUserId : undefined,
     isLive: item.isLive !== false,
+    isGoing: item.isGoing === true,
   };
 };
 
@@ -580,6 +593,7 @@ const createEmptyDraft = (
   viewCount: overrides?.viewCount ?? 0,
   openCount: overrides?.openCount ?? 0,
   tags: overrides?.tags || ['Draft'],
+  isGoing: overrides?.isGoing ?? false,
 });
 
 export const requiresPayoutStep = (
@@ -623,6 +637,15 @@ const createDefaultApiClient = (): ConnectPortalApiClient => {
       return response.flatMap((item) => {
         const event = normalizePublishedEvent(item);
         return event ? [event] : [];
+      });
+    },
+    listGoingEvents: async () => {
+      const response = await unwrap<any[]>(
+        ApiCall({ route: 'connect/events/going', verb: 'get', token: true })
+      );
+      return response.flatMap((item) => {
+        const event = normalizePublishedEvent(item);
+        return event ? [{ ...event, isGoing: true }] : [];
       });
     },
     getEvent: async (eventId: string) => {
@@ -673,6 +696,29 @@ const createDefaultApiClient = (): ConnectPortalApiClient => {
       );
       return normalizePublishedEvent(response);
     },
+    setEventGoing: async (eventId, going) => {
+      const response = await unwrap<any>(
+        ApiCall({
+          route: `connect/events/${eventId}/going`,
+          verb: 'patch',
+          token: true,
+          params: { going },
+        })
+      );
+      const event = normalizePublishedEvent(response?.event);
+      return {
+        event: event
+          ? {
+              ...event,
+              isGoing: response?.isGoing === true,
+              registrationCount: Number(response?.registrationCount ?? event.registrationCount),
+            }
+          : null,
+        isGoing: response?.isGoing === true,
+        registrationCount: Number(response?.registrationCount || 0),
+        changed: response?.changed === true,
+      };
+    },
     trackEventTelemetry: async (eventId, eventType, metadata) => {
       await ApiCall({
         route: `connect/events/${eventId}/telemetry`,
@@ -705,6 +751,7 @@ export const createConnectPortalStorage = (
     drafts: [],
     organizerPublished: [],
     publicPublished: [],
+    goingPublished: [],
     loadedAt: null,
   };
 
@@ -744,6 +791,7 @@ export const createConnectPortalStorage = (
     memoryCache = {
       ...memoryCache,
       drafts: draftsCache,
+      goingPublished: memoryCache.goingPublished,
       loadedAt: Date.now(),
     };
   };
@@ -755,19 +803,28 @@ export const createConnectPortalStorage = (
       return memoryCache;
     }
 
-    const [drafts, publicResult, organizerResult] = await Promise.all([
+    const [drafts, publicResult, organizerResult, goingResult] = await Promise.all([
       readDrafts(),
       apiClient.listPublicEvents().catch(() => null),
       apiClient.listOrganizerEvents().catch(() => null),
+      apiClient.listGoingEvents().catch(() => null),
     ]);
+
+    const goingPublished = goingResult ? sortByUpdatedDesc(goingResult) : [];
+    const goingIds = new Set(goingPublished.map((event) => event.id));
+    const publicPublished =
+      publicResult && publicResult.length > 0
+        ? sortByUpdatedDesc(publicResult).map((event) => ({
+            ...event,
+            isGoing: event.isGoing === true || goingIds.has(event.id),
+          }))
+        : SEEDED_GO_EVENTS;
 
     memoryCache = {
       drafts,
-      publicPublished:
-        publicResult && publicResult.length > 0
-          ? sortByUpdatedDesc(publicResult)
-          : SEEDED_GO_EVENTS,
+      publicPublished,
       organizerPublished: organizerResult ? sortByUpdatedDesc(organizerResult) : [],
+      goingPublished,
       loadedAt: Date.now(),
     };
 
@@ -817,6 +874,11 @@ export const createConnectPortalStorage = (
   const getPublishedGoEvents = async (force = false) => {
     const cache = await refreshPublishedEvents(force);
     return cache.publicPublished;
+  };
+
+  const getGoingEvents = async (force = false) => {
+    const cache = await refreshPublishedEvents(force);
+    return cache.goingPublished;
   };
 
   const getOrganizerPublishedEvents = async (force = false) => {
@@ -1059,6 +1121,38 @@ export const createConnectPortalStorage = (
 
   const getEventAnalytics = async (eventId: string) => apiClient.getEventAnalytics(eventId);
 
+  const replacePublishedEventInCache = (event: ConnectPortalPublishedEvent) => {
+    const replaceInList = (items: ConnectPortalPublishedEvent[]) =>
+      items.map((item) => (item.id === event.id ? { ...item, ...event } : item));
+
+    memoryCache = {
+      ...memoryCache,
+      publicPublished: replaceInList(memoryCache.publicPublished),
+      organizerPublished: replaceInList(memoryCache.organizerPublished),
+      goingPublished: event.isGoing
+        ? sortByUpdatedDesc([
+            { ...event, isGoing: true },
+            ...memoryCache.goingPublished.filter((item) => item.id !== event.id),
+          ])
+        : memoryCache.goingPublished.filter((item) => item.id !== event.id),
+      loadedAt: Date.now(),
+    };
+  };
+
+  const setEventGoing = async (eventId: string, going: boolean) => {
+    const response = await apiClient.setEventGoing(eventId, going);
+    if (response.event) {
+      replacePublishedEventInCache({
+        ...response.event,
+        isGoing: response.isGoing,
+        registrationCount: response.registrationCount,
+      });
+    } else {
+      invalidatePublishedCache();
+    }
+    return response;
+  };
+
   const trackEventTelemetry = async (
     eventId: string,
     eventType: 'publish' | 'detail_open' | 'detail_view' | 'manage_view',
@@ -1080,11 +1174,13 @@ export const createConnectPortalStorage = (
     getOrganizerEvents,
     getOrganizerSummary,
     getMyEvents,
+    getGoingEvents,
     getEventById,
     getDraftEventById,
     getDraftEventByPublishedEventId,
     getResumeResolution,
     getEventAnalytics,
+    setEventGoing,
     trackEventTelemetry,
     createDraftEvent,
     createEditDraftFromPublishedEvent,
@@ -1103,16 +1199,21 @@ export const createConnectPortalStorage = (
 
 export const connectPortalStorage = createConnectPortalStorage();
 
+export const isApprovedConnectCreator = (user: any) =>
+  user?.influencerProfile?.influencerStatus === 'approved';
+
 export const {
   getUserRecords: getStoredConnectPortalEvents,
   getOrganizerEvents: getConnectPortalOrganizerEvents,
   getOrganizerSummary: getConnectPortalOrganizerSummary,
   getMyEvents: getConnectPortalMyEvents,
+  getGoingEvents: getConnectPortalGoingEvents,
   getEventById: getConnectPortalEventById,
   getDraftEventById: getConnectPortalDraftById,
   getDraftEventByPublishedEventId: getConnectPortalDraftByPublishedEventId,
   getResumeResolution: getConnectPortalResumeResolution,
   getEventAnalytics: getConnectPortalEventAnalytics,
+  setEventGoing: setConnectPortalEventGoing,
   trackEventTelemetry: trackConnectPortalEventTelemetry,
   createDraftEvent: createConnectPortalDraft,
   createEditDraftFromPublishedEvent: createConnectPortalEditDraftFromPublishedEvent,
@@ -1891,6 +1992,20 @@ export const submitConnectEventTypeSuggestion = async (name: string): Promise<vo
   try {
     await ApiCall({
       route: 'global/connect-event-type/suggest',
+      verb: 'post',
+      token: true,
+      params: { name },
+      suppressErrorLog: true,
+    });
+  } catch {
+    // Fire-and-forget; suggestion tracking is best-effort
+  }
+};
+
+export const submitConnectServeRoleSuggestion = async (name: string): Promise<void> => {
+  try {
+    await ApiCall({
+      route: 'global/connect-serve-role/suggest',
       verb: 'post',
       token: true,
       params: { name },

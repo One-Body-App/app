@@ -1,6 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/ionicons';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -37,6 +37,7 @@ import {
   emitFeedItemUnavailable,
   emitOwnedPostDeleted,
   getFeedItemUnavailableMessage,
+  normalizeOwnedPostType,
 } from '@/services/ownedPostDeletion';
 import {
   createPostTelemetryRequestId,
@@ -80,7 +81,7 @@ function SinglePost({ navigation, route }: Props) {
       ],
     });
   }, [navigation]);
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     if (backNavigationInFlightRef.current) {
       return;
     }
@@ -96,7 +97,7 @@ function SinglePost({ navigation, route }: Props) {
     }
 
     resetToHomeFeed();
-  };
+  }, [navigation, resetToHomeFeed]);
 
   const getPost = useCallback(async () => {
     const handleUnavailablePost = (message?: string) => {
@@ -147,23 +148,16 @@ function SinglePost({ navigation, route }: Props) {
     }
   }, [handleBackPress, route.params?.postId, token]);
 
-  // useEffect(() => {
-  //   if (post) {
-  //     navigation.setOptions({
-  //       title: `${post.userData.name}'s Post`,
-  //     });
-  //   }
-  // }, [post]);
-
   const removePost = async (type: string, id: string) => {
+    const normalizedType = normalizeOwnedPostType(type);
     const normalizedId = String(id ?? '').trim();
-    if (normalizedId.length < 1) {
+    if (!normalizedType || normalizedId.length < 1) {
       Toast.show('Unable to delete this post right now.', Toast.SHORT);
       return;
     }
 
     const result = await deleteOwnedPost({
-      type,
+      type: normalizedType,
       id: normalizedId,
       token: token ?? undefined,
     });
@@ -174,7 +168,7 @@ function SinglePost({ navigation, route }: Props) {
     }
 
     emitOwnedPostDeleted({
-      type: result.type,
+      type: normalizedType,
       id: normalizedId,
     });
     handleBackPress();
@@ -203,7 +197,7 @@ function SinglePost({ navigation, route }: Props) {
 
   const trackSinglePostTelemetry = useCallback(
     (
-      eventName: CanonicalPostTelemetryEventName,
+      eventName: string,
       metadata?: Record<string, unknown>,
       overrides?: Partial<PostTelemetryEventInput>
     ) => {
@@ -212,37 +206,39 @@ function SinglePost({ navigation, route }: Props) {
         return;
       }
 
+      const authorId = post?.userData?._id;
+      const currentUserId = currentUser?._id ? String(currentUser._id) : undefined;
+
       trackPostTelemetry({
         postId,
         postType: 'social',
-        contentType: post?.type ?? 'social',
+        contentType: 'social',
         tags: Array.isArray((post as { tags?: unknown } | undefined)?.tags)
           ? ((post as { tags?: string[] }).tags ?? [])
           : [],
-        authorId: post?.userData?._id,
-        userId: currentUser?._id ? String(currentUser._id) : undefined,
+        authorId,
+        userId: currentUserId,
         surface: 'social_feed',
         surfaceTab: 'detail',
         entrypoint: 'single_post',
         requestId: requestIdRef.current,
-        isOwnPost:
-          Boolean(currentUser?._id) && Boolean(post?.userData?._id)
-            ? String(currentUser._id) === String(post.userData._id)
-            : undefined,
+        isOwnPost: currentUserId && authorId ? currentUserId === String(authorId) : undefined,
         isRepost: Boolean((post as { repost?: unknown } | undefined)?.repost),
         privacyState:
           (post as { private?: boolean } | undefined)?.private === true ? 'private' : 'public',
         ...overrides,
-        eventName,
+        eventName: eventName as CanonicalPostTelemetryEventName,
         metadata,
       });
     },
     [currentUser?._id, post, route.params?.postId]
   );
 
-  useEffect(() => {
-    setFeedTelemetryAuthToken(token || undefined);
-  }, [token]);
+  useFocusEffect(
+    useCallback(() => {
+      setFeedTelemetryAuthToken(token || undefined);
+    }, [token])
+  );
 
   useMountEffect(() => {
     if (route.params?.postId) {

@@ -64,6 +64,9 @@ jest.mock('@/src/services/connectPortal', () => ({
   createConnectPortalDraft: jest.fn(),
   createConnectServeJobDraft: jest.fn(),
   formatConnectPortalDateTime: jest.fn(() => 'May 1 at 7:00 PM'),
+  isApprovedConnectCreator: jest.fn(
+    (user: any) => user?.influencerProfile?.influencerStatus === 'approved'
+  ),
   trackConnectPortalEventTelemetry: jest.fn(() => Promise.resolve()),
 }));
 
@@ -121,6 +124,9 @@ function createPortalData(): any {
   return {
     snapshot: {
       publicPublished: [],
+      organizerPublished: [],
+      goingPublished: [],
+      drafts: [],
     },
     refresh: jest.fn(),
     activeTab: 'Go!',
@@ -189,7 +195,10 @@ describe('MapViewScreen', () => {
     mockChrome.mockClear();
     mockFilterSheet.mockClear();
     mockSearchBar.mockClear();
-    mockUseSelector.mockReturnValue({ profileImage: '' });
+    mockUseSelector.mockReturnValue({
+      profileImage: '',
+      influencerProfile: { influencerStatus: 'approved' },
+    });
   });
 
   it('shows only 7 Go event-type chips plus a See all action on map', () => {

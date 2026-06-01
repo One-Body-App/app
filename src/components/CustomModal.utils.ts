@@ -4,12 +4,14 @@ export const getKeyboardAvoidanceOffset = ({
   keyboardHeight,
   sheetHeight,
   viewportHeight,
+  safeAreaTopInset = 0,
 }: {
   avoidKeyboard: boolean;
   modalVisible: boolean;
   keyboardHeight: number;
   sheetHeight: number;
   viewportHeight: number;
+  safeAreaTopInset?: number;
 }) => {
   if (!avoidKeyboard || !modalVisible) {
     return 0;
@@ -24,5 +26,10 @@ export const getKeyboardAvoidanceOffset = ({
     return safeHeight;
   }
 
-  return Math.min(safeHeight, Math.max(0, viewportHeight - sheetHeight));
+  // The sheet is anchored to the bottom, so viewportHeight - sheetHeight is
+  // the empty space above it. safeAreaTopInset reserves room for the status
+  // bar + screen header so translating up by the keyboard never lifts the
+  // sheet past those elements.
+  const availableRoom = Math.max(0, viewportHeight - sheetHeight - safeAreaTopInset);
+  return Math.min(safeHeight, availableRoom);
 };
