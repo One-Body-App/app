@@ -809,6 +809,49 @@ describe('videoUploadQueue', () => {
     ]);
   });
 
+  it('continues to upload when backend video pre-screen is unavailable', async () => {
+    const storage = createMemoryStorage();
+    const videoTrimModule = jest.requireMock('react-native-video-trim');
+    const moderationModule = jest.requireMock('@/src/services/moderation/clientModeration');
+    const unavailableError = Object.assign(
+      new Error('Content moderation is temporarily unavailable'),
+      { status: 503 }
+    );
+    const uploadVideo = jest.fn(async () => createUploadedResult('mux_upload_deferred_review'));
+    const createWatchPost = jest.fn(async () => ({
+      _id: 'watch-deferred-review',
+      processingStatus: 'READY' as const,
+    }));
+
+    videoTrimModule.extractEditedFrames.mockResolvedValueOnce(['/tmp/frame-1.jpg']);
+    moderationModule.callBackendFallbackModeration.mockRejectedValueOnce(unavailableError);
+
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      uploadVideo,
+      createWatchPost,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe, { startImmediately: false });
+    await queue.start();
+    await queue.waitForIdle();
+
+    expect(uploadVideo).toHaveBeenCalledTimes(1);
+    expect(createWatchPost).toHaveBeenCalledTimes(1);
+    expect(queue.getItems()).toEqual([
+      expect.objectContaining({
+        status: 'complete',
+        moderationDecision: 'safe' as const,
+        moderationScores: null,
+        moderationError: 'Content moderation is temporarily unavailable',
+      }),
+    ]);
+  });
+
   it('coalesces repeated start calls into a single processing loop', async () => {
     const storage = createMemoryStorage();
     let releaseModeration: (() => void) | undefined;

@@ -1,13 +1,22 @@
 import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import { ScrollView, Pressable, View, ViewStyle, TextStyle } from 'react-native';
+import type { ComponentProps, ReactNode } from 'react';
+import {
+  ScrollView,
+  Pressable,
+  View,
+  ViewStyle,
+  TextStyle,
+  useWindowDimensions,
+} from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import StyledText from './Text';
 import { Colors, Typography } from '@/src/styles';
 import Button from '../Button';
-import { borderRadius } from '@/src/styles/outlines';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledTextInput from './TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import { spacing } from '@/src/styles/spacing';
@@ -16,12 +25,16 @@ import CustomModal from '../CustomModal';
 type SelectedItem = {
   text: string;
   value: string;
+  // Optional richer presentation (used by sheets like "Select prayer type").
+  description?: string;
+  iconName?: string;
 };
 
 interface Props {
   items: SelectedItem[];
   btnText: string;
   modalTitle: string;
+  modalSubtitle?: string;
   onChange: (item: any) => void;
   selectedItem?: string;
   label?: string;
@@ -41,6 +54,7 @@ export default function StyledSelect({
   items,
   onChange,
   modalTitle,
+  modalSubtitle,
   selectedItem,
   label,
   wrapperStyle,
@@ -54,6 +68,8 @@ export default function StyledSelect({
   leftIcon,
 }: Props) {
   const { dark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const searchedItems = useMemo(() => {
@@ -68,6 +84,101 @@ export default function StyledSelect({
 
     return items.filter((item) => item.text.toLowerCase().includes(normalizedSearchText));
   }, [hideSearch, items, searchText, showAllWithoutSearch]);
+
+  // A short option list with no search reads best as a compact, content-hugging
+  // sheet; a searchable list keeps the taller layout so results have room.
+  const compact = !!hideSearch;
+
+  // Theme-aware tile palette tuned to stay legible in both light and dark mode.
+  const grabberColor = dark ? 'rgba(255,255,255,0.20)' : Colors.neutral[600];
+  const tileBg = dark ? 'rgba(255,255,255,0.04)' : Colors.neutral[700];
+  const tileBorder = dark ? 'rgba(255,255,255,0.08)' : Colors.neutral[800];
+  const selectedTileBg = dark ? 'rgba(18,107,135,0.24)' : Colors.primarySapphire[900];
+  const medallionBg = dark ? 'rgba(18,107,135,0.20)' : 'rgba(18,107,135,0.10)';
+  const mutedColor = Colors.neutral[300];
+
+  const renderItem = (item: SelectedItem, index: number) => {
+    const isSelected = selectedItem === item.value;
+
+    return (
+      <Animated.View key={item.value} entering={FadeInDown.duration(260).delay(40 + index * 55)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: isSelected }}
+          onPress={() => {
+            onChange(item.value);
+            setModalVisible(false);
+          }}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: spacing.x12,
+            paddingVertical: spacing.x12,
+            paddingHorizontal: spacing.x12,
+            borderRadius: borderRadius.base,
+            borderWidth: borderWidth.thin,
+            borderColor: isSelected ? Colors.primarySapphire.brand : tileBorder,
+            backgroundColor: isSelected ? selectedTileBg : tileBg,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          {item.iconName ? (
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: borderRadius.max,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: isSelected ? Colors.primarySapphire.brand : medallionBg,
+              }}
+            >
+              <MaterialCommunityIcons
+                name={item.iconName as ComponentProps<typeof MaterialCommunityIcons>['name']}
+                size={20}
+                color={isSelected ? '#FFFFFF' : Colors.primarySapphire.brand}
+              />
+            </View>
+          ) : null}
+
+          <View style={{ flex: 1 }}>
+            <StyledText
+              style={[
+                Typography.body.x3M,
+                { color: Colors.neutral[200], textTransform: 'capitalize' },
+              ]}
+              numberOfLines={1}
+            >
+              {item.text}
+            </StyledText>
+            {item.description ? (
+              <StyledText
+                style={[Typography.body.x1, { color: mutedColor, marginTop: spacing.x2 }]}
+                numberOfLines={2}
+              >
+                {item.description}
+              </StyledText>
+            ) : null}
+          </View>
+
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: borderRadius.max,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: isSelected ? 0 : borderWidth.thin,
+              borderColor: tileBorder,
+              backgroundColor: isSelected ? Colors.primarySapphire.brand : 'transparent',
+            }}
+          >
+            {isSelected ? <MaterialCommunityIcons name="check" size={15} color="#FFFFFF" /> : null}
+          </View>
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={wrapperStyle}>
@@ -101,7 +212,6 @@ export default function StyledSelect({
           btnTextStyle,
         ]}
         rightIcon={rightIcon ?? <Ionicons name="chevron-down" color={Colors.neutral[200]} />}
-        // btnTextStyle={styles.btnText3}
         onPress={() => {
           setSearchText('');
           setModalVisible(true);
@@ -111,138 +221,120 @@ export default function StyledSelect({
       <CustomModal
         modalVisible={modalVisible}
         onclose={() => setModalVisible(false)}
-        // style={styles.bottomView}
         style={{
-          justifyContent: 'flex-end',
           margin: 0,
+          borderTopLeftRadius: borderRadius.large,
+          borderTopRightRadius: borderRadius.large,
+          backgroundColor: colors.background,
+          // Let a short, search-less list hug its content instead of filling half the screen.
+          ...(compact ? { minHeight: 0 } : {}),
         }}
       >
         <View
           style={{
-            paddingVertical: spacing.x16,
-            borderTopRightRadius: borderRadius.large,
-            borderTopLeftRadius: borderRadius.large,
-            // height: '90%',
-            flex: 1,
-            marginTop: spacing.x48,
-            backgroundColor: colors.background,
+            paddingTop: spacing.x8,
+            paddingBottom: insets.bottom + spacing.x16,
+            ...(compact ? {} : { flex: 1, marginTop: spacing.x48 }),
           }}
         >
-          {/* <View style={{ paddingHorizontal: spacing.x16, paddingBottom: spacing.x10 }}> */}
+          {/* Grabber */}
           <View
             style={{
-              flex: hideSearch ? 0 : 1.5,
+              alignSelf: 'center',
+              width: 44,
+              height: 5,
+              borderRadius: borderRadius.max,
+              backgroundColor: grabberColor,
+              marginBottom: spacing.x16,
+            }}
+          />
 
-              maxHeight: 90,
-              paddingHorizontal: spacing.x16,
-
-              // paddingBottom: hideSearch ? spacing.x10 : 0,
+          {/* Header */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              paddingHorizontal: spacing.x24,
+              marginBottom: spacing.x16,
             }}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                // flex: 1,
-              }}
-            >
-              <StyledText style={[Typography.fontSize.x4, { paddingBottom: spacing.x10 }]}>
+            <View style={{ flex: 1, paddingRight: spacing.x12 }}>
+              <StyledText style={[Typography.header.h3, { color: colors.text }]}>
                 {modalTitle}
               </StyledText>
-
-              <Pressable
-                onPress={() => {
-                  // setModalVisible(false);
-                  setModalVisible(false);
-                }}
-              >
-                <MaterialCommunityIcons
-                  name="window-close"
-                  size={18}
-                  color={dark ? colors.text : Colors.primary.brand}
-                />
-              </Pressable>
-            </View>
-            {!hideSearch ? (
-              <View style={{ flex: 1 }}>
-                <StyledTextInput
-                  clearButtonMode="always"
-                  wrapperStyle={{ flex: 1 }}
-                  value={searchText}
-                  returnKeyType="search"
-                  placeholder="Search"
-                  leftIcon={
-                    <View style={{ justifyContent: 'center' }}>
-                      <SearchIcon
-                        style={{ height: 15, width: 15, marginRight: spacing.x10 }}
-                        stroke={Colors.neutral[200]}
-                      />
-                    </View>
-                    // <MaterialCommunityIcons
-                    //   name="magnify"
-                    //   size={15}
-                    //   style={{ marginRight: 10 }}
-                    //   color={Colors.neutral[200]}
-                    // />
-                  }
-                  onChangeText={(text) => {
-                    setSearchText(text);
-                    // changeHandler('password', password.trim())
-                  }}
-                />
-              </View>
-            ) : null}
-          </View>
-
-          <View
-            style={{
-              flex: 1,
-              paddingHorizontal: hideSearch ? 0 : spacing.x8,
-            }}
-          >
-            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled>
-              {searchedItems.length == 0 && searchText != '' ? (
-                <StyledText style={[Typography.body.x2M, { padding: spacing.x16 }]}>
-                  No results found
+              {modalSubtitle ? (
+                <StyledText
+                  style={[Typography.body.x2, { color: mutedColor, marginTop: spacing.x4 }]}
+                >
+                  {modalSubtitle}
                 </StyledText>
               ) : null}
-              {searchedItems.map((item, index) => {
-                return (
-                  <Pressable
-                    onPress={() => {
-                      onChange(item.value);
+            </View>
 
-                      setModalVisible(false);
-                    }}
-                    // style={styles.listItem2}
-                    key={item.value}
-                    style={{
-                      padding: spacing.x16,
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      borderColor: Colors.primary[800],
-                      borderWidth: selectedItem == item.value ? 1 : 0,
-                      backgroundColor:
-                        selectedItem == item.value ? Colors.primarySapphire[900] : '',
-                    }}
-                  >
-                    <StyledText
-                      style={{
-                        color: Colors.neutral[200],
-                        textTransform: 'capitalize',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.text}
-                    </StyledText>
-                    {selectedItem == item.value ? (
-                      <MaterialCommunityIcons name="check" size={15} color={Colors.neutral[200]} />
-                    ) : null}
-                  </Pressable>
-                );
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={8}
+              onPress={() => setModalVisible(false)}
+              style={({ pressed }) => ({
+                width: 32,
+                height: 32,
+                borderRadius: borderRadius.max,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: dark ? 'rgba(255,255,255,0.06)' : Colors.neutral[700],
+                opacity: pressed ? 0.6 : 1,
               })}
-            </ScrollView>
+            >
+              <MaterialCommunityIcons
+                name="close"
+                size={18}
+                color={dark ? colors.text : Colors.primary.brand}
+              />
+            </Pressable>
           </View>
+
+          {/* Search (only when enabled) */}
+          {!hideSearch ? (
+            <View style={{ paddingHorizontal: spacing.x24, marginBottom: spacing.x12 }}>
+              <StyledTextInput
+                clearButtonMode="always"
+                value={searchText}
+                returnKeyType="search"
+                placeholder="Search"
+                leftIcon={
+                  <View style={{ justifyContent: 'center' }}>
+                    <SearchIcon
+                      style={{ height: 15, width: 15, marginRight: spacing.x10 }}
+                      stroke={Colors.neutral[200]}
+                    />
+                  </View>
+                }
+                onChangeText={(text) => setSearchText(text)}
+              />
+            </View>
+          ) : null}
+
+          {/* Options. Keyed on visibility so the staggered entrance replays each open. */}
+          <ScrollView
+            key={modalVisible ? 'sheet-open' : 'sheet-closed'}
+            keyboardShouldPersistTaps="always"
+            nestedScrollEnabled
+            style={compact ? { maxHeight: screenHeight * 0.62 } : { flex: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.x16,
+              paddingTop: spacing.x4,
+              rowGap: spacing.x10,
+            }}
+          >
+            {searchedItems.length === 0 && searchText !== '' ? (
+              <StyledText style={[Typography.body.x2M, { padding: spacing.x16 }]}>
+                No results found
+              </StyledText>
+            ) : null}
+            {searchedItems.map((item, index) => renderItem(item, index))}
+          </ScrollView>
         </View>
       </CustomModal>
     </View>

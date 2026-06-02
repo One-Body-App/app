@@ -354,18 +354,25 @@ function NewPrayer({ navigation, route }: Props) {
                     {
                       text: PrayerWallCategory.Request,
                       value: PrayerWallCategory.Request,
+                      iconName: 'hands-pray',
+                      description: 'Ask the community to pray with you',
                     },
                     {
                       text: PrayerWallCategory.Exhortation,
                       value: PrayerWallCategory.Exhortation,
+                      iconName: 'hand-heart-outline',
+                      description: 'Encourage and uplift others',
                     },
                     {
                       text: PrayerWallCategory.Testimony,
                       value: PrayerWallCategory.Testimony,
+                      iconName: 'star-four-points-outline',
+                      description: 'Share what God has done',
                     },
                   ]}
                   btnText={postType || 'Prayer Type'}
                   modalTitle="Select prayer type"
+                  modalSubtitle="Choose how you'd like to share"
                   onChange={(item: PrayerWallCategory) => {
                     setPostType(item);
                   }}

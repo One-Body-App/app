@@ -7,6 +7,8 @@ import {
   shouldAcceptProfileResult,
   shouldBeginMandatoryMfaOnboarding,
   shouldImmediatelyBeginMandatoryMfaOnboarding,
+  shouldLogoutAuthenticatedIntroRoute,
+  shouldWaitForProfileBeforeAuthNavigation,
 } from './authFlow';
 
 describe('authFlow', () => {
@@ -85,6 +87,56 @@ describe('authFlow', () => {
         requestToken: 'current-token',
       })
     ).toBe(true);
+  });
+
+  it('continues auth navigation on public routes when profile data is already available', () => {
+    expect(
+      shouldWaitForProfileBeforeAuthNavigation({
+        userToken: 'token',
+        isProfileLoading: true,
+        currentRouteName: 'SignUp',
+        hasProfileData: true,
+      })
+    ).toBe(false);
+  });
+
+  it('waits for profile loading when authenticated profile data is not available', () => {
+    expect(
+      shouldWaitForProfileBeforeAuthNavigation({
+        userToken: 'token',
+        isProfileLoading: true,
+        currentRouteName: 'SignUp',
+        hasProfileData: false,
+      })
+    ).toBe(true);
+  });
+
+  it('keeps private route auth navigation deferred during profile refresh', () => {
+    expect(
+      shouldWaitForProfileBeforeAuthNavigation({
+        userToken: 'token',
+        isProfileLoading: true,
+        currentRouteName: 'Home',
+        hasProfileData: true,
+      })
+    ).toBe(true);
+  });
+
+  it('logs out authenticated users that reach Intro outside explicit logout', () => {
+    expect(
+      shouldLogoutAuthenticatedIntroRoute({
+        userToken: 'token',
+        currentRouteName: 'Intro',
+      })
+    ).toBe(true);
+
+    expect(
+      shouldLogoutAuthenticatedIntroRoute({
+        userToken: 'token',
+        currentRouteName: 'Intro',
+        logoutPending: true,
+      })
+    ).toBe(false);
   });
 
   it('identifies the dedicated MFA onboarding login screen', () => {

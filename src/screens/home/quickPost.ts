@@ -76,8 +76,22 @@ export const moderateQuickPostText = async (
         };
       }
     } catch (_error) {
-      notify?.(QUICK_POST_MODERATION_ERROR_MESSAGE);
-      return { blocked: true };
+      notify?.(QUICK_POST_PENDING_REVIEW_MESSAGE);
+      return {
+        blocked: false,
+        moderationReview: buildPendingModerationReviewPayload([
+          {
+            type: 'text',
+            clientSource: result.source,
+            clientScores: result.scores,
+            clientReason: result.reason || QUICK_POST_MODERATION_ERROR_MESSAGE,
+            clientModel: result.model,
+            fallbackAction: 'pending_review',
+            fallbackProvider: 'openai',
+            fallbackFlagged: false,
+          } satisfies ModerationReviewCheckPayload,
+        ]),
+      };
     }
   }
 

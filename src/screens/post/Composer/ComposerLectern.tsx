@@ -51,15 +51,17 @@ export type ComposerLecternProps = {
   onToolPress: (tool: LecternToolId) => void;
   toolPanel?: React.ReactNode;
   // The lectern itself is a controlled component so the host can flip between
-  // collapsed (icons only) and expanded (with caption + labeled actions).
+  // compact options and expanded options. The caption stays visible in both.
   expanded: boolean;
   onExpandedChange: (next: boolean) => void;
   // Reports the sheet's measured height so the host can reserve space for it.
   onHeightChange?: (height: number) => void;
   captionInputRef?: React.RefObject<RNTextInput | null>;
+  bottomInset?: number;
 };
 
-const ICON_SIZE = 22;
+const EXPANDED_ICON_SIZE = 22;
+const COMPACT_ICON_SIZE = 34;
 
 const ToolButton = React.memo(function ToolButton({
   def,
@@ -96,13 +98,18 @@ const ToolButton = React.memo(function ToolButton({
       <View
         style={[
           styles.toolIconWrap,
+          expanded ? styles.toolIconWrapExpanded : styles.toolIconWrapCompact,
           {
             backgroundColor: expanded ? palette.glass : 'transparent',
             borderColor: expanded ? palette.glassBorder : 'transparent',
           },
         ]}
       >
-        <MaterialIcons name={def.icon} size={ICON_SIZE} color={palette.accent} />
+        <MaterialIcons
+          name={def.icon}
+          size={expanded ? EXPANDED_ICON_SIZE : COMPACT_ICON_SIZE}
+          color={palette.accent}
+        />
       </View>
       {expanded ? (
         <StyledText style={[styles.toolLabel, { color: palette.textPrimary }]}>
@@ -132,11 +139,11 @@ export default function ComposerLectern({
   onExpandedChange,
   onHeightChange,
   captionInputRef,
+  bottomInset = 0,
 }: ComposerLecternProps): React.ReactElement {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
   const { height: windowHeight } = useWindowDimensions();
-  const collapsedHeight = composerSpace.lecternCollapsedHeight;
-  // The sheet grows with its content (tools + an optional tool panel + caption)
+  // The sheet grows with its content (caption + tools + an optional tool panel)
   // up to a cap, and scrolls beyond that so the caption is always reachable.
   const maxExpandedHeight = Math.round(windowHeight * 0.85);
   const dragGesture = Gesture.Pan()
@@ -162,6 +169,42 @@ export default function ComposerLectern({
     enabled: Boolean(activeMention?.query),
   });
 
+  const captionNode = (
+    <View
+      testID="composer-caption-field"
+      style={[
+        styles.captionWrap,
+        { backgroundColor: palette.glass, borderColor: palette.glassBorder },
+      ]}
+    >
+      <StyledText style={[styles.captionLabel, { color: palette.textMuted }]}>CAPTION</StyledText>
+      <MentionInput
+        inputRef={captionInputRef}
+        activeMention={activeMention}
+        value={caption}
+        mentions={mentions}
+        selection={selection}
+        onSelectionChange={onSelectionChange}
+        onChangeText={onChangeCaption}
+        onSelectSuggestion={onSelectSuggestion}
+        onHandleBackspace={onHandleBackspace}
+        suggestions={suggestions}
+        isLoading={isMentionLoading}
+        isError={isMentionError}
+        inputStyle={[styles.captionInput, { color: palette.textPrimary }]}
+        placeholder="Share a testimony, a verse, a prayer request..."
+        placeholderTextColor={palette.textMuted}
+        multiline
+        maxLength={500}
+        textAlignVertical="top"
+        suggestionsContainerStyle={{
+          backgroundColor: palette.glassElevated,
+          borderColor: palette.glassBorder,
+        }}
+      />
+    </View>
+  );
+
   return (
     <View
       onLayout={(event) => onHeightChange?.(event.nativeEvent.layout.height)}
@@ -173,7 +216,7 @@ export default function ComposerLectern({
           boxShadow: `0 -8px 24px ${palette.shadow}`,
           ...(expanded
             ? { minHeight: composerSpace.lecternExpandedHeight, maxHeight: maxExpandedHeight }
-            : { height: collapsedHeight }),
+            : null),
         },
       ]}
     >
@@ -188,7 +231,7 @@ export default function ComposerLectern({
       <GestureDetector gesture={dragGesture}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Collapse tools' : 'Expand tools'}
+          accessibilityLabel={expanded ? 'Collapse post options' : 'Expand post options'}
           onPress={() => onExpandedChange(!expanded)}
           style={styles.handleHitArea}
         >
@@ -199,10 +242,15 @@ export default function ComposerLectern({
       {expanded ? (
         <ScrollView
           style={styles.bodyScroll}
-          contentContainerStyle={styles.bodyExpanded}
+          contentContainerStyle={[
+            styles.bodyExpanded,
+            { paddingBottom: composerSpace.lg + bottomInset },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
         >
+          {captionNode}
+
           <View style={[styles.toolsRow, styles.toolsRowExpanded]}>
             {visibleTools.map((tool) => (
               <ToolButton
@@ -215,46 +263,13 @@ export default function ComposerLectern({
             ))}
           </View>
 
-          {toolPanel ?? null}
-
-          <View
-            style={[
-              styles.captionWrap,
-              { backgroundColor: palette.glass, borderColor: palette.glassBorder },
-            ]}
-          >
-            <StyledText style={[styles.captionLabel, { color: palette.textMuted }]}>
-              CAPTION
-            </StyledText>
-            <MentionInput
-              inputRef={captionInputRef}
-              activeMention={activeMention}
-              value={caption}
-              mentions={mentions}
-              selection={selection}
-              onSelectionChange={onSelectionChange}
-              onChangeText={onChangeCaption}
-              onSelectSuggestion={onSelectSuggestion}
-              onHandleBackspace={onHandleBackspace}
-              suggestions={suggestions}
-              isLoading={isMentionLoading}
-              isError={isMentionError}
-              inputStyle={[styles.captionInput, { color: palette.textPrimary }]}
-              placeholder="Share a testimony, a verse, a prayer request..."
-              placeholderTextColor={palette.textMuted}
-              multiline
-              maxLength={500}
-              textAlignVertical="top"
-              suggestionsContainerStyle={{
-                backgroundColor: palette.glassElevated,
-                borderColor: palette.glassBorder,
-              }}
-            />
-          </View>
+          {toolPanel ? <View style={styles.toolPanelWrap}>{toolPanel}</View> : null}
         </ScrollView>
       ) : (
-        <View style={styles.bodyCollapsed}>
-          <View style={styles.toolsRow}>
+        <View style={[styles.bodyCompact, { paddingBottom: composerSpace.md + bottomInset }]}>
+          {captionNode}
+
+          <View style={[styles.toolsRow, styles.toolsRowCompact]}>
             {visibleTools.map((tool) => (
               <ToolButton
                 key={tool.id}
@@ -282,12 +297,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
-  lecternCollapsed: {
-    height: composerSpace.lecternCollapsedHeight,
-  },
-  lecternExpanded: {
-    height: composerSpace.lecternExpandedHeight,
-  },
   handleHitArea: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -300,16 +309,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     opacity: 0.9,
   },
-  bodyCollapsed: {
+  bodyCompact: {
     paddingHorizontal: composerSpace.lg,
-    paddingBottom: composerSpace.md,
+    gap: composerSpace.sm,
   },
   bodyScroll: {
     flexShrink: 1,
   },
   bodyExpanded: {
     paddingHorizontal: composerSpace.lg,
-    paddingBottom: composerSpace.lg,
     gap: composerSpace.md,
   },
   toolsRow: {
@@ -323,14 +331,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     flexWrap: 'wrap',
   },
+  toolsRowCompact: {
+    paddingTop: 0,
+    paddingBottom: composerSpace.xs,
+  },
   tool: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   toolCollapsed: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
   toolExpanded: {
     width: '30%',
@@ -339,12 +351,20 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   toolIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
+  },
+  toolIconWrapExpanded: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  toolIconWrapCompact: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 0,
   },
   toolLabel: {
     ...composerType.caption,
@@ -367,5 +387,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     padding: 0,
+  },
+  toolPanelWrap: {
+    gap: composerSpace.sm,
   },
 });

@@ -42,6 +42,18 @@ type ProfileResultGuard = LogoutGuardState & {
   requestToken?: string | null;
 };
 
+type AuthNavigationProfileLoadState = {
+  userToken?: string | null;
+  isProfileLoading?: boolean;
+  currentRouteName?: string | null;
+  hasProfileData?: boolean;
+};
+
+type AuthenticatedIntroRouteState = LogoutGuardState & {
+  userToken?: string | null;
+  currentRouteName?: string | null;
+};
+
 const PUBLIC_AUTH_ROUTES = new Set([
   'Intro',
   'AccountType',
@@ -140,4 +152,26 @@ export function shouldAcceptProfileResult(state: ProfileResultGuard): boolean {
   }
 
   return state.requestToken === state.currentToken;
+}
+
+export function shouldWaitForProfileBeforeAuthNavigation(
+  state: AuthNavigationProfileLoadState
+): boolean {
+  if (!state.userToken || !state.isProfileLoading) {
+    return false;
+  }
+
+  if (!state.hasProfileData) {
+    return true;
+  }
+
+  return !isPublicAuthRoute(state.currentRouteName);
+}
+
+export function shouldLogoutAuthenticatedIntroRoute(state: AuthenticatedIntroRouteState): boolean {
+  if (isExplicitLogoutActive(state)) {
+    return false;
+  }
+
+  return Boolean(state.userToken) && state.currentRouteName === 'Intro';
 }

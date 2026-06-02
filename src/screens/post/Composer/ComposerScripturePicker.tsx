@@ -286,31 +286,45 @@ export default function ComposerScripturePicker({
 
       {selected ? (
         <View
+          testID="selected-scripture-preview"
           style={[
-            styles.selected,
+            styles.selectedCard,
             {
-              backgroundColor: palette.glass,
+              backgroundColor: palette.moderationSafeBg,
               borderColor: palette.glassBorder,
             },
           ]}
         >
-          <View style={styles.selectedText}>
-            <StyledText style={[styles.selectedReference, { color: palette.textPrimary }]}>
-              {selected.reference}
-            </StyledText>
-            <StyledText style={[styles.selectedMeta, { color: palette.textMuted }]}>
-              {selected.translation}
-            </StyledText>
+          <View style={styles.selectedHeader}>
+            <View
+              style={[
+                styles.selectedIcon,
+                { backgroundColor: palette.glass, borderColor: palette.glassBorder },
+              ]}
+            >
+              <MaterialIcons name="menu-book" size={18} color={palette.accent} />
+            </View>
+            <View style={styles.selectedText}>
+              <StyledText style={[styles.selectedReference, { color: palette.textPrimary }]}>
+                {selected.reference}
+              </StyledText>
+              <StyledText style={[styles.selectedMeta, { color: palette.textMuted }]}>
+                {selected.translation}
+              </StyledText>
+            </View>
+            <Pressable
+              onPress={onClear}
+              accessibilityRole="button"
+              accessibilityLabel="Remove selected scripture"
+              hitSlop={8}
+              style={styles.iconButton}
+            >
+              <MaterialIcons name="close" size={18} color={palette.textMuted} />
+            </Pressable>
           </View>
-          <Pressable
-            onPress={onClear}
-            accessibilityRole="button"
-            accessibilityLabel="Remove selected scripture"
-            hitSlop={8}
-            style={styles.iconButton}
-          >
-            <MaterialIcons name="close" size={18} color={palette.textMuted} />
-          </Pressable>
+          <StyledText style={[styles.selectedVerseText, { color: palette.textSecondary }]}>
+            {selected.text}
+          </StyledText>
         </View>
       ) : null}
 
@@ -442,26 +456,29 @@ export default function ComposerScripturePicker({
           </Pressable>
         </View>
       ) : (
-        <View style={styles.suggestions}>
-          {suggestions.map((book) => (
-            <Pressable
-              key={book.usfm}
-              onPress={() => pickBook(book)}
-              accessibilityRole="button"
-              accessibilityLabel={`Select ${book.name}`}
-              style={[
-                styles.bookButton,
-                {
-                  backgroundColor: palette.glass,
-                  borderColor: palette.glassBorder,
-                },
-              ]}
-            >
-              <StyledText style={[styles.bookText, { color: palette.textPrimary }]}>
-                {book.name}
-              </StyledText>
-            </Pressable>
-          ))}
+        <View testID="scripture-book-options" style={styles.bookSection}>
+          <StyledText style={[styles.sectionLabel, { color: palette.textMuted }]}>Books</StyledText>
+          <View style={styles.suggestions}>
+            {suggestions.map((book) => (
+              <Pressable
+                key={book.usfm}
+                onPress={() => pickBook(book)}
+                accessibilityRole="button"
+                accessibilityLabel={`Select ${book.name}`}
+                style={[
+                  styles.bookButton,
+                  {
+                    backgroundColor: palette.glass,
+                    borderColor: palette.glassBorder,
+                  },
+                ]}
+              >
+                <StyledText style={[styles.bookText, { color: palette.textPrimary }]}>
+                  {book.name}
+                </StyledText>
+              </Pressable>
+            ))}
+          </View>
         </View>
       )}
 
@@ -520,14 +537,24 @@ const styles = StyleSheet.create({
     ...composerType.caption,
     fontWeight: '700',
   },
-  selected: {
+  selectedCard: {
     borderRadius: composerSpace.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: composerSpace.sm,
-    paddingVertical: composerSpace.xs,
+    padding: composerSpace.sm,
+    gap: composerSpace.xs,
+  },
+  selectedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: composerSpace.xs,
+  },
+  selectedIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   selectedText: {
     flex: 1,
@@ -538,6 +565,10 @@ const styles = StyleSheet.create({
   },
   selectedMeta: {
     ...composerType.caption,
+  },
+  selectedVerseText: {
+    ...composerType.caption,
+    lineHeight: 19,
   },
   iconButton: {
     width: 32,
@@ -605,6 +636,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: composerSpace.xs,
+  },
+  bookSection: {
+    gap: 6,
+  },
+  sectionLabel: {
+    ...composerType.eyebrow,
+    fontWeight: '700',
   },
   bookButton: {
     borderRadius: composerSpace.chipRadius,

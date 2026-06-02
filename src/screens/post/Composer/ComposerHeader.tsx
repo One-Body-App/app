@@ -22,7 +22,6 @@ export type ComposerHeaderProps = {
   characterMax: number;
   onClose: () => void;
   onSubmit: () => void;
-  onTogglePreview: () => void;
   canSubmit: boolean;
   isSubmitting: boolean;
   submitLabel?: string;
@@ -120,6 +119,7 @@ function AudienceSheet({
             key={key}
             onPress={() => onSelect(key)}
             accessibilityRole="menuitem"
+            accessibilityLabel={AUDIENCE_LABELS[key]}
             accessibilityState={{ selected: active }}
             style={({ pressed }) => [
               styles.menuItem,
@@ -155,7 +155,6 @@ export default function ComposerHeader({
   characterMax,
   onClose,
   onSubmit,
-  onTogglePreview,
   canSubmit,
   isSubmitting,
   submitLabel = 'Post',
@@ -210,15 +209,6 @@ export default function ComposerHeader({
         )}
 
         <View style={styles.actions}>
-          <Pressable
-            onPress={onTogglePreview}
-            accessibilityRole="button"
-            accessibilityLabel="Toggle preview"
-            style={[styles.iconButton, { backgroundColor: palette.glass }]}
-          >
-            <MaterialIcons name="visibility" size={20} color={palette.textPrimary} />
-          </Pressable>
-
           {showCounter ? <CounterRing fill={fill} palette={palette} /> : null}
 
           <Pressable
@@ -280,7 +270,7 @@ export default function ComposerHeader({
       <CustomModal
         modalVisible={sheetOpen}
         onclose={() => setSheetOpen(false)}
-        style={{ backgroundColor: sheetSurface, minHeight: 0 }}
+        style={[styles.audienceModal, { backgroundColor: sheetSurface }]}
       >
         <AudienceSheet
           palette={palette}
@@ -397,6 +387,9 @@ const styles = StyleSheet.create({
     paddingTop: composerSpace.sm,
     paddingBottom: composerSpace.xxl,
     gap: composerSpace.xs,
+  },
+  audienceModal: {
+    minHeight: 240,
   },
   sheetHandle: {
     alignSelf: 'center',

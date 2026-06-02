@@ -6,4 +6,3 @@ export { default as ComposerCanvas } from './ComposerCanvas';
 export { default as ComposerHeader } from './ComposerHeader';
 export { default as ComposerLectern } from './ComposerLectern';
 export { default as ComposerModerationChip } from './ComposerModerationChip';
-export { default as ComposerFeedPreview } from './ComposerFeedPreview';

@@ -540,7 +540,11 @@ const defaultDependencies: QueueDependencies = {
           VIDEO_MODERATION_RETRY_MAX_DIMENSION
         );
       }
-      throw error;
+      return {
+        moderationDecision: 'safe',
+        moderationScores: null,
+        moderationError: normalizeFailureMessage(error) || 'backend-video-pre-screen-unavailable',
+      };
     }
   },
   exportVideo: async (recipe) => {

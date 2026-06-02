@@ -131,7 +131,7 @@ export const composerSpace = {
   gutter: 16,
   edge: 20,
   // Lectern dimensions.
-  lecternCollapsedHeight: 72,
+  lecternCompactHeight: 232,
   lecternExpandedHeight: 296,
   lecternRadius: 28,
   // Chip / pill geometry.

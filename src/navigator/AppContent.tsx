@@ -94,8 +94,10 @@ import {
   isExplicitLogoutActive,
   isMfaEnrollmentScreenActive,
   isPublicAuthRoute,
+  shouldLogoutAuthenticatedIntroRoute,
   shouldImmediatelyBeginMandatoryMfaOnboarding,
   shouldBeginMandatoryMfaOnboarding,
+  shouldWaitForProfileBeforeAuthNavigation,
 } from '@/src/utils/authFlow';
 import getConfirmLoginVerificationDecision from '@/src/utils/confirmLoginVerification';
 
@@ -620,6 +622,21 @@ function AppContent() {
       return;
     }
 
+    if (
+      shouldLogoutAuthenticatedIntroRoute({
+        userToken: token,
+        currentRouteName,
+        logoutPending,
+        logoutCompletedAt,
+      })
+    ) {
+      if (__DEV__) {
+        console.log('[AppContent Navigation] Authenticated Intro route, logging out');
+      }
+      dispatch(logout({ destination: 'Intro' }));
+      return;
+    }
+
     if (shouldPauseForMandatoryMfaOnboarding) {
       if (__DEV__) {
         console.log(
@@ -665,9 +682,16 @@ function AppContent() {
       return;
     }
 
-    // Don't navigate while profile is loading to avoid race conditions
-    // This ensures we have complete profile data before making navigation decisions
-    if (hasValidToken && isProfileLoading) {
+    // Defer private-route decisions while a fresh profile request is in flight.
+    // Public auth routes can still redirect when cached profile data proves the session is active.
+    if (
+      shouldWaitForProfileBeforeAuthNavigation({
+        userToken: token,
+        isProfileLoading,
+        currentRouteName,
+        hasProfileData,
+      })
+    ) {
       if (__DEV__) {
         console.log('[AppContent Navigation] Waiting - profile is loading');
       }
@@ -1478,6 +1502,8 @@ function AppContent() {
     return null;
   }
 
+  const initialMainRoute = token ? 'MainRoot' : 'Intro';
+
   return (
     <NavigationContainer
       ref={navigationRef}
@@ -1497,7 +1523,7 @@ function AppContent() {
         <ReactionProvider>
           <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
             <MainStack.Navigator
-              initialRouteName="Intro"
+              initialRouteName={initialMainRoute}
               screenOptions={{
                 gestureEnabled: false,
                 fullScreenGestureEnabled: false,

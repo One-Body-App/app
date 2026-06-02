@@ -3,8 +3,7 @@ import {
   getQuickPostErrorMessage,
   moderateQuickPostText,
   QUICK_POST_MAX_CHARACTERS,
-  QUICK_POST_MODERATION_ERROR_MESSAGE,
-  QUICK_POST_TEXT_BLOCK_MESSAGE,
+  QUICK_POST_PENDING_REVIEW_MESSAGE,
 } from './quickPost';
 
 const mockBuildPendingModerationReviewPayload: jest.Mock = jest.fn((checks) => ({ checks }));
@@ -105,7 +104,7 @@ describe('quickPost helpers', () => {
     });
   });
 
-  it('blocks quick posts when fallback moderation cannot be completed', async () => {
+  it('submits quick posts for review when fallback moderation cannot be completed', async () => {
     const notify = jest.fn();
     mockModerateClientText.mockResolvedValue({
       action: 'fallback',
@@ -117,8 +116,19 @@ describe('quickPost helpers', () => {
     mockCallBackendFallbackModeration.mockRejectedValue(new Error('backend down'));
 
     await expect(moderateQuickPostText('retry me', notify)).resolves.toEqual({
-      blocked: true,
+      blocked: false,
+      moderationReview: {
+        checks: [
+          expect.objectContaining({
+            type: 'text',
+            fallbackAction: 'pending_review',
+            fallbackProvider: 'openai',
+            fallbackFlagged: false,
+            clientReason: 'threshold-hit',
+          }),
+        ],
+      },
     });
-    expect(notify).toHaveBeenCalledWith(QUICK_POST_MODERATION_ERROR_MESSAGE);
+    expect(notify).toHaveBeenCalledWith(QUICK_POST_PENDING_REVIEW_MESSAGE);
   });
 });

@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   StatusBar,
@@ -11,7 +10,8 @@ import {
   type TextInput as RNTextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView as KeyboardControllerAvoidingView } from 'react-native-keyboard-controller';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
@@ -29,7 +29,6 @@ import { moderateClientImage } from '@/src/services/moderation/imageModeration';
 import ComposerCanvas from './ComposerCanvas';
 import ComposerLectern, { type LecternToolId } from './ComposerLectern';
 import ComposerModerationChip from './ComposerModerationChip';
-import ComposerFeedPreview from './ComposerFeedPreview';
 import ComposerHeader from './ComposerHeader';
 import ComposerScripturePicker from './ComposerScripturePicker';
 import { submitComposerDraft } from './composerSubmit';
@@ -44,8 +43,6 @@ import {
   newMediaId,
   type ComposerAudience,
   type ComposerDraft,
-  type ComposerMode,
-  type ComposerPreviewMode,
   type MediaItem,
   type MediaModeration,
   type ModerationStatus,
@@ -98,15 +95,6 @@ type ProfileSummary = {
   firstName?: string;
 };
 
-function buildAuthorName(profile: ProfileSummary | undefined): string {
-  if (!profile) return 'You';
-  return profile.firstName?.trim() || profile.name?.trim() || 'You';
-}
-
-function resolveAuthorAvatar(profile: ProfileSummary | undefined): string | undefined {
-  return profile?.profileImage || profile?.profile_image || undefined;
-}
-
 type RemoveButtonProps = {
   onPress: () => void;
   paletteAccent: string;
@@ -140,6 +128,7 @@ function ComposerCanvasRemoveButton({
 export default function Composer({ navigation }: Props): React.ReactElement {
   const toast = useToast();
   const { dark } = useTheme();
+  const insets = useSafeAreaInsets();
   const scheme: 'dark' | 'light' = dark ? 'dark' : 'light';
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -149,10 +138,9 @@ export default function Composer({ navigation }: Props): React.ReactElement {
 
   const [draft, setDraftState] = useState<ComposerDraft>(() => emptyDraft('feed'));
   const [activeIndex, setActiveIndex] = useState(0);
-  const [lecternExpanded, setLecternExpanded] = useState(true);
-  const [lecternHeight, setLecternHeight] = useState(composerSpace.lecternExpandedHeight);
+  const [lecternExpanded, setLecternExpanded] = useState(false);
+  const [lecternHeight, setLecternHeight] = useState(composerSpace.lecternCompactHeight);
   const [scripturePickerOpen, setScripturePickerOpen] = useState(false);
-  const [previewMode, setPreviewMode] = useState<ComposerPreviewMode>('closed');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const captionInputRef = useRef<RNTextInput | null>(null);
 
@@ -425,10 +413,6 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     }
   }, [draft.media.length, draft.scriptureShare, mentionComposer.text, navigation]);
 
-  const handleTogglePreview = useCallback(() => {
-    setPreviewMode((current) => (current === 'closed' ? draft.mode : 'closed'));
-  }, [draft.mode]);
-
   const handleSubmit = useCallback(async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -473,7 +457,6 @@ export default function Composer({ navigation }: Props): React.ReactElement {
 
   const currentCaption = mentionComposer.text;
   const characterCount = currentCaption.length;
-  const currentDraft = useMemo(() => syncMentionDraft(draft), [draft, syncMentionDraft]);
   const canSubmit =
     !isSubmitting &&
     characterCount <= MAX_CAPTION_LENGTH &&
@@ -520,7 +503,6 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           characterMax={MAX_CAPTION_LENGTH}
           onClose={handleClose}
           onSubmit={handleSubmit}
-          onTogglePreview={handleTogglePreview}
           canSubmit={canSubmit}
           isSubmitting={isSubmitting}
           title={
@@ -562,9 +544,11 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           ) : null}
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        <KeyboardControllerAvoidingView
+          pointerEvents="box-none"
+          style={styles.lecternAvoider}
+          behavior="translate-with-padding"
+          keyboardVerticalOffset={0}
         >
           <ComposerLectern
             scheme={scheme}
@@ -595,8 +579,9 @@ export default function Composer({ navigation }: Props): React.ReactElement {
             onExpandedChange={setLecternExpanded}
             onHeightChange={setLecternHeight}
             captionInputRef={captionInputRef}
+            bottomInset={insets.bottom}
           />
-        </KeyboardAvoidingView>
+        </KeyboardControllerAvoidingView>
 
         {/* Scripture detection chip — spell-check / "rewrite with AI" style. */}
         {showScriptureChip ? (
@@ -613,17 +598,6 @@ export default function Composer({ navigation }: Props): React.ReactElement {
             </Pressable>
           </View>
         ) : null}
-
-        <ComposerFeedPreview
-          scheme={scheme}
-          visible={previewMode !== 'closed'}
-          mode={(previewMode === 'closed' ? draft.mode : previewMode) as ComposerMode}
-          onModeChange={(next) => setPreviewMode(next)}
-          draft={currentDraft}
-          authorName={buildAuthorName(currentUser)}
-          authorAvatarUri={resolveAuthorAvatar(currentUser)}
-          onClose={() => setPreviewMode('closed')}
-        />
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -639,6 +613,10 @@ const styles = StyleSheet.create({
   canvasWrap: {
     flex: 1,
     position: 'relative',
+  },
+  lecternAvoider: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
   },
   chipDock: {
     position: 'absolute',

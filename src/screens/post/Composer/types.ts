@@ -70,8 +70,6 @@ export type ComposerDraft = {
 
 export type ComposerLecternState = 'collapsed' | 'expanded';
 
-export type ComposerPreviewMode = 'closed' | 'feed' | 'watch';
-
 export const newMediaId = (): string =>
   `mi_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 

@@ -167,8 +167,13 @@ jest.mock('@sentry/react-native', () => ({
 }));
 
 jest.mock('react-native-keyboard-controller', () => {
+  const MockKeyboardView = ({ children, ...props }) =>
+    mockReact.createElement(mockView, props, children);
+
   return {
     KeyboardProvider: ({ children }) => mockReact.createElement(mockReact.Fragment, null, children),
+    KeyboardAvoidingView: MockKeyboardView,
+    KeyboardAwareScrollView: MockKeyboardView,
   };
 });
 

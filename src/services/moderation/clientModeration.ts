@@ -160,6 +160,7 @@ export const callBackendFallbackModeration = async (
     verb: 'post',
     token: true,
     params: payload,
+    suppressErrorLog: true,
   });
 
   if (response.status !== 200) {
