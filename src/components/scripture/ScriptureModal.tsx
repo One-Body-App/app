@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -52,11 +52,11 @@ export function ScriptureModal({
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Reset the chosen version to the poster's whenever a new reference opens.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (visible) setTranslation(posterTranslation);
   }, [visible, posterTranslation, mention]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!visible || !mention) return;
     let active = true;
     setLoading(true);
@@ -69,7 +69,7 @@ export function ScriptureModal({
     };
   }, [visible, mention, translation, token]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let active = true;
     fetchTranslations(token ?? true).then((l) => active && setTranslations(l));
     return () => {
@@ -88,6 +88,7 @@ export function ScriptureModal({
     options.find((o) => o.id === translation)?.shortName ||
     options.find((o) => o.id === translation)?.englishName ||
     translation;
+  const shareCount = mention?.shareCount ?? 0;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -142,6 +143,12 @@ export function ScriptureModal({
                 <Text style={styles.verseText}>{verse?.text}</Text>
               </ScrollView>
             )}
+
+            {!loading && !error ? (
+              <View style={styles.shareCountRow}>
+                <Text style={styles.shareCountText}>{shareCount.toLocaleString()} shares</Text>
+              </View>
+            ) : null}
 
             {!loading && !error && mention ? (
               <Pressable
@@ -216,6 +223,17 @@ const styles = StyleSheet.create({
   loadingText: { color: TEXT, opacity: 0.7, fontSize: 14 },
   errorText: { color: TEXT, opacity: 0.7, fontSize: 14 },
   verseText: { color: TEXT, fontSize: 16, lineHeight: 26 },
+  shareCountRow: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(3,47,60,0.14)',
+  },
+  shareCountText: {
+    color: HEADER,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   openLink: {
     marginTop: 16,
     color: HEADER,

@@ -1094,20 +1094,16 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
             </>
           ) : (
             <>
-              <Pressable style={{ justifyContent: 'center' }} onPress={handleSelectionFromGallery}>
-                <View style={videoPostStyles.galleryPreview}>
-                  {latestGalleryImg ? (
-                    <Image
-                      style={videoPostStyles.imgPreview}
-                      resizeMode="contain"
-                      source={{ uri: latestGalleryImg }}
-                    />
-                  ) : (
-                    <View
-                      style={[videoPostStyles.imgPreview, { backgroundColor: 'rgba(0,0,0,0.2)' }]}
-                    />
-                  )}
-                </View>
+              <Pressable
+                testID="video-recorder-flip-camera-button"
+                style={{ justifyContent: 'center' }}
+                onPress={handleFlipCamera}
+              >
+                <FastImage
+                  style={videoPostStyles.flipCameraImg}
+                  resizeMode={FastImage.resizeMode.contain}
+                  source={cameraIos}
+                />
               </Pressable>
               <Pressable
                 testID="video-recorder-record-button"
@@ -1129,16 +1125,20 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                   ]}
                 />
               </Pressable>
-              <Pressable
-                testID="video-recorder-flip-camera-button"
-                style={{ justifyContent: 'center' }}
-                onPress={handleFlipCamera}
-              >
-                <FastImage
-                  style={videoPostStyles.flipCameraImg}
-                  resizeMode={FastImage.resizeMode.contain}
-                  source={cameraIos}
-                />
+              <Pressable style={{ justifyContent: 'center' }} onPress={handleSelectionFromGallery}>
+                <View style={videoPostStyles.galleryPreview}>
+                  {latestGalleryImg ? (
+                    <Image
+                      style={videoPostStyles.imgPreview}
+                      resizeMode="contain"
+                      source={{ uri: latestGalleryImg }}
+                    />
+                  ) : (
+                    <View
+                      style={[videoPostStyles.imgPreview, { backgroundColor: 'rgba(0,0,0,0.2)' }]}
+                    />
+                  )}
+                </View>
               </Pressable>
             </>
           )}

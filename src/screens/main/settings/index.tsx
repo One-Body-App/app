@@ -8,6 +8,7 @@ import {
   Note,
   Note1,
   NotificationStatus,
+  Profile2User,
   Setting,
   Sms,
   SmsNotification,
@@ -43,6 +44,7 @@ type NotificationSwitchState = {
   emailNotificationsEnabled: boolean;
   subscribedToNewsletter: boolean;
   tagNotificationsEnabled: boolean;
+  connectionNotificationsEnabled: boolean;
   allowDirectMessages: boolean;
 };
 
@@ -61,6 +63,7 @@ function Settings({ navigation }: Props) {
     emailNotificationsEnabled: false,
     subscribedToNewsletter: false,
     tagNotificationsEnabled: true,
+    connectionNotificationsEnabled: true,
     allowDirectMessages: true,
   });
   const [securePreviewEnabled, setSecurePreviewEnabledState] = React.useState(false);
@@ -97,6 +100,7 @@ function Settings({ navigation }: Props) {
             emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
             subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
             tagNotificationsEnabled: res.response?.tagNotificationsEnabled ?? true,
+            connectionNotificationsEnabled: res.response?.connectionNotificationsEnabled ?? true,
             allowDirectMessages: res.response?.allowDirectMessages ?? true,
           });
           isLoadedRef.current = true;
@@ -156,6 +160,7 @@ function Settings({ navigation }: Props) {
           subscribedToNewsletter: nextNotificationSwitch.subscribedToNewsletter,
           emailNotificationsEnabled: nextNotificationSwitch.emailNotificationsEnabled,
           tagNotificationsEnabled: nextNotificationSwitch.tagNotificationsEnabled,
+          connectionNotificationsEnabled: nextNotificationSwitch.connectionNotificationsEnabled,
           allowDirectMessages: nextNotificationSwitch.allowDirectMessages,
         };
 
@@ -411,6 +416,14 @@ function Settings({ navigation }: Props) {
               'Push Notifications',
               'Send notifications to phone',
               NotificationStatus,
+              spacing.x16
+            )}
+
+            {renderNotificationRow(
+              'connectionNotificationsEnabled',
+              'Connected',
+              'Notify me about my connections and their posts',
+              Profile2User,
               spacing.x16
             )}
 

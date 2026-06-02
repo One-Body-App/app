@@ -82,6 +82,15 @@ export const submitComposerDraft = async ({
           name: draft.location.place_name,
         }
       : undefined,
+    scriptureShare: draft.scriptureShare
+      ? {
+          book: draft.scriptureShare.book,
+          chapter: draft.scriptureShare.chapter,
+          verse: draft.scriptureShare.verse,
+          verseEnd: draft.scriptureShare.verseEnd,
+          translation: draft.scriptureShare.translation,
+        }
+      : undefined,
   });
 
   const response = await ApiCall<{

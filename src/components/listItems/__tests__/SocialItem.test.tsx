@@ -51,6 +51,10 @@ jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
 }));
 
+jest.mock('expo-image', () => ({
+  Image: 'Image',
+}));
+
 jest.mock('@/components/primitives/FastImage', () => mockFastImageComponent);
 
 jest.mock('@/utils/ResponsiveFun', () => ({
@@ -108,6 +112,12 @@ jest.mock('@/services/repostSourceResolver', () => ({
 const mockedUseSelector = useSelector as jest.Mock;
 const mockedResolveVideoMetadata = resolveVideoMetadata as jest.Mock;
 
+const flattenText = (value: React.ReactNode): string => {
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(flattenText).join('');
+  return '';
+};
+
 const buildPost = (overrides: Record<string, any> = {}) => ({
   postId: 'post-1',
   type: PostType.social,
@@ -162,6 +172,42 @@ describe('SocialItem image interactions', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it('renders scripture share cards with share counts', async () => {
+    let renderer: TestRenderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <SocialItem
+          itemData={buildPost({
+            content: '',
+            scriptureShare: {
+              key: 'JHN.3.16',
+              reference: 'John 3:16',
+              book: 'JHN',
+              bookName: 'John',
+              chapter: 3,
+              verse: 16,
+              verseEnd: 16,
+              translation: 'BSB',
+              text: 'For God so loved the world.',
+              shareCount: 7,
+            },
+          })}
+          contentWidth={320}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const renderedText = renderer!.root
+      .findAll((node) => node.type === 'Text')
+      .map((node) => flattenText(node.props.children))
+      .join(' ');
+
+    expect(renderedText).toContain('John 3:16');
+    expect(renderedText).toContain('For God so loved the world.');
+    expect(renderedText).toContain('7 shares');
   });
 
   it('opens the full-screen viewer for top-level feed images without opening comments', async () => {

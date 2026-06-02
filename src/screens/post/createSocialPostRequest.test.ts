@@ -27,6 +27,7 @@ describe('buildCreateSocialPostRequest', () => {
         gif: undefined,
         moderationReview: undefined,
         location: undefined,
+        scriptureShare: undefined,
       },
       isFormUrlEncode: false,
     });
@@ -65,6 +66,7 @@ describe('buildCreateSocialPostRequest', () => {
           coordinates: [-73.9, 40.7],
           name: 'Brooklyn',
         },
+        scriptureShare: undefined,
         images: uploadedImages,
       },
       {
@@ -75,6 +77,40 @@ describe('buildCreateSocialPostRequest', () => {
     expect(request).toEqual({
       params: 'serialized-form-data',
       isFormUrlEncode: true,
+    });
+  });
+
+  it('includes scripture shares in json payloads', () => {
+    const request = buildCreateSocialPostRequest({
+      content: '',
+      mentionedUserIds: [],
+      mentions: [],
+      scriptureShare: {
+        book: 'JHN',
+        chapter: 3,
+        verse: 16,
+        verseEnd: 16,
+        translation: 'BSB',
+      },
+    });
+
+    expect(request).toEqual({
+      params: {
+        content: '',
+        mentionedUserIds: [],
+        mentions: [],
+        gif: undefined,
+        moderationReview: undefined,
+        location: undefined,
+        scriptureShare: {
+          book: 'JHN',
+          chapter: 3,
+          verse: 16,
+          verseEnd: 16,
+          translation: 'BSB',
+        },
+      },
+      isFormUrlEncode: false,
     });
   });
 });

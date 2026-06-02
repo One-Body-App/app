@@ -250,6 +250,20 @@ const resolveResultId = (value: SearchResultIdSource) => {
   return rawId ? String(rawId) : '';
 };
 
+const resolveFirstNonEmptyId = (...values: unknown[]) => {
+  return values.map((value) => (value ? String(value).trim() : '')).find(Boolean) ?? '';
+};
+
+const resolveUserTargetId = (raw: any) =>
+  resolveFirstNonEmptyId(
+    raw?._id,
+    raw?.userData?._id,
+    raw?.user?._id,
+    raw?.targetUser?._id,
+    raw?.userId,
+    raw?.id
+  );
+
 const toDate = (value?: string | Date) => {
   if (!value) return new Date();
   const date = new Date(value);
@@ -539,13 +553,13 @@ function Explore({ navigation, route }: Props) {
   );
 
   const buildUserResult = useCallback((raw: any): SearchUserResult | null => {
-    const id = resolveResultId(raw);
+    const id = resolveUserTargetId(raw);
     if (!id) return null;
 
     const user = {
       ...raw,
       id,
-      _id: raw?._id ?? id,
+      _id: id,
       profile: raw?.profile ?? {},
       following: Array.isArray(raw?.following) ? raw.following : [],
     } as User;

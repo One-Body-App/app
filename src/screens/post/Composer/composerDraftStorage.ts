@@ -29,13 +29,16 @@ export const loadComposerDraft = async (): Promise<ComposerDraft | null> => {
     const parsed = JSON.parse(raw) as SerializedDraft;
     return {
       mode: parsed.mode,
-      audience: parsed.audience,
+      // Coerce any unknown/legacy audience (e.g. the removed 'steward') to the
+      // default so a persisted draft can't reintroduce a dropped option.
+      audience: parsed.audience === 'connections' ? 'connections' : 'everyone',
       caption: parsed.caption,
       mentionedUserIds: parsed.mentionedUserIds ?? [],
       mentions: parsed.mentions ?? [],
       media: parsed.media ?? [],
       location: parsed.location ?? null,
       linkAttachments: parsed.linkAttachments ?? [],
+      scriptureShare: parsed.scriptureShare ?? null,
       quote: parsed.quote,
     };
   } catch {

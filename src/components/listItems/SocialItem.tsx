@@ -28,6 +28,7 @@ import { borderWidth } from '@/src/styles/outlines';
 import { Colors } from '@/src/styles';
 import ParsedText from '@/components/mentions/ParsedText';
 import ScriptureText from '@/components/scripture/ScriptureText';
+import ScriptureCard from '@/components/scripture/ScriptureCard';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
@@ -934,6 +935,8 @@ function SocialItem({
               />
             </Pressable>
           ) : null}
+
+          {itemData.scriptureShare ? <ScriptureCard share={itemData.scriptureShare} /> : null}
 
           {repostMeta && hasSourceCardData ? (
             <View style={{ marginBottom: spacing.x10 }}>

@@ -1,5 +1,5 @@
 import type { GiphyMedia } from '@giphy/react-native-sdk';
-import type { TaggedMention } from '@/utils/types';
+import type { ScriptureShare, TaggedMention } from '@/utils/types';
 import type { MapSuggestion } from '@/components/MapBoxTypes';
 
 // The composer treats every selected piece of media as the same shape so the
@@ -40,7 +40,7 @@ export type MediaItem = {
   moderation: MediaModeration;
 };
 
-export type ComposerAudience = 'everyone' | 'connections' | 'steward';
+export type ComposerAudience = 'everyone' | 'connections';
 
 export type ComposerMode = 'feed' | 'watch';
 
@@ -59,6 +59,7 @@ export type ComposerDraft = {
   media: MediaItem[];
   location: MapSuggestion | null;
   linkAttachments: ComposerLinkAttachment[];
+  scriptureShare: ScriptureShare | null;
   // Quote-repost context, if the composer was opened from a post's "Quote" CTA.
   quote?: {
     sourceId: string;
@@ -83,4 +84,5 @@ export const emptyDraft = (mode: ComposerMode = 'feed'): ComposerDraft => ({
   media: [],
   location: null,
   linkAttachments: [],
+  scriptureShare: null,
 });

@@ -2,7 +2,9 @@ import React, { useCallback, useMemo } from 'react';
 import {
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
+  useWindowDimensions,
   View,
   type GestureResponderEvent,
   type TextInput as RNTextInput,
@@ -47,10 +49,13 @@ export type ComposerLecternProps = {
   // Tool definitions in the order they should be rendered.
   tools: LecternToolDef[];
   onToolPress: (tool: LecternToolId) => void;
+  toolPanel?: React.ReactNode;
   // The lectern itself is a controlled component so the host can flip between
   // collapsed (icons only) and expanded (with caption + labeled actions).
   expanded: boolean;
   onExpandedChange: (next: boolean) => void;
+  // Reports the sheet's measured height so the host can reserve space for it.
+  onHeightChange?: (height: number) => void;
   captionInputRef?: React.RefObject<RNTextInput | null>;
 };
 
@@ -122,13 +127,18 @@ export default function ComposerLectern({
   excludedUserIds,
   tools,
   onToolPress,
+  toolPanel,
   expanded,
   onExpandedChange,
+  onHeightChange,
   captionInputRef,
 }: ComposerLecternProps): React.ReactElement {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
+  const { height: windowHeight } = useWindowDimensions();
   const collapsedHeight = composerSpace.lecternCollapsedHeight;
-  const expandedHeight = composerSpace.lecternExpandedHeight;
+  // The sheet grows with its content (tools + an optional tool panel + caption)
+  // up to a cap, and scrolls beyond that so the caption is always reachable.
+  const maxExpandedHeight = Math.round(windowHeight * 0.85);
   const dragGesture = Gesture.Pan()
     .onEnd((event) => {
       'worklet';
@@ -154,13 +164,16 @@ export default function ComposerLectern({
 
   return (
     <View
+      onLayout={(event) => onHeightChange?.(event.nativeEvent.layout.height)}
       style={[
         styles.lectern,
-        expanded ? styles.lecternExpanded : styles.lecternCollapsed,
         {
           backgroundColor: palette.glass,
           borderColor: palette.glassBorder,
           boxShadow: `0 -8px 24px ${palette.shadow}`,
+          ...(expanded
+            ? { minHeight: composerSpace.lecternExpandedHeight, maxHeight: maxExpandedHeight }
+            : { height: collapsedHeight }),
         },
       ]}
     >
@@ -183,20 +196,27 @@ export default function ComposerLectern({
         </Pressable>
       </GestureDetector>
 
-      <View style={expanded ? styles.bodyExpanded : styles.bodyCollapsed}>
-        <View style={[styles.toolsRow, expanded ? styles.toolsRowExpanded : null]}>
-          {visibleTools.map((tool) => (
-            <ToolButton
-              key={tool.id}
-              def={tool}
-              palette={palette}
-              expanded={expanded}
-              onPress={onToolPress}
-            />
-          ))}
-        </View>
+      {expanded ? (
+        <ScrollView
+          style={styles.bodyScroll}
+          contentContainerStyle={styles.bodyExpanded}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator
+        >
+          <View style={[styles.toolsRow, styles.toolsRowExpanded]}>
+            {visibleTools.map((tool) => (
+              <ToolButton
+                key={tool.id}
+                def={tool}
+                palette={palette}
+                expanded
+                onPress={onToolPress}
+              />
+            ))}
+          </View>
 
-        {expanded ? (
+          {toolPanel ?? null}
+
           <View
             style={[
               styles.captionWrap,
@@ -231,8 +251,22 @@ export default function ComposerLectern({
               }}
             />
           </View>
-        ) : null}
-      </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.bodyCollapsed}>
+          <View style={styles.toolsRow}>
+            {visibleTools.map((tool) => (
+              <ToolButton
+                key={tool.id}
+                def={tool}
+                palette={palette}
+                expanded={false}
+                onPress={onToolPress}
+              />
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -269,6 +303,9 @@ const styles = StyleSheet.create({
   bodyCollapsed: {
     paddingHorizontal: composerSpace.lg,
     paddingBottom: composerSpace.md,
+  },
+  bodyScroll: {
+    flexShrink: 1,
   },
   bodyExpanded: {
     paddingHorizontal: composerSpace.lg,

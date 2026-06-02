@@ -2,10 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import CustomModal from '@/src/components/CustomModal';
 import StyledText from '@/components/styled/Text';
-import { composerDurations, composerEasings } from './composerMotion';
+import { APP_HEADER_ANDROID_TITLE_PADDING_LEFT } from '@/src/styles/headerLayout';
 import {
   composerSpace,
   composerType,
@@ -27,24 +27,31 @@ export type ComposerHeaderProps = {
   isSubmitting: boolean;
   submitLabel?: string;
   title?: string;
-  eyebrow?: string;
 };
 
 const AUDIENCE_LABELS: Record<ComposerAudience, string> = {
   everyone: 'Everyone',
   connections: 'Connections',
-  steward: 'Steward review only',
 };
 
 const AUDIENCE_ICONS: Record<ComposerAudience, React.ComponentProps<typeof MaterialIcons>['name']> =
   {
     everyone: 'public',
     connections: 'group',
-    steward: 'shield',
   };
+
+const AUDIENCE_HINTS: Record<ComposerAudience, string> = {
+  everyone: 'Anyone on One Body can see this.',
+  connections: 'Only people you connect with.',
+};
 
 const RING_RADIUS = 11;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+// On iOS the title is centered across the full header width (like the app's
+// other screens). This symmetric inset keeps the centered title clear of the
+// close button on the left and the action cluster on the right.
+const IOS_TITLE_INSET = 120;
 
 function CounterRing({ fill, palette }: { fill: number; palette: ComposerPalette }) {
   const clampedFill = Math.max(0, Math.min(1.05, fill));
@@ -88,62 +95,51 @@ function CounterRing({ fill, palette }: { fill: number; palette: ComposerPalette
   );
 }
 
-function AudienceMenu({
+function AudienceSheet({
   palette,
   selected,
+  sheetSurface,
   onSelect,
-  onClose,
 }: {
   palette: ComposerPalette;
   selected: ComposerAudience;
+  sheetSurface: string;
   onSelect: (audience: ComposerAudience) => void;
-  onClose: () => void;
 }) {
   return (
-    <View
-      style={[
-        styles.menu,
-        {
-          backgroundColor: palette.glassElevated,
-          borderColor: palette.glassBorder,
-          shadowColor: palette.shadow,
-        },
-      ]}
-    >
+    <View style={[styles.sheet, { backgroundColor: sheetSurface }]}>
+      <View style={[styles.sheetHandle, { backgroundColor: palette.glassBorder }]} />
+      <StyledText style={[styles.sheetTitle, { color: palette.textPrimary }]}>
+        Who can see this?
+      </StyledText>
       {(Object.keys(AUDIENCE_LABELS) as ComposerAudience[]).map((key) => {
         const active = key === selected;
         const Icon = AUDIENCE_ICONS[key];
         return (
           <Pressable
             key={key}
-            onPress={() => {
-              onSelect(key);
-              onClose();
-            }}
+            onPress={() => onSelect(key)}
             accessibilityRole="menuitem"
             accessibilityState={{ selected: active }}
             style={({ pressed }) => [
               styles.menuItem,
               {
                 backgroundColor: active ? palette.glass : 'transparent',
+                borderColor: active ? palette.glassBorder : 'transparent',
                 opacity: pressed ? 0.7 : 1,
               },
             ]}
           >
-            <MaterialIcons name={Icon} size={18} color={palette.accent} />
+            <MaterialIcons name={Icon} size={20} color={palette.accent} />
             <View style={styles.menuItemText}>
               <StyledText style={[styles.menuItemTitle, { color: palette.textPrimary }]}>
                 {AUDIENCE_LABELS[key]}
               </StyledText>
               <StyledText style={[styles.menuItemHint, { color: palette.textMuted }]}>
-                {key === 'everyone'
-                  ? 'Anyone on One Body can see this.'
-                  : key === 'connections'
-                    ? 'Only people you connect with.'
-                    : 'Send to stewards for thoughtful review before publishing.'}
+                {AUDIENCE_HINTS[key]}
               </StyledText>
             </View>
-            {active ? <MaterialIcons name="check" size={18} color={palette.accent} /> : null}
+            {active ? <MaterialIcons name="check" size={20} color={palette.accent} /> : null}
           </Pressable>
         );
       })}
@@ -164,45 +160,40 @@ export default function ComposerHeader({
   isSubmitting,
   submitLabel = 'Post',
   title = 'New post',
-  eyebrow,
 }: ComposerHeaderProps): React.ReactElement {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const fill = characterMax > 0 ? characterCount / characterMax : 0;
   const showCounter = characterCount > 0;
-  const ribbonOpacity = useSharedValue(0.85);
-
-  React.useEffect(() => {
-    ribbonOpacity.value = withTiming(menuOpen ? 1 : 0.85, {
-      duration: composerDurations.chip,
-      easing: composerEasings.cinema,
-    });
-  }, [menuOpen, ribbonOpacity]);
-
-  const ribbonStyle = useAnimatedStyle(() => ({ opacity: ribbonOpacity.value }));
-
   const audienceIcon = AUDIENCE_ICONS[audience];
+  const isIOS = Platform.OS === 'ios';
+  const sheetSurface = scheme === 'dark' ? '#0D0D0D' : '#ffffff';
+
+  const titleNode = (
+    <StyledText numberOfLines={1} style={[styles.title, { color: palette.textPrimary }]}>
+      {title}
+    </StyledText>
+  );
 
   return (
     <View style={styles.headerWrap}>
-      {Platform.OS === 'ios' ? (
+      {isIOS ? (
         <BlurView
           blurType={scheme === 'dark' ? 'chromeMaterialDark' : 'chromeMaterial'}
           blurAmount={18}
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      <Animated.View
-        style={[
-          styles.ribbon,
-          ribbonStyle,
-          {
-            backgroundColor: palette.ribbonStart,
-          },
-        ]}
-      />
+      <View style={[styles.ribbon, { backgroundColor: palette.ribbonStart }]} />
 
-      <View style={[styles.header, { backgroundColor: 'transparent' }]}>
+      <View style={styles.header}>
+        {/* iOS: title centered across the whole header, behind the controls. */}
+        {isIOS ? (
+          <View pointerEvents="none" style={styles.titleOverlayIOS}>
+            {titleNode}
+          </View>
+        ) : null}
+
         <Pressable
           onPress={onClose}
           accessibilityRole="button"
@@ -212,38 +203,11 @@ export default function ComposerHeader({
           <MaterialIcons name="close" size={22} color={palette.textPrimary} />
         </Pressable>
 
-        <View style={styles.titleWrap}>
-          {eyebrow ? (
-            <StyledText style={[styles.eyebrow, { color: palette.textMuted }]}>
-              {eyebrow.toUpperCase()}
-            </StyledText>
-          ) : null}
-          <StyledText style={[styles.title, { color: palette.textPrimary }]}>{title}</StyledText>
-
-          <Pressable
-            onPress={() => setMenuOpen((value) => !value)}
-            accessibilityRole="button"
-            accessibilityLabel={`Audience: ${AUDIENCE_LABELS[audience]}`}
-            accessibilityState={{ expanded: menuOpen }}
-            style={[
-              styles.audience,
-              {
-                backgroundColor: palette.glass,
-                borderColor: palette.glassBorder,
-              },
-            ]}
-          >
-            <MaterialIcons name={audienceIcon} size={14} color={palette.accent} />
-            <StyledText style={[styles.audienceLabel, { color: palette.textPrimary }]}>
-              {AUDIENCE_LABELS[audience]}
-            </StyledText>
-            <MaterialIcons
-              name={menuOpen ? 'expand-less' : 'expand-more'}
-              size={16}
-              color={palette.textMuted}
-            />
-          </Pressable>
-        </View>
+        {isIOS ? (
+          <View style={styles.titleFlex} />
+        ) : (
+          <View style={styles.titleWrapAndroid}>{titleNode}</View>
+        )}
 
         <View style={styles.actions}>
           <Pressable
@@ -287,14 +251,47 @@ export default function ComposerHeader({
         </View>
       </View>
 
-      {menuOpen ? (
-        <AudienceMenu
+      <View style={[styles.audienceRow, isIOS ? styles.audienceRowIOS : styles.audienceRowAndroid]}>
+        <Pressable
+          onPress={() => setSheetOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Audience: ${AUDIENCE_LABELS[audience]}`}
+          accessibilityState={{ expanded: sheetOpen }}
+          style={[
+            styles.audience,
+            {
+              backgroundColor: palette.glass,
+              borderColor: palette.glassBorder,
+            },
+          ]}
+        >
+          <MaterialIcons name={audienceIcon} size={14} color={palette.accent} />
+          <StyledText style={[styles.audienceLabel, { color: palette.textPrimary }]}>
+            {AUDIENCE_LABELS[audience]}
+          </StyledText>
+          <MaterialIcons
+            name={sheetOpen ? 'expand-less' : 'expand-more'}
+            size={16}
+            color={palette.textMuted}
+          />
+        </Pressable>
+      </View>
+
+      <CustomModal
+        modalVisible={sheetOpen}
+        onclose={() => setSheetOpen(false)}
+        style={{ backgroundColor: sheetSurface, minHeight: 0 }}
+      >
+        <AudienceSheet
           palette={palette}
           selected={audience}
-          onSelect={onAudienceChange}
-          onClose={() => setMenuOpen(false)}
+          sheetSurface={sheetSurface}
+          onSelect={(next) => {
+            onAudienceChange(next);
+            setSheetOpen(false);
+          }}
         />
-      ) : null}
+      </CustomModal>
     </View>
   );
 }
@@ -313,12 +310,30 @@ const styles = StyleSheet.create({
     right: composerSpace.lg,
     height: composerSpace.ribbonHeight,
     borderRadius: 1,
+    opacity: 0.9,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: composerSpace.headerHeight,
     gap: composerSpace.sm,
+  },
+  titleOverlayIOS: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: IOS_TITLE_INSET,
+    right: IOS_TITLE_INSET,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleFlex: {
+    flex: 1,
+  },
+  titleWrapAndroid: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   iconButton: {
     width: 36,
@@ -327,32 +342,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 18,
   },
-  titleWrap: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: 2,
-  },
-  eyebrow: {
-    ...composerType.eyebrow,
-    fontWeight: '700',
-  },
   title: {
     ...composerType.title,
-    fontSize: 16,
-  },
-  audience: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: composerSpace.chipRadius,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginTop: 2,
-  },
-  audienceLabel: {
-    ...composerType.caption,
-    fontWeight: '600',
+    fontSize: 22,
+    lineHeight: 28,
   },
   actions: {
     flexDirection: 'row',
@@ -376,24 +369,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.4,
   },
-  menu: {
+  audienceRow: {
     marginTop: composerSpace.xs,
-    borderRadius: composerSpace.md,
+  },
+  audienceRowIOS: {
+    alignItems: 'center',
+  },
+  audienceRowAndroid: {
+    alignItems: 'flex-start',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  },
+  audience: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: composerSpace.chipRadius,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 6,
-    gap: 4,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.22,
-    shadowRadius: 24,
-    elevation: 8,
+  },
+  audienceLabel: {
+    ...composerType.caption,
+    fontWeight: '600',
+  },
+  sheet: {
+    paddingHorizontal: composerSpace.lg,
+    paddingTop: composerSpace.sm,
+    paddingBottom: composerSpace.xxl,
+    gap: composerSpace.xs,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+    marginBottom: composerSpace.md,
+  },
+  sheetTitle: {
+    ...composerType.title,
+    fontSize: 18,
+    marginBottom: composerSpace.xs,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: composerSpace.sm,
     paddingHorizontal: composerSpace.sm,
-    paddingVertical: composerSpace.xs,
-    borderRadius: composerSpace.sm,
+    paddingVertical: composerSpace.sm,
+    borderRadius: composerSpace.md,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   menuItemText: {
     flex: 1,

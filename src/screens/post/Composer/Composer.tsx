@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -24,13 +24,14 @@ import { hasLikelyScripture } from '@/services/scripture';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
 import isCreatorBlogEligible from '@/src/utils/creatorBlogAccess';
-import { selectMedia, type SelectedMedia } from '@/src/services/mediaCapture';
+import { selectMedia, type MediaSourceKind, type SelectedMedia } from '@/src/services/mediaCapture';
 import { moderateClientImage } from '@/src/services/moderation/imageModeration';
 import ComposerCanvas from './ComposerCanvas';
 import ComposerLectern, { type LecternToolId } from './ComposerLectern';
 import ComposerModerationChip from './ComposerModerationChip';
 import ComposerFeedPreview from './ComposerFeedPreview';
 import ComposerHeader from './ComposerHeader';
+import ComposerScripturePicker from './ComposerScripturePicker';
 import { submitComposerDraft } from './composerSubmit';
 import {
   clearComposerDraft,
@@ -54,9 +55,16 @@ type Props = NativeStackScreenProps<MainStackParamList, 'Post'>;
 
 const MAX_CAPTION_LENGTH = 300;
 
-type ToastOptions = {
-  type?: 'success' | 'danger' | 'warning';
-  placement?: 'bottom' | 'top';
+type ToastOptions = { type?: 'success' | 'danger' | 'warning'; placement?: 'bottom' | 'top' };
+
+const resolveMediaSourceFromActionSheet = (buttonIndex: number): MediaSourceKind | null => {
+  if (buttonIndex === 1) {
+    return 'library';
+  }
+  if (buttonIndex === 2) {
+    return 'camera';
+  }
+  return null;
 };
 
 const decisionToStatus: Record<string, ModerationStatus> = {
@@ -119,11 +127,7 @@ function ComposerCanvasRemoveButton({
       accessibilityLabel="Remove this media"
       style={({ pressed }) => [
         styles.removeButton,
-        {
-          backgroundColor: paletteBg,
-          borderColor: paletteBorder,
-          opacity: pressed ? 0.7 : 1,
-        },
+        { backgroundColor: paletteBg, borderColor: paletteBorder, opacity: pressed ? 0.7 : 1 },
       ]}
     >
       <View style={[styles.removeButtonIcon, { backgroundColor: paletteAccent }]}>
@@ -143,9 +147,11 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     | ProfileSummary
     | undefined;
 
-  const [draft, setDraft] = useState<ComposerDraft>(() => emptyDraft('feed'));
+  const [draft, setDraftState] = useState<ComposerDraft>(() => emptyDraft('feed'));
   const [activeIndex, setActiveIndex] = useState(0);
   const [lecternExpanded, setLecternExpanded] = useState(true);
+  const [lecternHeight, setLecternHeight] = useState(composerSpace.lecternExpandedHeight);
+  const [scripturePickerOpen, setScripturePickerOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<ComposerPreviewMode>('closed');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const captionInputRef = useRef<RNTextInput | null>(null);
@@ -155,41 +161,55 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     sanitizeText: (value: string) => sanitizeComposerText(value, MAX_CAPTION_LENGTH),
   });
 
-  // Keep the draft's caption + mention metadata in sync with the mention hook.
-  React.useEffect(() => {
-    setDraft((current) => ({
+  const persistDraft = useCallback((nextDraft: ComposerDraft) => {
+    persistComposerDraft(nextDraft).catch(() => undefined);
+  }, []);
+
+  const updateDraft = useCallback(
+    (updater: (current: ComposerDraft) => ComposerDraft) => {
+      setDraftState((current) => {
+        const nextDraft = updater(current);
+        persistDraft(nextDraft);
+        return nextDraft;
+      });
+    },
+    [persistDraft]
+  );
+
+  const syncMentionDraft = useCallback(
+    (current: ComposerDraft): ComposerDraft => ({
       ...current,
       caption: mentionComposer.text,
       mentionedUserIds: mentionComposer.mentionedUserIds,
       mentions: mentionComposer.mentions,
-    }));
-  }, [mentionComposer.mentionedUserIds, mentionComposer.mentions, mentionComposer.text]);
+    }),
+    [mentionComposer.mentionedUserIds, mentionComposer.mentions, mentionComposer.text]
+  );
 
-  // Hydrate a previously stashed draft on mount so users do not lose work
-  // when the screen unmounts unexpectedly (e.g. push notification deeplink).
+  // Hydrate a previously stashed draft when the screen first focuses so users
+  // do not lose work when the screen unmounts unexpectedly.
   const hasHydratedRef = useRef(false);
-  React.useEffect(() => {
-    if (hasHydratedRef.current) return;
-    hasHydratedRef.current = true;
-    loadComposerDraft()
-      .then((restored) => {
-        if (!restored) return;
-        if (restored.caption || restored.media.length > 0) {
-          setDraft(restored);
-          if (restored.caption) {
-            mentionComposer.setText(restored.caption);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasHydratedRef.current) return undefined;
+      hasHydratedRef.current = true;
+      let active = true;
+      loadComposerDraft()
+        .then((restored) => {
+          if (!active || !restored) return;
+          if (restored.caption || restored.media.length > 0 || restored.scriptureShare) {
+            setDraftState(restored);
+            if (restored.caption) {
+              mentionComposer.setText(restored.caption);
+            }
           }
-        }
-      })
-      .catch(() => undefined);
-    // mentionComposer.setText is stable enough; we intentionally only run once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Persist the draft on every change so a crash mid-edit does not lose work.
-  React.useEffect(() => {
-    persistComposerDraft(draft).catch(() => undefined);
-  }, [draft]);
+        })
+        .catch(() => undefined);
+      return () => {
+        active = false;
+      };
+    }, [mentionComposer])
+  );
 
   const showToast = useCallback(
     (message: string, options?: ToastOptions) => {
@@ -201,12 +221,15 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     [toast]
   );
 
-  const setMediaModeration = useCallback((mediaId: string, moderation: MediaModeration) => {
-    setDraft((current) => ({
-      ...current,
-      media: current.media.map((item) => (item.id === mediaId ? { ...item, moderation } : item)),
-    }));
-  }, []);
+  const setMediaModeration = useCallback(
+    (mediaId: string, moderation: MediaModeration) => {
+      updateDraft((current) => ({
+        ...current,
+        media: current.media.map((item) => (item.id === mediaId ? { ...item, moderation } : item)),
+      }));
+    },
+    [updateDraft]
+  );
 
   const moderatePhoto = useCallback(
     async (mediaItem: MediaItem) => {
@@ -238,7 +261,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     (items: SelectedMedia[]) => {
       if (items.length === 0) return;
       const newItems = items.map(buildMediaFromSelected);
-      setDraft((current) => ({
+      updateDraft((current) => ({
         ...current,
         media: [...current.media, ...newItems],
       }));
@@ -256,26 +279,26 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           });
         });
     },
-    [moderatePhoto, setMediaModeration]
+    [moderatePhoto, setMediaModeration, updateDraft]
   );
 
-  const removeMediaAt = useCallback((index: number) => {
-    setDraft((current) => ({
-      ...current,
-      media: current.media.filter((_, idx) => idx !== index),
-    }));
-  }, []);
+  const removeMediaAt = useCallback(
+    (index: number) => {
+      updateDraft((current) => ({
+        ...current,
+        media: current.media.filter((_, idx) => idx !== index),
+      }));
+    },
+    [updateDraft]
+  );
 
   const handleAddPhoto = useCallback(async () => {
     const action = await new Promise<'library' | 'camera' | null>((resolve) => {
       if (Platform.OS === 'ios') {
         ActionSheetIOS.showActionSheetWithOptions(
-          {
-            options: ['Cancel', 'Choose From Library', 'Open Camera'],
-            cancelButtonIndex: 0,
-          },
-          (buttonIndex) => {
-            resolve(buttonIndex === 1 ? 'library' : buttonIndex === 2 ? 'camera' : null);
+          { options: ['Cancel', 'Choose From Library', 'Open Camera'], cancelButtonIndex: 0 },
+          (buttonIndex: number) => {
+            resolve(resolveMediaSourceFromActionSheet(buttonIndex));
           }
         );
         return;
@@ -300,7 +323,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
   }, [appendMedia, showToast]);
 
   const handleAddVideo = useCallback(() => {
-    navigation.navigate('VideoPost', { openCameraOnMount: false });
+    navigation.navigate('VideoPost', { openCameraOnMount: true });
   }, [navigation]);
 
   const handleToolPress = useCallback(
@@ -316,12 +339,11 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           showToast('GIF picker coming soon.', { type: 'warning' });
           break;
         case 'verse':
-          showToast('Verse picker coming soon.', { type: 'warning' });
+          setLecternExpanded(true);
+          setScripturePickerOpen((current) => !current);
           break;
         case 'place':
-          showToast('Tap the map pin on the existing composer for now.', {
-            type: 'warning',
-          });
+          showToast('Tap the map pin on the existing composer for now.', { type: 'warning' });
           break;
         case 'writer':
           navigation.navigate('BlogComposer');
@@ -333,12 +355,46 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     [handleAddPhoto, handleAddVideo, navigation, showToast]
   );
 
-  const handleAudienceChange = useCallback((audience: ComposerAudience) => {
-    setDraft((current) => ({ ...current, audience }));
-  }, []);
+  const handleAudienceChange = useCallback(
+    (audience: ComposerAudience) => {
+      updateDraft((current) => ({ ...current, audience }));
+    },
+    [updateDraft]
+  );
+
+  const handleCaptionChange = useCallback(
+    (next: string) => {
+      const sanitized = sanitizeComposerText(next, MAX_CAPTION_LENGTH);
+      mentionComposer.setText(sanitized);
+      updateDraft((current) => ({
+        ...current,
+        caption: sanitized,
+        mentionedUserIds: mentionComposer.mentionedUserIds,
+        mentions: mentionComposer.mentions,
+      }));
+      if (!hasLikelyScripture(sanitized)) {
+        setScriptureChipDismissed(false);
+      }
+    },
+    [mentionComposer, updateDraft]
+  );
+
+  const handleSelectScripture = useCallback(
+    (scriptureShare: NonNullable<ComposerDraft['scriptureShare']>) => {
+      updateDraft((current) => ({ ...current, scriptureShare }));
+    },
+    [updateDraft]
+  );
+
+  const handleClearScripture = useCallback(() => {
+    updateDraft((current) => ({ ...current, scriptureShare: null }));
+  }, [updateDraft]);
 
   const handleClose = useCallback(() => {
-    const hasDraftContent = draft.caption.trim().length > 0 || draft.media.length > 0;
+    const hasDraftContent =
+      mentionComposer.text.trim().length > 0 ||
+      draft.media.length > 0 ||
+      Boolean(draft.scriptureShare);
     if (hasDraftContent) {
       Alert.alert('Keep your draft?', 'We can hold this for you and you can pick it up later.', [
         { text: 'Keep editing', style: 'cancel' },
@@ -367,7 +423,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
-  }, [draft.caption, draft.media.length, navigation]);
+  }, [draft.media.length, draft.scriptureShare, mentionComposer.text, navigation]);
 
   const handleTogglePreview = useCallback(() => {
     setPreviewMode((current) => (current === 'closed' ? draft.mode : 'closed'));
@@ -377,11 +433,10 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const outcome = await submitComposerDraft({ draft, token });
+      const draftForSubmit = syncMentionDraft(draft);
+      const outcome = await submitComposerDraft({ draft: draftForSubmit, token });
       if (outcome.status === 'ok') {
-        showToast(outcome.message ?? 'Posted to your feed.', {
-          type: 'success',
-        });
+        showToast(outcome.message ?? 'Posted to your feed.', { type: 'success' });
       } else if (outcome.status === 'pending_review') {
         showToast(
           outcome.message ??
@@ -393,6 +448,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
         return;
       }
       mentionComposer.reset();
+      setDraftState(emptyDraft('feed'));
       // Successful submission clears the locally stashed draft.
       clearComposerDraft().catch(() => undefined);
       if (navigation.canGoBack()) {
@@ -404,7 +460,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
     } finally {
       setIsSubmitting(false);
     }
-  }, [draft, isSubmitting, mentionComposer, navigation, showToast, token]);
+  }, [draft, isSubmitting, mentionComposer, navigation, showToast, syncMentionDraft, token]);
 
   // Scripture detection chip: derived from the caption (cheap regex, no
   // network). Dismissable; the server does the authoritative parse on submit.
@@ -415,11 +471,13 @@ export default function Composer({ navigation }: Props): React.ReactElement {
   const [scriptureChipDismissed, setScriptureChipDismissed] = useState(false);
   const showScriptureChip = scriptureDetected && !scriptureChipDismissed;
 
-  const characterCount = draft.caption.length;
+  const currentCaption = mentionComposer.text;
+  const characterCount = currentCaption.length;
+  const currentDraft = useMemo(() => syncMentionDraft(draft), [draft, syncMentionDraft]);
   const canSubmit =
     !isSubmitting &&
     characterCount <= MAX_CAPTION_LENGTH &&
-    (draft.media.length > 0 || draft.caption.trim().length > 0);
+    (draft.media.length > 0 || currentCaption.trim().length > 0 || Boolean(draft.scriptureShare));
   const activeMedia = draft.media[activeIndex];
   const moderationChipVisible = Boolean(activeMedia && activeMedia.kind === 'photo');
   const allowWriter = isCreatorBlogEligible(
@@ -428,22 +486,10 @@ export default function Composer({ navigation }: Props): React.ReactElement {
 
   const tools = useMemo(
     () => [
-      {
-        id: 'photo' as LecternToolId,
-        label: 'Photo',
-        icon: 'photo-library' as const,
-      },
-      {
-        id: 'video' as LecternToolId,
-        label: 'Video',
-        icon: 'videocam' as const,
-      },
+      { id: 'photo' as LecternToolId, label: 'Photo', icon: 'photo-library' as const },
+      { id: 'video' as LecternToolId, label: 'Video', icon: 'videocam' as const },
       { id: 'gif' as LecternToolId, label: 'GIF', icon: 'gif-box' as const },
-      {
-        id: 'verse' as LecternToolId,
-        label: 'Verse',
-        icon: 'menu-book' as const,
-      },
+      { id: 'verse' as LecternToolId, label: 'Verse', icon: 'menu-book' as const },
       { id: 'place' as LecternToolId, label: 'Place', icon: 'place' as const },
       {
         id: 'writer' as LecternToolId,
@@ -477,7 +523,6 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           onTogglePreview={handleTogglePreview}
           canSubmit={canSubmit}
           isSubmitting={isSubmitting}
-          eyebrow={draft.media.length > 0 ? 'Composing' : 'On your heart'}
           title={
             draft.media.length > 0
               ? `${draft.media.length} item${draft.media.length === 1 ? '' : 's'}`
@@ -490,6 +535,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
             items={draft.media}
             scheme={scheme}
             onRequestMedia={handleAddPhoto}
+            reservedBottom={lecternHeight}
             onActiveIndexChange={(index) => setActiveIndex(index)}
           />
 
@@ -522,8 +568,8 @@ export default function Composer({ navigation }: Props): React.ReactElement {
         >
           <ComposerLectern
             scheme={scheme}
-            caption={mentionComposer.text}
-            onChangeCaption={mentionComposer.setText}
+            caption={currentCaption}
+            onChangeCaption={handleCaptionChange}
             mentions={mentionComposer.mentions}
             selection={mentionComposer.selection}
             onSelectionChange={mentionComposer.setSelection}
@@ -534,8 +580,20 @@ export default function Composer({ navigation }: Props): React.ReactElement {
             excludedUserIds={mentionComposer.mentionedUserIds}
             tools={tools}
             onToolPress={handleToolPress}
+            toolPanel={
+              scripturePickerOpen ? (
+                <ComposerScripturePicker
+                  palette={palette}
+                  token={token}
+                  selected={draft.scriptureShare}
+                  onSelect={handleSelectScripture}
+                  onClear={handleClearScripture}
+                />
+              ) : undefined
+            }
             expanded={lecternExpanded}
             onExpandedChange={setLecternExpanded}
+            onHeightChange={setLecternHeight}
             captionInputRef={captionInputRef}
           />
         </KeyboardAvoidingView>
@@ -561,7 +619,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
           visible={previewMode !== 'closed'}
           mode={(previewMode === 'closed' ? draft.mode : previewMode) as ComposerMode}
           onModeChange={(next) => setPreviewMode(next)}
-          draft={draft}
+          draft={currentDraft}
           authorName={buildAuthorName(currentUser)}
           authorAvatarUri={resolveAuthorAvatar(currentUser)}
           onClose={() => setPreviewMode('closed')}

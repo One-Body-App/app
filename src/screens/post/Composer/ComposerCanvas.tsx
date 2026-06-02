@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -19,7 +21,9 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import FastImage from '@/components/primitives/FastImage';
 import CustomVideo from '@/src/components/CustomVideo';
 import StyledText from '@/components/styled/Text';
-import { composerDurations } from './composerMotion';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import { getHeight } from '@/utils/ResponsiveFun';
+import { composerDurations, composerEasings } from './composerMotion';
 import {
   composerSpace,
   composerType,
@@ -39,6 +43,9 @@ export type ComposerCanvasProps = {
   onRequestMedia?: () => void;
   emptyTitle?: string;
   emptySubtitle?: string;
+  // Space the lectern sheet occupies at the bottom, so the empty-state graphic
+  // stays centered in the visible stage above it instead of being clipped.
+  reservedBottom?: number;
   // Notifies the host when the active index changes so chips/preview can update.
   onActiveIndexChange?: (index: number, item: MediaItem | undefined) => void;
 };
@@ -205,12 +212,98 @@ const formatDuration = (durationMs: number): string => {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 };
 
+type ComposerEmptyStateProps = {
+  palette: ComposerPalette;
+  emptyTitle: string;
+  emptySubtitle: string;
+  showArrow: boolean;
+  reservedBottom?: number;
+  onLayout: (event: { nativeEvent: { layout: { width: number; height: number } } }) => void;
+};
+
+function ComposerEmptyState({
+  palette,
+  emptyTitle,
+  emptySubtitle,
+  showArrow,
+  reservedBottom,
+  onLayout,
+}: ComposerEmptyStateProps): React.ReactElement {
+  // A slow "load" entrance plus a gentle, continuous breathing so the empty
+  // stage feels alive while the user decides what to add.
+  const enter = useSharedValue(0);
+  const breathe = useSharedValue(0);
+
+  useMountEffect(() => {
+    enter.value = withTiming(1, { duration: 900, easing: composerEasings.cinema });
+    breathe.value = withRepeat(
+      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+  });
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [{ scale: 0.92 + enter.value * 0.08 }],
+  }));
+
+  const haloStyle = useAnimatedStyle(() => ({
+    opacity: enter.value * (0.6 + breathe.value * 0.3),
+    transform: [{ scale: 1 + breathe.value * 0.06 }],
+  }));
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + breathe.value * 0.04 }],
+  }));
+
+  return (
+    <View
+      accessibilityRole="summary"
+      onLayout={onLayout}
+      style={[
+        styles.empty,
+        { backgroundColor: palette.stage, paddingBottom: reservedBottom ?? getHeight(12) },
+      ]}
+    >
+      <Animated.View style={[styles.emptyContent, contentStyle]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.emptyHalo, haloStyle, { backgroundColor: palette.stageHighlight }]}
+        />
+        <Animated.View
+          accessibilityLabel="Compose stage"
+          style={[
+            styles.emptyIconWrap,
+            iconStyle,
+            { backgroundColor: palette.glass, borderColor: palette.glassBorder },
+          ]}
+        >
+          <MaterialIcons name="auto-awesome" size={32} color={palette.accent} />
+        </Animated.View>
+        <StyledText style={[styles.emptyTitle, { color: palette.textPrimary }]}>
+          {emptyTitle}
+        </StyledText>
+        <StyledText style={[styles.emptySubtitle, { color: palette.textSecondary }]}>
+          {emptySubtitle}
+        </StyledText>
+        {showArrow ? (
+          <View style={styles.emptyAccent}>
+            <MaterialIcons name="south" size={20} color={palette.accent} />
+          </View>
+        ) : null}
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function ComposerCanvas({
   items,
   scheme,
   onRequestMedia,
   emptyTitle = 'What is God doing today?',
   emptySubtitle = 'Tap below to add a photo, video, or word.',
+  reservedBottom,
   onActiveIndexChange,
 }: ComposerCanvasProps): React.ReactElement {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
@@ -269,38 +362,14 @@ export default function ComposerCanvas({
 
   if (items.length === 0) {
     return (
-      <View
-        accessibilityRole="summary"
+      <ComposerEmptyState
+        palette={palette}
+        emptyTitle={emptyTitle}
+        emptySubtitle={emptySubtitle}
+        showArrow={Boolean(onRequestMedia)}
+        reservedBottom={reservedBottom}
         onLayout={handleLayout}
-        style={[
-          styles.empty,
-          {
-            backgroundColor: palette.stage,
-          },
-        ]}
-      >
-        <View style={[styles.emptyHalo, { backgroundColor: palette.stageHighlight }]} />
-        <View
-          accessibilityLabel="Compose stage"
-          style={[
-            styles.emptyIconWrap,
-            { backgroundColor: palette.glass, borderColor: palette.glassBorder },
-          ]}
-        >
-          <MaterialIcons name="auto-awesome" size={32} color={palette.accent} />
-        </View>
-        <StyledText style={[styles.emptyTitle, { color: palette.textPrimary }]}>
-          {emptyTitle}
-        </StyledText>
-        <StyledText style={[styles.emptySubtitle, { color: palette.textSecondary }]}>
-          {emptySubtitle}
-        </StyledText>
-        {onRequestMedia ? (
-          <View style={styles.emptyAccent}>
-            <MaterialIcons name="south" size={20} color={palette.accent} />
-          </View>
-        ) : null}
-      </View>
+      />
     );
   }
 
@@ -391,15 +460,20 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: composerSpace.xxl,
+    paddingHorizontal: composerSpace.xxl,
+    // paddingBottom is applied inline (reservedBottom) so the graphic stays
+    // centered in the visible stage above the lectern sheet.
     overflow: 'hidden',
+  },
+  emptyContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyHalo: {
     position: 'absolute',
-    width: 420,
-    height: 420,
-    borderRadius: 420,
-    opacity: 0.7,
+    width: 300,
+    height: 300,
+    borderRadius: 300,
   },
   emptyIconWrap: {
     width: 72,
@@ -413,6 +487,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     ...composerType.title,
     fontSize: 24,
+    lineHeight: 30,
     textAlign: 'center',
   },
   emptySubtitle: {

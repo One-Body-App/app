@@ -15,6 +15,14 @@ type CreateSocialPostLocation = {
   name: string;
 };
 
+type CreateScriptureSharePayload = {
+  book: string;
+  chapter: number;
+  verse: number;
+  verseEnd?: number;
+  translation?: string;
+};
+
 export type CreateSocialPostRequestArgs = {
   content: string;
   mentionedUserIds: string[];
@@ -23,6 +31,7 @@ export type CreateSocialPostRequestArgs = {
   gif?: GiphyMedia | null;
   moderationReview?: ModerationReviewPayload;
   location?: CreateSocialPostLocation;
+  scriptureShare?: CreateScriptureSharePayload | null;
 };
 
 export const buildCreateSocialPostRequest = ({
@@ -33,6 +42,7 @@ export const buildCreateSocialPostRequest = ({
   gif,
   moderationReview,
   location,
+  scriptureShare,
 }: CreateSocialPostRequestArgs) => {
   const basePayload = {
     content,
@@ -41,6 +51,7 @@ export const buildCreateSocialPostRequest = ({
     gif: gif ?? undefined,
     moderationReview,
     location,
+    scriptureShare: scriptureShare ?? undefined,
   };
 
   if (uploadedImages && uploadedImages.length > 0) {

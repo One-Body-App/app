@@ -232,8 +232,8 @@ function ArticleItem({
                 numberOfLines={2}
                 style={[
                   {
-                    color: dark ? Colors.neutral.brand : '#032F3C',
-                    fontFamily: 'Rubik-SemiBold',
+                    color: dark ? '#f6f6f6' : '#032F3C',
+                    fontFamily: 'OpenSans-Bold',
                     fontSize: 16,
                   },
                   blogPostTitleStyle,

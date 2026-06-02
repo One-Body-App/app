@@ -43,8 +43,11 @@ import {
   Interest,
   OrganizationSize,
   OrganizationType,
+  ScriptureShare,
   Tag,
 } from '@/utils/types';
+import ComposerScripturePicker from '@/src/screens/post/Composer/ComposerScripturePicker';
+import { resolveComposerPalette } from '@/src/screens/post/Composer/composerTheme';
 
 import MapBox from '@/components/MapBox';
 import type { MapSuggestion } from '@/components/MapBoxTypes';
@@ -127,6 +130,14 @@ type EditProfileDTO = {
     latitude: number;
     address: string;
   };
+  favoriteVerse?: {
+    book: string;
+    chapter: number;
+    verse: number;
+    verseEnd?: number;
+    translation?: string;
+  };
+  removeFavoriteVerse?: boolean;
 };
 
 function EditProfile({ navigation, route }: Props) {
@@ -159,6 +170,9 @@ function EditProfile({ navigation, route }: Props) {
   const [website, setWebsite] = useState<string>(user?.website ?? '');
   const [isValidWebsite, setIsValidWebsite] = useState<boolean | null>(null);
   const [bio, setBio] = useState<string>(user?.bio ?? '');
+  const [favoriteVerse, setFavoriteVerse] = useState<ScriptureShare | null>(
+    user?.favoriteVerse ?? null
+  );
   const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
   const [selectedOrganizationCategory, setSelectedOrganizationCategory] = useState<string>(
     user?.profile.organizationCategory ??
@@ -227,7 +241,8 @@ function EditProfile({ navigation, route }: Props) {
     { text: 'Mega', value: 'mega' },
   ];
 
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
+  const scripturePalette = resolveComposerPalette(dark ? 'dark' : 'light');
 
   useEffect(() => {
     if (newLocation) {
@@ -972,6 +987,17 @@ function EditProfile({ navigation, route }: Props) {
                 />
               ) : null}
 
+              <View style={{ marginTop: spacing.x16 }}>
+                <StyledText style={{ marginBottom: 10 }}>Favorite verse</StyledText>
+                <ComposerScripturePicker
+                  palette={scripturePalette}
+                  token={token}
+                  selected={favoriteVerse}
+                  onSelect={(share) => setFavoriteVerse(share)}
+                  onClear={() => setFavoriteVerse(null)}
+                />
+              </View>
+
               <View style={{ flex: 4, marginTop: spacing.x16 }}>
                 <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
                 <Button
@@ -1299,6 +1325,18 @@ function EditProfile({ navigation, route }: Props) {
                   if (headerImageObject) data.headerImage = headerImageObject;
                   if (bio) data.bio = bio;
                   if (username) data.username = username;
+
+                  if (favoriteVerse) {
+                    data.favoriteVerse = {
+                      book: favoriteVerse.book,
+                      chapter: favoriteVerse.chapter,
+                      verse: favoriteVerse.verse,
+                      verseEnd: favoriteVerse.verseEnd,
+                      translation: favoriteVerse.translation,
+                    };
+                  } else if (user?.favoriteVerse) {
+                    data.removeFavoriteVerse = true;
+                  }
 
                   if (oftenChurch) data.oftenChurch = oftenChurch;
 

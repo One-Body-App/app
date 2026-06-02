@@ -354,7 +354,7 @@ function IntroScreen({ navigation }: Props) {
             <View style={[styles.sunContainer, sunStyle]}>
               <FastImage
                 source={dark ? ASSETS.logogroupDark : ASSETS.logogroup}
-                style={styles.logoImage}
+                style={[styles.logoImage, { tintColor: dark ? '#ffffff' : '#032f3c' }]}
                 resizeMode="contain"
               />
             </View>

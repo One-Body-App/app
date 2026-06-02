@@ -39,6 +39,11 @@ type ScreenNavigationProp = CompositeNavigationProp<
   >
 >;
 
+const resolveTargetUserId = (item: User) => {
+  const candidates = [item?._id, item?.id, item?.userId];
+  return candidates.map((value) => (value ? String(value).trim() : '')).find(Boolean) ?? '';
+};
+
 function UserItem({ item }: { item: User }) {
   const { colors } = useTheme();
   const navigation = useNavigation<ScreenNavigationProp>();
@@ -46,6 +51,14 @@ function UserItem({ item }: { item: User }) {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [localIsFollowing, setLocalIsFollowing] = useState<boolean | null>(null);
+  const targetUserId = resolveTargetUserId(item);
+  const profileFollowing = user?.following ?? [];
+  const isFollowing =
+    localIsFollowing ??
+    (targetUserId
+      ? profileFollowing.some((followedId) => String(followedId) === targetUserId)
+      : false);
 
   const handleUnSubscribe = async (id: string) => {
     setIsLoading(true);
@@ -56,6 +69,7 @@ function UserItem({ item }: { item: User }) {
         verb: 'patch',
       });
       if (res?.status === 200) {
+        setLocalIsFollowing(false);
         dispatch(getProfile.Request({ token }));
         // Toast.show('unfollowed successfully.', Toast.LONG);
         // dispatch(getuserAll({ token: token }));
@@ -81,6 +95,7 @@ function UserItem({ item }: { item: User }) {
       if (res?.status === 200) {
         // dispatch(getuserAll({ token: token }));
         // dispatch(getuserGet({ token: token }));
+        setLocalIsFollowing(true);
         dispatch(getProfile.Request({ token }));
         // Toast.show('Followed successfully.', Toast.LONG);
       } else {
@@ -98,9 +113,9 @@ function UserItem({ item }: { item: User }) {
       onPress={() => {
         // if (item?.link) OpenURLButton(item?.link);
         // if (onPress) onPress(item);
-        if (item?.id) {
+        if (targetUserId) {
           navigation.navigate('UserProfile', {
-            id: item?.id,
+            id: targetUserId,
           });
         }
       }}
@@ -175,13 +190,11 @@ function UserItem({ item }: { item: User }) {
                 paddingVertical: spacing.x10,
                 paddingHorizontal: spacing.x16,
                 backgroundColor:
-                  item?.id && user?.following.includes(item?.id)
-                    ? Colors.neutral[600]
-                    : Colors.primarySapphire.brand,
+                  targetUserId && isFollowing ? Colors.neutral[600] : Colors.primarySapphire.brand,
               },
             ]}
             btnTextStyle={{
-              color: item?.id && user?.following.includes(item?.id) ? Colors.neutral[200] : '#FFF',
+              color: targetUserId && isFollowing ? Colors.neutral[200] : '#FFF',
             }}
             disabledBtnStyle={{
               paddingVertical: spacing.x10,
@@ -190,21 +203,17 @@ function UserItem({ item }: { item: User }) {
             }}
             // btnTextStyle={{ color: Colors.neutral[700] }}
             disabledBtnTextStyle={{ color: Colors.neutral[300] }}
-            text={
-              user?.following.some((followedId) => followedId === item?.id)
-                ? 'Connected'
-                : 'Connect'
-            }
+            text={isFollowing ? 'Connected' : 'Connect'}
             onPress={() => {
-              if (item?.id) {
-                if (user?.following.includes(item?.id)) {
-                  handleUnSubscribe(item?.id);
+              if (targetUserId) {
+                if (isFollowing) {
+                  handleUnSubscribe(targetUserId);
                 } else {
-                  handleSubscribe(item?.id);
+                  handleSubscribe(targetUserId);
                 }
               }
             }}
-            disabled={isLoading}
+            disabled={isLoading || !targetUserId}
             wrapperViewBtnStyle={{
               justifyContent: 'center',
               backgroundColor: Colors.neutral[800],

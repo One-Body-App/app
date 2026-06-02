@@ -472,6 +472,19 @@ function ProfileHeader({
             <StyledText style={styles.bioText}>{profileData.bio}</StyledText>
           ) : null}
 
+          {profileData.favoriteVerse ? (
+            <View style={styles.favoriteVerse}>
+              <StyledText style={styles.favoriteVerseReference}>
+                {profileData.favoriteVerse.reference}
+              </StyledText>
+              {profileData.favoriteVerse.text ? (
+                <StyledText style={styles.favoriteVerseText} numberOfLines={3}>
+                  {`"${profileData.favoriteVerse.text}"`}
+                </StyledText>
+              ) : null}
+            </View>
+          ) : null}
+
           {(Boolean(
             profileData.profile?.location?.address && profileData.profile?.isLocationPublic
           ) ||
@@ -715,6 +728,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     marginBottom: spacing.x8,
+  },
+  favoriteVerse: {
+    borderLeftColor: Colors.primary.brand,
+    borderLeftWidth: 3,
+    marginBottom: spacing.x8,
+    paddingLeft: spacing.x8,
+  },
+  favoriteVerseReference: {
+    color: Colors.primary.brand,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  favoriteVerseText: {
+    color: Colors.neutral[300],
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 19,
+    marginTop: 2,
   },
   connectedAction: {
     backgroundColor: Colors.neutral[800],

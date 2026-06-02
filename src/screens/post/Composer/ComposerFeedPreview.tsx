@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
-  useSharedValue,
+  useDerivedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -90,6 +90,44 @@ function MediaThumbStrip({ items, palette }: { items: MediaItem[]; palette: Comp
   );
 }
 
+function PreviewScriptureCard({
+  draft,
+  palette,
+}: {
+  draft: ComposerDraft;
+  palette: ComposerPalette;
+}) {
+  const scripture = draft.scriptureShare;
+  if (!scripture) {
+    return null;
+  }
+
+  return (
+    <View
+      style={[
+        styles.scripturePreview,
+        { backgroundColor: palette.glass, borderColor: palette.glassBorder },
+      ]}
+    >
+      <View style={styles.scripturePreviewHead}>
+        <MaterialIcons name="menu-book" size={16} color={palette.accent} />
+        <StyledText style={[styles.scripturePreviewRef, { color: palette.textPrimary }]}>
+          {scripture.reference}
+        </StyledText>
+      </View>
+      <StyledText
+        numberOfLines={4}
+        style={[styles.scripturePreviewText, { color: palette.textSecondary }]}
+      >
+        {scripture.text}
+      </StyledText>
+      <StyledText style={[styles.scripturePreviewMeta, { color: palette.textMuted }]}>
+        {scripture.translation}
+      </StyledText>
+    </View>
+  );
+}
+
 function FeedPreviewCard({
   draft,
   palette,
@@ -124,11 +162,7 @@ function FeedPreviewCard({
             {authorName ?? 'You'}
           </StyledText>
           <StyledText style={[styles.audience, { color: palette.textMuted }]}>
-            {draft.audience === 'connections'
-              ? 'Connections'
-              : draft.audience === 'steward'
-                ? 'Steward review only'
-                : 'Public'}
+            {draft.audience === 'connections' ? 'Connections' : 'Public'}
           </StyledText>
         </View>
       </View>
@@ -138,6 +172,8 @@ function FeedPreviewCard({
           {draft.caption}
         </StyledText>
       ) : null}
+
+      <PreviewScriptureCard draft={draft} palette={palette} />
 
       {hero ? (
         <View
@@ -162,7 +198,7 @@ function FeedPreviewCard({
             </View>
           ) : null}
         </View>
-      ) : (
+      ) : draft.scriptureShare ? null : (
         <View
           style={[
             styles.heroEmpty,
@@ -273,16 +309,18 @@ export default function ComposerFeedPreview({
   onClose,
 }: ComposerFeedPreviewProps): React.ReactElement | null {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
-  const translateX = useSharedValue(visible ? 0 : 100);
-  const opacity = useSharedValue(visible ? 1 : 0);
-
-  React.useEffect(() => {
-    translateX.value = withSpring(visible ? 0 : 100, { damping: 22, stiffness: 220 });
-    opacity.value = withTiming(visible ? 1 : 0, {
-      duration: composerDurations.enter,
-      easing: composerEasings.cinema,
-    });
-  }, [opacity, translateX, visible]);
+  const translateX = useDerivedValue(
+    () => withSpring(visible ? 0 : 100, { damping: 22, stiffness: 220 }),
+    [visible]
+  );
+  const opacity = useDerivedValue(
+    () =>
+      withTiming(visible ? 1 : 0, {
+        duration: composerDurations.enter,
+        easing: composerEasings.cinema,
+      }),
+    [visible]
+  );
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -459,6 +497,30 @@ const styles = StyleSheet.create({
   },
   caption: {
     ...composerType.body,
+  },
+  scripturePreview: {
+    borderRadius: composerSpace.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: composerSpace.sm,
+    gap: 6,
+  },
+  scripturePreviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  scripturePreviewRef: {
+    ...composerType.body,
+    fontWeight: '700',
+    flex: 1,
+  },
+  scripturePreviewText: {
+    ...composerType.caption,
+    lineHeight: 18,
+  },
+  scripturePreviewMeta: {
+    ...composerType.caption,
+    fontWeight: '700',
   },
   heroFrame: {
     aspectRatio: 1,
