@@ -13,6 +13,9 @@ import {
   Animated,
   TextInput,
   Linking,
+  ActionSheetIOS,
+  Alert,
+  Platform,
 } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -132,12 +135,6 @@ const DEFAULT_SERMON_FILTERS: SermonFilters = {
   sort: 'recent',
 };
 
-const SERMON_PROVIDER_OPTIONS = [
-  { label: 'All', value: '' },
-  { label: 'YouTube', value: 'youtube' },
-  { label: 'Vimeo', value: 'vimeo' },
-] as const;
-
 const SERMON_DURATION_OPTIONS = [
   { label: 'Any', value: '' },
   { label: '< 30m', value: 'short' },
@@ -158,16 +155,6 @@ const SERMON_SORT_OPTIONS = [
   { label: 'Title', value: 'title' },
   { label: 'Confidence', value: 'confidence' },
 ] as const;
-
-const SERMON_TEXT_FILTERS: {
-  key: 'speaker' | 'denomination' | 'topic' | 'channelId';
-  label: string;
-}[] = [
-  { key: 'speaker', label: 'Speaker' },
-  { key: 'denomination', label: 'Denomination' },
-  { key: 'topic', label: 'Topic' },
-  { key: 'channelId', label: 'Channel ID' },
-];
 
 const formatSermonDuration = (seconds?: number) => {
   const total = Number(seconds ?? 0);
@@ -295,6 +282,7 @@ function Watch({ navigation, route }: any) {
   const [sermonsLoading, setSermonsLoading] = useState(false);
   const [sermonsLoadingMore, setSermonsLoadingMore] = useState(false);
   const [sermonsError, setSermonsError] = useState(false);
+  const [interestOptions, setInterestOptions] = useState<string[]>([]);
   const [activeSermon, setActiveSermon] = useState<SermonVideo | null>(null);
   const [likedSermonIds, setLikedSermonIds] = useState<Set<string>>(() => new Set());
   const [sermonComments, setSermonComments] = useState<SermonComment[]>([]);
@@ -422,6 +410,36 @@ function Watch({ navigation, route }: any) {
     },
     [mergeSermonEngagement, sermonFilters]
   );
+
+  const loadInterests = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+    try {
+      const response = await ApiCall<unknown>({
+        route: 'tags/interest',
+        verb: 'get',
+        token,
+      });
+      if (response.status === 200) {
+        const body = response.response;
+        let rawList: unknown[] = [];
+        if (Array.isArray(body)) {
+          rawList = body;
+        } else if (Array.isArray((body as { data?: unknown[] })?.data)) {
+          rawList = (body as { data: unknown[] }).data;
+        } else if (Array.isArray((body as { items?: unknown[] })?.items)) {
+          rawList = (body as { items: unknown[] }).items;
+        }
+        const names = rawList
+          .map((tag) => String((tag as { name?: unknown })?.name ?? '').trim())
+          .filter((name) => name.length > 0);
+        setInterestOptions(Array.from(new Set(names)));
+      }
+    } catch {
+      // Interests are optional; on failure the picker just shows "All interests".
+    }
+  }, [token]);
 
   const patchSermonEngagement = useCallback(
     (
@@ -568,6 +586,34 @@ function Watch({ navigation, route }: any) {
     []
   );
 
+  const openInterestSheet = useCallback(() => {
+    const labels = ['All interests', ...interestOptions];
+    const valueAt = (labelIndex: number) =>
+      labelIndex <= 0 ? '' : (interestOptions[labelIndex - 1] ?? '');
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Filter by interest',
+          options: ['Cancel', ...labels],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex > 0) {
+            updateDraftSermonFilter('topic', valueAt(buttonIndex - 1));
+          }
+        }
+      );
+      return;
+    }
+    Alert.alert('Filter by interest', undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      ...labels.map((label, index) => ({
+        text: label,
+        onPress: () => updateDraftSermonFilter('topic', valueAt(index)),
+      })),
+    ]);
+  }, [interestOptions, updateDraftSermonFilter]);
+
   const applySermonFilters = useCallback(() => {
     setSermonFilters(draftSermonFilters);
     sermonFilterSheetRef.current?.dismiss();
@@ -589,8 +635,9 @@ function Watch({ navigation, route }: any) {
 
   const openSermonFilters = useCallback(() => {
     setDraftSermonFilters(sermonFilters);
+    loadInterests();
     sermonFilterSheetRef.current?.present();
-  }, [sermonFilters]);
+  }, [loadInterests, sermonFilters]);
 
   const renderSermonBackdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
@@ -1393,12 +1440,6 @@ function Watch({ navigation, route }: any) {
             />
           </View>
           <SermonOptionGroup
-            title="Provider"
-            options={SERMON_PROVIDER_OPTIONS}
-            currentValue={draftSermonFilters.provider}
-            onChange={(value) => updateDraftSermonFilter('provider', value)}
-          />
-          <SermonOptionGroup
             title="Duration"
             options={SERMON_DURATION_OPTIONS}
             currentValue={draftSermonFilters.duration}
@@ -1416,22 +1457,24 @@ function Watch({ navigation, route }: any) {
             currentValue={draftSermonFilters.sort}
             onChange={(value) => updateDraftSermonFilter('sort', value)}
           />
-          <View style={styles.sermonSheetGrid}>
-            {SERMON_TEXT_FILTERS.map(({ key, label }) => (
-              <View key={key} style={styles.sermonInputWrap}>
-                <TextInput
-                  value={draftSermonFilters[key]}
-                  onChangeText={(value) => updateDraftSermonFilter(key, value)}
-                  placeholder={label}
-                  placeholderTextColor="rgba(255,255,255,0.45)"
-                  style={styles.sermonSheetInput}
-                />
-              </View>
-            ))}
+          <View style={styles.sermonSheetSection}>
+            <Text style={styles.sermonSheetTitle}>Interest</Text>
+            <Pressable style={styles.sermonInputWrap} onPress={openInterestSheet}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.sermonSheetInput,
+                  draftSermonFilters.topic ? null : { color: 'rgba(255,255,255,0.45)' },
+                ]}
+              >
+                {draftSermonFilters.topic || 'All interests'}
+              </Text>
+              <MaterialIcons name="keyboard-arrow-down" size={20} color="rgba(255,255,255,0.55)" />
+            </Pressable>
           </View>
           <View style={styles.sermonSheetActions}>
             <Pressable onPress={resetSermonFilters} style={styles.sermonResetButton}>
-              <Text style={styles.sermonResetText}>Reset</Text>
+              <Text style={styles.sermonResetText}>Clear</Text>
             </Pressable>
             <Pressable onPress={applySermonFilters} style={styles.sermonApplyButton}>
               <Text style={styles.sermonApplyText}>Apply filters</Text>

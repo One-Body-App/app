@@ -39,7 +39,18 @@
       "Bash(grep -nE \"Notifications\\\\.tsx|screens/notifications/|data/mock\\\\.ts|api/endpoints\\\\.ts\" /tmp/claude-501/react-doctor-bc05074e-0c07-4900-9dbb-bf13407b4bbd 2>/dev/null | head -40; echo \"EXIT: $?\")",
       "Read(//private/tmp/claude-501/react-doctor-bc05074e-0c07-4900-9dbb-bf13407b4bbd/**)",
       "Bash(npx react-doctor@latest --diff --score)",
-      "Bash(node -e \"const i=require\\('iconsax-react-native'\\); console.log\\('Profile2User:', typeof i.Profile2User\\)\")"
+      "Bash(node -e \"const i=require\\('iconsax-react-native'\\); console.log\\('Profile2User:', typeof i.Profile2User\\)\")",
+      "Bash(grep -rnE 'focus-visible|::backdrop|^\\\\s*input,|^\\\\s*input\\\\s*\\\\{|select\\\\s*\\\\{|btn--accent|btn--outline' styles/)",
+      "Bash(node -e \"const s=require\\('./package.json'\\).scripts; console.log\\(JSON.stringify\\(s,null,2\\)\\)\")",
+      "Bash(echo \"tsc exit code: $?\")",
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --hide-scrollbars --force-color-profile=srgb --virtual-time-budget=800 --screenshot=/tmp/sheet-desktop.png --window-size=1024,680 file:///tmp/sheet-harness.html)",
+      "Bash(echo \"desktop shot exit: $?\")",
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --hide-scrollbars --force-color-profile=srgb --virtual-time-budget=800 --screenshot=/tmp/sheet-mobile.png --window-size=414,820 file:///tmp/sheet-harness.html)",
+      "Bash(echo \"mobile shot exit: $?\")"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/private/tmp"
     ]
   }
 }

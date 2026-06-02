@@ -51,6 +51,14 @@ export type ChatUserKey = {
   isActive: boolean;
 };
 
+export type ChatUserDeviceKey = {
+  deviceId: string;
+  publicKey: string;
+  keyVersion: number;
+  algorithm?: 'x25519';
+  isActive?: boolean;
+};
+
 export type RegisterChatKeyPayload = {
   publicKey: string;
   algorithm?: 'x25519';

@@ -5,6 +5,7 @@ import {
   ChatConversationTargetPayload,
   ConversationListItem,
   CreateChatGroupPayload,
+  ChatUserDeviceKey,
   ChatUserKey,
   RegisterChatDeviceTokenPayload,
   RegisterChatKeyPayload,
@@ -57,6 +58,15 @@ export const fetchUserChatPublicKey = async (userId: string, token?: string) => 
     route: `chat/keys/${userId}`,
     verb: 'get',
     token: withToken(token),
+  });
+};
+
+export const fetchUserChatDeviceKeys = async (userId: string, token?: string) => {
+  return ApiCall<ApiEnvelope<ChatUserDeviceKey[]>>({
+    route: `chat/keys/${userId}/devices`,
+    verb: 'get',
+    token: withToken(token),
+    suppressErrorLog: true,
   });
 };
 

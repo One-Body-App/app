@@ -1562,7 +1562,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
                 <Image
                   source={{ uri: imageUrl }}
                   style={styles.mediaGridImage}
-                  resizeMode="cover"
+                  contentFit="cover"
                 />
               </Pressable>
             ))}
@@ -1577,7 +1577,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
             <Image
               source={{ uri: item.mediaUrl }}
               style={styles.mediaBubbleImage}
-              resizeMode="cover"
+              contentFit="cover"
             />
           </Pressable>
         );

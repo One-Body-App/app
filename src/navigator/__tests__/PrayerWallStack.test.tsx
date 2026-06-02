@@ -120,4 +120,31 @@ describe('PrayerWallStack', () => {
       })
     );
   });
+
+  it('uses a non-transparent header on the new prayer screen so the form is not hidden behind it', () => {
+    act(() => {
+      TestRenderer.create(<PrayerWallStack />);
+    });
+
+    const prayerScreen = recordedScreens.find((screen) => screen.name === 'Prayer');
+    expect(prayerScreen).toBeTruthy();
+
+    const resolvedOptions = prayerScreen?.options({
+      route: {
+        params: {},
+      },
+    });
+
+    expect(resolvedOptions).toEqual(
+      expect.objectContaining({
+        headerShown: true,
+        headerTransparent: false,
+        headerBlurEffect: undefined,
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: '#ffffff' },
+        contentStyle: { backgroundColor: '#ffffff' },
+        title: 'Post on Prayer Wall',
+      })
+    );
+  });
 });

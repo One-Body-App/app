@@ -2,6 +2,7 @@ const mockGetGenericPassword = jest.fn();
 const mockSetGenericPassword = jest.fn();
 const mockRegisterChatPublicKey = jest.fn();
 const mockFetchUserChatPublicKey = jest.fn();
+const mockFetchUserChatDeviceKeys = jest.fn();
 const mockCryptoBoxKeypair = jest.fn();
 const mockToBase64 = jest.fn();
 const mockReady = Promise.resolve();
@@ -21,6 +22,7 @@ jest.mock('react-native-device-info', () => ({
 jest.mock('../api', () => ({
   registerChatPublicKey: (...args: any[]) => mockRegisterChatPublicKey(...args),
   fetchUserChatPublicKey: (...args: any[]) => mockFetchUserChatPublicKey(...args),
+  fetchUserChatDeviceKeys: (...args: any[]) => mockFetchUserChatDeviceKeys(...args),
 }));
 
 jest.mock('react-native-libsodium', () => ({
@@ -39,6 +41,7 @@ describe('chat keyManager', () => {
     mockSetGenericPassword.mockReset();
     mockRegisterChatPublicKey.mockReset();
     mockFetchUserChatPublicKey.mockReset();
+    mockFetchUserChatDeviceKeys.mockReset();
     mockCryptoBoxKeypair.mockReset();
     mockToBase64.mockReset();
 
@@ -52,6 +55,103 @@ describe('chat keyManager', () => {
       status: 200,
       response: { data: {} },
     });
+  });
+
+  it('fetches a peer device key and caches the first active key', async () => {
+    mockFetchUserChatDeviceKeys.mockResolvedValue({
+      status: 200,
+      response: {
+        data: [
+          {
+            deviceId: 'old-phone',
+            publicKey: 'inactive-peer-public-key',
+            keyVersion: 3,
+            isActive: false,
+          },
+          {
+            deviceId: 'phone',
+            publicKey: 'peer-public-key',
+            keyVersion: 2,
+          },
+        ],
+      },
+    });
+
+    // eslint-disable-next-line global-require
+    const keyManager = require('../keyManager') as typeof import('../keyManager');
+
+    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).resolves.toEqual({
+      publicKey: 'peer-public-key',
+      keyVersion: 2,
+    });
+    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).resolves.toEqual({
+      publicKey: 'peer-public-key',
+      keyVersion: 2,
+    });
+
+    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
+    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledWith('peer-user-id', 'token-123');
+    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
+  });
+
+  it('throws a missing public key error when the device key list is empty', async () => {
+    mockFetchUserChatDeviceKeys.mockResolvedValue({
+      status: 200,
+      response: {
+        data: [],
+      },
+    });
+
+    // eslint-disable-next-line global-require
+    const keyManager = require('../keyManager') as typeof import('../keyManager');
+
+    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
+      'Public key not found for user'
+    );
+
+    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
+    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
+  });
+
+  it('uses a short negative cache for repeated missing public key checks', async () => {
+    mockFetchUserChatDeviceKeys.mockResolvedValue({
+      status: 200,
+      response: {
+        data: [],
+      },
+    });
+
+    // eslint-disable-next-line global-require
+    const keyManager = require('../keyManager') as typeof import('../keyManager');
+
+    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
+      'Public key not found for user'
+    );
+    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
+      'Public key not found for user'
+    );
+
+    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
+    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
+  });
+
+  it('preserves direct-message-disabled errors from the device key endpoint', async () => {
+    mockFetchUserChatDeviceKeys.mockResolvedValue({
+      status: 403,
+      response: {
+        message: 'Direct messages are disabled for this user',
+      },
+    });
+
+    // eslint-disable-next-line global-require
+    const keyManager = require('../keyManager') as typeof import('../keyManager');
+
+    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
+      'Direct messages are disabled for this user'
+    );
+
+    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
+    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
   });
 
   it('generates and registers a keypair using named libsodium exports', async () => {

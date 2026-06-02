@@ -1,11 +1,13 @@
 import * as Keychain from 'react-native-keychain';
 import { base64_variants, crypto_box_keypair, ready, to_base64 } from 'react-native-libsodium';
 import DeviceInfo from 'react-native-device-info';
-import { fetchUserChatPublicKey, registerChatPublicKey } from './api';
+import { fetchUserChatDeviceKeys, registerChatPublicKey } from './api';
 
 const CHAT_KEYCHAIN_SERVICE = 'com.onebody.chat.keys.v1';
 const CHAT_KEYCHAIN_USERNAME = 'onebody-chat';
 const PEER_KEY_CACHE_TTL_MS = 5 * 60 * 1000;
+const PEER_KEY_MISSING_CACHE_TTL_MS = 30 * 1000;
+const MISSING_PEER_KEY_ERROR = 'Public key not found for user';
 
 type StoredChatKeypair = {
   algorithm: 'x25519';
@@ -20,6 +22,7 @@ const peerKeyCache = new Map<
   string,
   { publicKey: string; keyVersion: number; expiresAt: number }
 >();
+const missingPeerKeyCache = new Map<string, { message: string; expiresAt: number }>();
 
 const KEY_INIT_ERROR =
   'Secure messaging key setup is unavailable right now. Please restart the app and try again.';
@@ -129,24 +132,45 @@ export const getPeerPublicKey = async (userId: string, token?: string) => {
     return { publicKey: cached.publicKey, keyVersion: cached.keyVersion };
   }
 
-  const response = await fetchUserChatPublicKey(userId, token);
-  if (response.status !== 200 || !response.response?.data?.publicKey) {
+  const missingCached = missingPeerKeyCache.get(userId);
+  if (missingCached && missingCached.expiresAt > now) {
+    throw new Error(missingCached.message);
+  }
+
+  missingPeerKeyCache.delete(userId);
+
+  const response = await fetchUserChatDeviceKeys(userId, token);
+  if (response.status !== 200) {
     throw new Error(
       (response.response as { message?: string })?.message || 'Unable to fetch receiver key'
     );
   }
 
+  const key = Array.isArray(response.response?.data)
+    ? response.response.data.find((item) => item?.publicKey && item.isActive !== false)
+    : null;
+
+  if (!key?.publicKey) {
+    missingPeerKeyCache.set(userId, {
+      message: MISSING_PEER_KEY_ERROR,
+      expiresAt: now + PEER_KEY_MISSING_CACHE_TTL_MS,
+    });
+    throw new Error(MISSING_PEER_KEY_ERROR);
+  }
+
   const record = {
-    publicKey: response.response.data.publicKey,
-    keyVersion: response.response.data.keyVersion || 1,
+    publicKey: key.publicKey,
+    keyVersion: key.keyVersion || 1,
     expiresAt: now + PEER_KEY_CACHE_TTL_MS,
   };
 
   peerKeyCache.set(userId, record);
+  missingPeerKeyCache.delete(userId);
 
   return { publicKey: record.publicKey, keyVersion: record.keyVersion };
 };
 
 export const clearPeerKeyCache = () => {
   peerKeyCache.clear();
+  missingPeerKeyCache.clear();
 };

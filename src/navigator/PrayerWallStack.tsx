@@ -140,6 +140,11 @@ function PrayerWall() {
         options={({ route }) => {
           return {
             headerShown: Platform.OS !== 'android',
+            headerTransparent: false,
+            headerBlurEffect: undefined,
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+            contentStyle: { backgroundColor: colors.background },
             headerBackTitleVisible: false,
             headerBackTitle: 'Back',
             title: route.params?.postId ? 'Edit Post on Prayer Wall' : 'Post on Prayer Wall',
