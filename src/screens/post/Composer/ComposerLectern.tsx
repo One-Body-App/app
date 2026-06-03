@@ -58,6 +58,9 @@ export type ComposerLecternProps = {
   onHeightChange?: (height: number) => void;
   captionInputRef?: React.RefObject<RNTextInput | null>;
   bottomInset?: number;
+  // Safe-area top inset, so the expanded sheet leaves room for the header and
+  // never grows tall enough to overlap it.
+  topInset?: number;
 };
 
 const EXPANDED_ICON_SIZE = 22;
@@ -140,12 +143,16 @@ export default function ComposerLectern({
   onHeightChange,
   captionInputRef,
   bottomInset = 0,
+  topInset = 0,
 }: ComposerLecternProps): React.ReactElement {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
   const { height: windowHeight } = useWindowDimensions();
   // The sheet grows with its content (caption + tools + an optional tool panel)
   // up to a cap, and scrolls beyond that so the caption is always reachable.
-  const maxExpandedHeight = Math.round(windowHeight * 0.85);
+  // The cap leaves room for the header so the sheet never overlaps it.
+  const maxExpandedHeight = Math.round(
+    windowHeight - topInset - composerSpace.headerHeight - composerSpace.lg
+  );
   const dragGesture = Gesture.Pan()
     .onEnd((event) => {
       'worklet';
@@ -211,7 +218,10 @@ export default function ComposerLectern({
       style={[
         styles.lectern,
         {
-          backgroundColor: palette.glass,
+          // Expanded: an opaque surface so the canvas/header behind cannot bleed
+          // through (Android has no BlurView). Compact: translucent glass keeps
+          // the floating-over-the-stage look.
+          backgroundColor: expanded ? palette.stage : palette.glass,
           borderColor: palette.glassBorder,
           boxShadow: `0 -8px 24px ${palette.shadow}`,
           ...(expanded
@@ -220,7 +230,7 @@ export default function ComposerLectern({
         },
       ]}
     >
-      {Platform.OS === 'ios' ? (
+      {Platform.OS === 'ios' && !expanded ? (
         <BlurView
           blurType={scheme === 'dark' ? 'chromeMaterialDark' : 'chromeMaterial'}
           blurAmount={20}

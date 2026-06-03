@@ -19,6 +19,12 @@ import {
   type BibleBook,
   type BibleTranslation,
 } from '@/services/scripture';
+import {
+  getChapterOptions,
+  getVerseOptions,
+  hasValidChapter,
+  hasValidVerse,
+} from '@/services/scriptureSelection';
 import type { ScriptureMention, ScriptureShare } from '@/utils/types';
 import { composerSpace, composerType, type ComposerPalette } from './composerTheme';
 
@@ -30,12 +36,21 @@ type Props = {
   onClear: () => void;
 };
 
+// Drop a trailing chapter/verse portion ("John 3 16" -> "john") so the book
+// still surfaces while the user is typing the numbers.
+const bookQueryPart = (query: string): string => {
+  const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  while (tokens.length > 1 && /^[\d:.\-–]+$/.test(tokens[tokens.length - 1])) {
+    tokens.pop();
+  }
+  return tokens.join(' ');
+};
+
 const matchesBook = (book: BibleBook, query: string): boolean => {
-  const normalized = query.toLowerCase().trim();
-  if (!normalized) return true;
+  const part = bookQueryPart(query);
+  if (!part) return true;
   return (
-    book.name.toLowerCase().includes(normalized) ||
-    book.aliases.some((alias) => alias.includes(normalized))
+    book.name.toLowerCase().includes(part) || book.aliases.some((alias) => alias.includes(part))
   );
 };
 
@@ -48,8 +63,6 @@ const toPayload = (mention: Pick<ScriptureMention, 'book' | 'chapter' | 'verse' 
 
 const findBook = (usfm?: string): BibleBook | null =>
   usfm ? (BIBLE_BOOKS.find((book) => book.usfm === usfm.toUpperCase()) ?? null) : null;
-
-const cleanNumberInput = (value: string): string => value.replace(/\D/g, '').slice(0, 3);
 
 const buildStructuredMention = (
   book: BibleBook | null,
@@ -74,10 +87,33 @@ const buildStructuredMention = (
   };
 };
 
+// IDs MUST match HelloAO's translation slugs (bible.helloao.org/api/
+// available_translations.json) — the API proxies verse lookups straight to
+// HelloAO, and an unknown slug returns its HTML SPA shell, which the server
+// reads as an empty verse and 404s ("verse not found"). "engKJV"/"WEB" are NOT
+// valid HelloAO slugs; the correct ones are "eng_kjv" and "ENGWEBP".
 const FALLBACK_TRANSLATIONS: BibleTranslation[] = [
-  { id: 'BSB', name: 'Berean Standard Bible', englishName: 'BSB', language: 'eng' },
-  { id: 'engKJV', name: 'King James Version', englishName: 'KJV', language: 'eng' },
-  { id: 'WEB', name: 'World English Bible', englishName: 'WEB', language: 'eng' },
+  {
+    id: 'BSB',
+    name: 'Berean Standard Bible',
+    englishName: 'Berean Standard Bible',
+    shortName: 'BSB',
+    language: 'eng',
+  },
+  {
+    id: 'eng_kjv',
+    name: 'King James Version',
+    englishName: 'King James Version',
+    shortName: 'KJV',
+    language: 'eng',
+  },
+  {
+    id: 'ENGWEBP',
+    name: 'World English Bible',
+    englishName: 'World English Bible',
+    shortName: 'WEB',
+    language: 'eng',
+  },
 ];
 
 const translationLabel = (translation: BibleTranslation): string =>
@@ -103,7 +139,17 @@ export default function ComposerScripturePicker({
   const [verse, setVerse] = useState(selected?.verse ? String(selected.verse) : '');
   const translationOptions = translations.length > 0 ? translations : FALLBACK_TRANSLATIONS;
 
-  const exact = parseScriptureLocal(query)[0] ?? null;
+  // Only treat a typed reference as confirmable once it validates against the
+  // local versification table, so out-of-range refs (e.g. "John 99:99") never
+  // offer a confirm that would only fail at the verse fetch.
+  const parsed = parseScriptureLocal(query, { looseSeparator: true })[0] ?? null;
+  const parsedBook = parsed ? findBook(parsed.book) : null;
+  const exact =
+    parsed &&
+    hasValidChapter(parsedBook, parsed.chapter) &&
+    hasValidVerse(parsedBook, parsed.chapter, parsed.verse)
+      ? parsed
+      : null;
   const structuredMention = buildStructuredMention(selectedBook, chapter, verse);
   const suggestions = useMemo(() => {
     const trimmed = query.trim();
@@ -376,54 +422,95 @@ export default function ComposerScripturePicker({
             </Pressable>
           </View>
 
-          <View style={styles.fields}>
-            <View style={styles.field}>
+          <View style={styles.chipFields}>
+            <View style={styles.chipField}>
               <StyledText style={[styles.fieldLabel, { color: palette.textMuted }]}>
                 Chapter
               </StyledText>
-              <TextInput
-                value={chapter}
-                onChangeText={(next) => {
-                  setChapter(cleanNumberInput(next));
-                  setError('');
-                }}
-                keyboardType="number-pad"
-                placeholder="3"
-                placeholderTextColor={palette.textMuted}
-                style={[
-                  styles.fieldInput,
-                  {
-                    color: palette.textPrimary,
-                    backgroundColor: palette.glass,
-                    borderColor: palette.glassBorder,
-                  },
-                ]}
-              />
+              <ScrollView
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.chipRow}
+              >
+                {getChapterOptions(selectedBook).map((option) => {
+                  const active = String(option) === chapter;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => {
+                        setChapter(String(option));
+                        setVerse('');
+                        setError('');
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Chapter ${option}`}
+                      style={[
+                        styles.numberChip,
+                        {
+                          backgroundColor: active ? palette.accent : palette.glass,
+                          borderColor: active ? palette.accent : palette.glassBorder,
+                        },
+                      ]}
+                    >
+                      <StyledText
+                        style={[
+                          styles.numberChipText,
+                          { color: active ? '#ffffff' : palette.textPrimary },
+                        ]}
+                      >
+                        {option}
+                      </StyledText>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
 
             {chapter ? (
-              <View style={styles.field}>
+              <View style={styles.chipField}>
                 <StyledText style={[styles.fieldLabel, { color: palette.textMuted }]}>
                   Verse
                 </StyledText>
-                <TextInput
-                  value={verse}
-                  onChangeText={(next) => {
-                    setVerse(cleanNumberInput(next));
-                    setError('');
-                  }}
-                  keyboardType="number-pad"
-                  placeholder="16"
-                  placeholderTextColor={palette.textMuted}
-                  style={[
-                    styles.fieldInput,
-                    {
-                      color: palette.textPrimary,
-                      backgroundColor: palette.glass,
-                      borderColor: palette.glassBorder,
-                    },
-                  ]}
-                />
+                <ScrollView
+                  horizontal
+                  nestedScrollEnabled
+                  showsHorizontalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={styles.chipRow}
+                >
+                  {getVerseOptions(selectedBook, chapter).map((option) => {
+                    const active = String(option) === verse;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => {
+                          setVerse(String(option));
+                          setError('');
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Verse ${option}`}
+                        style={[
+                          styles.numberChip,
+                          {
+                            backgroundColor: active ? palette.accent : palette.glass,
+                            borderColor: active ? palette.accent : palette.glassBorder,
+                          },
+                        ]}
+                      >
+                        <StyledText
+                          style={[
+                            styles.numberChipText,
+                            { color: active ? '#ffffff' : palette.textPrimary },
+                          ]}
+                        >
+                          {option}
+                        </StyledText>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
               </View>
             ) : null}
           </View>
@@ -613,24 +700,32 @@ const styles = StyleSheet.create({
     ...composerType.body,
     fontWeight: '700',
   },
-  fields: {
-    flexDirection: 'row',
+  chipFields: {
     gap: composerSpace.sm,
   },
-  field: {
-    flex: 1,
+  chipField: {
     gap: 6,
   },
   fieldLabel: {
     ...composerType.eyebrow,
     fontWeight: '700',
   },
-  fieldInput: {
-    minHeight: 44,
-    borderRadius: composerSpace.sm,
+  chipRow: {
+    gap: composerSpace.xs,
+    paddingVertical: 2,
+  },
+  numberChip: {
+    minWidth: 40,
+    borderRadius: composerSpace.chipRadius,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: composerSpace.sm,
-    fontSize: 15,
+    paddingVertical: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numberChipText: {
+    ...composerType.caption,
+    fontWeight: '700',
   },
   suggestions: {
     flexDirection: 'row',

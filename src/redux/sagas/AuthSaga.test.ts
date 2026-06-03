@@ -213,6 +213,36 @@ describe('getProfileSaga stale result guards', () => {
 
     expect(dispatched).toEqual([{ type: ACTIONS.SET_LOADER, data: false }]);
   });
+
+  it('clears local auth when the active profile request returns unauthorized', async () => {
+    mockApiCall.mockResolvedValue({
+      status: 401,
+      response: { message: 'Invalid Clerk session token' },
+    });
+    mockClearAuthTokens.mockResolvedValue(undefined);
+    const dispatched: any[] = [];
+
+    await runSaga(
+      {
+        dispatch: (action) => dispatched.push(action),
+        getState: () => ({
+          auth: {
+            userToken: 'active-token',
+            logoutPending: false,
+            logoutCompletedAt: undefined,
+          },
+        }),
+      },
+      getProfileSaga,
+      { type: 'get_profile_request', token: 'active-token', pullSavedData: false }
+    ).toPromise();
+
+    expect(mockClearAuthTokens).toHaveBeenCalled();
+    expect(dispatched).toEqual([
+      { type: ACTIONS.CLEAR_AUTH_STATE },
+      { type: ACTIONS.SET_LOADER, data: false },
+    ]);
+  });
 });
 
 describe('profile update onboarding completion', () => {

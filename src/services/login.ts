@@ -83,7 +83,10 @@ export const loginWithEmailAndPassword = async (params: {
   return res;
 };
 
-export const migrateLegacyPasswordToClerk = async (params: { email: string; password: string }) => {
+export const migrateLegacyPasswordToClerk = async (
+  params: { email: string; password: string },
+  options?: { suppressErrorLog?: boolean }
+) => {
   return ApiCall<{ migrated: boolean }>({
     route: 'auth/clerk/migrate-password',
     verb: 'post',
@@ -91,6 +94,7 @@ export const migrateLegacyPasswordToClerk = async (params: { email: string; pass
       email: params.email.trim().toLowerCase(),
       password: params.password,
     },
+    suppressErrorLog: options?.suppressErrorLog,
   });
 };
 
@@ -129,6 +133,14 @@ export const finishPasskeyRegistration = async (params: {
 export const beginAuthenticatedMfaOnboarding = async (token: string) => {
   return ApiCall<MfaChallengeResponse | { mfaRequired: false }>({
     route: 'auth/mfa/onboarding/begin',
+    verb: 'post',
+    token,
+  });
+};
+
+export const beginAuthenticatedMfaLogin = async (token: string) => {
+  return ApiCall<MfaChallengeResponse | { mfaRequired: false }>({
+    route: 'auth/mfa/login/begin',
     verb: 'post',
     token,
   });

@@ -46,6 +46,10 @@ export type ComposerCanvasProps = {
   // Space the lectern sheet occupies at the bottom, so the empty-state graphic
   // stays centered in the visible stage above it instead of being clipped.
   reservedBottom?: number;
+  // Hides the empty-state hero (keeps a plain stage) while the lectern is
+  // expanded, so its text cannot bleed through the sheet and collide with the
+  // tools/picker beneath it.
+  suppressEmptyState?: boolean;
   // Notifies the host when the active index changes so chips/preview can update.
   onActiveIndexChange?: (index: number, item: MediaItem | undefined) => void;
 };
@@ -304,6 +308,7 @@ export default function ComposerCanvas({
   emptyTitle = 'What is God doing today?',
   emptySubtitle = 'Tap below to add a photo, video, or word.',
   reservedBottom,
+  suppressEmptyState = false,
   onActiveIndexChange,
 }: ComposerCanvasProps): React.ReactElement {
   const palette = useMemo(() => resolveComposerPalette(scheme), [scheme]);
@@ -361,6 +366,13 @@ export default function ComposerCanvas({
   );
 
   if (items.length === 0) {
+    // While the lectern covers the stage (expanded), render a plain backdrop so
+    // the hero text cannot show through the sheet.
+    if (suppressEmptyState) {
+      return (
+        <View onLayout={handleLayout} style={[styles.stage, { backgroundColor: palette.stage }]} />
+      );
+    }
     return (
       <ComposerEmptyState
         palette={palette}

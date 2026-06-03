@@ -13,6 +13,7 @@
 ## Project conventions
 
 - Follow existing component structure in `src/`.
+- Cross-check every change against the equivalent area in `web/`. Mobile changes must verify whether the web app needs the same behavior, and web changes should follow the mobile app's established behavior where applicable. If the feature or equivalent surface does not exist in the other client, ask whether it should be added.
 - Keep hook usage unconditional and ordered; avoid conditional hooks.
 - Do not import or call `useEffect` / `React.useEffect` directly in frontend code.
 - Prefer derived state, event handlers, Redux/saga flows, `useFocusEffect`, and keyed remounts before reaching for lifecycle synchronization.

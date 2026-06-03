@@ -57,21 +57,9 @@ describe('quickPost helpers', () => {
     });
 
     await expect(moderateQuickPostText('blocked text', notify)).resolves.toEqual({
-      blocked: false,
-      moderationReview: {
-        checks: [
-          {
-            type: 'text',
-            clientSource: 'heuristic',
-            clientScores: undefined,
-            clientReason: 'blocked-pattern',
-            clientModel: undefined,
-            fallbackAction: 'pending_review',
-          },
-        ],
-      },
+      blocked: true,
     });
-    expect(notify).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('violates our Terms of Use'));
   });
 
   it('returns a moderation review payload when fallback moderation flags the content', async () => {
@@ -83,7 +71,7 @@ describe('quickPost helpers', () => {
       model: 'toxicity-model',
     });
     mockCallBackendFallbackModeration.mockResolvedValue({
-      finalAction: 'flag_for_admin_review',
+      finalAction: 'pending_review',
       provider: 'openai',
       flagged: true,
       model: 'omni-moderation',
@@ -96,12 +84,35 @@ describe('quickPost helpers', () => {
         checks: [
           expect.objectContaining({
             type: 'text',
-            fallbackAction: 'flag_for_admin_review',
+            fallbackAction: 'pending_review',
             fallbackProvider: 'openai',
           }),
         ],
       },
     });
+  });
+
+  it('blocks quick posts when fallback moderation returns block', async () => {
+    const notify = jest.fn();
+    mockModerateClientText.mockResolvedValue({
+      action: 'fallback',
+      source: 'toxicity',
+      scores: { toxicity: 0.45 },
+      reason: 'threshold-hit',
+      model: 'toxicity-model',
+    });
+    mockCallBackendFallbackModeration.mockResolvedValue({
+      finalAction: 'block',
+      provider: 'openai',
+      flagged: true,
+      model: 'omni-moderation',
+      results: { categories: { harassment: true } },
+    });
+
+    await expect(moderateQuickPostText('block me', notify)).resolves.toEqual({
+      blocked: true,
+    });
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('violates our Terms of Use'));
   });
 
   it('submits quick posts for review when fallback moderation cannot be completed', async () => {

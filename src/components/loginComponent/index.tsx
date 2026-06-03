@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   BackHandler,
@@ -25,6 +25,7 @@ import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
 import {
+  beginAuthenticatedMfaLogin,
   beginPasskeyLogin,
   beginPasskeyRegistration,
   beginTotpSetup,
@@ -49,6 +50,9 @@ import {
   PASSKEY_ASSOCIATION_FALLBACK_MESSAGE,
 } from '@/src/utils/passkeyErrors';
 import { getValidAccessToken } from '@/src/services/authTokens';
+import { clearPendingLoginMfa, markPendingLoginMfa } from '@/src/services/pendingLoginMfa';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import useObservedEffect from '@/src/hooks/useObservedEffect';
 
 import Button from '../Button';
 import CustomClipboard, { CustomClipboardHandle } from '../CustomClipboard';
@@ -83,6 +87,36 @@ type LoginComponentProps = {
   currentUserEmail?: string;
   initialMfaChallenge?: MfaChallengeResponse;
   onMfaLaunchScreenChange?: (isVisible: boolean) => void;
+};
+
+type ClerkEmailSecondFactor = {
+  strategy?: string;
+  emailAddressId?: string;
+  email_address_id?: string;
+  safeIdentifier?: string;
+  safe_identifier?: string;
+};
+
+const getClerkEmailSecondFactor = (signInAttempt: any) => {
+  const factors =
+    signInAttempt?.supportedSecondFactors ?? signInAttempt?.supported_second_factors ?? null;
+
+  if (!Array.isArray(factors)) {
+    return null;
+  }
+
+  const factor = factors.find((item: ClerkEmailSecondFactor) => item?.strategy === 'email_code') as
+    | ClerkEmailSecondFactor
+    | undefined;
+
+  if (!factor) {
+    return null;
+  }
+
+  return {
+    emailAddressId: factor.emailAddressId ?? factor.email_address_id,
+    safeIdentifier: factor.safeIdentifier ?? factor.safe_identifier,
+  };
 };
 
 const passkeyClient: any = (() => {
@@ -130,6 +164,49 @@ const getClerkErrorMessage = (error: any, fallback = 'Sign in failed.') => {
   );
 };
 
+const SIGN_IN_CREDENTIALS_MESSAGE = 'Incorrect email or password.';
+
+const getClerkErrorDetails = (error: any) => {
+  const firstError = error?.errors?.[0] ?? {};
+  const code = typeof firstError?.code === 'string' ? firstError.code : '';
+  const message = getClerkErrorMessage(error, '');
+
+  return {
+    code,
+    message,
+    normalizedMessage: message.toLowerCase(),
+  };
+};
+
+const isClerkIdentifierNotFoundError = (error: any) => {
+  const { code, normalizedMessage } = getClerkErrorDetails(error);
+
+  return (
+    code === 'form_identifier_not_found' ||
+    normalizedMessage.includes("couldn't find your account") ||
+    normalizedMessage.includes("couldn't find an account")
+  );
+};
+
+const isClerkCredentialError = (error: any) => {
+  const { code, normalizedMessage } = getClerkErrorDetails(error);
+
+  return (
+    isClerkIdentifierNotFoundError(error) ||
+    code === 'form_password_incorrect' ||
+    normalizedMessage.includes('password is incorrect') ||
+    normalizedMessage.includes('incorrect password')
+  );
+};
+
+const getSignInErrorMessage = (error: any) => {
+  if (isClerkCredentialError(error)) {
+    return SIGN_IN_CREDENTIALS_MESSAGE;
+  }
+
+  return getClerkErrorMessage(error);
+};
+
 const getIncompleteClerkSignInMessage = (result: any) => {
   const status = String(result?.status ?? '');
   if (status === 'needs_second_factor') {
@@ -149,6 +226,41 @@ const getIncompleteClerkSignInMessage = (result: any) => {
   }
   return 'Additional verification is required. Please check your email and try again.';
 };
+
+const isLoginMfaChallenge = (challenge: MfaChallengeResponse | null) =>
+  !!challenge && !challenge.enrollmentRequired;
+
+const getLoginMfaFallbackCopy = (method: MfaMethod) => {
+  if (method === 'totp') {
+    return 'Having trouble with your authenticator app? Verify by email instead.';
+  }
+
+  return 'Having trouble with your passkey? Verify by email instead.';
+};
+
+const PASSKEY_LOGIN_STALE_CHALLENGE_MESSAGE =
+  'We could not finish that passkey challenge. Please try again or verify by email instead.';
+
+const isPasskeyChallengeMissingMessage = (message?: unknown) =>
+  typeof message === 'string' && message.toLowerCase().includes('no passkey challenge in progress');
+
+const apiMessage = (response: unknown, fallback: string) => {
+  const message = (response as { message?: unknown } | null)?.message;
+  return typeof message === 'string' && message.trim() ? message : fallback;
+};
+
+const passkeyLoginFinishError = (response: unknown) => {
+  const message = apiMessage(response, 'Unable to verify passkey.');
+  const error = new Error(
+    isPasskeyChallengeMissingMessage(message) ? PASSKEY_LOGIN_STALE_CHALLENGE_MESSAGE : message
+  );
+  (error as any).passkeyChallengeMissing = isPasskeyChallengeMissingMessage(message);
+  return error;
+};
+
+const isPasskeyChallengeMissingError = (error: unknown) =>
+  Boolean((error as { passkeyChallengeMissing?: boolean } | null)?.passkeyChallengeMissing) ||
+  isPasskeyChallengeMissingMessage((error as Error | null)?.message);
 
 const toBase64FromBase64Url = (value?: string) => {
   if (!value || typeof value !== 'string') {
@@ -281,17 +393,18 @@ function LoginComponent({
   const [totpOtpauth, setTotpOtpauth] = useState<string>('');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [pendingAccessToken, setPendingAccessToken] = useState<string>('');
+  const [clerkMfaEmail, setClerkMfaEmail] = useState<string>('');
   const [isPasskeyAssociationUnavailable, setIsPasskeyAssociationUnavailable] = useState(false);
   const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
   const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const clipboardRef = useRef<CustomClipboardHandle>(null);
   const locationPromptedRef = useRef(false);
-  const hasAutoPromptedPasskeyRef = useRef(false);
   const hasPasskeyHeroLoadedRef = useRef(false);
   const submissionInFlightRef = useRef(false);
   const passkeyInFlightRef = useRef<Promise<void> | null>(null);
   const handledInitialMfaChallengeSignatureRef = useRef<string | null>(null);
+  const postClerkMfaAccessTokenRef = useRef('');
 
   const logAndroidPasskey = useCallback((event: string, payload?: Record<string, unknown>) => {
     if (__DEV__ && Platform.OS === 'android') {
@@ -299,13 +412,32 @@ function LoginComponent({
     }
   }, []);
 
-  useEffect(() => {
+  const handleClerkTaskNavigation = useCallback(
+    async ({ session }: { session?: { currentTask?: { key?: string } | null } | null }) => {
+      const taskKey = session?.currentTask?.key;
+      if (!taskKey || taskKey === 'setup-mfa') {
+        return;
+      }
+
+      if (taskKey === 'reset-password') {
+        navigation.navigate(
+          'ForgotPassword' as any,
+          {
+            email: form.email.trim() || undefined,
+          } as any
+        );
+      }
+    },
+    [form.email, navigation]
+  );
+
+  useMountEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
       locationPromptedRef.current = val === '1';
     });
-  }, []);
+  });
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (!initialMfaChallenge) return;
     if (handledInitialMfaChallengeSignatureRef.current === initialMfaChallengeSignature) {
       return;
@@ -314,7 +446,6 @@ function LoginComponent({
 
     const preferredMethod = resolveInitialMfaMethod(initialMfaChallenge);
 
-    hasAutoPromptedPasskeyRef.current = false;
     hasPasskeyHeroLoadedRef.current = false;
     submissionInFlightRef.current = false;
     passkeyInFlightRef.current = null;
@@ -337,7 +468,7 @@ function LoginComponent({
     }
   }, [initialMfaChallenge, initialMfaChallengeSignature, trackMfaEvent]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (!mfaChallenge || selectedMfaMethod !== 'passkey') {
       return;
     }
@@ -351,6 +482,7 @@ function LoginComponent({
 
   const completeLogin = useCallback(
     (accessToken: string) => {
+      clearPendingLoginMfa().catch(() => undefined);
       clearPendingSocialContinuation();
       logAndroidPasskey('token_accepted', {
         hasAccessToken: Boolean(accessToken),
@@ -392,7 +524,7 @@ function LoginComponent({
         return;
       }
 
-      const token = response?.tokens?.accessToken;
+      const token = postClerkMfaAccessTokenRef.current || response?.tokens?.accessToken;
       if (!token) {
         throw new Error('Invalid authentication response');
       }
@@ -401,13 +533,46 @@ function LoginComponent({
       if (codes.length > 0) {
         setBackupCodes(codes);
         setPendingAccessToken(token);
+        postClerkMfaAccessTokenRef.current = '';
         setSuccessText('Save these backup codes in a safe place. They are shown only once.');
         return;
       }
 
+      postClerkMfaAccessTokenRef.current = '';
       completeLogin(token);
     },
     [completeLogin, trackMfaEvent]
+  );
+
+  const beginPostClerkPasswordMfa = useCallback(
+    async (accessToken: string) => {
+      const res = await beginAuthenticatedMfaLogin(accessToken);
+      if (res.status !== 200) {
+        throw new Error(
+          (res.response as any)?.message ?? 'Unable to start multi-factor authentication.'
+        );
+      }
+
+      if ((res.response as any)?.mfaRequired) {
+        await markPendingLoginMfa();
+        postClerkMfaAccessTokenRef.current = accessToken;
+        await handleAuthResult(res.response);
+        return true;
+      }
+
+      await clearPendingLoginMfa();
+      postClerkMfaAccessTokenRef.current = '';
+      return false;
+    },
+    [handleAuthResult]
+  );
+
+  const beginPostClerkSocialMfa = useCallback(
+    async (accessToken: string) => {
+      await syncClerkUserProfile({});
+      return beginPostClerkPasswordMfa(accessToken);
+    },
+    [beginPostClerkPasswordMfa]
   );
 
   const requestEmailMfaCode = useCallback(
@@ -552,33 +717,49 @@ function LoginComponent({
           return;
         }
 
-        const begin = await beginPasskeyLogin({ mfaToken: mfaChallenge.mfaToken });
-        if (begin.status !== 200) {
-          throw new Error((begin.response as any)?.message ?? 'Unable to begin passkey login.');
-        }
-        const nativeAuthenticationRequest = normalizePasskeyAuthenticationRequestForNative(
-          begin.response
-        );
-        logAndroidPasskey('native_prompt_start', {
-          flow,
-        });
-        const assertion = await authenticate(nativeAuthenticationRequest);
-        logAndroidPasskey('native_prompt_end', {
-          flow,
-          success: true,
-        });
-        const finish = await finishPasskeyLogin({
-          mfaToken: mfaChallenge.mfaToken,
-          response: normalizePasskeyAuthenticationResponseForServer(assertion),
-        });
-        if (finish.status !== 200) {
-          throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
+        const runPasskeyLoginAttempt = async () => {
+          const begin = await beginPasskeyLogin({ mfaToken: mfaChallenge.mfaToken });
+          if (begin.status !== 200) {
+            throw new Error(apiMessage(begin.response, 'Unable to begin passkey login.'));
+          }
+          const nativeAuthenticationRequest = normalizePasskeyAuthenticationRequestForNative(
+            begin.response
+          );
+          logAndroidPasskey('native_prompt_start', {
+            flow,
+          });
+          const assertion = await authenticate(nativeAuthenticationRequest);
+          logAndroidPasskey('native_prompt_end', {
+            flow,
+            success: true,
+          });
+          const finish = await finishPasskeyLogin({
+            mfaToken: mfaChallenge.mfaToken,
+            response: normalizePasskeyAuthenticationResponseForServer(assertion),
+          });
+          if (finish.status !== 200) {
+            throw passkeyLoginFinishError(finish.response);
+          }
+          return finish.response;
+        };
+
+        let authResult: unknown;
+        try {
+          authResult = await runPasskeyLoginAttempt();
+        } catch (passkeyLoginError) {
+          if (!isPasskeyChallengeMissingError(passkeyLoginError)) {
+            throw passkeyLoginError;
+          }
+          logAndroidPasskey('stale_challenge_retry', {
+            flow,
+          });
+          authResult = await runPasskeyLoginAttempt();
         }
         trackMfaEvent('mfa_method_success', {
           method: 'passkey',
           flow,
         });
-        await handleAuthResult(finish.response);
+        await handleAuthResult(authResult);
       } catch (mfaError: any) {
         logAndroidPasskey('native_prompt_end', {
           flow,
@@ -667,48 +848,9 @@ function LoginComponent({
     }
   }, [handleAuthResult, logAndroidPasskey, mfaChallenge, requestEmailMfaCode, trackMfaEvent]);
 
-  useEffect(() => {
-    hasAutoPromptedPasskeyRef.current = false;
+  useObservedEffect(() => {
     setIsPasskeyAssociationUnavailable(false);
   }, [mfaChallenge?.mfaToken]);
-
-  useEffect(() => {
-    if (!mfaChallenge) return undefined;
-    if (selectedMfaMethod !== 'passkey') return undefined;
-    if (isPasskeyAssociationUnavailable) return undefined;
-    if (hasAutoPromptedPasskeyRef.current) return undefined;
-
-    hasAutoPromptedPasskeyRef.current = true;
-    let isCancelled = false;
-
-    const startPasskey = () => {
-      if (isCancelled) {
-        return;
-      }
-
-      logAndroidPasskey('auto_start_requested', {
-        enrollmentRequired: mfaChallenge.enrollmentRequired,
-        reason: mfaChallenge.reason,
-      });
-      runPasskey().catch((e: any) => {
-        if (!isCancelled) {
-          setError(e?.message ?? 'Passkey verification failed.');
-        }
-      });
-    };
-
-    startPasskey();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [
-    logAndroidPasskey,
-    isPasskeyAssociationUnavailable,
-    mfaChallenge,
-    runPasskey,
-    selectedMfaMethod,
-  ]);
 
   const submitMfa = useCallback(async () => {
     if (!mfaChallenge) return;
@@ -962,6 +1104,48 @@ function LoginComponent({
     }
   };
 
+  const submitClerkEmailMfa = useCallback(async () => {
+    if (!isSignInLoaded || !signIn || !setActive) {
+      setError('Sign in is still loading. Please try again.');
+      return;
+    }
+
+    if (!form.code.trim()) {
+      setError('Enter your verification code.');
+      return;
+    }
+
+    const result = await signIn.attemptSecondFactor({
+      strategy: 'email_code',
+      code: form.code.trim(),
+    });
+
+    if (result.status !== 'complete' || !result.createdSessionId) {
+      setError(getIncompleteClerkSignInMessage(result));
+      return;
+    }
+
+    await setActive({ session: result.createdSessionId, navigate: handleClerkTaskNavigation });
+    const accessToken = await getValidAccessToken({ forceRefreshClerk: true });
+    if (!accessToken) {
+      throw new Error('Unable to start Clerk session.');
+    }
+
+    if (await beginPostClerkPasswordMfa(accessToken)) {
+      return;
+    }
+
+    completeLogin(accessToken);
+  }, [
+    beginPostClerkPasswordMfa,
+    completeLogin,
+    form.code,
+    handleClerkTaskNavigation,
+    isSignInLoaded,
+    setActive,
+    signIn,
+  ]);
+
   const signInUser = useCallback(async () => {
     if (submissionInFlightRef.current) {
       return;
@@ -976,6 +1160,11 @@ function LoginComponent({
 
       if (backupCodes.length > 0 && pendingAccessToken) {
         completeLogin(pendingAccessToken);
+        return;
+      }
+
+      if (clerkMfaEmail) {
+        await submitClerkEmailMfa();
         return;
       }
 
@@ -1007,16 +1196,48 @@ function LoginComponent({
       try {
         result = await attemptClerkPasswordSignIn();
       } catch (clerkError: any) {
-        const migration = await migrateLegacyPasswordToClerk({
-          email: normalizedEmail,
-          password: form.password,
-        }).catch(() => undefined);
+        if (!isClerkIdentifierNotFoundError(clerkError)) {
+          throw clerkError;
+        }
+
+        const migration = await migrateLegacyPasswordToClerk(
+          {
+            email: normalizedEmail,
+            password: form.password,
+          },
+          {
+            suppressErrorLog: true,
+          }
+        );
 
         if (migration?.status === 200 && migration.response?.migrated) {
           result = await attemptClerkPasswordSignIn();
+        } else if (migration?.status === 401) {
+          throw new Error(SIGN_IN_CREDENTIALS_MESSAGE);
         } else {
-          throw clerkError;
+          const migrationMessage =
+            (migration?.response as any)?.message ?? 'Unable to finish account migration.';
+          throw new Error(migrationMessage);
         }
+      }
+
+      if (result.status === 'needs_second_factor') {
+        const emailFactor = getClerkEmailSecondFactor(result);
+        if (!emailFactor) {
+          setError('Your account requires a second factor that is not available here.');
+          return;
+        }
+
+        await signIn.prepareSecondFactor({
+          strategy: 'email_code',
+          emailAddressId: emailFactor.emailAddressId,
+        });
+        setForm((prev) => ({ ...prev, code: '' }));
+        setClerkMfaEmail(emailFactor.safeIdentifier ?? normalizedEmail);
+        setSuccessText(
+          `A verification code was sent to ${emailFactor.safeIdentifier ?? normalizedEmail}.`
+        );
+        return;
       }
 
       if (result.status !== 'complete' || !result.createdSessionId) {
@@ -1024,10 +1245,14 @@ function LoginComponent({
         return;
       }
 
-      await setActive({ session: result.createdSessionId });
-      const accessToken = await getValidAccessToken();
+      await setActive({ session: result.createdSessionId, navigate: handleClerkTaskNavigation });
+      const accessToken = await getValidAccessToken({ forceRefreshClerk: true });
       if (!accessToken) {
         throw new Error('Unable to start Clerk session.');
+      }
+
+      if (await beginPostClerkPasswordMfa(accessToken)) {
+        return;
       }
 
       completeLogin(accessToken);
@@ -1040,7 +1265,7 @@ function LoginComponent({
         } as any);
         return;
       }
-      setError(fallbackMessage);
+      setError(getSignInErrorMessage(e));
     } finally {
       submissionInFlightRef.current = false;
       setIsSubmitting(false);
@@ -1048,24 +1273,27 @@ function LoginComponent({
     }
   }, [
     backupCodes.length,
+    beginPostClerkPasswordMfa,
     completeLogin,
     dispatch,
     ensureLocationPermission,
     form.email,
     form.password,
-    handleAuthResult,
     isSignInLoaded,
+    clerkMfaEmail,
+    handleClerkTaskNavigation,
     mfaChallenge,
     navigation,
     pendingAccessToken,
     setActive,
     signIn,
+    submitClerkEmailMfa,
     submitMfa,
   ]);
 
   const handleSocialLogin = useCallback(
     async (provider: 'google' | 'apple') => {
-      if (socialLoading || mfaChallenge || submissionInFlightRef.current) return;
+      if (socialLoading || mfaChallenge || clerkMfaEmail || submissionInFlightRef.current) return;
       const providerLabel = provider === 'google' ? 'Google' : 'Apple';
       setError('');
       setSuccessText('');
@@ -1083,13 +1311,19 @@ function LoginComponent({
           return;
         }
 
-        await activateSsoSession({ session: createdSessionId });
-        const accessToken = await getValidAccessToken();
+        await activateSsoSession({
+          session: createdSessionId,
+          navigate: handleClerkTaskNavigation,
+        });
+        const accessToken = await getValidAccessToken({ forceRefreshClerk: true });
         if (!accessToken) {
           throw new Error('Unable to start Clerk session.');
         }
 
-        await syncClerkUserProfile({});
+        if (await beginPostClerkSocialMfa(accessToken)) {
+          return;
+        }
+
         clearPendingSocialContinuation();
         dispatch(
           setLoginData({
@@ -1110,7 +1344,17 @@ function LoginComponent({
         setSocialLoading(false);
       }
     },
-    [dispatch, ensureLocationPermission, mfaChallenge, navigation, socialLoading, startSSOFlow]
+    [
+      beginPostClerkSocialMfa,
+      clerkMfaEmail,
+      dispatch,
+      ensureLocationPermission,
+      handleClerkTaskNavigation,
+      mfaChallenge,
+      navigation,
+      socialLoading,
+      startSSOFlow,
+    ]
   );
 
   const methodButton = (method: MfaMethod, label: string) => {
@@ -1144,47 +1388,90 @@ function LoginComponent({
     );
   };
 
-  const showCodeInput = mfaChallenge && selectedMfaMethod !== 'passkey';
+  const isClerkMfaPending = !!clerkMfaEmail;
+  const isLoginMfa = isLoginMfaChallenge(mfaChallenge);
+  const canUseEmailFallback =
+    isLoginMfa &&
+    selectedMfaMethod !== 'email' &&
+    mfaChallenge?.availableMethods.includes('email') === true;
+  const isLoginPasskeyScreen = isLoginMfa && selectedMfaMethod === 'passkey';
+  const isLoginTotpScreen = isLoginMfa && selectedMfaMethod === 'totp';
+  const isLoginEmailScreen = isLoginMfa && selectedMfaMethod === 'email';
+  const showCodeInput =
+    (mfaChallenge && selectedMfaMethod !== 'passkey' && selectedMfaMethod !== 'backup') ||
+    isClerkMfaPending;
+  const handleLoginEmailFallback = useCallback(() => {
+    if (!mfaChallenge || !canUseEmailFallback) {
+      return;
+    }
+
+    selectMethod('email').catch((e: any) => {
+      setError(e?.message ?? 'Unable to send email verification code.');
+    });
+  }, [canUseEmailFallback, mfaChallenge, selectMethod]);
   const mfaHeaderText = (() => {
-    if (!mfaChallenge) {
+    if (!mfaChallenge && !isClerkMfaPending) {
       return 'Welcome back';
+    }
+
+    if (isLoginEmailScreen || isClerkMfaPending) {
+      return 'Verify your email';
+    }
+
+    if (isLoginTotpScreen) {
+      return 'Authenticator';
     }
 
     return 'Secure Sign-In';
   })();
   const subHeaderText = (() => {
-    if (!mfaChallenge) {
+    if (!mfaChallenge && !isClerkMfaPending) {
       return 'Sign in to your account';
     }
 
-    if (mfaChallenge.enrollmentRequired) {
+    if (isLoginEmailScreen || isClerkMfaPending) {
+      return 'Enter the verification code sent to your email.';
+    }
+
+    if (isLoginTotpScreen) {
+      return 'Enter the code from your authenticator app.';
+    }
+
+    if (mfaChallenge?.enrollmentRequired) {
       return 'Set up multi-factor authentication to continue';
     }
 
-    return 'Choose a verification method to continue';
+    return 'Confirm your identity to continue.';
   })();
   const primaryButtonText = (() => {
     if (backupCodes.length > 0 && pendingAccessToken) {
       return 'I Saved My Backup Codes';
     }
 
-    if (!mfaChallenge) {
+    if (!mfaChallenge && !isClerkMfaPending) {
       return 'Sign In';
+    }
+
+    if (isClerkMfaPending) {
+      return 'Verify';
     }
 
     if (selectedMfaMethod !== 'passkey') {
       return 'Verify';
     }
 
-    if (mfaChallenge.enrollmentRequired) {
+    if (mfaChallenge?.enrollmentRequired) {
       return 'Set Up Passkey';
     }
 
     return 'Verify with Passkey';
   })();
   const showMfaLaunchScreen = !!mfaChallenge && mfaChallenge.enrollmentRequired;
+  const showPasskeyLoginScreen = isLoginPasskeyScreen;
+  const showMfaHeroScreen = showMfaLaunchScreen || showPasskeyLoginScreen;
   const isPasskeyEnrollmentScreen =
     showMfaLaunchScreen && selectedMfaMethod === 'passkey' && !showOtherMfaOptions;
+  const isPasskeyLoginScreen = showPasskeyLoginScreen;
   const isTotpEnrollmentScreen = showMfaLaunchScreen && selectedMfaMethod === 'totp';
   const totpSetupCode = useMemo(() => extractTotpSetupCode(totpOtpauth), [totpOtpauth]);
   const handleCopyManualTotpCode = useCallback(() => {
@@ -1201,13 +1488,22 @@ function LoginComponent({
     setTotpOtpauth('');
     setBackupCodes([]);
     setPendingAccessToken('');
-    hasAutoPromptedPasskeyRef.current = false;
+    postClerkMfaAccessTokenRef.current = '';
+    clearPendingLoginMfa().catch(() => undefined);
     setIsPasskeyAssociationUnavailable(false);
     setError('');
     setSuccessText('');
     setIsSubmitting(false);
     submissionInFlightRef.current = false;
     passkeyInFlightRef.current = null;
+  }, []);
+  const handleBackFromClerkMfa = useCallback(() => {
+    setClerkMfaEmail('');
+    setForm((prev) => ({ ...prev, code: '' }));
+    setError('');
+    setSuccessText('');
+    setIsSubmitting(false);
+    submissionInFlightRef.current = false;
   }, []);
   const handleMfaLaunchBack = useCallback(() => {
     if (selectedMfaMethod === 'totp') {
@@ -1225,6 +1521,9 @@ function LoginComponent({
     if (backupCodes.length > 0 && pendingAccessToken) {
       return 'I Saved My Backup Codes';
     }
+    if (isPasskeyLoginScreen) {
+      return 'Verify with Passkey';
+    }
     if (selectedMfaMethod === 'totp') {
       return totpOtpauth ? 'Verify Authenticator Code' : 'Set up Authenticator App';
     }
@@ -1232,12 +1531,18 @@ function LoginComponent({
   })();
   const launchHeaderTitle = isTotpEnrollmentScreen ? 'Authenticator' : 'Passkeys';
   const launchTitleText = (() => {
+    if (isPasskeyLoginScreen) {
+      return 'Verify with your Passkey';
+    }
     if (isPasskeyEnrollmentScreen) {
       return 'Create a Passkey';
     }
     return 'Set up your authenticator app';
   })();
   const launchDescriptionText = (() => {
+    if (isPasskeyLoginScreen) {
+      return 'Use the passkey you set up during account security to finish signing in.';
+    }
     if (isPasskeyEnrollmentScreen) {
       return 'Passkeys uses the same method as unlocking your phone, making your account nearly impossible to hack.';
     }
@@ -1250,13 +1555,21 @@ function LoginComponent({
   if (useAndroidFallbackHero) {
     heroAnimationSource = passkeyHeroFallbackAnimation;
   }
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 250);
+  }, []);
+  const refreshControl = React.createElement(RefreshControl, {
+    refreshing: isRefreshing,
+    onRefresh: handleRefresh,
+  });
 
-  useEffect(() => {
+  useObservedEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
     if (
       Platform.OS === 'android' &&
-      showMfaLaunchScreen &&
+      showMfaHeroScreen &&
       !hasPasskeyHeroLoadedRef.current &&
       !useAndroidFallbackHero
     ) {
@@ -1272,11 +1585,11 @@ function LoginComponent({
         clearTimeout(timeout);
       }
     };
-  }, [showMfaLaunchScreen, useAndroidFallbackHero]);
+  }, [showMfaHeroScreen, useAndroidFallbackHero]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (Platform.OS === 'ios') {
-      navigation.setOptions({ headerShown: !showMfaLaunchScreen });
+      navigation.setOptions({ headerShown: !showMfaHeroScreen });
     }
 
     return () => {
@@ -1284,12 +1597,12 @@ function LoginComponent({
         navigation.setOptions({ headerShown: true });
       }
     };
-  }, [navigation, showMfaLaunchScreen]);
+  }, [navigation, showMfaHeroScreen]);
 
-  useEffect(() => {
-    onMfaLaunchScreenChange?.(showMfaLaunchScreen);
+  useObservedEffect(() => {
+    onMfaLaunchScreenChange?.(showMfaHeroScreen);
 
-    if (Platform.OS !== 'android' || !showMfaLaunchScreen) {
+    if (Platform.OS !== 'android' || !showMfaHeroScreen) {
       return () => {
         onMfaLaunchScreenChange?.(false);
       };
@@ -1304,27 +1617,19 @@ function LoginComponent({
       subscription.remove();
       onMfaLaunchScreenChange?.(false);
     };
-  }, [handleMfaLaunchBack, onMfaLaunchScreenChange, showMfaLaunchScreen]);
+  }, [handleMfaLaunchBack, onMfaLaunchScreenChange, showMfaHeroScreen]);
 
-  if (showMfaLaunchScreen) {
+  if (showMfaHeroScreen) {
     return (
       <View style={styles.screenContainer}>
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 36, flexGrow: 1 }}
+          contentContainerStyle={styles.heroScrollContent}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
           alwaysBounceVertical
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={() => {
-                setIsRefreshing(true);
-                setTimeout(() => setIsRefreshing(false), 250);
-              }}
-            />
-          }
+          refreshControl={refreshControl}
         >
           <View
             style={{
@@ -1668,23 +1973,26 @@ function LoginComponent({
               }
               signInUser();
             }}
-            style={{
-              backgroundColor: '#126B87',
-              height: 56,
-              borderRadius: 28,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginBottom: 14,
-              marginTop: 6,
-              opacity: isSubmitting ? 0.6 : 1,
-            }}
+            style={[styles.heroPrimaryBtn, isSubmitting ? styles.heroPrimaryBtnDisabled : null]}
           >
-            <StyledText
-              style={{ color: '#FFFFFF', fontFamily: 'Lato', fontWeight: '700', fontSize: 18 }}
-            >
-              {launchPrimaryButtonText}
-            </StyledText>
+            <StyledText style={styles.heroPrimaryBtnText}>{launchPrimaryButtonText}</StyledText>
           </Pressable>
+
+          {isPasskeyLoginScreen && canUseEmailFallback ? (
+            <Pressable disabled={isSubmitting} onPress={handleLoginEmailFallback}>
+              <StyledText
+                style={{
+                  textAlign: 'center',
+                  color: dark ? '#A7B7BC' : '#4e6a71',
+                  fontFamily: 'Lato',
+                  fontWeight: '700',
+                  fontSize: 16,
+                }}
+              >
+                {getLoginMfaFallbackCopy(selectedMfaMethod)}
+              </StyledText>
+            </Pressable>
+          ) : null}
 
           {isPasskeyEnrollmentScreen && mfaChallenge?.availableMethods.includes('totp') ? (
             <Pressable
@@ -1742,15 +2050,7 @@ function LoginComponent({
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => {
-              setIsRefreshing(true);
-              setTimeout(() => setIsRefreshing(false), 250);
-            }}
-          />
-        }
+        refreshControl={refreshControl}
       >
         <View style={[styles.headerFrame, { marginTop: 28 }]}>
           <StyledText style={styles.welcomeText}>{mfaHeaderText}</StyledText>
@@ -1771,22 +2071,24 @@ function LoginComponent({
             </View>
           ) : null}
 
-          <View style={styles.inputSpacer}>
-            <StyledText style={styles.inputLabel}>Email</StyledText>
-            <StyledTextInput
-              placeholder="Email Address"
-              placeholderTextColor={dark ? '#999DA1' : '#838584'}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={!mfaChallenge}
-              value={form.email}
-              backgroundColor={dark ? '#202328' : '#F2F3F3'}
-              inputWrapperStyle={styles.inputWrapper}
-              onChangeText={(v) => setForm((prev) => ({ ...prev, email: v.trim() }))}
-            />
-          </View>
+          {!mfaChallenge || isClerkMfaPending ? (
+            <View style={styles.inputSpacer}>
+              <StyledText style={styles.inputLabel}>Email</StyledText>
+              <StyledTextInput
+                placeholder="Email Address"
+                placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!mfaChallenge && !isClerkMfaPending}
+                value={form.email}
+                backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                inputWrapperStyle={styles.inputWrapper}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, email: v.trim() }))}
+              />
+            </View>
+          ) : null}
 
-          {!mfaChallenge ? (
+          {!mfaChallenge && !isClerkMfaPending ? (
             <View style={styles.inputSpacer}>
               <StyledText style={styles.inputLabel}>Password</StyledText>
               <StyledTextInput
@@ -1808,7 +2110,82 @@ function LoginComponent({
                 }
               />
             </View>
-          ) : (
+          ) : null}
+
+          {isClerkMfaPending ? (
+            <View style={{ marginTop: 8, rowGap: 10 }}>
+              <StyledText style={{ color: dark ? '#cdd0d4' : '#4b5563' }}>
+                We sent a verification code to {clerkMfaEmail}.
+              </StyledText>
+              <View style={styles.inputSpacer}>
+                <StyledText style={styles.inputLabel}>Verification code</StyledText>
+                <StyledTextInput
+                  placeholder="Enter code"
+                  placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                  autoCapitalize="characters"
+                  keyboardType="number-pad"
+                  value={form.code}
+                  backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                  inputWrapperStyle={styles.inputWrapper}
+                  onChangeText={(v) => setForm((prev) => ({ ...prev, code: v }))}
+                />
+              </View>
+              <Pressable disabled={isSubmitting} onPress={handleBackFromClerkMfa}>
+                <StyledText style={{ color: dark ? '#9aa4af' : '#6b7280', fontSize: 12 }}>
+                  Back to sign in
+                </StyledText>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {mfaChallenge && !isClerkMfaPending && isLoginMfa ? (
+            <View style={{ marginTop: 8, rowGap: 12 }}>
+              {isLoginEmailScreen ? (
+                <StyledText style={{ color: dark ? '#cdd0d4' : '#4b5563' }}>
+                  We sent a verification code to {mfaChallenge.emailMasked}.
+                </StyledText>
+              ) : null}
+
+              {isLoginTotpScreen ? (
+                <StyledText style={{ color: dark ? '#cdd0d4' : '#4b5563' }}>
+                  Open your authenticator app and enter the 6-digit code.
+                </StyledText>
+              ) : null}
+
+              {showCodeInput ? (
+                <View style={styles.inputSpacer}>
+                  <StyledText style={styles.inputLabel}>Verification code</StyledText>
+                  <StyledTextInput
+                    placeholder="Enter code"
+                    placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                    autoCapitalize="characters"
+                    keyboardType="number-pad"
+                    value={form.code}
+                    backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                    inputWrapperStyle={styles.inputWrapper}
+                    onChangeText={(v) => setForm((prev) => ({ ...prev, code: v }))}
+                  />
+                </View>
+              ) : null}
+
+              {isLoginTotpScreen && canUseEmailFallback ? (
+                <Pressable disabled={isSubmitting} onPress={handleLoginEmailFallback}>
+                  <StyledText
+                    style={{
+                      color: dark ? '#9aa4af' : '#6b7280',
+                      fontSize: 13,
+                      fontFamily: 'Lato',
+                      fontWeight: '700',
+                    }}
+                  >
+                    {getLoginMfaFallbackCopy(selectedMfaMethod)}
+                  </StyledText>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+
+          {mfaChallenge && !isClerkMfaPending && !isLoginMfa ? (
             <View style={{ marginTop: 8, rowGap: 10 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {mfaChallenge.enrollmentRequired ? (
@@ -1892,7 +2269,7 @@ function LoginComponent({
                 </View>
               ) : null}
             </View>
-          )}
+          ) : null}
 
           {!!successText && <StyledText style={styles.successAlertText}>{successText}</StyledText>}
           {!!error && <StyledText style={styles.fieldError}>{error}</StyledText>}
@@ -1918,7 +2295,7 @@ function LoginComponent({
             disabled={isSubmitting}
           />
 
-          {!mfaChallenge ? (
+          {!mfaChallenge && !isClerkMfaPending ? (
             <View style={styles.socialSection}>
               <View style={styles.dividerRow}>
                 <View style={styles.dividerLine} />

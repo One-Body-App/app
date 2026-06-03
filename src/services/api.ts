@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import { DevSettings } from 'react-native';
 import { BASE_URL } from './constants';
 import { getValidAccessToken, refreshAuthTokens } from './authTokens';
+import { getClerkSessionToken } from './clerkSession';
 
 const shouldPreferManagedSessionToken = (route: string) => !route.startsWith('auth/social-login');
 
@@ -36,6 +37,7 @@ export const ApiCall = async <T = any>({
   timeoutMs?: number;
 }): Promise<{ status: number; response: T }> => {
   let tokenToUse = '';
+  let usedManagedSessionToken = false;
   const requestUrl = external ? route : joinUrl(baseurl ?? BASE_URL, route);
 
   const makeAuthHeader = (value: string) =>
@@ -108,9 +110,16 @@ export const ApiCall = async <T = any>({
 
   try {
     if (token !== undefined) {
-      const managedAccessToken = shouldPreferManagedSessionToken(route)
-        ? await getValidAccessToken()
-        : null;
+      let managedAccessToken: string | null = null;
+      if (shouldPreferManagedSessionToken(route)) {
+        const clerkAccessToken = await getClerkSessionToken();
+        if (clerkAccessToken) {
+          managedAccessToken = clerkAccessToken;
+          usedManagedSessionToken = true;
+        } else {
+          managedAccessToken = await getValidAccessToken();
+        }
+      }
 
       if (typeof token === 'string' && token.length > 0) {
         // Most app calls pass Redux token strings. Prefer the managed token source so we don't
@@ -138,19 +147,14 @@ export const ApiCall = async <T = any>({
     const isAuthEndpoint = route.startsWith('auth/login') || route.startsWith('auth/register');
     const isRefreshEndpoint = route.startsWith('auth/refresh');
     const canRetryWithManagedToken =
-      status === 401 &&
-      token !== undefined &&
-      typeof token === 'string' &&
-      token.length > 0 &&
-      shouldPreferManagedSessionToken(route);
-    const canRetryWithRefresh =
-      status === 401 && token !== undefined && !isRefreshEndpoint && !isAuthEndpoint;
+      status === 401 && token !== undefined && shouldPreferManagedSessionToken(route);
+    let forceManagedAccess: string | null = null;
 
     if (canRetryWithManagedToken) {
-      const managedAccess = await getValidAccessToken();
-      if (managedAccess && managedAccess !== tokenToUse) {
+      forceManagedAccess = await getClerkSessionToken({ forceRefresh: true });
+      if (forceManagedAccess && forceManagedAccess !== tokenToUse) {
         try {
-          const managedRetryResponse = await executeRequest(requestUrl, managedAccess);
+          const managedRetryResponse = await executeRequest(requestUrl, forceManagedAccess);
           if (managedRetryResponse) {
             return { status: 200, response: managedRetryResponse.data as T };
           }
@@ -172,6 +176,14 @@ export const ApiCall = async <T = any>({
         }
       }
     }
+
+    const canRetryWithRefresh =
+      status === 401 &&
+      token !== undefined &&
+      !isRefreshEndpoint &&
+      !isAuthEndpoint &&
+      !usedManagedSessionToken &&
+      !forceManagedAccess;
 
     if (canRetryWithRefresh) {
       const refreshed = await refreshAuthTokens();

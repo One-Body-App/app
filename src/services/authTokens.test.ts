@@ -1,4 +1,4 @@
-import { clearAuthTokens, loadAuthTokens } from './authTokens';
+import { clearAuthTokens, getValidAccessToken, loadAuthTokens } from './authTokens';
 
 const mockAxiosPost = jest.fn();
 const mockAsyncStorageMultiGet = jest.fn();
@@ -7,6 +7,8 @@ const mockGetGenericPassword = jest.fn();
 const mockSetGenericPassword = jest.fn();
 const mockResetGenericPassword = jest.fn();
 const mockGetAllGenericPasswordServices = jest.fn();
+const mockGetClerkSessionToken = jest.fn();
+const mockSignOutClerkSession = jest.fn();
 
 const AUTH_TOKEN_SERVICE = 'com.onebody.auth.tokens';
 const LEGACY_KEYS = [
@@ -38,6 +40,11 @@ jest.mock('react-native-keychain', () => ({
   setGenericPassword: (...args: unknown[]) => mockSetGenericPassword(...args),
   resetGenericPassword: (...args: unknown[]) => mockResetGenericPassword(...args),
   getAllGenericPasswordServices: (...args: unknown[]) => mockGetAllGenericPasswordServices(...args),
+}));
+
+jest.mock('./clerkSession', () => ({
+  getClerkSessionToken: (...args: unknown[]) => mockGetClerkSessionToken(...args),
+  signOutClerkSession: (...args: unknown[]) => mockSignOutClerkSession(...args),
 }));
 
 const setSecureEntry = (service: string, password?: string) => {
@@ -110,6 +117,19 @@ describe('authTokens', () => {
       return true;
     });
     mockGetAllGenericPasswordServices.mockImplementation(async () => Object.keys(secureEntries));
+    mockGetClerkSessionToken.mockResolvedValue(null);
+    mockSignOutClerkSession.mockResolvedValue(undefined);
+  });
+
+  it('passes force-refresh requests through to the Clerk session token getter', async () => {
+    mockGetClerkSessionToken.mockResolvedValue('fresh-clerk-token');
+
+    await expect(getValidAccessToken({ forceRefreshClerk: true })).resolves.toBe(
+      'fresh-clerk-token'
+    );
+
+    expect(mockGetClerkSessionToken).toHaveBeenCalledWith({ forceRefresh: true });
+    expect(mockAsyncStorageMultiGet).not.toHaveBeenCalled();
   });
 
   it('invalidates the secure auth entry when reset leaves the token behind', async () => {

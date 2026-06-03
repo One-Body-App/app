@@ -26,6 +26,11 @@ export default function createLoginStyles(isDark: boolean) {
     scrollContent: {
       paddingBottom: 40,
     },
+    heroScrollContent: {
+      paddingHorizontal: 24,
+      paddingBottom: 36,
+      flexGrow: 1,
+    },
     headerFrame: {
       marginTop: 18,
       paddingHorizontal: 16,
@@ -96,6 +101,24 @@ export default function createLoginStyles(isDark: boolean) {
       fontWeight: '600',
       fontSize: 18,
       color: '#FFFFFF',
+    },
+    heroPrimaryBtn: {
+      backgroundColor: palette.primary,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 14,
+      marginTop: 6,
+    },
+    heroPrimaryBtnDisabled: {
+      opacity: 0.6,
+    },
+    heroPrimaryBtnText: {
+      color: '#FFFFFF',
+      fontFamily: 'Lato',
+      fontWeight: '700',
+      fontSize: 18,
     },
     successAlertBox: {
       backgroundColor: palette.successBg,

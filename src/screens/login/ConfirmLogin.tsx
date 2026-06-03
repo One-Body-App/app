@@ -271,25 +271,41 @@ function ConfirmLogin({ route, navigation }: Props) {
     });
   }, [navigation, normalizedResendEmail]);
 
+  const handleClerkTaskNavigation = useCallback(
+    async ({ session }: { session?: { currentTask?: { key?: string } | null } | null }) => {
+      if (session?.currentTask?.key === 'reset-password') {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Login' as any,
+              params: normalizedResendEmail ? { prefillEmail: normalizedResendEmail } : undefined,
+            } as any,
+          ],
+        });
+      }
+    },
+    [navigation, normalizedResendEmail]
+  );
+
   const completeClerkSignupSession = useCallback(
     async (createdSessionId: string) => {
       if (!setActive) {
         throw new Error('Authentication is still loading. Please try again.');
       }
 
-      await setActive({ session: createdSessionId });
-      const [syncResult, accessToken] = await Promise.all([
-        syncClerkUserProfile({
-          email: normalizedResendEmail || undefined,
-          name: route?.params?.signupName,
-          username: route?.params?.signupUsername,
-          accountType: route?.params?.accountType as any,
-        }),
-        getValidAccessToken(),
-      ]);
+      await setActive({ session: createdSessionId, navigate: handleClerkTaskNavigation });
+      const accessToken = await getValidAccessToken({ forceRefreshClerk: true });
       if (!accessToken) {
         throw new Error('Unable to start a Clerk session.');
       }
+
+      const syncResult = await syncClerkUserProfile({
+        email: normalizedResendEmail || undefined,
+        name: route?.params?.signupName,
+        username: route?.params?.signupUsername,
+        accountType: route?.params?.accountType as any,
+      });
 
       dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'password' }));
       dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
@@ -302,6 +318,7 @@ function ConfirmLogin({ route, navigation }: Props) {
       route?.params?.accountType,
       route?.params?.signupName,
       route?.params?.signupUsername,
+      handleClerkTaskNavigation,
       setActive,
     ]
   );

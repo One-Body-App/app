@@ -47,6 +47,7 @@ import {
 } from '../redux/actions/AuthActions'; // Adjust path
 import { clearAuthTokens, getValidAccessToken, loadAuthTokens } from '../services/authTokens';
 import { beginAuthenticatedMfaOnboarding } from '../services/login';
+import { clearPendingLoginMfa, hasPendingLoginMfa } from '../services/pendingLoginMfa';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
 import Login from '../screens/login'; // Adjust path
@@ -316,6 +317,15 @@ function AppContent() {
           return;
         }
 
+        if (await hasPendingLoginMfa()) {
+          await clearAuthTokens();
+          await clearPendingLoginMfa();
+          if (!cancelled && !explicitLogoutActiveRef.current) {
+            dispatch(clearAuthState());
+          }
+          return;
+        }
+
         const accessToken = await getValidAccessToken();
         if (cancelled || explicitLogoutActiveRef.current) return;
 
@@ -355,7 +365,13 @@ function AppContent() {
         return;
       }
 
-      const accessToken = await getValidAccessToken();
+      if (await hasPendingLoginMfa()) {
+        return;
+      }
+
+      const accessToken = await getValidAccessToken({
+        forceRefreshClerk: Platform.OS === 'android',
+      });
       if (explicitLogoutActiveRef.current) {
         return;
       }

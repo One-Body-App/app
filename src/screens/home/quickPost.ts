@@ -28,19 +28,8 @@ export const moderateQuickPostText = async (
   const result = await moderateClientText(content);
 
   if (result.action === 'block') {
-    return {
-      blocked: false,
-      moderationReview: buildPendingModerationReviewPayload([
-        {
-          type: 'text',
-          clientSource: result.source,
-          clientScores: result.scores,
-          clientReason: result.reason || QUICK_POST_TEXT_BLOCK_MESSAGE,
-          clientModel: result.model,
-          fallbackAction: 'pending_review',
-        } satisfies ModerationReviewCheckPayload,
-      ]),
-    };
+    notify?.(QUICK_POST_TEXT_BLOCK_MESSAGE);
+    return { blocked: true };
   }
 
   if (result.action === 'fallback') {
@@ -56,7 +45,12 @@ export const moderateQuickPostText = async (
         },
       });
 
-      if (fallbackResponse.finalAction !== 'allow') {
+      if (fallbackResponse.finalAction === 'block') {
+        notify?.(QUICK_POST_TEXT_BLOCK_MESSAGE);
+        return { blocked: true };
+      }
+
+      if (fallbackResponse.finalAction === 'pending_review') {
         return {
           blocked: false,
           moderationReview: buildPendingModerationReviewPayload([

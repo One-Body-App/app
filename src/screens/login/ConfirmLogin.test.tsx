@@ -320,7 +320,12 @@ describe('ConfirmLogin', () => {
     });
 
     expect(mockAttemptEmailAddressVerification).toHaveBeenCalledWith({ code: '123456' });
-    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_123' });
+    expect(mockSetActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'sess_123',
+        navigate: expect.any(Function),
+      })
+    );
     expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({
       email: 'person@example.com',
       name: 'Person Example',
@@ -366,7 +371,12 @@ describe('ConfirmLogin', () => {
     });
 
     expect(mockAttemptEmailAddressVerification).not.toHaveBeenCalled();
-    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_existing' });
+    expect(mockSetActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'sess_existing',
+        navigate: expect.any(Function),
+      })
+    );
     expect(mockNavigationReset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'MainRoot' }],
@@ -405,7 +415,12 @@ describe('ConfirmLogin', () => {
       await verifyButton!.props.onPress();
     });
 
-    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_existing' });
+    expect(mockSetActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'sess_existing',
+        navigate: expect.any(Function),
+      })
+    );
     expect(readAllText(renderer!)).not.toContain('This verification has already been verified.');
     expect(mockNavigationReset).toHaveBeenCalledWith({
       index: 0,
@@ -460,7 +475,12 @@ describe('ConfirmLogin', () => {
       username: 'person_test',
       legalAccepted: true,
     });
-    expect(mockSetActive).toHaveBeenCalledWith({ session: 'sess_patched' });
+    expect(mockSetActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'sess_patched',
+        navigate: expect.any(Function),
+      })
+    );
     expect(mockNavigationReset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'MainRoot' }],

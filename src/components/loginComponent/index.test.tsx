@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Image, InteractionManager, Platform, Text, Pressable } from 'react-native';
+import { Image, InteractionManager, Platform, Text, TextInput, Pressable } from 'react-native';
 import type { MfaChallengeResponse } from '@/services/login';
 import { PASSKEY_ASSOCIATION_FALLBACK_MESSAGE } from '@/src/utils/passkeyErrors';
 import LoginComponent from './index';
@@ -11,6 +11,7 @@ const mockNavigate = jest.fn();
 const mockReset = jest.fn();
 const mockBeginPasskeyLogin = jest.fn();
 const mockBeginPasskeyRegistration = jest.fn();
+const mockBeginAuthenticatedMfaLogin = jest.fn();
 const mockSendEmailMfaCode = jest.fn();
 const mockAuthenticate = jest.fn();
 const mockRegister = jest.fn();
@@ -25,9 +26,13 @@ const mockClearPendingSocialContinuation = jest.fn();
 const mockStartSSOFlow = jest.fn();
 const mockActivateSsoSession = jest.fn();
 const mockSignInCreate = jest.fn();
+const mockPrepareSecondFactor = jest.fn();
+const mockAttemptSecondFactor = jest.fn();
 const mockSetActive = jest.fn();
 const mockGetValidAccessToken = jest.fn();
 const mockSyncClerkUserProfile = jest.fn();
+const mockMarkPendingLoginMfa = jest.fn();
+const mockClearPendingLoginMfa = jest.fn();
 
 jest.mock('@clerk/expo', () => ({
   useSSO: () => ({
@@ -40,10 +45,19 @@ jest.mock('@clerk/expo/legacy', () => ({
     isLoaded: true,
     signIn: {
       create: mockSignInCreate,
+      prepareSecondFactor: mockPrepareSecondFactor,
+      attemptSecondFactor: mockAttemptSecondFactor,
     },
     setActive: mockSetActive,
   }),
 }));
+
+jest.mock('expo-image', () => {
+  const mockReactNative = jest.requireActual('react-native');
+  return {
+    Image: mockReactNative.Image,
+  };
+});
 
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
@@ -77,12 +91,13 @@ jest.mock('@/src/redux/actions/AuthActions', () => ({
 }));
 
 jest.mock('@/services/login', () => ({
+  beginAuthenticatedMfaLogin: (token?: unknown) => mockBeginAuthenticatedMfaLogin(token),
   beginPasskeyLogin: (params?: unknown) => mockBeginPasskeyLogin(params),
   beginPasskeyRegistration: (params?: unknown) => mockBeginPasskeyRegistration(params),
   beginTotpSetup: jest.fn(),
   finishPasskeyLogin: (params?: unknown) => mockFinishPasskeyLogin(params),
   finishPasskeyRegistration: (params?: unknown) => mockFinishPasskeyRegistration(params),
-  migrateLegacyPasswordToClerk: (params?: unknown) => mockMigrateLegacyPasswordToClerk(params),
+  migrateLegacyPasswordToClerk: (...args: unknown[]) => mockMigrateLegacyPasswordToClerk(...args),
   loginWithEmailAndPassword: jest.fn(),
   sendEmailMfaCode: (params?: unknown) => mockSendEmailMfaCode(params),
   verifyBackupCode: jest.fn(),
@@ -105,7 +120,12 @@ jest.mock('@/src/services/pendingSocialContinuation', () => ({
 }));
 
 jest.mock('@/src/services/authTokens', () => ({
-  getValidAccessToken: () => mockGetValidAccessToken(),
+  getValidAccessToken: (...args: unknown[]) => mockGetValidAccessToken(...args),
+}));
+
+jest.mock('@/src/services/pendingLoginMfa', () => ({
+  markPendingLoginMfa: (...args: unknown[]) => mockMarkPendingLoginMfa(...args),
+  clearPendingLoginMfa: (...args: unknown[]) => mockClearPendingLoginMfa(...args),
 }));
 
 jest.mock('@/src/services/clerkSync', () => ({
@@ -227,6 +247,17 @@ const findTouchableByLabel = (renderer: TestRenderer.ReactTestRenderer, label: s
   });
 };
 
+const findTouchableByExactLabel = (renderer: TestRenderer.ReactTestRenderer, label: string) => {
+  return renderer.root.findAllByType(Pressable).find((node) => {
+    const text = node
+      .findAllByType(Text)
+      .map((textNode) => flattenText(textNode.props.children))
+      .join(' ')
+      .trim();
+    return text === label;
+  });
+};
+
 describe('LoginComponent passkey fallback', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -288,16 +319,29 @@ describe('LoginComponent passkey fallback', () => {
       status: 'complete',
       createdSessionId: 'clerk-password-session-id',
     });
+    mockPrepareSecondFactor.mockResolvedValue({
+      status: 'needs_second_factor',
+    });
+    mockAttemptSecondFactor.mockResolvedValue({
+      status: 'complete',
+      createdSessionId: 'clerk-mfa-session-id',
+    });
     mockSetActive.mockResolvedValue(undefined);
     mockMigrateLegacyPasswordToClerk.mockResolvedValue({
       status: 401,
       response: { migrated: false },
+    });
+    mockBeginAuthenticatedMfaLogin.mockResolvedValue({
+      status: 200,
+      response: { mfaRequired: false },
     });
     mockGetValidAccessToken.mockResolvedValue('social-access-token');
     mockSyncClerkUserProfile.mockResolvedValue({
       status: 200,
       response: {},
     });
+    mockMarkPendingLoginMfa.mockResolvedValue(undefined);
+    mockClearPendingLoginMfa.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -313,7 +357,7 @@ describe('LoginComponent passkey fallback', () => {
     });
   });
 
-  it('falls back to email when iOS passkey association fails during login MFA', async () => {
+  it('falls back to email after the user starts passkey and iOS association fails', async () => {
     let renderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
@@ -325,26 +369,206 @@ describe('LoginComponent passkey fallback', () => {
 
     await flushPromises();
 
+    expect(mockBeginPasskeyLogin).not.toHaveBeenCalled();
+    expect(mockSendEmailMfaCode).not.toHaveBeenCalled();
+    expect(getRenderedText(renderer!)).toContain('Verify with Passkey');
+
+    const primaryButton = findTouchableByLabel(renderer!, 'Verify with Passkey');
+    expect(primaryButton).toBeTruthy();
+
+    await act(async () => {
+      await primaryButton?.props.onPress?.();
+    });
+    await flushPromises();
+
     expect(mockBeginPasskeyLogin).toHaveBeenCalledTimes(1);
     expect(mockSendEmailMfaCode).toHaveBeenCalledWith({ mfaToken: 'mfa-token' });
 
     const renderedText = getRenderedText(renderer!);
     expect(renderedText).toContain(PASSKEY_ASSOCIATION_FALLBACK_MESSAGE);
+    expect(renderedText).toContain('Verify your email');
+    expect(renderedText).toContain('Verification code');
     expect(renderedText).not.toContain('Unable to verify webcredentials association');
     expect(renderedText).not.toContain('Verify with Passkey');
-
-    const passkeyButton = findTouchableByLabel(renderer!, 'Passkey');
-    expect(passkeyButton?.props.disabled).toBe(true);
-
-    await act(async () => {
-      passkeyButton?.props.onPress?.();
-    });
-    await flushPromises(2);
+    expect(findTouchableByExactLabel(renderer!, 'Passkey')).toBeUndefined();
+    expect(findTouchableByExactLabel(renderer!, 'Backup Code')).toBeUndefined();
 
     expect(mockBeginPasskeyLogin).toHaveBeenCalledTimes(1);
   }, 15000);
 
-  it('auto-starts passkey enrollment without requiring a manual tap', async () => {
+  it('shows passkey login MFA without method chips or automatic passkey launch', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <LoginComponent
+          currentUserEmail="person@example.com"
+          initialMfaChallenge={{
+            ...challengeBase,
+            availableMethods: ['passkey', 'email', 'backup'],
+          }}
+        />
+      );
+    });
+    mountedRenderers.push(renderer!);
+
+    await flushPromises();
+
+    const renderedText = getRenderedText(renderer!);
+    expect(renderedText).toContain('Verify with Passkey');
+    expect(renderedText).toContain('Having trouble with your passkey? Verify by email instead.');
+    expect(renderedText).not.toContain('Use other MFA options');
+    expect(findTouchableByExactLabel(renderer!, 'Passkey')).toBeUndefined();
+    expect(findTouchableByExactLabel(renderer!, 'Authenticator')).toBeUndefined();
+    expect(findTouchableByExactLabel(renderer!, 'Email')).toBeUndefined();
+    expect(findTouchableByExactLabel(renderer!, 'Backup Code')).toBeUndefined();
+    expect(mockBeginPasskeyLogin).not.toHaveBeenCalled();
+    expect(mockSendEmailMfaCode).not.toHaveBeenCalled();
+  });
+
+  it('retries passkey login once when the server challenge was stale', async () => {
+    mockAuthenticate.mockResolvedValue({
+      id: 'credential-id',
+      rawId: 'credential-raw-id',
+      type: 'public-key',
+      response: {
+        authenticatorData: 'authenticator-data',
+        clientDataJSON: 'client-data',
+        signature: 'signature',
+        userHandle: 'user-handle',
+      },
+    });
+    mockFinishPasskeyLogin
+      .mockResolvedValueOnce({
+        status: 400,
+        response: { message: 'No passkey challenge in progress' },
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        response: {
+          tokens: {
+            accessToken: 'passkey-access-token',
+          },
+        },
+      });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <LoginComponent currentUserEmail="person@example.com" initialMfaChallenge={challengeBase} />
+      );
+    });
+    mountedRenderers.push(renderer!);
+
+    await flushPromises();
+
+    const primaryButton = findTouchableByLabel(renderer!, 'Verify with Passkey');
+    await act(async () => {
+      await primaryButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockBeginPasskeyLogin).toHaveBeenCalledTimes(2);
+    expect(mockAuthenticate).toHaveBeenCalledTimes(2);
+    expect(mockFinishPasskeyLogin).toHaveBeenCalledTimes(2);
+    expect(getRenderedText(renderer!)).not.toContain('No passkey challenge in progress');
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_LOGIN_DATA',
+      payload: {
+        token: 'passkey-access-token',
+        resetProfile: true,
+      },
+    });
+  });
+
+  it('sends email and switches to email verification from passkey login fallback', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <LoginComponent currentUserEmail="person@example.com" initialMfaChallenge={challengeBase} />
+      );
+    });
+    mountedRenderers.push(renderer!);
+
+    await flushPromises();
+
+    const fallback = findTouchableByLabel(renderer!, 'Verify by email instead');
+    expect(fallback).toBeTruthy();
+
+    await act(async () => {
+      await fallback?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockSendEmailMfaCode).toHaveBeenCalledWith({ mfaToken: 'mfa-token' });
+    const renderedText = getRenderedText(renderer!);
+    expect(renderedText).toContain('Verify your email');
+    expect(renderedText).toContain('We sent a verification code to p***@example.com.');
+    expect(renderedText).toContain('Verification code');
+    expect(renderedText).not.toContain('Verify with Passkey');
+  });
+
+  it('shows authenticator login MFA only when TOTP is preferred', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <LoginComponent
+          currentUserEmail="person@example.com"
+          initialMfaChallenge={{
+            ...challengeBase,
+            preferredMethod: 'totp',
+            availableMethods: ['totp', 'email', 'backup'],
+          }}
+        />
+      );
+    });
+    mountedRenderers.push(renderer!);
+
+    await flushPromises();
+
+    const renderedText = getRenderedText(renderer!);
+    expect(renderedText).toContain('Authenticator');
+    expect(renderedText).toContain('Open your authenticator app and enter the 6-digit code.');
+    expect(renderedText).toContain(
+      'Having trouble with your authenticator app? Verify by email instead.'
+    );
+    expect(renderedText).toContain('Verification code');
+    expect(renderedText).not.toContain('Connect your authenticator app');
+    expect(findTouchableByExactLabel(renderer!, 'Backup Code')).toBeUndefined();
+    expect(mockSendEmailMfaCode).not.toHaveBeenCalled();
+  });
+
+  it('sends email immediately and renders verify email UI when email is preferred for login MFA', async () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <LoginComponent
+          currentUserEmail="person@example.com"
+          initialMfaChallenge={{
+            ...challengeBase,
+            preferredMethod: 'email',
+            availableMethods: ['email', 'backup'],
+          }}
+        />
+      );
+    });
+    mountedRenderers.push(renderer!);
+
+    await flushPromises();
+
+    expect(mockSendEmailMfaCode).toHaveBeenCalledWith({ mfaToken: 'mfa-token' });
+    const renderedText = getRenderedText(renderer!);
+    expect(renderedText).toContain('Verify your email');
+    expect(renderedText).toContain('We sent a verification code to p***@example.com.');
+    expect(renderedText).toContain('Verification code');
+    expect(findTouchableByExactLabel(renderer!, 'Backup Code')).toBeUndefined();
+  });
+
+  it('shows passkey enrollment without starting setup before the user taps the CTA', async () => {
     let renderer: TestRenderer.ReactTestRenderer;
 
     act(() => {
@@ -362,11 +586,13 @@ describe('LoginComponent passkey fallback', () => {
 
     await flushPromises();
 
-    expect(mockBeginPasskeyRegistration).toHaveBeenCalledTimes(1);
+    expect(getRenderedText(renderer!)).toContain('Create a Passkey');
+    expect(getRenderedText(renderer!)).toContain('Set up your Passkey');
+    expect(mockBeginPasskeyRegistration).not.toHaveBeenCalled();
     expect(mockSendEmailMfaCode).not.toHaveBeenCalled();
   });
 
-  it('runs passkey enrollment only once per challenge token on Android rerenders', async () => {
+  it('does not start Android passkey enrollment on rerenders before the user taps the CTA', async () => {
     Object.defineProperty(Platform, 'OS', {
       configurable: true,
       value: 'android',
@@ -404,7 +630,7 @@ describe('LoginComponent passkey fallback', () => {
 
     await flushPromises();
 
-    expect(mockBeginPasskeyRegistration).toHaveBeenCalledTimes(1);
+    expect(mockBeginPasskeyRegistration).not.toHaveBeenCalled();
     expect(InteractionManager.runAfterInteractions).not.toHaveBeenCalled();
   });
 
@@ -445,6 +671,14 @@ describe('LoginComponent passkey fallback', () => {
       );
     });
 
+    await flushPromises();
+
+    const primaryButton = findTouchableByLabel(mountedRenderers[0], 'Set up your Passkey');
+    expect(primaryButton).toBeTruthy();
+
+    await act(async () => {
+      await primaryButton?.props.onPress?.();
+    });
     await flushPromises();
 
     expect(mockBeginPasskeyRegistration).toHaveBeenCalledTimes(1);
@@ -491,8 +725,15 @@ describe('LoginComponent passkey fallback', () => {
       strategy: 'oauth_google',
       redirectUrl: 'onebodyapp://oauth-native-callback',
     });
-    expect(mockActivateSsoSession).toHaveBeenCalledWith({ session: 'clerk-session-id' });
+    expect(mockActivateSsoSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'clerk-session-id',
+        navigate: expect.any(Function),
+      })
+    );
+    expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
     expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({});
+    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('social-access-token');
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'SET_LOGIN_DATA',
@@ -504,6 +745,98 @@ describe('LoginComponent passkey fallback', () => {
       })
     );
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
+  });
+
+  it('requires app MFA after social sign-in when enrolled MFA is active', async () => {
+    mockBeginAuthenticatedMfaLogin.mockResolvedValueOnce({
+      status: 200,
+      response: {
+        ...challengeBase,
+        mfaToken: 'social-mfa-token',
+        enrollmentRequired: false,
+        preferredMethod: 'passkey',
+        availableMethods: ['passkey', 'email'],
+        emailMasked: 'p***@example.com',
+      },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
+    });
+    mountedRenderers.push(renderer!);
+
+    const googleButton = renderer!.root.findAllByType(Pressable).find((node) => {
+      return node.findAllByType(Image).length > 0;
+    });
+
+    expect(googleButton).toBeTruthy();
+
+    await act(async () => {
+      await googleButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockActivateSsoSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'clerk-session-id',
+        navigate: expect.any(Function),
+      })
+    );
+    expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({});
+    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('social-access-token');
+    expect(mockMarkPendingLoginMfa).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'SET_LOGIN_DATA' })
+    );
+    expect(mockReset).not.toHaveBeenCalled();
+    expect(getRenderedText(renderer!)).toContain('Verify with Passkey');
+
+    mockAuthenticate.mockResolvedValueOnce({
+      id: 'credential-id',
+      rawId: 'credential-raw-id',
+      type: 'public-key',
+      response: {
+        authenticatorData: 'authenticator-data',
+        clientDataJSON: 'client-data',
+        signature: 'signature',
+        userHandle: 'user-handle',
+      },
+    });
+    mockFinishPasskeyLogin.mockResolvedValueOnce({
+      status: 200,
+      response: {
+        tokens: {
+          accessToken: 'legacy-social-mfa-token',
+        },
+      },
+    });
+
+    const primaryButton = findTouchableByLabel(renderer!, 'Verify with Passkey');
+    await act(async () => {
+      await primaryButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockFinishPasskeyLogin).toHaveBeenCalledWith(
+      expect.objectContaining({ mfaToken: 'social-mfa-token' })
+    );
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_LOGIN_DATA',
+      payload: {
+        token: 'social-access-token',
+        resetProfile: true,
+      },
+    });
+    expect(mockClearPendingLoginMfa).toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'GET_PROFILE_REQUEST',
+      payload: {
+        token: 'social-access-token',
+      },
+    });
   });
 
   it('signs social users in directly without routing through the MFA screen', async () => {
@@ -529,7 +862,12 @@ describe('LoginComponent passkey fallback', () => {
       strategy: 'oauth_apple',
       redirectUrl: 'onebodyapp://oauth-native-callback',
     });
-    expect(mockActivateSsoSession).toHaveBeenCalledWith({ session: 'clerk-session-id' });
+    expect(mockActivateSsoSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'clerk-session-id',
+        navigate: expect.any(Function),
+      })
+    );
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'SET_LOGIN_DATA',
@@ -541,5 +879,306 @@ describe('LoginComponent passkey fallback', () => {
       })
     );
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
+  });
+
+  it('checks app MFA after Clerk password sign-in before entering the app', async () => {
+    mockGetValidAccessToken.mockResolvedValueOnce('clerk-access-token');
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
+    });
+    mountedRenderers.push(renderer!);
+
+    const inputs = renderer!.root.findAllByType(TextInput);
+
+    await act(async () => {
+      inputs[0].props.onChangeText('person@example.com');
+      inputs[1].props.onChangeText('password');
+    });
+
+    const signInButton = findTouchableByLabel(renderer!, 'Sign In');
+    await act(async () => {
+      await signInButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockSetActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'clerk-password-session-id',
+        navigate: expect.any(Function),
+      })
+    );
+    expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
+    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('clerk-access-token');
+    expect(mockClearPendingLoginMfa).toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_LOGIN_DATA',
+      payload: {
+        token: 'clerk-access-token',
+        resetProfile: true,
+      },
+    });
+    expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
+  });
+
+  it('requires app MFA after Clerk password sign-in when enrolled MFA is active', async () => {
+    mockGetValidAccessToken.mockResolvedValueOnce('clerk-access-token');
+    mockBeginAuthenticatedMfaLogin.mockResolvedValueOnce({
+      status: 200,
+      response: {
+        ...challengeBase,
+        mfaToken: 'login-mfa-token',
+        enrollmentRequired: false,
+        preferredMethod: 'passkey',
+        availableMethods: ['passkey', 'email'],
+        emailMasked: 'p***@example.com',
+      },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
+    });
+    mountedRenderers.push(renderer!);
+
+    const inputs = renderer!.root.findAllByType(TextInput);
+
+    await act(async () => {
+      inputs[0].props.onChangeText('person@example.com');
+      inputs[1].props.onChangeText('password');
+    });
+
+    const signInButton = findTouchableByLabel(renderer!, 'Sign In');
+    await act(async () => {
+      await signInButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockSetActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'clerk-password-session-id',
+        navigate: expect.any(Function),
+      })
+    );
+    expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
+    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('clerk-access-token');
+    expect(mockMarkPendingLoginMfa).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'SET_LOGIN_DATA' })
+    );
+    expect(mockReset).not.toHaveBeenCalled();
+    expect(getRenderedText(renderer!)).toContain('Verify with Passkey');
+    expect(mockBeginPasskeyLogin).not.toHaveBeenCalled();
+
+    mockAuthenticate.mockResolvedValueOnce({
+      id: 'credential-id',
+      rawId: 'credential-raw-id',
+      type: 'public-key',
+      response: {
+        authenticatorData: 'authenticator-data',
+        clientDataJSON: 'client-data',
+        signature: 'signature',
+        userHandle: 'user-handle',
+      },
+    });
+    mockFinishPasskeyLogin.mockResolvedValueOnce({
+      status: 200,
+      response: {
+        tokens: {
+          accessToken: 'legacy-password-mfa-token',
+        },
+      },
+    });
+
+    const primaryButton = findTouchableByLabel(renderer!, 'Verify with Passkey');
+    await act(async () => {
+      await primaryButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockFinishPasskeyLogin).toHaveBeenCalledWith(
+      expect.objectContaining({ mfaToken: 'login-mfa-token' })
+    );
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_LOGIN_DATA',
+      payload: {
+        token: 'clerk-access-token',
+        resetProfile: true,
+      },
+    });
+    expect(mockClearPendingLoginMfa).toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'GET_PROFILE_REQUEST',
+      payload: {
+        token: 'clerk-access-token',
+      },
+    });
+  });
+
+  it('prepares and completes Clerk email MFA after password sign-in needs a second factor', async () => {
+    mockSignInCreate.mockResolvedValueOnce({
+      status: 'needs_second_factor',
+      supportedSecondFactors: [
+        {
+          strategy: 'email_code',
+          emailAddressId: 'idn_123',
+          safeIdentifier: 'p***@example.com',
+        },
+      ],
+    });
+    mockGetValidAccessToken.mockResolvedValueOnce('clerk-mfa-access-token');
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
+    });
+    mountedRenderers.push(renderer!);
+
+    const initialInputs = renderer!.root.findAllByType(TextInput);
+
+    await act(async () => {
+      initialInputs[0].props.onChangeText('Person@Example.com');
+      initialInputs[1].props.onChangeText('password');
+    });
+
+    const signInButton = findTouchableByLabel(renderer!, 'Sign In');
+    await act(async () => {
+      await signInButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockSignInCreate).toHaveBeenCalledWith({
+      identifier: 'person@example.com',
+      password: 'password',
+      strategy: 'password',
+    });
+    expect(mockPrepareSecondFactor).toHaveBeenCalledWith({
+      strategy: 'email_code',
+      emailAddressId: 'idn_123',
+    });
+    expect(getRenderedText(renderer!)).toContain('p***@example.com');
+
+    const codeInput = renderer!.root
+      .findAllByType(TextInput)
+      .find((node) => node.props.placeholder === 'Enter code');
+
+    await act(async () => {
+      codeInput?.props.onChangeText('123456');
+    });
+
+    const verifyButton = findTouchableByLabel(renderer!, 'Verify');
+    await act(async () => {
+      await verifyButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockAttemptSecondFactor).toHaveBeenCalledWith({
+      strategy: 'email_code',
+      code: '123456',
+    });
+    expect(mockSetActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: 'clerk-mfa-session-id',
+        navigate: expect.any(Function),
+      })
+    );
+    expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_LOGIN_DATA',
+      payload: {
+        token: 'clerk-mfa-access-token',
+        resetProfile: true,
+      },
+    });
+    expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
+  });
+
+  it('does not attempt legacy migration when Clerk rejects the password', async () => {
+    mockSignInCreate.mockRejectedValueOnce({
+      errors: [
+        {
+          code: 'form_password_incorrect',
+          message: 'Password is incorrect',
+        },
+      ],
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
+    });
+    mountedRenderers.push(renderer!);
+
+    const inputs = renderer!.root.findAllByType(TextInput);
+
+    await act(async () => {
+      inputs[0].props.onChangeText('person@example.com');
+      inputs[1].props.onChangeText('wrong-password');
+    });
+
+    const signInButton = findTouchableByLabel(renderer!, 'Sign In');
+    await act(async () => {
+      await signInButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockMigrateLegacyPasswordToClerk).not.toHaveBeenCalled();
+    const renderedText = getRenderedText(renderer!);
+    expect(renderedText).toContain('Incorrect email or password.');
+    expect(renderedText).not.toContain('Password is incorrect');
+  });
+
+  it('shows a generic credential error when legacy migration rejects a missing Clerk account', async () => {
+    mockSignInCreate.mockRejectedValueOnce({
+      errors: [
+        {
+          code: 'form_identifier_not_found',
+          message: "Couldn't find your account",
+        },
+      ],
+    });
+    mockMigrateLegacyPasswordToClerk.mockResolvedValueOnce({
+      status: 401,
+      response: { message: 'Invalid credentials' },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
+    });
+    mountedRenderers.push(renderer!);
+
+    const inputs = renderer!.root.findAllByType(TextInput);
+
+    await act(async () => {
+      inputs[0].props.onChangeText('person@example.com');
+      inputs[1].props.onChangeText('password');
+    });
+
+    const signInButton = findTouchableByLabel(renderer!, 'Sign In');
+    await act(async () => {
+      await signInButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockMigrateLegacyPasswordToClerk).toHaveBeenCalledWith(
+      {
+        email: 'person@example.com',
+        password: 'password',
+      },
+      {
+        suppressErrorLog: true,
+      }
+    );
+    const renderedText = getRenderedText(renderer!);
+    expect(renderedText).toContain('Incorrect email or password.');
+    expect(renderedText).not.toContain("Couldn't find your account");
+    expect(renderedText).not.toContain('Invalid credentials');
   });
 });

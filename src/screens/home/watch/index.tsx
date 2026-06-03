@@ -1192,20 +1192,17 @@ function Watch({ navigation, route }: any) {
       </View>
 
       {activePortalTab === 'sermons' ? (
-        <View style={[styles.sermonScreen, { paddingTop: insets.top + 70 }]}>
-          <View style={styles.sermonHeader}>
-            <View>
-              <Text style={styles.sermonHeaderTitle}>Sermons</Text>
-              <Text style={styles.sermonHeaderSubtitle}>
-                Public messages from approved YouTube and Vimeo sources.
-              </Text>
-            </View>
-            <Pressable onPress={openSermonFilters} style={styles.sermonFilterButton}>
-              <MaterialIcons name="tune" size={20} color="#FFFFFF" />
-              <Text style={styles.sermonFilterText}>Filter</Text>
-            </Pressable>
-          </View>
+        <Pressable
+          onPress={openSermonFilters}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.sermonFilterButton, { top: insets.top + spacing.x10 }]}
+        >
+          <MaterialIcons name="tune" size={22} color="#FFFFFF" />
+        </Pressable>
+      ) : null}
 
+      {activePortalTab === 'sermons' ? (
+        <View style={[styles.sermonScreen, { paddingTop: insets.top + 70 }]}>
           {sermonsLoading ? (
             <View style={styles.feedStateContainer}>
               <ActivityIndicator size="large" color="#12d2d9" />
@@ -1689,40 +1686,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0D0D',
   },
-  sermonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.x18,
-    paddingBottom: spacing.x14,
-  },
-  sermonHeaderTitle: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  sermonHeaderSubtitle: {
-    marginTop: 3,
-    maxWidth: 250,
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 12,
-    lineHeight: 17,
-  },
   sermonFilterButton: {
-    flexDirection: 'row',
+    position: 'absolute',
+    right: spacing.x16,
+    zIndex: 40,
+    width: 40,
+    height: 40,
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
     borderRadius: 999,
-    paddingHorizontal: spacing.x14,
-    paddingVertical: spacing.x10,
     backgroundColor: 'rgba(18,210,217,0.22)',
     borderWidth: 1,
     borderColor: 'rgba(18,210,217,0.46)',
-  },
-  sermonFilterText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
   sermonList: {
     flex: 1,

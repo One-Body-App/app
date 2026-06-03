@@ -1,5 +1,9 @@
 import type { ModerationReviewCheckPayload } from '@/src/services/moderation/types';
-import { buildPendingModerationReviewPayload } from '@/src/services/moderation/clientModeration';
+import {
+  buildPendingModerationReviewPayload,
+  callBackendFallbackModeration,
+  moderateClientText,
+} from '@/src/services/moderation/clientModeration';
 import { buildCreateSocialPostRequest } from '@/src/screens/post/createSocialPostRequest';
 import { ApiCall } from '@/src/services/api';
 import type { ComposerDraft, MediaItem } from './types';
@@ -17,6 +21,81 @@ const mediaItemToUploadedImage = (item: MediaItem) => ({
   type: item.type ?? 'image/jpeg',
   name: item.fileName ?? `image_${item.id}.jpg`,
 });
+
+const COMPOSER_TEXT_BLOCK_MESSAGE =
+  'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
+
+type ComposerTextModerationOutcome =
+  | { status: 'allow'; check?: undefined }
+  | { status: 'block'; check?: undefined }
+  | { status: 'pending_review'; check: ModerationReviewCheckPayload };
+
+const moderateComposerText = async (content: string): Promise<ComposerTextModerationOutcome> => {
+  const normalizedContent = String(content ?? '').trim();
+  if (!normalizedContent) {
+    return { status: 'allow' };
+  }
+
+  const clientResult = await moderateClientText(normalizedContent);
+  if (clientResult.action === 'block') {
+    return { status: 'block' };
+  }
+
+  if (clientResult.action !== 'fallback') {
+    return { status: 'allow' };
+  }
+
+  try {
+    const fallbackResponse = await callBackendFallbackModeration({
+      type: 'text',
+      content: normalizedContent,
+      clientMetadata: {
+        source: clientResult.source,
+        scores: clientResult.scores,
+        reason: clientResult.reason,
+        model: clientResult.model,
+      },
+    });
+
+    if (fallbackResponse.finalAction === 'block') {
+      return { status: 'block' };
+    }
+
+    if (fallbackResponse.finalAction === 'pending_review') {
+      return {
+        status: 'pending_review',
+        check: {
+          type: 'text',
+          clientSource: clientResult.source,
+          clientScores: clientResult.scores,
+          clientReason: clientResult.reason,
+          clientModel: clientResult.model,
+          fallbackAction: fallbackResponse.finalAction,
+          fallbackProvider: fallbackResponse.provider,
+          fallbackFlagged: fallbackResponse.flagged,
+          fallbackModel: fallbackResponse.model,
+          fallbackResults: fallbackResponse.results,
+        },
+      };
+    }
+  } catch (_error) {
+    return {
+      status: 'pending_review',
+      check: {
+        type: 'text',
+        clientSource: clientResult.source,
+        clientScores: clientResult.scores,
+        clientReason: clientResult.reason || 'fallback-moderation-unavailable',
+        clientModel: clientResult.model,
+        fallbackAction: 'pending_review',
+        fallbackProvider: 'openai',
+        fallbackFlagged: false,
+      },
+    };
+  }
+
+  return { status: 'allow' };
+};
 
 const moderationCheckFromMedia = (item: MediaItem): ModerationReviewCheckPayload | null => {
   if (item.moderation.status === 'unsure' || item.moderation.status === 'blocked') {
@@ -55,13 +134,33 @@ export const submitComposerDraft = async ({
     };
   }
 
+  const content = mergeContent(draft);
+  let resolvedTextModerationCheck = textModerationCheck ?? null;
+  if (textModerationCheck === undefined) {
+    const textModeration = await moderateComposerText(content);
+    if (textModeration.status === 'block') {
+      return {
+        status: 'failed',
+        message: COMPOSER_TEXT_BLOCK_MESSAGE,
+      };
+    }
+    if (textModeration.status === 'pending_review') {
+      resolvedTextModerationCheck = textModeration.check;
+    }
+  } else if (textModerationCheck?.fallbackAction === 'block') {
+    return {
+      status: 'failed',
+      message: COMPOSER_TEXT_BLOCK_MESSAGE,
+    };
+  }
+
   const photoItems = draft.media.filter((item) => item.kind === 'photo');
   const uploadedImages =
     photoItems.length > 0 ? photoItems.map(mediaItemToUploadedImage) : undefined;
 
   const moderationChecks: ModerationReviewCheckPayload[] = [];
-  if (textModerationCheck) {
-    moderationChecks.push(textModerationCheck);
+  if (resolvedTextModerationCheck) {
+    moderationChecks.push(resolvedTextModerationCheck);
   }
   draft.media.forEach((item) => {
     const check = moderationCheckFromMedia(item);
@@ -70,7 +169,7 @@ export const submitComposerDraft = async ({
   const moderationReview = buildPendingModerationReviewPayload(moderationChecks);
 
   const request = buildCreateSocialPostRequest({
-    content: mergeContent(draft),
+    content,
     mentionedUserIds: draft.mentionedUserIds,
     mentions: draft.mentions,
     uploadedImages,
@@ -138,12 +237,12 @@ export const submitComposerDraft = async ({
       }
     | undefined;
   if (body?.moderationPassed === false) {
-    const reason =
-      body.moderationTypeFailure === 'image'
-        ? 'Your photo conflicts with our community standards.'
-        : body.moderationTypeFailure === 'text'
-          ? 'Your post text was screened. Please rephrase.'
-          : 'This post was screened by our moderation.';
+    let reason = 'This post was screened by our moderation.';
+    if (body.moderationTypeFailure === 'image') {
+      reason = 'Your photo conflicts with our community standards.';
+    } else if (body.moderationTypeFailure === 'text') {
+      reason = 'Your post text was screened. Please rephrase.';
+    }
     return { status: 'failed', message: reason };
   }
 

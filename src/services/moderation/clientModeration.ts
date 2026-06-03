@@ -1,6 +1,5 @@
 import RNFS from 'react-native-fs';
 import * as tf from '@tensorflow/tfjs';
-// eslint-disable-next-line import/no-duplicates
 import '@tensorflow/tfjs-react-native';
 import '@tensorflow/tfjs-backend-cpu';
 import * as toxicity from '@tensorflow-models/toxicity';
@@ -27,11 +26,28 @@ const TOXICITY_LABELS = [
   'sexual_explicit',
 ] as const;
 
-const BLOCKED_TEXT_PATTERNS = [
-  /\b(?:fagg?(?:ot)?|nigg(?:er|a)|spic|kike)\b/i,
-  /\b(?:kill yourself|kys)\b/i,
-  /\b(?:rape|raped|raping)\b/i,
-  /\b(?:porn|xxx|onlyfans|nudes?|sex\s*tape)\b/i,
+const BLOCKED_TEXT_PATTERNS: Array<{ id: string; pattern: RegExp }> = [
+  {
+    id: 'hate-slur',
+    pattern: /\b(?:fagg?(?:ot)?|nigg(?:er|a)|spic|kike)\b/i,
+  },
+  {
+    id: 'self-harm',
+    pattern: /\b(?:kill yourself|kys)\b/i,
+  },
+  {
+    id: 'sexual-violence',
+    pattern: /\b(?:rape|raped|raping)\b/i,
+  },
+  {
+    id: 'sexual-content',
+    pattern: /\b(?:porn|xxx|onlyfans|nudes?|sex\s*tape)\b/i,
+  },
+  {
+    id: 'profanity',
+    pattern:
+      /\b(?:f[\W_]*u[\W_]*c[\W_]*k(?:e?r|ing|ed)?|s[\W_]*h[\W_]*[i!1|][\W_]*t(?:ty|head)?|b[\W_]*[i!1|][\W_]*t[\W_]*c[\W_]*h(?:es|ing)?|c[\W_]*u[\W_]*n[\W_]*t|a[\W_]*s[\W_]*s[\W_]*h[\W_]*o[\W_]*l[\W_]*e|d[\W_]*[i!1|][\W_]*c[\W_]*k|p[\W_]*u[\W_]*s[\W_]*s[\W_]*y|c[\W_]*o[\W_]*c[\W_]*k)\b/i,
+  },
 ];
 
 let tensorflowReadyPromise: Promise<void> | null = null;
@@ -53,6 +69,24 @@ const getImageMimeType = (uri: string) => {
 const normalizeNumericScore = (value: unknown) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const normalizeTextForLexicalModeration = (value: string) =>
+  value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[1|]/g, 'i')
+    .replace(/[@4]/g, 'a')
+    .replace(/[$5]/g, 's')
+    .replace(/[0]/g, 'o')
+    .replace(/[3]/g, 'e')
+    .replace(/[+7]/g, 't');
+
+const findBlockedTextPattern = (text: string) => {
+  const lexicalText = normalizeTextForLexicalModeration(text);
+  return BLOCKED_TEXT_PATTERNS.find(
+    ({ pattern }) => pattern.test(text) || pattern.test(lexicalText)
+  );
 };
 
 export const resolveTextActionFromScore = (score: number): ClientModerationAction => {
@@ -105,12 +139,12 @@ export const moderateClientText = async (text: string): Promise<ClientModeration
     };
   }
 
-  const matchedPattern = BLOCKED_TEXT_PATTERNS.find((pattern) => pattern.test(normalizedText));
+  const matchedPattern = findBlockedTextPattern(normalizedText);
   if (matchedPattern) {
     return {
       action: 'block',
       source: 'heuristic',
-      reason: matchedPattern.source,
+      reason: `blocked-text:${matchedPattern.id}`,
     };
   }
 

@@ -247,8 +247,12 @@ export async function refreshAuthTokens(): Promise<StoredAuthTokens | null> {
   return inFlightRefresh;
 }
 
-export async function getValidAccessToken(): Promise<string | null> {
-  const clerkToken = await getClerkSessionToken();
+export async function getValidAccessToken(options?: {
+  forceRefreshClerk?: boolean;
+}): Promise<string | null> {
+  const clerkToken = await getClerkSessionToken({
+    forceRefresh: options?.forceRefreshClerk === true,
+  });
   if (clerkToken) {
     return clerkToken;
   }

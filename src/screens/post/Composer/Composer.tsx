@@ -518,6 +518,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
             scheme={scheme}
             onRequestMedia={handleAddPhoto}
             reservedBottom={lecternHeight}
+            suppressEmptyState={lecternExpanded}
             onActiveIndexChange={(index) => setActiveIndex(index)}
           />
 
@@ -580,6 +581,7 @@ export default function Composer({ navigation }: Props): React.ReactElement {
             onHeightChange={setLecternHeight}
             captionInputRef={captionInputRef}
             bottomInset={insets.bottom}
+            topInset={insets.top}
           />
         </KeyboardControllerAvoidingView>
 
@@ -615,8 +617,15 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   lecternAvoider: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    // Start below the header and clip, so an expanded sheet (pushed up by the
+    // keyboard) can never paint over the header.
+    top: composerSpace.headerHeight,
     justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
   chipDock: {
     position: 'absolute',

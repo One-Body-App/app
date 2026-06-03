@@ -19,6 +19,7 @@ import {
 // --------------- ACTIONS ---------------
 import {
   completeLogout,
+  clearAuthState,
   setLoginData,
   getProfile,
   setProfile,
@@ -667,6 +668,9 @@ export function* getProfileSaga(params: { pullSavedData: any; token: string; typ
           isProfileCompleted: resolveProfileCompleted(responseData),
         })
       );
+    } else if (res?.status === 401) {
+      yield call(clearAuthTokens);
+      yield put(clearAuthState());
     } else {
       yield put(getProfile.Failed(res?.response));
     }

@@ -1,4 +1,7 @@
-type TokenGetter = () => Promise<string | null>;
+type TokenGetterOptions = {
+  skipCache?: boolean;
+};
+type TokenGetter = (options?: TokenGetterOptions) => Promise<string | null>;
 type SignOutFn = () => Promise<void>;
 
 let tokenGetter: TokenGetter | null = null;
@@ -17,12 +20,12 @@ export const clearClerkSessionAccessors = () => {
   signOutFn = null;
 };
 
-export const getClerkSessionToken = async () => {
+export const getClerkSessionToken = async (options?: { forceRefresh?: boolean }) => {
   if (!tokenGetter) {
     return null;
   }
 
-  return tokenGetter();
+  return tokenGetter(options?.forceRefresh ? { skipCache: true } : undefined);
 };
 
 export const signOutClerkSession = async () => {

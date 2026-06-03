@@ -692,18 +692,20 @@ function SignupForm({ navigation, route }: Props) {
         }
 
         await activateSsoSession({ session: createdSessionId });
-        const [syncResult, accessToken] = await Promise.all([
+        const accessToken = await getValidAccessToken({ forceRefreshClerk: true });
+        if (!accessToken) {
+          throw new Error('Unable to start Clerk session.');
+        }
+
+        const [syncResult] = await Promise.all([
           syncClerkUserProfile({
             accountType,
           }),
-          getValidAccessToken(),
           clearPendingAccountType(),
         ]);
         clearPendingSocialContinuation();
-        if (accessToken) {
-          dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'social' }));
-          dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
-        }
+        dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'social' }));
+        dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
         navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
       } catch (e: any) {
         setFormError(

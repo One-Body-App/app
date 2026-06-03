@@ -40,6 +40,11 @@ Sentry.init({
 const nativeConfig = Config as unknown as Record<string, string | undefined>;
 const clerkPublishableKey =
   nativeConfig.CLERK_PUBLISHABLE_KEY ?? nativeConfig.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
+const clerkTaskUrls = {
+  'choose-organization': 'onebodyapp://login/choose-organization',
+  'reset-password': 'onebodyapp://login/reset-password',
+  'setup-mfa': 'onebodyapp://login/setup-mfa',
+};
 
 function ClerkSessionBridge() {
   const { getToken } = useAuth();
@@ -47,7 +52,7 @@ function ClerkSessionBridge() {
 
   useMountEffect(() => {
     setClerkSessionAccessors({
-      getToken: () => getToken(),
+      getToken: (options) => getToken(options),
       signOut: () => signOut(),
     });
 
@@ -85,6 +90,7 @@ function App() {
     <ClerkProvider
       publishableKey={clerkPublishableKey}
       tokenCache={tokenCache}
+      taskUrls={clerkTaskUrls}
       __experimental_passkeys={passkeys}
     >
       <Provider store={store}>
