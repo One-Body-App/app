@@ -76,7 +76,7 @@ describe('logoutSaga', () => {
         dispatch: (action) => dispatched.push(action),
         getState: () => state,
       },
-      logoutSaga,
+      logoutSaga as any,
       { type: ACTIONS.LOGOUT, data }
     ).toPromise();
 
@@ -170,6 +170,7 @@ describe('getProfileSaga stale result guards', () => {
       status: 200,
       response: { emailVerified: true, isProfileCompleted: true },
     });
+    mockGetValidAccessToken.mockResolvedValue(null);
   });
 
   it('drops a profile success when logout completed after the request started', async () => {
@@ -186,7 +187,7 @@ describe('getProfileSaga stale result guards', () => {
           },
         }),
       },
-      getProfileSaga,
+      getProfileSaga as any,
       { type: 'get_profile_request', token: 'stale-token', pullSavedData: false }
     ).toPromise();
 
@@ -207,14 +208,79 @@ describe('getProfileSaga stale result guards', () => {
           },
         }),
       },
-      getProfileSaga,
+      getProfileSaga as any,
       { type: 'get_profile_request', token: 'old-token', pullSavedData: false }
     ).toPromise();
 
     expect(dispatched).toEqual([{ type: ACTIONS.SET_LOADER, data: false }]);
   });
 
-  it('clears local auth when the active profile request returns unauthorized', async () => {
+  it('recovers a profile 401, retries once, and keeps auth state', async () => {
+    mockApiCall
+      .mockResolvedValueOnce({
+        status: 401,
+        response: { message: 'Invalid Clerk session token' },
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        response: {
+          emailVerified: true,
+          accountType: 'individual',
+          profile: {
+            dateOfBirth: '1990-01-01',
+            location: { address: 'Atlanta, GA' },
+          },
+          interests: ['prayer'],
+        },
+      });
+    mockGetValidAccessToken.mockResolvedValue('recovered-token');
+    const dispatched: any[] = [];
+
+    await runSaga(
+      {
+        dispatch: (action) => dispatched.push(action),
+        getState: () => ({
+          auth: {
+            userToken: 'active-token',
+            logoutPending: false,
+            logoutCompletedAt: undefined,
+          },
+        }),
+      },
+      getProfileSaga as any,
+      { type: 'get_profile_request', token: 'active-token', pullSavedData: false }
+    ).toPromise();
+
+    expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
+    expect(mockApiCall).toHaveBeenNthCalledWith(1, {
+      route: 'user/my-profile?pullSavedData=false',
+      token: 'active-token',
+      verb: 'get',
+    });
+    expect(mockApiCall).toHaveBeenNthCalledWith(2, {
+      route: 'user/my-profile?pullSavedData=false',
+      token: 'recovered-token',
+      verb: 'get',
+    });
+    expect(mockClearAuthTokens).not.toHaveBeenCalled();
+    expect(dispatched).toEqual([
+      { type: ACTIONS.FETCH_LOGIN_DATA, data: { token: 'recovered-token' } },
+      getProfile.Success({
+        token: 'recovered-token',
+        emailVerified: true,
+        accountType: 'individual',
+        profile: {
+          dateOfBirth: '1990-01-01',
+          location: { address: 'Atlanta, GA' },
+        },
+        interests: ['prayer'],
+        isProfileCompleted: true,
+      }),
+      { type: ACTIONS.SET_LOADER, data: false },
+    ]);
+  });
+
+  it('clears local auth when the active profile request returns unauthorized and recovery fails', async () => {
     mockApiCall.mockResolvedValue({
       status: 401,
       response: { message: 'Invalid Clerk session token' },
@@ -233,11 +299,12 @@ describe('getProfileSaga stale result guards', () => {
           },
         }),
       },
-      getProfileSaga,
+      getProfileSaga as any,
       { type: 'get_profile_request', token: 'active-token', pullSavedData: false }
     ).toPromise();
 
-    expect(mockClearAuthTokens).toHaveBeenCalled();
+    expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
+    expect(mockClearAuthTokens).not.toHaveBeenCalled();
     expect(dispatched).toEqual([
       { type: ACTIONS.CLEAR_AUTH_STATE },
       { type: ACTIONS.SET_LOADER, data: false },
@@ -272,7 +339,7 @@ describe('profile update onboarding completion', () => {
       {
         dispatch: (action) => dispatched.push(action),
       },
-      updateProfileRequest,
+      updateProfileRequest as any,
       {
         type: ACTIONS.Profile_Update,
         data: {
@@ -326,7 +393,7 @@ describe('profile update onboarding completion', () => {
       {
         dispatch: (action) => dispatched.push(action),
       },
-      updateOrgProfileRequest,
+      updateOrgProfileRequest as any,
       {
         type: ACTIONS.ORGProfile_Update,
         data: {
@@ -364,7 +431,7 @@ describe('verifyEmailTokenSaga', () => {
 
   const runVerifyEmailToken = async (
     action: { type: string; verificationToken?: string; prefillEmail?: string },
-    state = {
+    state: any = {
       auth: {
         userToken: 'access-token',
         getProfileData: {
@@ -386,7 +453,7 @@ describe('verifyEmailTokenSaga', () => {
         dispatch: (nextAction) => dispatched.push(nextAction),
         getState: () => state,
       },
-      verifyEmailTokenSaga,
+      verifyEmailTokenSaga as any,
       action
     ).toPromise();
 

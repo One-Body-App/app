@@ -536,7 +536,7 @@ function UploadImage({ navigation, route }: Props) {
     () =>
       Object.fromEntries(
         UPLOAD_IMAGE_FILTERS.map(({ id }) => [id, buildUploadImageColorMatrix(id, adjust)])
-      ) as Record<FilterId, number[]>,
+      ) as Record<FilterId, ReturnType<typeof buildUploadImageColorMatrix>>,
     [adjust]
   );
 

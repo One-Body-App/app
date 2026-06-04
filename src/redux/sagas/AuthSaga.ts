@@ -30,7 +30,7 @@ import {
   verifyEmailToken,
 } from '../actions/AuthActions';
 import { AccountType, ResponseGenerator } from '@/utils/types';
-import { clearAuthTokens, getValidAccessToken, saveAuthTokens } from '@/services/authTokens';
+import { clearAuthTokens, getValidAccessToken } from '@/services/authTokens';
 import { disablePushNotifications } from '@/src/services/notification/pushNotificationService';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import { signOutSocialProviders } from '@/services/socialAuth';
@@ -172,30 +172,8 @@ function* loginSocialRequest(params: {
   };
   type: string;
 }) {
-  try {
-    const res: ResponseGenerator = yield ApiCall({
-      params: params.data.data,
-      route: 'auth/social-login',
-      verb: 'post',
-      token: params.data.data.token,
-    });
-
-    if (res?.status == 200) {
-      if (res?.response?.email && params.data.gotoSignup) {
-        yield put(setProfile(res?.response));
-        params.data.gotoSignup();
-      } else {
-        yield put(setLoader(false));
-      }
-      params.data.sendFcm(params.data.data.token);
-      yield put(setLoginData({ token: params.data.data.token, resetProfile: true }));
-    } else {
-      params.data.seterror(res?.response?.message);
-      yield put(setLoader(false));
-    }
-  } catch (e) {
-    yield put(setLoader(false));
-  }
+  params.data.seterror('Social sign-in now uses Clerk. Please try again with Google or Apple.');
+  yield put(setLoader(false));
 }
 export function* loginSocialSaga() {
   yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
@@ -334,43 +312,8 @@ export function* RemoveSocialAccountSaga() {
   yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
 }
 
-function* signUpSaga(params: { data: any; type: string }) {
-  try {
-    const res: ResponseGenerator = yield ApiCall({
-      params: params.data,
-      route: 'auth/register',
-      verb: 'post',
-    });
-
-    if (res?.status === 200 && res?.response) {
-      const tokens = (res?.response as any)?.tokens;
-      const accessToken = tokens?.accessToken;
-      if (tokens?.accessToken && tokens?.refreshToken) {
-        try {
-          yield call(saveAuthTokens, tokens);
-        } catch (error: any) {
-          if (__DEV__) {
-            console.warn(
-              'Token persistence failed during signup; continuing with in-memory session',
-              error?.message
-            );
-          }
-        }
-        yield put(setLoginData({ token: accessToken, resetProfile: true }));
-      }
-      yield put(setAccountType(''));
-      yield put(signUp.Success((res?.response as any)?.user ?? res?.response));
-    } else {
-      const fallbackMessage =
-        (res?.response as any)?.message ??
-        (typeof res?.response === 'string' ? res.response : 'That was a glitch on our part.');
-      yield put(signUp.Failed(fallbackMessage));
-    }
-  } catch (e) {
-    const fallbackMessage =
-      (e as any)?.message ?? 'That was a glitch on our part. Please try again.';
-    yield put(signUp.Failed(fallbackMessage));
-  }
+function* signUpSaga(_params: { data: any; type: string }) {
+  yield put(signUp.Failed('Email signup now uses Clerk. Please use the signup screen again.'));
 }
 export function* SignUpSaga() {
   yield takeLatest(SignUp.REQUEST, signUpSaga);
@@ -669,8 +612,34 @@ export function* getProfileSaga(params: { pullSavedData: any; token: string; typ
         })
       );
     } else if (res?.status === 401) {
-      yield call(clearAuthTokens);
-      yield put(clearAuthState());
+      const recoveredToken: string | null = yield call(getValidAccessToken, {
+        forceRefreshClerk: true,
+      });
+      if (recoveredToken) {
+        yield put(setLoginData({ token: recoveredToken }));
+        const retryRes: ResponseGenerator = yield ApiCall({
+          route: `user/my-profile?pullSavedData=${params.pullSavedData ?? false}`,
+          token: recoveredToken,
+          verb: 'get',
+        });
+
+        if (retryRes?.status === 200) {
+          const retryResponseData = retryRes?.response ?? {};
+          yield put(
+            getProfile.Success({
+              token: recoveredToken,
+              ...retryResponseData,
+              isProfileCompleted: resolveProfileCompleted(retryResponseData),
+            })
+          );
+        } else if (retryRes?.status === 401) {
+          yield put(clearAuthState());
+        } else {
+          yield put(getProfile.Failed(retryRes?.response));
+        }
+      } else {
+        yield put(clearAuthState());
+      }
     } else {
       yield put(getProfile.Failed(res?.response));
     }

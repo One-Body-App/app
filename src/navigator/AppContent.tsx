@@ -26,7 +26,10 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+  createNativeStackNavigator,
+  type NativeStackNavigationOptions,
+} from '@react-navigation/native-stack';
 import {
   getMessaging,
   getInitialNotification,
@@ -45,15 +48,19 @@ import {
   clearAuthState,
   verifyEmailToken,
 } from '../redux/actions/AuthActions'; // Adjust path
-import { clearAuthTokens, getValidAccessToken, loadAuthTokens } from '../services/authTokens';
+import { clearAuthTokens, getAuthTokenKind, getValidAccessToken } from '../services/authTokens';
 import { beginAuthenticatedMfaOnboarding } from '../services/login';
+import { emitNotificationRefresh } from '../services/notification/notificationRefreshSignal';
+import { queueRemoteNotificationPayload } from '../services/notification/pushNotificationStorage';
 import { clearPendingLoginMfa, hasPendingLoginMfa } from '../services/pendingLoginMfa';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
 import Login from '../screens/login'; // Adjust path
+import ResetPassword from '../screens/resetPassword/ResetPassword';
 import Signup from '../screens/signup'; // Adjust path
 
 import { MainStackParamList } from './types'; // Adjust path
+import { resolveResetPasswordLinkState } from './resetPasswordLinking';
 
 import Intro from '../screens/intro'; // Adjust path
 
@@ -331,16 +338,9 @@ function AppContent() {
 
         if (accessToken) {
           dispatch(setLoginData({ token: accessToken }));
-        } else {
-          // Only clear the session if tokens are confirmed absent.
-          // A null from getValidAccessToken may be a transient network failure during refresh;
-          // in that case loadAuthTokens still returns the stored refresh token, so we keep it.
-          const stored = await loadAuthTokens();
-          if (!stored) {
-            await clearAuthTokens();
-            if (!explicitLogoutActiveRef.current) {
-              dispatch(clearAuthState());
-            }
+        } else if (getAuthTokenKind(tokenRef.current) === 'api') {
+          if (!explicitLogoutActiveRef.current) {
+            dispatch(clearAuthState());
           }
         }
       } finally {
@@ -369,6 +369,7 @@ function AppContent() {
         return;
       }
 
+      const currentToken = tokenRef.current;
       const accessToken = await getValidAccessToken({
         forceRefreshClerk: Platform.OS === 'android',
       });
@@ -376,17 +377,11 @@ function AppContent() {
         return;
       }
 
-      if (accessToken && accessToken !== token) {
+      if (accessToken && accessToken !== currentToken) {
         dispatch(setLoginData({ token: accessToken }));
-      } else if (!accessToken && token) {
-        // Only clear the session if the stored tokens are confirmed absent or expired.
-        // Do not log the user out due to a transient network failure during refresh.
-        const stored = await loadAuthTokens();
-        if (!stored) {
-          await clearAuthTokens();
-          if (!explicitLogoutActiveRef.current) {
-            dispatch(clearAuthState());
-          }
+      } else if (!accessToken && getAuthTokenKind(currentToken) === 'api') {
+        if (!explicitLogoutActiveRef.current) {
+          dispatch(clearAuthState());
         }
       }
     } catch (error) {
@@ -394,9 +389,10 @@ function AppContent() {
         console.log('[AppContent Token Refresh] Failed to refresh token on resume', error);
       }
     }
-  }, [dispatch, token]);
+  }, [dispatch]);
   const refreshTokenOnResumeRef = useRef(refreshTokenOnResume);
   refreshTokenOnResumeRef.current = refreshTokenOnResume;
+
   const syncIosDisplayedNotifications = useCallback(async () => {
     if (Platform.OS !== 'ios') {
       return 0;
@@ -875,6 +871,12 @@ function AppContent() {
       },
       SignUp: { path: '/signup/:action' },
       Login: { path: '/login/:action' },
+      ResetPassword: {
+        path: '/reset-password',
+        parse: {
+          token: (tokenParam: string) => tokenParam,
+        },
+      },
       SinglePost: {
         path: '/post/social/:postId',
       },
@@ -1374,6 +1376,18 @@ function AppContent() {
         return chatState as any;
       }
 
+      const resetPasswordState = resolveResetPasswordLinkState(adjustedPath);
+      if (resetPasswordState) {
+        if (__DEV__) {
+          console.log(
+            '[Deep Link getStateFromPath] Resolved reset password link:',
+            adjustedPath,
+            resetPasswordState
+          );
+        }
+        return resetPasswordState as any;
+      }
+
       const state = getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
       if (__DEV__) {
         console.log(
@@ -1505,7 +1519,7 @@ function AppContent() {
       border: '#1B1B1B',
     },
   };
-  const getAndroidAuthRouteOptions = (backgroundColor: string) =>
+  const getAndroidAuthRouteOptions = (backgroundColor: string): NativeStackNavigationOptions =>
     Platform.OS === 'android'
       ? {
           statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
@@ -1574,7 +1588,6 @@ function AppContent() {
                   headerTitleStyle: {
                     fontSize: 24,
                     fontWeight: '700',
-                    letterSpacing: 0.3,
                   },
                   animation: 'slide_from_right',
                 }}
@@ -1749,6 +1762,29 @@ function AppContent() {
               <MainStack.Screen
                 name="ForgotPassword"
                 component={ForgotPassword}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        headerTransparent: false,
+                        headerStyle: {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? darkTheme.colors.background
+                              : theme.colors.background,
+                        },
+                      }
+                    : {
+                        headerShown: false,
+                        ...getAndroidAuthRouteOptions(
+                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background
+                        ),
+                      }),
+                }}
+              />
+              <MainStack.Screen
+                name="ResetPassword"
+                component={ResetPassword}
                 options={{
                   ...(Platform.OS === 'ios'
                     ? {

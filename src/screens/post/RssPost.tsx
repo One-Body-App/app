@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
@@ -75,7 +75,7 @@ function RssPost({ navigation, route }: Props) {
       ],
     });
   }, [navigation]);
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     if (backNavigationInFlightRef.current) {
       return;
     }
@@ -91,7 +91,7 @@ function RssPost({ navigation, route }: Props) {
     }
 
     resetToHomeFeed();
-  };
+  }, [navigation, resetToHomeFeed]);
 
   const getRssPost = useCallback(async () => {
     setIsLoading(true);
@@ -154,18 +154,6 @@ function RssPost({ navigation, route }: Props) {
     }
   }, [handleBackPress, route.params?.postId, route.params?.postType, token]);
 
-  // useEffect(() => {
-  //   if (post) {
-  //     navigation.setOptions({
-  //       title: `${post.userData.name}'s Post`,
-  //     });
-  //   }
-  // }, [post]);
-
-  useEffect(() => {
-    setFeedTelemetryAuthToken(token || undefined);
-  }, [token]);
-
   useMountEffect(() => {
     if (route.params?.postId) {
       getRssPost();
@@ -192,10 +180,12 @@ function RssPost({ navigation, route }: Props) {
         return;
       }
 
-      emitOwnedPostDeleted({
-        type: result.type,
-        id: normalizedId,
-      });
+      if (result.type) {
+        emitOwnedPostDeleted({
+          type: result.type,
+          id: normalizedId,
+        });
+      }
       handleBackPress();
     },
     [handleBackPress, token]
@@ -221,7 +211,7 @@ function RssPost({ navigation, route }: Props) {
 
   const trackSingleRssTelemetry = useCallback(
     (
-      eventName: CanonicalPostTelemetryEventName,
+      eventName: string,
       metadata?: Record<string, unknown>,
       overrides?: Partial<PostTelemetryEventInput>
     ) => {
@@ -230,11 +220,18 @@ function RssPost({ navigation, route }: Props) {
         return;
       }
 
+      // Keep the feed-telemetry transport on the current auth token (covers
+      // token refreshes); all of this screen's telemetry flows through here.
+      setFeedTelemetryAuthToken(token || undefined);
+
       const resolvedPostType = route.params?.postType === 'watch' ? 'watch' : 'rss';
       trackPostTelemetry({
         postId,
         postType: resolvedPostType,
-        contentType: route.params?.postType === 'watch' ? 'watch' : (post?.type ?? 'posts'),
+        contentType:
+          route.params?.postType === 'watch'
+            ? 'watch'
+            : ((post as { type?: string } | undefined)?.type ?? 'posts'),
         tags: Array.isArray((post as { tags?: unknown } | undefined)?.tags)
           ? ((post as { tags?: string[] }).tags ?? [])
           : [],
@@ -246,17 +243,17 @@ function RssPost({ navigation, route }: Props) {
         requestId: requestIdRef.current,
         isOwnPost:
           Boolean(currentUser?._id) && Boolean(post?.userData?._id)
-            ? String(currentUser._id) === String(post.userData._id)
+            ? String(currentUser?._id) === String(post?.userData?._id)
             : undefined,
         isRepost: Boolean((post as { repost?: unknown } | undefined)?.repost),
         privacyState:
           (post as { private?: boolean } | undefined)?.private === true ? 'private' : 'public',
         ...overrides,
-        eventName,
+        eventName: eventName as CanonicalPostTelemetryEventName,
         metadata,
       });
     },
-    [currentUser?._id, post, route.params?.postId, route.params?.postType]
+    [currentUser?._id, post, route.params?.postId, route.params?.postType, token]
   );
 
   let contentNode = (

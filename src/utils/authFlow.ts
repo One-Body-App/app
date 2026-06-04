@@ -60,6 +60,7 @@ const PUBLIC_AUTH_ROUTES = new Set([
   'Login',
   'SignUp',
   'ForgotPassword',
+  'ResetPassword',
   'ConfirmLogin',
 ]);
 

@@ -14,6 +14,7 @@ import {
   buildScriptureKey,
   DEFAULT_TRANSLATION,
   fetchScriptureShare,
+  fetchScriptureShareCounts,
   fetchTranslations,
   parseScriptureLocal,
   type BibleBook,
@@ -163,7 +164,9 @@ export default function ComposerScripturePicker({
       setLoadingReference(mention.reference);
       try {
         const share = await fetchScriptureShare(toPayload(mention), translation, token ?? true);
-        onSelect(share);
+        // Best-effort times-shared count for the quote card (returns {} on error).
+        const counts = await fetchScriptureShareCounts([share.key], token ?? true);
+        onSelect({ ...share, shareCount: counts[share.key] ?? share.shareCount });
         setQuery(share.reference);
       } catch {
         setError('Could not load that verse. Check the reference and try again.');
@@ -186,7 +189,7 @@ export default function ComposerScripturePicker({
           nextTranslation,
           token ?? true
         );
-        onSelect(share);
+        onSelect({ ...share, shareCount: selected.shareCount });
         setQuery(share.reference);
       } catch {
         setError('Could not load that version. Please try again.');
@@ -427,13 +430,7 @@ export default function ComposerScripturePicker({
               <StyledText style={[styles.fieldLabel, { color: palette.textMuted }]}>
                 Chapter
               </StyledText>
-              <ScrollView
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.chipRow}
-              >
+              <View style={styles.chipGrid}>
                 {getChapterOptions(selectedBook).map((option) => {
                   const active = String(option) === chapter;
                   return (
@@ -465,7 +462,7 @@ export default function ComposerScripturePicker({
                     </Pressable>
                   );
                 })}
-              </ScrollView>
+              </View>
             </View>
 
             {chapter ? (
@@ -473,13 +470,7 @@ export default function ComposerScripturePicker({
                 <StyledText style={[styles.fieldLabel, { color: palette.textMuted }]}>
                   Verse
                 </StyledText>
-                <ScrollView
-                  horizontal
-                  nestedScrollEnabled
-                  showsHorizontalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={styles.chipRow}
-                >
+                <View style={styles.chipGrid}>
                   {getVerseOptions(selectedBook, chapter).map((option) => {
                     const active = String(option) === verse;
                     return (
@@ -510,7 +501,7 @@ export default function ComposerScripturePicker({
                       </Pressable>
                     );
                   })}
-                </ScrollView>
+                </View>
               </View>
             ) : null}
           </View>
@@ -710,21 +701,22 @@ const styles = StyleSheet.create({
     ...composerType.eyebrow,
     fontWeight: '700',
   },
-  chipRow: {
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: composerSpace.xs,
     paddingVertical: 2,
   },
   numberChip: {
-    minWidth: 40,
-    borderRadius: composerSpace.chipRadius,
+    width: 52,
+    minHeight: 44,
+    borderRadius: composerSpace.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: composerSpace.sm,
-    paddingVertical: 7,
     alignItems: 'center',
     justifyContent: 'center',
   },
   numberChipText: {
-    ...composerType.caption,
+    ...composerType.body,
     fontWeight: '700',
   },
   suggestions: {

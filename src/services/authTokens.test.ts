@@ -1,4 +1,11 @@
-import { clearAuthTokens, getValidAccessToken, loadAuthTokens } from './authTokens';
+import {
+  clearAuthTokens,
+  getAuthTokenKind,
+  getValidAccessToken,
+  loadAuthTokens,
+  loadAuthTokensState,
+  refreshAuthTokens,
+} from './authTokens';
 
 const mockAxiosPost = jest.fn();
 const mockAsyncStorageMultiGet = jest.fn();
@@ -54,6 +61,12 @@ const setSecureEntry = (service: string, password?: string) => {
   }
 
   delete secureEntries[service];
+};
+
+const jwtWithPayload = (payload: Record<string, unknown>) => {
+  const encode = (value: Record<string, unknown>) =>
+    Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${encode({ alg: 'none' })}.${encode(payload)}.signature`;
 };
 
 describe('authTokens', () => {
@@ -130,6 +143,68 @@ describe('authTokens', () => {
 
     expect(mockGetClerkSessionToken).toHaveBeenCalledWith({ forceRefresh: true });
     expect(mockAsyncStorageMultiGet).not.toHaveBeenCalled();
+  });
+
+  it('classifies Clerk, API, and unknown JWT payloads', () => {
+    expect(
+      getAuthTokenKind(
+        jwtWithPayload({
+          iss: 'https://clerk.onebody.test',
+          sub: 'user_123',
+          sid: 'sess_123',
+          exp: 9999999999,
+        })
+      )
+    ).toBe('clerk');
+
+    expect(
+      getAuthTokenKind(
+        jwtWithPayload({
+          sub: '6565d6f1f946d2d4cf74c101',
+          actorType: 'user',
+          accountType: 'individual',
+          exp: 9999999999,
+        })
+      )
+    ).toBe('api');
+
+    expect(getAuthTokenKind(jwtWithPayload({ sub: 'opaque-subject' }))).toBe('unknown');
+  });
+
+  it('reports Keychain read failures as unavailable without clearing stored state', async () => {
+    const storedPassword = JSON.stringify({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      accessTokenExpiresAt: Date.now() + 60_000,
+      refreshTokenExpiresAt: Date.now() + 120_000,
+    });
+    setSecureEntry(AUTH_TOKEN_SERVICE, storedPassword);
+    mockGetGenericPassword.mockRejectedValueOnce(new Error('Keychain temporarily unavailable'));
+
+    await expect(loadAuthTokensState()).resolves.toEqual({ status: 'unavailable' });
+
+    expect(secureEntries[AUTH_TOKEN_SERVICE]).toBe(storedPassword);
+    expect(mockResetGenericPassword).not.toHaveBeenCalled();
+    expect(mockAsyncStorageMultiRemove).not.toHaveBeenCalled();
+  });
+
+  it('does not refresh or clear legacy API tokens implicitly', async () => {
+    setSecureEntry(
+      AUTH_TOKEN_SERVICE,
+      JSON.stringify({
+        accessToken: 'expired-access-token',
+        refreshToken: 'expired-refresh-token',
+        accessTokenExpiresAt: Date.now() - 60_000,
+        refreshTokenExpiresAt: Date.now() - 1_000,
+      })
+    );
+
+    await expect(refreshAuthTokens()).resolves.toBeNull();
+
+    expect(mockAxiosPost).not.toHaveBeenCalled();
+    expect(mockSignOutClerkSession).not.toHaveBeenCalled();
+    expect(mockResetGenericPassword).not.toHaveBeenCalled();
+    expect(mockAsyncStorageMultiRemove).not.toHaveBeenCalled();
   });
 
   it('invalidates the secure auth entry when reset leaves the token behind', async () => {

@@ -28,6 +28,7 @@
 
 - If UI or behavior changes, suggest the relevant screen-level manual check (iOS/Android).
 - If automated tests exist for the touched area, run or suggest them.
+- Do not load the module under test with `const { ... } = require('./module')` (CommonJS `require` returns `any`, so `.map`/`.every`/etc. callbacks become implicit-`any` and fail `tsc`). Use a typed ES `import` instead — `jest.mock(...)` is hoisted above imports, so the mock still applies before the module loads.
 
 ## Safety
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Linking, ScrollView, useColorScheme, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -19,43 +19,43 @@ import { button } from '@/src/styles/buttons';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ForgotPassword'>;
 
+const emailvalidate = (text: string) => {
+  const reg = /^\w+([.\-+]?\w+)*@\w+([.-]?\w+)*(\.\w\w+)+$/;
+
+  if (reg.test(text) === false) {
+    return true;
+  }
+  return false;
+};
+
 function ForgotPassword({ route }: Props) {
-  const [email, setEmail] = React.useState<string>('');
-  const [emailError, setEmailError] = React.useState<boolean>();
+  const [email, setEmail] = React.useState<string>(route?.params?.email ?? '');
   const [error, seterror] = React.useState<string>('');
   const [showSuccess, setShowSuccess] = React.useState<boolean>(false);
 
   const { colors } = useTheme();
 
-  const emailvalidate = (text: string) => {
-    const reg = /^\w+([.\-+]?\w+)*@\w+([.-]?\w+)*(\.\w\w+)+$/;
-
-    if (reg.test(text) === false) {
-      return true;
-    }
-    return false;
-  };
   const dispatch = useDispatch();
-
-  React.useEffect(() => {
-    const prefill = route?.params?.email;
-    if (prefill && !email) {
-      setEmail(prefill);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route?.params?.email]);
 
   const forget = async () => {
     if (!emailvalidate(email) && email != null) {
-      setEmailError(false);
       seterror('');
       dispatch(setLoader(true));
       try {
-        await ApiCall({
+        const result = await ApiCall<{ message?: string }>({
           route: 'auth/forgot-password',
           verb: 'patch',
-          params: { email: email.trim().toLowerCase() },
+          params: { email: email.trim().toLowerCase(), delivery: 'mobile' },
         });
+
+        if (result.status >= 400) {
+          const requestError = new Error(
+            result.response?.message ?? 'Unable to send reset instructions.'
+          ) as Error & { response?: typeof result.response };
+          requestError.response = result.response;
+          throw requestError;
+        }
+
         setEmail('');
         dispatch(setLoader(false));
         setShowSuccess(true);
@@ -69,11 +69,9 @@ function ForgotPassword({ route }: Props) {
         seterror(message);
       }
     } else {
-      setEmailError(true);
       seterror('Email not valid!!');
     }
   };
-  const { dark } = useTheme();
   return (
     <UserStepsLayout backgroundColor={colors.background} showCustomHeaderOnAndroid>
       <ScrollView style={{ flexGrow: 1 }}>
@@ -110,8 +108,8 @@ function ForgotPassword({ route }: Props) {
                   ]}
                 >
                   <StyledText style={GeneralStyle.successtext}>
-                    If you have an account with us, You will get an email with the instructions to
-                    reset your password
+                    If an account exists for that email, open the reset link on this device to
+                    create a new password inside One Body.
                   </StyledText>
                 </View>
               ) : null}
@@ -125,7 +123,6 @@ function ForgotPassword({ route }: Props) {
                 autoCapitalize="none"
                 onChangeText={(e) => {
                   setEmail(e);
-                  setEmailError(false);
                 }}
               />
               {error != null ? (

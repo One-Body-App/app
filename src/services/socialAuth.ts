@@ -2,8 +2,6 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import { Buffer } from 'buffer';
 import { Platform } from 'react-native';
-import { ApiCall } from './api';
-import { AuthTokens, saveAuthTokens } from './authTokens';
 import { GOOGLE_LOGIN_CLIENT_ID } from './constants';
 import type { MfaChallengeResponse } from './login';
 
@@ -24,8 +22,15 @@ export type SocialTokenResult = {
   cancelled?: boolean;
 };
 
+type LegacyAuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  refreshExpiresIn: number;
+};
+
 export type SocialLoginResponse = {
-  tokens?: AuthTokens;
+  tokens?: LegacyAuthTokens;
   user?: any;
   isNewUser?: boolean;
   authMethod?: 'social';
@@ -41,20 +46,6 @@ export type SocialLoginResponse = {
   availableMethods?: MfaChallengeResponse['availableMethods'];
   emailMasked?: string;
   reason?: MfaChallengeResponse['reason'];
-};
-
-const persistTokensSafely = async (tokens?: AuthTokens) => {
-  if (!tokens?.accessToken) {
-    return;
-  }
-
-  try {
-    await saveAuthTokens(tokens);
-  } catch (error: any) {
-    if (__DEV__) {
-      console.warn('Token persistence failed; continuing with in-memory session', error?.message);
-    }
-  }
 };
 
 let googleConfigured = false;
@@ -299,26 +290,14 @@ export const exchangeSocialToken = async (params: {
   details?: SocialProfileDetails;
   createIfMissing?: boolean;
 }) => {
-  const res = await ApiCall<SocialLoginResponse>({
-    route: 'auth/social-login',
-    verb: 'post',
-    params: {
+  return {
+    status: 410,
+    response: {
       provider: params.provider,
-      intent: params.intent,
-      idToken: params.idToken,
-      token: params.idToken,
-      nonce: params.nonce,
-      accountType: params.accountType ?? undefined,
       details: params.details,
-      createIfMissing: params.createIfMissing,
-    },
-  });
-
-  if (res.status === 200 && res.response?.tokens?.accessToken) {
-    await persistTokensSafely(res.response.tokens);
-  }
-
-  return res;
+      message: 'Legacy social-token exchange is disabled. Please use Clerk social sign-in.',
+    } as SocialLoginResponse,
+  };
 };
 
 const runBestEffortProviderSignOut = async <T>(

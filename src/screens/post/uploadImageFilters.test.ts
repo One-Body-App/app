@@ -1,3 +1,11 @@
+import {
+  buildUploadImageColorMatrix,
+  IDENTITY_COLOR_MATRIX,
+  resolveUploadImageAdjustMatrix,
+  resolveUploadImageFilterMatrix,
+  UPLOAD_IMAGE_FILTERS,
+} from './uploadImageFilters';
+
 jest.mock('react-native-color-matrix-image-filters', () => {
   const filters = jest.requireActual('rn-color-matrices').default;
   const { concatColorMatrices: actualConcatColorMatrices } =
@@ -17,14 +25,6 @@ jest.mock('react-native-color-matrix-image-filters', () => {
     warm: filters.warm,
   };
 });
-
-const {
-  buildUploadImageColorMatrix,
-  IDENTITY_COLOR_MATRIX,
-  resolveUploadImageAdjustMatrix,
-  resolveUploadImageFilterMatrix,
-  UPLOAD_IMAGE_FILTERS,
-} = require('./uploadImageFilters');
 
 describe('uploadImageFilters', () => {
   it('ships the expected filter tray order', () => {

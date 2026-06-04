@@ -1,6 +1,7 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-devsettings/withAsyncStorage';
 
+import { useLayoutEffect } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 
@@ -50,14 +51,14 @@ function ClerkSessionBridge() {
   const { getToken } = useAuth();
   const { signOut } = useClerk();
 
-  useMountEffect(() => {
+  useLayoutEffect(() => {
     setClerkSessionAccessors({
       getToken: (options) => getToken(options),
       signOut: () => signOut(),
     });
 
     return clearClerkSessionAccessors;
-  });
+  }, [getToken, signOut]);
 
   return null;
 }

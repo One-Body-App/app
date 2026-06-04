@@ -27,8 +27,9 @@ describe('authFlow', () => {
     ).toBe('placeholder');
   });
 
-  it('treats AccountType as a public auth route', () => {
+  it('treats auth entry screens as public auth routes', () => {
     expect(isPublicAuthRoute('AccountType')).toBe(true);
+    expect(isPublicAuthRoute('ResetPassword')).toBe(true);
     expect(isPublicAuthRoute('MainRoot')).toBe(false);
   });
 

@@ -39,27 +39,14 @@ import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import StyledTextInput from '@/components/styled/TextInput';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
-import {
-  ensureGoogleSigninConfigured,
-  exchangeSocialToken,
-  getAppleIdToken,
-  getGoogleIdToken,
-} from '@/services/socialAuth';
 import { clearPendingAccountType, savePendingAccountType } from '@/src/services/accountTypeStorage';
-import {
-  clearPendingSocialContinuation,
-  loadPendingSocialContinuation,
-} from '@/src/services/pendingSocialContinuation';
+import { clearPendingSocialContinuation } from '@/src/services/pendingSocialContinuation';
 import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { getValidAccessToken } from '@/src/services/authTokens';
 import { syncClerkUserProfile } from '@/src/services/clerkSync';
-import {
-  getSocialAuthActionLabel,
-  getSocialAuthErrorMessage,
-  isSocialSignupRequiredResponse,
-} from '@/src/utils/socialAuthFlow';
+import { getSocialAuthActionLabel } from '@/src/utils/socialAuthFlow';
 
 const brandWhite = '#f6f6f7';
 const googleIcon = require('@/assets/icons/google.png');
@@ -289,10 +276,6 @@ function SignupForm({ navigation, route }: Props) {
       dispatch(setAccountType(accountType));
       savePendingAccountType(accountType).catch(() => undefined);
     }
-  });
-
-  useMountEffect(() => {
-    ensureGoogleSigninConfigured();
   });
 
   const orbitAnim = useRef(new Animated.Value(0)).current;
@@ -569,103 +552,6 @@ function SignupForm({ navigation, route }: Props) {
     }
   };
 
-  const completeSocialSignup = useCallback(
-    async (params: {
-      provider: 'google' | 'apple';
-      idToken: string;
-      nonce?: string;
-      details?: {
-        email?: string;
-        displayName?: string;
-        firstName?: string;
-        lastName?: string;
-      };
-    }) => {
-      if (socialLoading) {
-        return;
-      }
-
-      const providerLabel = params.provider === 'google' ? 'Google' : 'Apple';
-      setFormError('');
-      setFormSuccess('');
-      dispatch(setLoader(true));
-      setSocialLoading(true);
-
-      try {
-        if (accountType) {
-          dispatch(setAccountType(accountType));
-          await savePendingAccountType(accountType);
-        }
-
-        const res = await exchangeSocialToken({
-          provider: params.provider,
-          intent: 'signup',
-          idToken: params.idToken,
-          nonce: params.nonce,
-          accountType,
-          details: params.details,
-          createIfMissing: true,
-        });
-
-        if (res.status === 200 && isSocialSignupRequiredResponse(res.response)) {
-          clearPendingSocialContinuation();
-          setFormError('Please choose an account type to continue your social sign-in.');
-          return;
-        }
-
-        if (res.status === 200 && res.response?.mfaRequired) {
-          clearPendingSocialContinuation();
-          setFormError(
-            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
-          );
-          return;
-        }
-
-        if (res.status === 200 && res.response?.tokens?.accessToken) {
-          clearPendingSocialContinuation();
-          if (res.response.isNewUser && accountType) {
-            dispatch(
-              getProfile.Success({
-                token: res.response.tokens.accessToken,
-                email: params.details?.email ?? state.email,
-                emailVerified: true,
-                accountType,
-                isProfileCompleted: false,
-              })
-            );
-          }
-          await clearPendingAccountType();
-          dispatch(
-            setLoginData({
-              token: res.response.tokens.accessToken,
-              resetProfile: true,
-              authMethod: res.response?.authMethod ?? 'social',
-              bypassMandatoryMfaOnboarding: res.response?.bypassMandatoryMfaOnboarding !== false,
-            })
-          );
-          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-          return;
-        }
-
-        setFormError(
-          getSocialAuthErrorMessage(
-            res.response,
-            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
-          )
-        );
-      } catch (e: any) {
-        setFormError(
-          e?.message ??
-            `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
-        );
-      } finally {
-        dispatch(setLoader(false));
-        setSocialLoading(false);
-      }
-    },
-    [accountType, dispatch, navigation, socialLoading, state.email]
-  );
-
   const handleSocialSignup = useCallback(
     async (provider: 'google' | 'apple') => {
       if (socialLoading) {
@@ -772,20 +658,8 @@ function SignupForm({ navigation, route }: Props) {
     }
 
     attemptedPendingSocialSignupRef.current = true;
-    const pendingSocialContinuation = loadPendingSocialContinuation();
-
-    if (!pendingSocialContinuation) {
-      clearPendingSocialContinuation();
-      setFormError('Your social sign-in session expired. Please try again.');
-      return;
-    }
-
-    completeSocialSignup({
-      provider: pendingSocialContinuation.provider,
-      idToken: pendingSocialContinuation.idToken,
-      nonce: pendingSocialContinuation.nonce,
-      details: pendingSocialContinuation.details,
-    });
+    clearPendingSocialContinuation();
+    setFormError('Please continue with Google or Apple again to finish creating your account.');
   });
 
   const orbitStyle = {

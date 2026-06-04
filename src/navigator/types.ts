@@ -516,6 +516,7 @@ export type MainStackParamList = {
   };
 
   ForgotPassword: { email?: string } | undefined;
+  ResetPassword: { token?: string } | undefined;
 
   ConfirmLogin: ConfirmLoginScreen;
   VideoPost:

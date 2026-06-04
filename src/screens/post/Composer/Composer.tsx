@@ -31,6 +31,7 @@ import ComposerLectern, { type LecternToolId } from './ComposerLectern';
 import ComposerModerationChip from './ComposerModerationChip';
 import ComposerHeader from './ComposerHeader';
 import ComposerScripturePicker from './ComposerScripturePicker';
+import ComposerScriptureCard from './ComposerScriptureCard';
 import { submitComposerDraft } from './composerSubmit';
 import {
   clearComposerDraft,
@@ -369,7 +370,12 @@ export default function Composer({ navigation }: Props): React.ReactElement {
 
   const handleSelectScripture = useCallback(
     (scriptureShare: NonNullable<ComposerDraft['scriptureShare']>) => {
+      // The scripture rides along as its own quote card (draft.scriptureShare),
+      // not as text in the caption. Attach it, close the picker, and refocus the
+      // caption so the user can add their own words.
       updateDraft((current) => ({ ...current, scriptureShare }));
+      setScripturePickerOpen(false);
+      setTimeout(() => captionInputRef.current?.focus(), 50);
     },
     [updateDraft]
   );
@@ -573,6 +579,15 @@ export default function Composer({ navigation }: Props): React.ReactElement {
                   selected={draft.scriptureShare}
                   onSelect={handleSelectScripture}
                   onClear={handleClearScripture}
+                />
+              ) : undefined
+            }
+            attachment={
+              draft.scriptureShare ? (
+                <ComposerScriptureCard
+                  share={draft.scriptureShare}
+                  palette={palette}
+                  onRemove={handleClearScripture}
                 />
               ) : undefined
             }

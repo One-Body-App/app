@@ -343,7 +343,7 @@ export default function VideoPost({ navigation, route }: Props) {
     setIsTrimEditorVisible(false);
     resetTrimState();
     resetCropState();
-  }, [resetCropState, resetTrimState]);
+  }, [resetCropState, resetTrimState, setIsTrimEditorVisible]);
 
   const rejectUnsupportedUploadedVideo = useCallback(() => {
     clearSelectedVideo();
@@ -376,7 +376,7 @@ export default function VideoPost({ navigation, route }: Props) {
       setPendingAutoTrimUri(options?.autoOpenTrimEditor ? sourceUri : null);
       resetCropState();
     },
-    [resetCropState, resetTrimState]
+    [resetCropState, resetTrimState, setIsTrimEditorVisible]
   );
 
   const resolveVideoUri = useCallback(async (asset?: Asset, explicitUri?: string) => {
@@ -690,7 +690,7 @@ export default function VideoPost({ navigation, route }: Props) {
         toast.show('Unable to open trim editor.', { type: 'danger' });
       }
     },
-    [getTrimEditorPath, toast]
+    [getTrimEditorPath, setIsTrimEditorVisible, toast]
   );
 
   const handleTrimPress = useCallback(() => {

@@ -50,6 +50,8 @@ export type ComposerLecternProps = {
   tools: LecternToolDef[];
   onToolPress: (tool: LecternToolId) => void;
   toolPanel?: React.ReactNode;
+  // Rendered just below the caption (e.g. an attached scripture quote card).
+  attachment?: React.ReactNode;
   // The lectern itself is a controlled component so the host can flip between
   // compact options and expanded options. The caption stays visible in both.
   expanded: boolean;
@@ -138,6 +140,7 @@ export default function ComposerLectern({
   tools,
   onToolPress,
   toolPanel,
+  attachment,
   expanded,
   onExpandedChange,
   onHeightChange,
@@ -261,6 +264,8 @@ export default function ComposerLectern({
         >
           {captionNode}
 
+          {attachment}
+
           <View style={[styles.toolsRow, styles.toolsRowExpanded]}>
             {visibleTools.map((tool) => (
               <ToolButton
@@ -278,6 +283,8 @@ export default function ComposerLectern({
       ) : (
         <View style={[styles.bodyCompact, { paddingBottom: composerSpace.md + bottomInset }]}>
           {captionNode}
+
+          {attachment}
 
           <View style={[styles.toolsRow, styles.toolsRowCompact]}>
             {visibleTools.map((tool) => (

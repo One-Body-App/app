@@ -1,7 +1,4 @@
-import axios from 'axios';
 import { ApiCall } from '@/services/api';
-import { BASE_URL } from './constants';
-import { saveAuthTokens } from './authTokens';
 import { requestUserPermission } from './notification/notificationServices';
 
 type AuthApiTokens = {
@@ -28,59 +25,35 @@ export type MfaChallengeResponse = {
   reason: 'mandatory_mfa' | 'step_up';
 };
 
-const persistTokensSafely = async (tokens?: AuthApiTokens) => {
-  if (!tokens?.accessToken) {
-    return;
-  }
-
-  try {
-    await saveAuthTokens(tokens);
-  } catch (error: any) {
-    if (__DEV__) {
-      console.warn('Token persistence failed; continuing with in-memory session', error?.message);
-    }
-  }
+const legacyAuthDisabledResponse = {
+  status: 410,
+  response: {
+    message: 'Legacy API authentication is disabled. Please use Clerk sign-in.',
+  },
 };
 
-export const registerWithEmailAndPassword = async (params: {
+export const registerWithEmailAndPassword = async (_params: {
   name: string;
   email: string;
   username: string;
   password: string;
   accountType?: string | null;
 }) => {
-  const res = await ApiCall<AuthApiResponse | MfaChallengeResponse>({
-    route: 'auth/register',
-    verb: 'post',
-    params: {
-      ...params,
-      accountType: params.accountType ?? undefined,
-    },
-  });
-
-  if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
-    await persistTokensSafely((res.response as any).tokens);
-  }
-
-  return res;
+  return legacyAuthDisabledResponse as {
+    status: number;
+    response: AuthApiResponse | MfaChallengeResponse | { message: string };
+  };
 };
 
-export const loginWithEmailAndPassword = async (params: {
+export const loginWithEmailAndPassword = async (_params: {
   email: string;
   password: string;
   twoFactorCode?: string;
 }) => {
-  const res = await ApiCall<AuthApiResponse | MfaChallengeResponse>({
-    route: 'auth/login',
-    verb: 'post',
-    params,
-  });
-
-  if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
-    await persistTokensSafely((res.response as any).tokens);
-  }
-
-  return res;
+  return legacyAuthDisabledResponse as {
+    status: number;
+    response: AuthApiResponse | MfaChallengeResponse | { message: string };
+  };
 };
 
 export const migrateLegacyPasswordToClerk = async (
@@ -96,12 +69,6 @@ export const migrateLegacyPasswordToClerk = async (
     },
     suppressErrorLog: options?.suppressErrorLog,
   });
-};
-
-const persistTokensIfProvided = async (response: any) => {
-  if (response?.tokens?.accessToken) {
-    await persistTokensSafely(response.tokens);
-  }
 };
 
 export const beginPasskeyRegistration = async (params: {
@@ -124,9 +91,6 @@ export const finishPasskeyRegistration = async (params: {
     verb: 'post',
     params,
   });
-  if (res.status === 200) {
-    await persistTokensIfProvided(res.response);
-  }
   return res;
 };
 
@@ -163,9 +127,6 @@ export const finishPasskeyLogin = async (params: {
     verb: 'post',
     params,
   });
-  if (res.status === 200) {
-    await persistTokensIfProvided(res.response);
-  }
   return res;
 };
 
@@ -183,9 +144,6 @@ export const verifyTotpSetup = async (params: { mfaToken: string; code: string }
     verb: 'post',
     params,
   });
-  if (res.status === 200) {
-    await persistTokensIfProvided(res.response);
-  }
   return res;
 };
 
@@ -195,9 +153,6 @@ export const verifyTotpCode = async (params: { mfaToken: string; code: string })
     verb: 'post',
     params,
   });
-  if (res.status === 200) {
-    await persistTokensIfProvided(res.response);
-  }
   return res;
 };
 
@@ -215,9 +170,6 @@ export const verifyEmailMfaCode = async (params: { mfaToken: string; code: strin
     verb: 'post',
     params,
   });
-  if (res.status === 200) {
-    await persistTokensIfProvided(res.response);
-  }
   return res;
 };
 
@@ -227,35 +179,23 @@ export const verifyBackupCode = async (params: { mfaToken: string; code: string 
     verb: 'post',
     params,
   });
-  if (res.status === 200) {
-    await persistTokensIfProvided(res.response);
-  }
   return res;
 };
 
-export const verifyEmailTwoFactorCode = async (params: { email: string; code: string }) => {
-  const res = await ApiCall<AuthApiResponse>({
-    route: 'auth/two-factor/email/verify',
-    verb: 'post',
-    params,
-  });
-
-  if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
-    await persistTokensSafely((res.response as any).tokens);
-  }
-
-  return res;
-};
-
-export const refreshWithStoredToken = async (refreshToken: string) => {
-  const options = {
-    method: 'POST',
-    url: `${BASE_URL}/auth/refresh`,
-    headers: { 'Content-Type': 'application/json' },
-    data: { refreshToken },
+export const verifyEmailTwoFactorCode = async (_params: { email: string; code: string }) => {
+  return legacyAuthDisabledResponse as {
+    status: number;
+    response: AuthApiResponse | { message: string };
   };
+};
 
-  return axios.request(options);
+export const refreshWithStoredToken = async (_refreshToken: string) => {
+  return {
+    status: 410,
+    data: {
+      message: 'Legacy API token refresh is disabled. Please use Clerk sign-in.',
+    },
+  };
 };
 
 export const processLogin = async (accessToken: string) => {

@@ -43,30 +43,38 @@ export default function ScriptureCard({ share, style }: Props): React.ReactEleme
         },
       ]}
     >
-      <View style={styles.header}>
-        <View style={styles.iconFrame}>
-          <MaterialIcons name="menu-book" size={17} color="#41899f" />
+      <View style={styles.rail} />
+      <View style={styles.body}>
+        <View style={styles.header}>
+          <View style={styles.iconFrame}>
+            <MaterialIcons name="menu-book" size={17} color="#41899f" />
+          </View>
+          <View style={styles.headerText}>
+            <StyledText numberOfLines={1} style={styles.reference}>
+              {share.reference}
+            </StyledText>
+            <StyledText numberOfLines={1} style={styles.translation}>
+              {share.translation}
+            </StyledText>
+          </View>
         </View>
-        <View style={styles.headerText}>
-          <StyledText numberOfLines={1} style={styles.reference}>
-            {share.reference}
-          </StyledText>
-          <StyledText numberOfLines={1} style={styles.translation}>
-            {share.translation}
-          </StyledText>
-        </View>
-      </View>
 
-      <StyledText style={styles.verseText}>{text}</StyledText>
-
-      <View style={styles.footer}>
-        <View style={styles.count}>
-          <MaterialIcons name="visibility" size={15} color="#41899f" />
-          <StyledText style={styles.countText}>{formatCount(share.shareCount)} shares</StyledText>
+        <View style={styles.quoteRow}>
+          <StyledText style={styles.quoteMark}>“</StyledText>
+          <StyledText style={styles.verseText}>{text}</StyledText>
         </View>
-        {canExpand ? (
-          <StyledText style={styles.expandText}>{expanded ? 'Show less' : 'Read more'}</StyledText>
-        ) : null}
+
+        <View style={styles.footer}>
+          <View style={styles.count}>
+            <MaterialIcons name="visibility" size={15} color="#41899f" />
+            <StyledText style={styles.countText}>{formatCount(share.shareCount)} shares</StyledText>
+          </View>
+          {canExpand ? (
+            <StyledText style={styles.expandText}>
+              {expanded ? 'Show less' : 'Read more'}
+            </StyledText>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -74,17 +82,36 @@ export default function ScriptureCard({ share, style }: Props): React.ReactEleme
 
 const styles = StyleSheet.create({
   card: {
+    flexDirection: 'row',
     borderRadius: 12,
     borderWidth: borderWidth.thin,
     borderColor: 'rgba(3, 47, 60, 0.15)',
     backgroundColor: 'rgba(65, 137, 159, 0.06)',
-    padding: spacing.x10,
+    overflow: 'hidden',
     marginBottom: spacing.x10,
+  },
+  rail: {
+    width: 4,
+    backgroundColor: '#41899f',
+  },
+  body: {
+    flex: 1,
+    padding: spacing.x10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.x8,
+  },
+  quoteRow: {
+    flexDirection: 'row',
+  },
+  quoteMark: {
+    color: '#41899f',
+    fontSize: 28,
+    lineHeight: 30,
+    marginTop: -4,
+    marginRight: 6,
   },
   iconFrame: {
     width: 32,
@@ -111,6 +138,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   verseText: {
+    flex: 1,
     color: '#032f3c',
     fontSize: 15,
     lineHeight: 23,

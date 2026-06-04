@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { decode as decodeBase64 } from 'base-64';
 import * as Keychain from 'react-native-keychain';
-import { BASE_URL } from './constants';
 import { getClerkSessionToken, signOutClerkSession } from './clerkSession';
 
 const STORAGE_KEYS = {
@@ -28,7 +27,71 @@ export type StoredAuthTokens = {
   refreshTokenExpiresAt: number;
 };
 
+export type AuthTokenKind = 'clerk' | 'api' | 'unknown';
+export type LoadAuthTokensState =
+  | { status: 'ok'; tokens: StoredAuthTokens }
+  | { status: 'empty' | 'unavailable'; tokens?: undefined };
+
 let inFlightRefresh: Promise<StoredAuthTokens | null> | null = null;
+
+function decodeBase64UrlJson(value: string): Record<string, unknown> | null {
+  try {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    return JSON.parse(decodeBase64(padded)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function decodeJwtPayload(token?: string): Record<string, unknown> | null {
+  if (!token) {
+    return null;
+  }
+
+  const parts = token.split('.');
+  if (parts.length < 2 || !parts[1]) {
+    return null;
+  }
+
+  return decodeBase64UrlJson(parts[1]);
+}
+
+export function getAuthTokenKind(token?: string): AuthTokenKind {
+  const payload = decodeJwtPayload(token);
+  if (!payload) {
+    return 'unknown';
+  }
+
+  const issuer = typeof payload.iss === 'string' ? payload.iss.toLowerCase() : '';
+  const subject = typeof payload.sub === 'string' ? payload.sub : '';
+  const sessionId = typeof payload.sid === 'string' ? payload.sid : '';
+  if (issuer.includes('clerk') || subject.startsWith('user_') || sessionId.startsWith('sess_')) {
+    return 'clerk';
+  }
+
+  if (
+    payload.actorType === 'user' ||
+    payload.actorType === 'admin' ||
+    typeof payload.accountType === 'string' ||
+    typeof payload.role === 'string'
+  ) {
+    return 'api';
+  }
+
+  return 'unknown';
+}
+
+export function getAuthTokenExpiresAt(token?: string): number | null {
+  const payload = decodeJwtPayload(token);
+  const exp = payload?.exp;
+  return typeof exp === 'number' && Number.isFinite(exp) && exp > 0 ? exp * 1000 : null;
+}
+
+export function isAuthTokenExpired(token?: string, skewMs = 30_000): boolean {
+  const expiresAt = getAuthTokenExpiresAt(token);
+  return expiresAt != null && Date.now() + skewMs >= expiresAt;
+}
 
 function isValidStoredTokens(value: Partial<StoredAuthTokens> | null): value is StoredAuthTokens {
   if (!value) {
@@ -74,19 +137,25 @@ async function clearLegacyTokens(): Promise<void> {
   ]);
 }
 
-async function readSecureTokens(): Promise<StoredAuthTokens | null> {
+async function readSecureTokensState(): Promise<LoadAuthTokensState> {
+  let credentials: false | Keychain.UserCredentials;
   try {
-    const credentials = await Keychain.getGenericPassword({
+    credentials = await Keychain.getGenericPassword({
       service: AUTH_TOKEN_SERVICE,
     });
-    if (!credentials) {
-      return null;
-    }
-
-    const parsed = JSON.parse(credentials.password ?? '{}') as Partial<StoredAuthTokens>;
-    return isValidStoredTokens(parsed) ? parsed : null;
   } catch {
-    return null;
+    return { status: 'unavailable' };
+  }
+
+  if (!credentials) {
+    return { status: 'empty' };
+  }
+
+  try {
+    const parsed = JSON.parse(credentials.password ?? '{}') as Partial<StoredAuthTokens>;
+    return isValidStoredTokens(parsed) ? { status: 'ok', tokens: parsed } : { status: 'empty' };
+  } catch {
+    return { status: 'empty' };
   }
 }
 
@@ -147,7 +216,7 @@ async function clearSecureTokens(): Promise<void> {
     // ignore default-service cleanup failures
   }
 
-  if (await readSecureTokens()) {
+  if ((await readSecureTokensState()).status === 'ok') {
     await invalidateSecureTokens();
 
     try {
@@ -158,42 +227,35 @@ async function clearSecureTokens(): Promise<void> {
   }
 }
 
-export async function loadAuthTokens(): Promise<StoredAuthTokens | null> {
-  const secure = await readSecureTokens();
-  if (secure) {
+export async function loadAuthTokensState(): Promise<LoadAuthTokensState> {
+  const secure = await readSecureTokensState();
+  if (secure.status === 'ok') {
     return secure;
   }
 
   const legacy = await readLegacyTokens();
   if (!legacy) {
-    return null;
+    return secure.status === 'unavailable' ? { status: 'unavailable' } : { status: 'empty' };
   }
 
-  const wroteSecure = await writeSecureTokens(legacy);
-  await clearLegacyTokens();
-  return wroteSecure ? legacy : null;
+  if (secure.status !== 'unavailable') {
+    const wroteSecure = await writeSecureTokens(legacy);
+    if (wroteSecure) {
+      await clearLegacyTokens();
+    }
+    return { status: 'ok', tokens: legacy };
+  }
+
+  return { status: 'ok', tokens: legacy };
 }
 
-export async function saveAuthTokens(tokens: AuthTokens): Promise<StoredAuthTokens> {
-  const now = Date.now();
-  const accessTokenExpiresAt = now + tokens.expiresIn * 1000;
-  const refreshTokenExpiresAt = now + tokens.refreshExpiresIn * 1000;
+export async function loadAuthTokens(): Promise<StoredAuthTokens | null> {
+  const state = await loadAuthTokensState();
+  return state.status === 'ok' ? state.tokens : null;
+}
 
-  const storedTokens: StoredAuthTokens = {
-    accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken,
-    accessTokenExpiresAt,
-    refreshTokenExpiresAt,
-  };
-
-  const wroteSecure = await writeSecureTokens(storedTokens);
-  if (wroteSecure) {
-    await clearLegacyTokens();
-    return storedTokens;
-  }
-
-  await clearLegacyTokens();
-  throw new Error('Secure token storage unavailable');
+export async function saveAuthTokens(_tokens: AuthTokens): Promise<StoredAuthTokens> {
+  throw new Error('Legacy API token storage is disabled. Please use Clerk sign-in.');
 }
 
 export async function clearAuthTokens(): Promise<void> {
@@ -207,10 +269,6 @@ export async function clearAuthTokens(): Promise<void> {
   await clearLegacyTokens();
 }
 
-function isExpired(expiresAt: number, skewMs = 30_000) {
-  return Date.now() + skewMs >= expiresAt;
-}
-
 export async function refreshAuthTokens(): Promise<StoredAuthTokens | null> {
   if (inFlightRefresh) {
     return inFlightRefresh;
@@ -218,26 +276,6 @@ export async function refreshAuthTokens(): Promise<StoredAuthTokens | null> {
 
   inFlightRefresh = (async () => {
     try {
-      const stored = await loadAuthTokens();
-      if (!stored) {
-        return null;
-      }
-
-      if (isExpired(stored.refreshTokenExpiresAt, 0)) {
-        await clearAuthTokens();
-        return null;
-      }
-
-      const url = `${BASE_URL}/auth/refresh`;
-      const res = await axios.post(url, { refreshToken: stored.refreshToken });
-
-      const nextTokens: AuthTokens | undefined = res?.data?.tokens;
-      if (!nextTokens?.accessToken || !nextTokens?.refreshToken) {
-        return null;
-      }
-
-      return await saveAuthTokens(nextTokens);
-    } catch {
       return null;
     } finally {
       inFlightRefresh = null;
@@ -250,22 +288,20 @@ export async function refreshAuthTokens(): Promise<StoredAuthTokens | null> {
 export async function getValidAccessToken(options?: {
   forceRefreshClerk?: boolean;
 }): Promise<string | null> {
-  const clerkToken = await getClerkSessionToken({
+  return getClerkSessionToken({
     forceRefresh: options?.forceRefreshClerk === true,
-  });
-  if (clerkToken) {
+  }).catch(() => null);
+}
+
+export async function getValidApiAccessToken(): Promise<string | null> {
+  return null;
+}
+
+export async function recoverAuthAfterUnauthorized(rejectedToken?: string): Promise<string | null> {
+  const clerkToken = await getClerkSessionToken({ forceRefresh: true }).catch(() => null);
+  if (clerkToken && clerkToken !== rejectedToken) {
     return clerkToken;
   }
 
-  const stored = await loadAuthTokens();
-  if (!stored) {
-    return null;
-  }
-
-  if (!isExpired(stored.accessTokenExpiresAt)) {
-    return stored.accessToken;
-  }
-
-  const refreshed = await refreshAuthTokens();
-  return refreshed?.accessToken ?? null;
+  return null;
 }

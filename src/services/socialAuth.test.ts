@@ -182,16 +182,10 @@ describe('socialAuth Google configuration', () => {
     expect(JSON.stringify(mockConsoleWarn.mock.calls)).not.toContain(googleIdToken);
   });
 
-  it('passes intent and createIfMissing through the social token exchange request', async () => {
+  it('does not call the legacy social token exchange endpoint', async () => {
     const socialAuth = loadSocialAuthModule('web-client-id');
-    mockApiCall.mockResolvedValue({
-      status: 200,
-      response: {
-        signupRequired: true,
-      },
-    });
 
-    await socialAuth.exchangeSocialToken({
+    const result = await socialAuth.exchangeSocialToken({
       provider: 'google',
       intent: 'login',
       idToken: 'google-id-token',
@@ -201,16 +195,14 @@ describe('socialAuth Google configuration', () => {
       createIfMissing: false,
     });
 
-    expect(mockApiCall).toHaveBeenCalledWith({
-      route: 'auth/social-login',
-      verb: 'post',
-      params: expect.objectContaining({
+    expect(result).toEqual({
+      status: 410,
+      response: expect.objectContaining({
         provider: 'google',
-        intent: 'login',
-        idToken: 'google-id-token',
-        token: 'google-id-token',
-        createIfMissing: false,
+        message: 'Legacy social-token exchange is disabled. Please use Clerk social sign-in.',
       }),
     });
+    expect(mockApiCall).not.toHaveBeenCalled();
+    expect(mockSaveAuthTokens).not.toHaveBeenCalled();
   });
 });
