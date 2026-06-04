@@ -147,21 +147,22 @@ export const ApiCall = async <T = any>({
 
     if (typeof token === 'string' && token.length > 0) {
       const initialTokenKind = getAuthTokenKind(token);
+
+      if (initialTokenKind === 'clerk' || initialTokenKind === 'unknown') {
+        return {
+          tokenValue: token,
+          kind: initialTokenKind,
+          usedClerk: initialTokenKind === 'clerk',
+        };
+      }
+
       const clerkAccessToken = await getClerkTokenSafely();
       if (clerkAccessToken) {
         return { tokenValue: clerkAccessToken, kind: 'clerk', usedClerk: true };
       }
 
-      if (initialTokenKind === 'api') {
-        return {
-          tokenValue: '',
-          kind: 'api',
-          usedClerk: false,
-        };
-      }
-
       return {
-        tokenValue: token,
+        tokenValue: '',
         kind: initialTokenKind,
         usedClerk: false,
       };

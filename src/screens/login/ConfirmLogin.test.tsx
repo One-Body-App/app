@@ -331,6 +331,7 @@ describe('ConfirmLogin', () => {
       name: 'Person Example',
       username: 'person.test',
       accountType: 'individual',
+      token: 'clerk-token',
     });
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'SET_LOGIN_DATA',
@@ -342,6 +343,10 @@ describe('ConfirmLogin', () => {
     expect(mockNavigationReset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'MainRoot' }],
+    });
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'GET_PROFILE_SUCCESS',
+      payload: { _id: 'user_123' },
     });
 
     act(() => {

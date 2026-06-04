@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Animated, InteractionManager, Pressable } from 'react-native';
+import { Animated, InteractionManager, Pressable, Text } from 'react-native';
 import SignupForm from './index';
 
 const mockDispatch = jest.fn();
@@ -13,9 +13,15 @@ const mockExchangeSocialToken = jest.fn();
 const mockStartSSOFlow = jest.fn();
 const mockActivateSsoSession = jest.fn();
 const mockSignUpCreate = jest.fn();
+const mockSignUpUpdate = jest.fn();
 const mockPrepareEmailAddressVerification = jest.fn();
 const mockGetValidAccessToken = jest.fn();
 const mockSyncClerkUserProfile = jest.fn();
+
+jest.mock('expo-crypto', () => ({
+  randomUUID: jest.fn(() => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+  getRandomBytes: jest.fn((byteCount: number) => Uint8Array.from(Array(byteCount).fill(171))),
+}));
 
 jest.mock('expo-image', () => {
   const mockReact = jest.requireActual('react');
@@ -58,6 +64,7 @@ jest.mock('@clerk/expo/legacy', () => ({
     isLoaded: true,
     signUp: {
       create: mockSignUpCreate,
+      update: mockSignUpUpdate,
       prepareEmailAddressVerification: mockPrepareEmailAddressVerification,
     },
   }),
@@ -200,16 +207,24 @@ jest.mock('@/src/services/clerkSync', () => ({
   syncClerkUserProfile: (params?: unknown) => mockSyncClerkUserProfile(params),
 }));
 
-const fillInput = (
-  renderer: TestRenderer.ReactTestRenderer,
-  testID: string,
-  value: string
-) => {
+const fillInput = (renderer: TestRenderer.ReactTestRenderer, testID: string, value: string) => {
   const input = renderer.root.findByProps({ testID }) as TestRenderer.ReactTestInstance;
   act(() => {
     input.props.onChangeText(value);
   });
 };
+
+const flattenText = (value: unknown): string => {
+  if (Array.isArray(value)) return value.map(flattenText).join('');
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  return '';
+};
+
+const readAllText = (renderer: TestRenderer.ReactTestRenderer) =>
+  renderer.root
+    .findAllByType(Text)
+    .map((node) => flattenText(node.props.children))
+    .join(' ');
 
 const pressJoin = async (renderer: TestRenderer.ReactTestRenderer) => {
   const joinButton = renderer.root
@@ -265,6 +280,10 @@ describe('SignupForm social buttons', () => {
       },
     });
     mockSignUpCreate.mockResolvedValue({ status: 'missing_requirements' });
+    mockSignUpUpdate.mockResolvedValue({
+      status: 'complete',
+      createdSessionId: 'clerk-session-id',
+    });
     mockPrepareEmailAddressVerification.mockResolvedValue({});
     mockActivateSsoSession.mockResolvedValue(undefined);
     mockStartSSOFlow.mockResolvedValue({
@@ -313,9 +332,16 @@ describe('SignupForm social buttons', () => {
     expect(mockStartSSOFlow).toHaveBeenCalledWith({
       strategy: 'oauth_apple',
       redirectUrl: 'onebodyapp://oauth-native-callback',
+      unsafeMetadata: {
+        authMethod: 'social',
+        accountType: 'individual',
+      },
     });
     expect(mockActivateSsoSession).toHaveBeenCalledWith({ session: 'clerk-session-id' });
-    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({ accountType: 'individual' });
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({
+      accountType: 'individual',
+      token: 'clerk-access-token',
+    });
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'SET_LOGIN_DATA',
@@ -327,6 +353,61 @@ describe('SignupForm social buttons', () => {
     );
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
     expect(mockReplace).not.toHaveBeenCalledWith('Login', expect.anything());
+  });
+
+  it('surfaces Clerk social signup password requirements as configuration errors', async () => {
+    const socialSignUpResource = {
+      status: 'missing_requirements',
+      missingFields: ['first_name', 'last_name', 'username', 'legal_accepted', 'password'],
+      emailAddress: 'person@example.com',
+      unsafeMetadata: {},
+      update: mockSignUpUpdate,
+    };
+    mockStartSSOFlow.mockResolvedValueOnce({
+      createdSessionId: null,
+      setActive: mockActivateSsoSession,
+      signUp: socialSignUpResource,
+    });
+    mockSignUpUpdate.mockResolvedValueOnce({
+      status: 'complete',
+      createdSessionId: 'patched-clerk-session-id',
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    const navigation = {
+      replace: mockReplace,
+      navigate: mockNavigate,
+      reset: mockReset,
+    } as any;
+    const route = {
+      key: 'signup',
+      name: 'SignUp',
+      params: {
+        accountType: 'individual',
+      },
+    } as any;
+
+    act(() => {
+      renderer = TestRenderer.create(<SignupForm navigation={navigation} route={route} />);
+    });
+
+    const appleButton = renderer!.root.findByProps({ testID: 'signup-apple-button' });
+    await act(async () => {
+      await appleButton.props.onPress();
+    });
+
+    expect(mockSignUpUpdate).not.toHaveBeenCalled();
+    expect(mockActivateSsoSession).not.toHaveBeenCalled();
+    expect(mockSyncClerkUserProfile).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'SET_LOGIN_DATA' })
+    );
+    expect(readAllText(renderer!)).toContain('Clerk is requiring a password for social signup');
+    expect(mockReset).not.toHaveBeenCalled();
+
+    act(() => {
+      renderer!.unmount();
+    });
   });
 
   it('submits individual signup with Clerk canonical first and last name fields', async () => {

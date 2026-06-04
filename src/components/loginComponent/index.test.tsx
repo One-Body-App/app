@@ -732,8 +732,8 @@ describe('LoginComponent passkey fallback', () => {
       })
     );
     expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
-    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({});
-    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('social-access-token');
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({ token: 'social-access-token' });
+    expect(mockBeginAuthenticatedMfaLogin).not.toHaveBeenCalled();
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'SET_LOGIN_DATA',
@@ -747,8 +747,40 @@ describe('LoginComponent passkey fallback', () => {
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
   });
 
-  it('requires app MFA after social sign-in when enrolled MFA is active', async () => {
-    mockBeginAuthenticatedMfaLogin.mockResolvedValueOnce({
+  it('does not complete social login when profile sync rejects the Clerk token', async () => {
+    mockSyncClerkUserProfile.mockResolvedValueOnce({
+      status: 401,
+      response: { message: 'Invalid Clerk session token' },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<LoginComponent currentUserEmail="person@example.com" />);
+    });
+    mountedRenderers.push(renderer!);
+
+    const googleButton = renderer!.root.findAllByType(Pressable).find((node) => {
+      return node.findAllByType(Image).length > 0;
+    });
+
+    await act(async () => {
+      await googleButton?.props.onPress?.();
+    });
+    await flushPromises();
+
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({ token: 'social-access-token' });
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'SET_LOGIN_DATA',
+      })
+    );
+    expect(mockReset).not.toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
+    expect(getRenderedText(renderer!)).toContain('Invalid Clerk session token');
+  });
+
+  it('signs social users in directly even when enrolled app MFA exists', async () => {
+    mockBeginAuthenticatedMfaLogin.mockResolvedValue({
       status: 200,
       response: {
         ...challengeBase,
@@ -785,58 +817,19 @@ describe('LoginComponent passkey fallback', () => {
       })
     );
     expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
-    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({});
-    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('social-access-token');
-    expect(mockMarkPendingLoginMfa).toHaveBeenCalledTimes(1);
-    expect(mockDispatch).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'SET_LOGIN_DATA' })
-    );
-    expect(mockReset).not.toHaveBeenCalled();
-    expect(getRenderedText(renderer!)).toContain('Verify with Passkey');
-
-    mockAuthenticate.mockResolvedValueOnce({
-      id: 'credential-id',
-      rawId: 'credential-raw-id',
-      type: 'public-key',
-      response: {
-        authenticatorData: 'authenticator-data',
-        clientDataJSON: 'client-data',
-        signature: 'signature',
-        userHandle: 'user-handle',
-      },
-    });
-    mockFinishPasskeyLogin.mockResolvedValueOnce({
-      status: 200,
-      response: {
-        tokens: {
-          accessToken: 'legacy-social-mfa-token',
-        },
-      },
-    });
-
-    const primaryButton = findTouchableByLabel(renderer!, 'Verify with Passkey');
-    await act(async () => {
-      await primaryButton?.props.onPress?.();
-    });
-    await flushPromises();
-
-    expect(mockFinishPasskeyLogin).toHaveBeenCalledWith(
-      expect.objectContaining({ mfaToken: 'social-mfa-token' })
-    );
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({ token: 'social-access-token' });
+    expect(mockBeginAuthenticatedMfaLogin).not.toHaveBeenCalled();
+    expect(mockMarkPendingLoginMfa).not.toHaveBeenCalled();
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'SET_LOGIN_DATA',
-      payload: {
+      payload: expect.objectContaining({
         token: 'social-access-token',
-        resetProfile: true,
-      },
+        authMethod: 'social',
+        bypassMandatoryMfaOnboarding: true,
+      }),
     });
-    expect(mockClearPendingLoginMfa).toHaveBeenCalled();
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'GET_PROFILE_REQUEST',
-      payload: {
-        token: 'social-access-token',
-      },
-    });
+    expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
+    expect(getRenderedText(renderer!)).not.toContain('Verify with Passkey');
   });
 
   it('signs social users in directly without routing through the MFA screen', async () => {
@@ -881,8 +874,12 @@ describe('LoginComponent passkey fallback', () => {
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
   });
 
-  it('checks app MFA after Clerk password sign-in before entering the app', async () => {
+  it('syncs after Clerk password sign-in before entering the app', async () => {
     mockGetValidAccessToken.mockResolvedValueOnce('clerk-access-token');
+    mockSyncClerkUserProfile.mockResolvedValueOnce({
+      status: 200,
+      response: { user: { _id: 'synced-user' } },
+    });
 
     let renderer: TestRenderer.ReactTestRenderer;
 
@@ -911,19 +908,30 @@ describe('LoginComponent passkey fallback', () => {
       })
     );
     expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
-    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('clerk-access-token');
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({
+      token: 'clerk-access-token',
+      email: 'person@example.com',
+    });
+    expect(mockBeginAuthenticatedMfaLogin).not.toHaveBeenCalled();
     expect(mockClearPendingLoginMfa).toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'SET_LOGIN_DATA',
+        payload: expect.objectContaining({
+          token: 'clerk-access-token',
+          resetProfile: true,
+          authMethod: 'password',
+        }),
+      })
+    );
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'SET_LOGIN_DATA',
-      payload: {
-        token: 'clerk-access-token',
-        resetProfile: true,
-      },
+      type: 'GET_PROFILE_SUCCESS',
+      payload: { _id: 'synced-user' },
     });
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
   });
 
-  it('requires app MFA after Clerk password sign-in when enrolled MFA is active', async () => {
+  it('does not start backend app MFA after Clerk password sign-in', async () => {
     mockGetValidAccessToken.mockResolvedValueOnce('clerk-access-token');
     mockBeginAuthenticatedMfaLogin.mockResolvedValueOnce({
       status: 200,
@@ -964,58 +972,25 @@ describe('LoginComponent passkey fallback', () => {
       })
     );
     expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
-    expect(mockBeginAuthenticatedMfaLogin).toHaveBeenCalledWith('clerk-access-token');
-    expect(mockMarkPendingLoginMfa).toHaveBeenCalledTimes(1);
-    expect(mockDispatch).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'SET_LOGIN_DATA' })
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({
+      token: 'clerk-access-token',
+      email: 'person@example.com',
+    });
+    expect(mockBeginAuthenticatedMfaLogin).not.toHaveBeenCalled();
+    expect(mockMarkPendingLoginMfa).not.toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'SET_LOGIN_DATA',
+        payload: expect.objectContaining({
+          token: 'clerk-access-token',
+          resetProfile: true,
+          authMethod: 'password',
+        }),
+      })
     );
-    expect(mockReset).not.toHaveBeenCalled();
-    expect(getRenderedText(renderer!)).toContain('Verify with Passkey');
+    expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
+    expect(getRenderedText(renderer!)).not.toContain('Verify with Passkey');
     expect(mockBeginPasskeyLogin).not.toHaveBeenCalled();
-
-    mockAuthenticate.mockResolvedValueOnce({
-      id: 'credential-id',
-      rawId: 'credential-raw-id',
-      type: 'public-key',
-      response: {
-        authenticatorData: 'authenticator-data',
-        clientDataJSON: 'client-data',
-        signature: 'signature',
-        userHandle: 'user-handle',
-      },
-    });
-    mockFinishPasskeyLogin.mockResolvedValueOnce({
-      status: 200,
-      response: {
-        tokens: {
-          accessToken: 'legacy-password-mfa-token',
-        },
-      },
-    });
-
-    const primaryButton = findTouchableByLabel(renderer!, 'Verify with Passkey');
-    await act(async () => {
-      await primaryButton?.props.onPress?.();
-    });
-    await flushPromises();
-
-    expect(mockFinishPasskeyLogin).toHaveBeenCalledWith(
-      expect.objectContaining({ mfaToken: 'login-mfa-token' })
-    );
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'SET_LOGIN_DATA',
-      payload: {
-        token: 'clerk-access-token',
-        resetProfile: true,
-      },
-    });
-    expect(mockClearPendingLoginMfa).toHaveBeenCalled();
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'GET_PROFILE_REQUEST',
-      payload: {
-        token: 'clerk-access-token',
-      },
-    });
   });
 
   it('prepares and completes Clerk email MFA after password sign-in needs a second factor', async () => {
@@ -1087,13 +1062,21 @@ describe('LoginComponent passkey fallback', () => {
       })
     );
     expect(mockGetValidAccessToken).toHaveBeenCalledWith({ forceRefreshClerk: true });
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'SET_LOGIN_DATA',
-      payload: {
-        token: 'clerk-mfa-access-token',
-        resetProfile: true,
-      },
+    expect(mockSyncClerkUserProfile).toHaveBeenCalledWith({
+      token: 'clerk-mfa-access-token',
+      email: 'person@example.com',
     });
+    expect(mockBeginAuthenticatedMfaLogin).not.toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'SET_LOGIN_DATA',
+        payload: expect.objectContaining({
+          token: 'clerk-mfa-access-token',
+          resetProfile: true,
+          authMethod: 'password',
+        }),
+      })
+    );
     expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'MainRoot' }] });
   });
 

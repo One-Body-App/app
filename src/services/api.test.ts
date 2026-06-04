@@ -24,6 +24,7 @@ jest.mock('axios', () => ({
 }));
 
 const axiosGet = axios.get as jest.MockedFunction<typeof axios.get>;
+const axiosPost = axios.post as jest.MockedFunction<typeof axios.post>;
 
 const unauthorized = (message = 'Invalid Clerk session token') => ({
   response: {
@@ -86,11 +87,38 @@ describe('ApiCall auth retry', () => {
     );
   });
 
+  it('uses a caller-provided Clerk token before any cached Clerk token', async () => {
+    mockGetAuthTokenKind.mockReturnValue('clerk');
+    mockGetClerkSessionToken.mockResolvedValue('cached-clerk-token');
+    axiosPost.mockResolvedValueOnce({ data: { ok: true } } as any);
+
+    const result = await ApiCall({
+      route: 'auth/clerk/sync',
+      verb: 'post',
+      token: 'fresh-social-clerk-token',
+      params: {},
+      suppressErrorLog: true,
+    });
+
+    expect(result).toEqual({ status: 200, response: { ok: true } });
+    expect(mockGetClerkSessionToken).not.toHaveBeenCalled();
+    expect(axiosPost).toHaveBeenNthCalledWith(
+      1,
+      'https://api.test/auth/clerk/sync',
+      {},
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer fresh-social-clerk-token',
+        },
+        timeout: 300000,
+      }
+    );
+  });
+
   it('tries a force-refreshed Clerk token after a rejected Clerk token', async () => {
     mockGetAuthTokenKind.mockReturnValue('clerk');
-    mockGetClerkSessionToken
-      .mockResolvedValueOnce('stale-clerk-token')
-      .mockResolvedValueOnce('fresh-clerk-token');
+    mockGetClerkSessionToken.mockResolvedValueOnce('fresh-clerk-token');
     axiosGet
       .mockRejectedValueOnce(unauthorized())
       .mockResolvedValueOnce({ data: { ok: true } } as any);
@@ -103,13 +131,13 @@ describe('ApiCall auth retry', () => {
     });
 
     expect(result).toEqual({ status: 200, response: { ok: true } });
-    expect(mockGetClerkSessionToken).toHaveBeenNthCalledWith(1, undefined);
-    expect(mockGetClerkSessionToken).toHaveBeenNthCalledWith(2, { forceRefresh: true });
+    expect(mockGetClerkSessionToken).toHaveBeenCalledTimes(1);
+    expect(mockGetClerkSessionToken).toHaveBeenNthCalledWith(1, { forceRefresh: true });
     expect(axiosGet).toHaveBeenNthCalledWith(
       1,
       'https://api.test/user/my-profile?pullSavedData=false',
       {
-        headers: { Authorization: 'Bearer stale-clerk-token' },
+        headers: { Authorization: 'Bearer redux-clerk-token' },
         timeout: 300000,
       }
     );
@@ -125,9 +153,7 @@ describe('ApiCall auth retry', () => {
 
   it('returns one final 401 when Clerk retry fails', async () => {
     mockGetAuthTokenKind.mockReturnValue('clerk');
-    mockGetClerkSessionToken
-      .mockResolvedValueOnce('stale-clerk-token')
-      .mockResolvedValueOnce('fresh-clerk-token');
+    mockGetClerkSessionToken.mockResolvedValueOnce('fresh-clerk-token');
     axiosGet.mockRejectedValueOnce(unauthorized()).mockRejectedValueOnce(unauthorized());
 
     const result = await ApiCall({

@@ -165,6 +165,11 @@ export type User = {
     isMfaActive?: boolean;
     defaultMethod?: 'passkey' | 'totp' | 'email' | 'backup';
   };
+  authSecurity?: {
+    mfaProvider?: 'clerk';
+    requiresMfaEnrollment?: boolean;
+    legacyMfaReenrollmentRequired?: boolean;
+  };
   influencerProfile?: InfluencerProfile;
   profile: Profile;
   savedPrayers?: string[];

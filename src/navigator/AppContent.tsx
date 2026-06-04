@@ -594,7 +594,7 @@ function AppContent() {
     const hasProfileError = getProfileError;
     const isEmailVerified = !!profileData?.emailVerified;
     const hasVerifiedEmail = isEmailVerified || isProfileCompleted;
-    const hasActiveMfa = profileData?.mfaConfig?.isMfaActive === true;
+    const requiresMfaEnrollment = profileData?.authSecurity?.requiresMfaEnrollment === true;
     const isMfaEnrollmentFlowActive = isMfaEnrollmentScreenActive({
       currentRouteName,
       currentRouteParams,
@@ -621,7 +621,7 @@ function AppContent() {
         hasProfileData,
         isProfileCompleted,
         hasProfileError: !!hasProfileError,
-        hasActiveMfa,
+        requiresMfaEnrollment,
         isMfaEnrollmentScreenActive: isMfaEnrollmentFlowActive,
         platform: Platform.OS,
       });
@@ -871,8 +871,14 @@ function AppContent() {
       },
       SignUp: { path: '/signup/:action' },
       Login: { path: '/login/:action' },
-      ResetPassword: {
+      ForgotPassword: {
         path: '/reset-password',
+        parse: {
+          email: (emailParam: string) => emailParam,
+        },
+      },
+      ResetPassword: {
+        path: '/legacy-reset-password',
         parse: {
           token: (tokenParam: string) => tokenParam,
         },

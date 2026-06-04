@@ -27,6 +27,10 @@ type MandatoryMfaGateState = LogoutGuardState & {
   getProfileData?: {
     emailVerified?: boolean | null;
     isProfileCompleted?: boolean | null;
+    authSecurity?: {
+      requiresMfaEnrollment?: boolean | null;
+      legacyMfaReenrollmentRequired?: boolean | null;
+    } | null;
     mfaConfig?: {
       isMfaActive?: boolean | null;
     } | null;
@@ -91,13 +95,13 @@ export function getDrawerNavMode(state: DrawerAuthState): 'main' | 'onboarding' 
 export function isMfaEnrollmentScreenActive(
   state: Pick<MandatoryMfaGateState, 'currentRouteName' | 'currentRouteParams' | 'getProfileData'>
 ): boolean {
-  const hasActiveMfa = state.getProfileData?.mfaConfig?.isMfaActive === true;
+  const requiresMfaEnrollment = state.getProfileData?.authSecurity?.requiresMfaEnrollment === true;
 
   return (
     state.currentRouteName === 'Login' &&
     state.currentRouteParams?.mfaOnboardingFlow === true &&
     state.currentRouteParams?.initialMfaChallenge?.enrollmentRequired === true &&
-    !hasActiveMfa
+    requiresMfaEnrollment
   );
 }
 
@@ -122,7 +126,7 @@ export function shouldBeginMandatoryMfaOnboarding(state: MandatoryMfaGateState):
     return false;
   }
 
-  if (state.getProfileData.mfaConfig?.isMfaActive === true) {
+  if (state.getProfileData.authSecurity?.requiresMfaEnrollment !== true) {
     return false;
   }
 

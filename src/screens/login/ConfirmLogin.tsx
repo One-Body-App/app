@@ -305,7 +305,15 @@ function ConfirmLogin({ route, navigation }: Props) {
         name: route?.params?.signupName,
         username: route?.params?.signupUsername,
         accountType: route?.params?.accountType as any,
+        token: accessToken,
       });
+      if (syncResult.status !== 200) {
+        const message =
+          typeof syncResult.response?.message === 'string'
+            ? syncResult.response.message
+            : 'Unable to finish account setup. Please try again.';
+        throw new Error(message);
+      }
 
       dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'password' }));
       dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));

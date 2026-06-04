@@ -149,7 +149,7 @@ describe('authFlow', () => {
           initialMfaChallenge: { enrollmentRequired: true },
         },
         getProfileData: {
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(true);
@@ -165,7 +165,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(true);
@@ -182,7 +182,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(true);
@@ -199,13 +199,13 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(false);
   });
 
-  it('does not begin mandatory MFA onboarding when MFA is already active', () => {
+  it('does not begin mandatory MFA onboarding when Clerk does not require enrollment', () => {
     expect(
       shouldBeginMandatoryMfaOnboarding({
         navigationReady: true,
@@ -215,7 +215,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: true },
+          authSecurity: { requiresMfaEnrollment: false },
         },
       })
     ).toBe(false);
@@ -231,7 +231,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: false,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(true);
@@ -247,7 +247,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: false,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(false);
@@ -264,7 +264,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(false);
@@ -281,7 +281,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(false);
@@ -301,7 +301,7 @@ describe('authFlow', () => {
         getProfileData: {
           emailVerified: true,
           isProfileCompleted: true,
-          mfaConfig: { isMfaActive: false },
+          authSecurity: { requiresMfaEnrollment: true },
         },
       })
     ).toBe(false);

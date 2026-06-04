@@ -25,7 +25,6 @@ import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { getProfile, setLoginData } from '@/src/redux/actions/AuthActions';
 import {
-  beginAuthenticatedMfaLogin,
   beginPasskeyLogin,
   beginPasskeyRegistration,
   beginTotpSetup,
@@ -50,7 +49,7 @@ import {
   PASSKEY_ASSOCIATION_FALLBACK_MESSAGE,
 } from '@/src/utils/passkeyErrors';
 import { getValidAccessToken } from '@/src/services/authTokens';
-import { clearPendingLoginMfa, markPendingLoginMfa } from '@/src/services/pendingLoginMfa';
+import { clearPendingLoginMfa } from '@/src/services/pendingLoginMfa';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import useObservedEffect from '@/src/hooks/useObservedEffect';
 
@@ -498,6 +497,47 @@ function LoginComponent({
     [dispatch, logAndroidPasskey, mfaChallenge?.enrollmentRequired, navigation]
   );
 
+  const completeSyncedClerkLogin = useCallback(
+    async ({
+      accessToken,
+      authMethod,
+      bypassMandatoryMfaOnboarding,
+      email,
+    }: {
+      accessToken: string;
+      authMethod: 'password' | 'social';
+      bypassMandatoryMfaOnboarding?: boolean;
+      email?: string;
+    }) => {
+      const syncResult = await syncClerkUserProfile({
+        token: accessToken,
+        email,
+      });
+      if (syncResult.status !== 200) {
+        const message =
+          typeof syncResult.response?.message === 'string'
+            ? syncResult.response.message
+            : 'Unable to sync your account. Please try again.';
+        throw new Error(message);
+      }
+
+      clearPendingLoginMfa().catch(() => undefined);
+      clearPendingSocialContinuation();
+      const syncedProfile = syncResult.response?.user ?? syncResult.response;
+      dispatch(
+        setLoginData({
+          token: accessToken,
+          resetProfile: true,
+          authMethod,
+          bypassMandatoryMfaOnboarding,
+        })
+      );
+      dispatch(getProfile.Success(syncedProfile));
+      navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+    },
+    [dispatch, navigation]
+  );
+
   const handleAuthResult = useCallback(
     async (response: any) => {
       if (response?.mfaRequired) {
@@ -542,37 +582,6 @@ function LoginComponent({
       completeLogin(token);
     },
     [completeLogin, trackMfaEvent]
-  );
-
-  const beginPostClerkPasswordMfa = useCallback(
-    async (accessToken: string) => {
-      const res = await beginAuthenticatedMfaLogin(accessToken);
-      if (res.status !== 200) {
-        throw new Error(
-          (res.response as any)?.message ?? 'Unable to start multi-factor authentication.'
-        );
-      }
-
-      if ((res.response as any)?.mfaRequired) {
-        await markPendingLoginMfa();
-        postClerkMfaAccessTokenRef.current = accessToken;
-        await handleAuthResult(res.response);
-        return true;
-      }
-
-      await clearPendingLoginMfa();
-      postClerkMfaAccessTokenRef.current = '';
-      return false;
-    },
-    [handleAuthResult]
-  );
-
-  const beginPostClerkSocialMfa = useCallback(
-    async (accessToken: string) => {
-      await syncClerkUserProfile({});
-      return beginPostClerkPasswordMfa(accessToken);
-    },
-    [beginPostClerkPasswordMfa]
   );
 
   const requestEmailMfaCode = useCallback(
@@ -1114,6 +1123,7 @@ function LoginComponent({
       setError('Enter your verification code.');
       return;
     }
+    const normalizedEmail = form.email.trim().toLowerCase();
 
     const result = await signIn.attemptSecondFactor({
       strategy: 'email_code',
@@ -1131,15 +1141,15 @@ function LoginComponent({
       throw new Error('Unable to start Clerk session.');
     }
 
-    if (await beginPostClerkPasswordMfa(accessToken)) {
-      return;
-    }
-
-    completeLogin(accessToken);
+    await completeSyncedClerkLogin({
+      accessToken,
+      authMethod: 'password',
+      email: normalizedEmail,
+    });
   }, [
-    beginPostClerkPasswordMfa,
-    completeLogin,
+    completeSyncedClerkLogin,
     form.code,
+    form.email,
     handleClerkTaskNavigation,
     isSignInLoaded,
     setActive,
@@ -1251,11 +1261,11 @@ function LoginComponent({
         throw new Error('Unable to start Clerk session.');
       }
 
-      if (await beginPostClerkPasswordMfa(accessToken)) {
-        return;
-      }
-
-      completeLogin(accessToken);
+      await completeSyncedClerkLogin({
+        accessToken,
+        authMethod: 'password',
+        email: normalizedEmail,
+      });
     } catch (e: any) {
       const fallbackMessage = getClerkErrorMessage(e);
       if (fallbackMessage.toLowerCase().includes('verify your email')) {
@@ -1273,8 +1283,8 @@ function LoginComponent({
     }
   }, [
     backupCodes.length,
-    beginPostClerkPasswordMfa,
     completeLogin,
+    completeSyncedClerkLogin,
     dispatch,
     ensureLocationPermission,
     form.email,
@@ -1320,20 +1330,11 @@ function LoginComponent({
           throw new Error('Unable to start Clerk session.');
         }
 
-        if (await beginPostClerkSocialMfa(accessToken)) {
-          return;
-        }
-
-        clearPendingSocialContinuation();
-        dispatch(
-          setLoginData({
-            token: accessToken,
-            resetProfile: true,
-            authMethod: 'social',
-            bypassMandatoryMfaOnboarding: true,
-          })
-        );
-        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+        await completeSyncedClerkLogin({
+          accessToken,
+          authMethod: 'social',
+          bypassMandatoryMfaOnboarding: true,
+        });
       } catch (e: any) {
         setError(
           e?.message ??
@@ -1345,13 +1346,12 @@ function LoginComponent({
       }
     },
     [
-      beginPostClerkSocialMfa,
       clerkMfaEmail,
+      completeSyncedClerkLogin,
       dispatch,
       ensureLocationPermission,
       handleClerkTaskNavigation,
       mfaChallenge,
-      navigation,
       socialLoading,
       startSSOFlow,
     ]

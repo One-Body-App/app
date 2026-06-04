@@ -5,11 +5,12 @@ export const syncClerkUserProfile = async (params: {
   name?: string;
   username?: string;
   accountType?: string | null;
+  token?: string | boolean;
 }) => {
   return ApiCall({
     route: 'auth/clerk/sync',
     verb: 'post',
-    token: true,
+    token: params.token ?? true,
     params: {
       email: params.email,
       name: params.name,

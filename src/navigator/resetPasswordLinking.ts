@@ -2,8 +2,8 @@ type ResetPasswordLinkState =
   | {
       routes: [
         {
-          name: 'ResetPassword';
-          params?: { token?: string };
+          name: 'ForgotPassword';
+          params?: { email?: string };
         },
       ];
     }
@@ -31,13 +31,13 @@ export const resolveResetPasswordLinkState = (path: string): ResetPasswordLinkSt
   }
 
   const query = new URLSearchParams(rawQuery ?? '');
-  const token = query.get('token') ?? undefined;
-  if (token || isApiResetPath) {
+  if (isApiResetPath) {
+    const email = query.get('email') ?? undefined;
     return {
       routes: [
         {
-          name: 'ResetPassword',
-          params: token ? { token } : undefined,
+          name: 'ForgotPassword',
+          params: email ? { email } : undefined,
         },
       ],
     };

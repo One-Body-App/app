@@ -18,6 +18,7 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useDispatch } from 'react-redux';
 import { useSSO } from '@clerk/expo';
 import { useSignUp } from '@clerk/expo/legacy';
+import * as Crypto from 'expo-crypto';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
@@ -66,6 +67,68 @@ const initialFormState = {
   passwordError: '',
   cPassword: '',
   cPasswordError: '',
+};
+
+type SocialSignupRequirementsUpdate = {
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  legalAccepted?: boolean;
+  unsafeMetadata?: Record<string, unknown>;
+};
+
+const SOCIAL_SIGNUP_PATCHABLE_FIELDS = ['first_name', 'last_name', 'username', 'legal_accepted'];
+
+const normalizeClerkMissingField = (field: string) =>
+  field
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+const getClerkMissingFields = (value: any) => {
+  const fields =
+    value?.missingFields ??
+    value?.missing_fields ??
+    value?.missingRequirements ??
+    value?.missing_requirements;
+
+  return Array.isArray(fields)
+    ? fields.filter((field): field is string => typeof field === 'string')
+    : [];
+};
+
+const getCreatedSessionId = (value: any) => {
+  const sessionId = value?.createdSessionId;
+  return typeof sessionId === 'string' && sessionId.trim() ? sessionId : undefined;
+};
+
+const socialMissingFieldLabel = (field: string) => {
+  const normalized = normalizeClerkMissingField(field);
+  if (normalized === 'first_name') return 'first name';
+  if (normalized === 'last_name') return 'last name';
+  if (normalized === 'legal_accepted') return 'terms acceptance';
+  return normalized.replace(/_/g, ' ') || field;
+};
+
+const socialMissingRequirementsMessage = (fields: string[]) => {
+  if (fields.some((field) => normalizeClerkMissingField(field) === 'password')) {
+    return 'Clerk is requiring a password for social signup. Update the Clerk OAuth signup requirements or use email signup.';
+  }
+
+  if (fields.length === 0) {
+    return 'Additional profile information is required before continuing.';
+  }
+  return `Clerk needs ${fields.map(socialMissingFieldLabel).join(', ')} before continuing.`;
+};
+
+const titleCaseFallback = (value: string) => {
+  const cleaned = value.replace(/[^a-zA-Z0-9]+/g, ' ').trim();
+  if (!cleaned) return '';
+  return cleaned
+    .split(/\s+/)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`)
+    .join(' ');
 };
 
 type SignupPalette = {
@@ -268,6 +331,147 @@ function SignupForm({ navigation, route }: Props) {
       return unique.slice(0, 5);
     },
     [normalizeUsername]
+  );
+
+  const completeSocialSignupSession = useCallback(
+    async (
+      createdSessionId: string,
+      activateSsoSession: (params: { session: string }) => unknown
+    ) => {
+      await activateSsoSession({ session: createdSessionId });
+      const accessToken = await getValidAccessToken({ forceRefreshClerk: true });
+      if (!accessToken) {
+        throw new Error('Unable to start Clerk session.');
+      }
+
+      const syncResult = await syncClerkUserProfile({
+        accountType,
+        token: accessToken,
+      });
+      if (syncResult.status !== 200) {
+        const message =
+          typeof syncResult.response?.message === 'string'
+            ? syncResult.response.message
+            : 'Unable to create your account with this social login. Please try again.';
+        throw new Error(message);
+      }
+
+      await clearPendingAccountType();
+      clearPendingSocialContinuation();
+      dispatch(
+        setLoginData({
+          token: accessToken,
+          resetProfile: true,
+          authMethod: 'social',
+          bypassMandatoryMfaOnboarding: true,
+        })
+      );
+      dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
+      navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+    },
+    [accountType, dispatch, navigation]
+  );
+
+  const buildSocialSignupRequirementsUpdate = useCallback(
+    (missingFields: string[], resource: any): SocialSignupRequirementsUpdate => {
+      const requestedFields = new Set(
+        (missingFields.length ? missingFields : SOCIAL_SIGNUP_PATCHABLE_FIELDS).map(
+          normalizeClerkMissingField
+        )
+      );
+      const update: SocialSignupRequirementsUpdate = {};
+      const emailLocalPart = String(resource?.emailAddress ?? '')
+        .split('@')[0]
+        ?.trim();
+      const fallbackName = titleCaseFallback(emailLocalPart || 'One Body');
+      const fallbackNameParts = fallbackName.split(/\s+/).filter(Boolean);
+      const firstName = signupFirstName || resource?.firstName || fallbackNameParts[0] || 'One';
+      const lastName = signupLastName || resource?.lastName || fallbackNameParts[1] || 'Body';
+      const usernameBase =
+        state.username ||
+        resource?.username ||
+        emailLocalPart ||
+        `${firstName}${lastName}` ||
+        'onebody';
+      const generatedUsername = normalizeClerkUsername(
+        `${usernameBase}${Crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`
+      );
+
+      if (requestedFields.has('first_name')) {
+        update.firstName = firstName;
+      }
+      if (requestedFields.has('last_name')) {
+        update.lastName = lastName;
+      }
+      if (requestedFields.has('username')) {
+        update.username = generatedUsername;
+      }
+      if (requestedFields.has('legal_accepted')) {
+        update.legalAccepted = true;
+      }
+      update.unsafeMetadata = {
+        ...(resource?.unsafeMetadata && typeof resource.unsafeMetadata === 'object'
+          ? resource.unsafeMetadata
+          : {}),
+        authMethod: 'social',
+        ...(accountType ? { accountType } : {}),
+      };
+
+      return update;
+    },
+    [accountType, normalizeClerkUsername, signupFirstName, signupLastName, state.username]
+  );
+
+  const completeOrPatchSocialSignup = useCallback(
+    async (resource: any, activateSsoSession: (params: { session: string }) => unknown) => {
+      const createdSessionId = getCreatedSessionId(resource);
+      if (createdSessionId) {
+        await completeSocialSignupSession(createdSessionId, activateSsoSession);
+        return;
+      }
+
+      if (resource?.status !== 'missing_requirements') {
+        throw new Error('Additional account information is required before continuing.');
+      }
+
+      const missingFields = getClerkMissingFields(resource);
+      const update = buildSocialSignupRequirementsUpdate(missingFields, resource);
+      const updateKeys = new Set(Object.keys(update));
+      const unpatchedFields = missingFields.filter((field) => {
+        const normalized = normalizeClerkMissingField(field);
+        if (normalized === 'first_name') return !update.firstName;
+        if (normalized === 'last_name') return !update.lastName;
+        if (normalized === 'username') return !update.username;
+        if (normalized === 'legal_accepted') return update.legalAccepted !== true;
+        return true;
+      });
+
+      if (unpatchedFields.length > 0 || updateKeys.size === 0) {
+        throw new Error(
+          socialMissingRequirementsMessage(
+            unpatchedFields.length > 0 ? unpatchedFields : missingFields
+          )
+        );
+      }
+
+      if (typeof resource.update !== 'function') {
+        throw new Error('Additional account information is required before continuing.');
+      }
+
+      const updated = await resource.update(update);
+      const updatedSessionId = getCreatedSessionId(updated) ?? getCreatedSessionId(resource);
+      if (!updatedSessionId) {
+        const remainingFields = getClerkMissingFields(updated);
+        throw new Error(
+          socialMissingRequirementsMessage(
+            remainingFields.length > 0 ? remainingFields : missingFields
+          )
+        );
+      }
+
+      await completeSocialSignupSession(updatedSessionId, activateSsoSession);
+    },
+    [buildSocialSignupRequirementsUpdate, completeSocialSignupSession]
   );
 
   // Set accountType in Redux when screen loads so social login can access it
@@ -565,34 +769,29 @@ function SignupForm({ navigation, route }: Props) {
       setSocialLoading(true);
 
       try {
-        const { createdSessionId, setActive: activateSsoSession } = await startSSOFlow({
+        const ssoResult = await startSSOFlow({
           strategy: provider === 'google' ? 'oauth_google' : 'oauth_apple',
           redirectUrl: 'onebodyapp://oauth-native-callback',
+          unsafeMetadata: {
+            authMethod: 'social',
+            ...(accountType ? { accountType } : {}),
+          },
         } as any);
+        const { createdSessionId, setActive: activateSsoSession, signUp: ssoSignUp } = ssoResult;
 
-        if (!createdSessionId || !activateSsoSession) {
+        if (!activateSsoSession) {
           setFormError(
             `Unable to ${getSocialAuthActionLabel('signup')} with ${providerLabel}. Please try again.`
           );
           return;
         }
 
-        await activateSsoSession({ session: createdSessionId });
-        const accessToken = await getValidAccessToken({ forceRefreshClerk: true });
-        if (!accessToken) {
-          throw new Error('Unable to start Clerk session.');
+        if (createdSessionId) {
+          await completeSocialSignupSession(createdSessionId, activateSsoSession);
+          return;
         }
 
-        const [syncResult] = await Promise.all([
-          syncClerkUserProfile({
-            accountType,
-          }),
-          clearPendingAccountType(),
-        ]);
-        clearPendingSocialContinuation();
-        dispatch(setLoginData({ token: accessToken, resetProfile: true, authMethod: 'social' }));
-        dispatch(getProfile.Success(syncResult.response?.user ?? syncResult.response));
-        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+        await completeOrPatchSocialSignup(ssoSignUp, activateSsoSession);
       } catch (e: any) {
         setFormError(
           e?.message ??
@@ -603,7 +802,14 @@ function SignupForm({ navigation, route }: Props) {
         setSocialLoading(false);
       }
     },
-    [accountType, dispatch, navigation, socialLoading, startSSOFlow]
+    [
+      accountType,
+      completeOrPatchSocialSignup,
+      completeSocialSignupSession,
+      dispatch,
+      socialLoading,
+      startSSOFlow,
+    ]
   );
 
   useMountEffect(() => {
