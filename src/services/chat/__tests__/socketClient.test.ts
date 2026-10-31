@@ -1,3 +1,4 @@
+import * as socketClient from '../socketClient';
 const mockGetValidAccessToken = jest.fn();
 const mockIo = jest.fn();
 
@@ -114,10 +115,8 @@ class FakeSocket {
 
 describe('socketClient', () => {
   let createdSockets: FakeSocket[] = [];
-  let socketClient: typeof import('../socketClient') | null = null;
 
   beforeEach(async () => {
-    jest.resetModules();
     createdSockets = [];
     mockIo.mockImplementation(() => {
       const socket = new FakeSocket();
@@ -126,8 +125,6 @@ describe('socketClient', () => {
     });
     mockGetValidAccessToken.mockReset();
     mockGetValidAccessToken.mockResolvedValue('token-1');
-    // eslint-disable-next-line global-require
-    socketClient = require('../socketClient') as typeof import('../socketClient');
   });
 
   afterEach(() => {
@@ -266,4 +263,14 @@ describe('socketClient', () => {
       reactions: [{ type: 'love', userId: 'user-1' }],
     });
   });
+  it('does not resurrect a connection after logout while the token is loading', async () => {
+    let resolve!: (value: string) => void;
+    mockGetValidAccessToken.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const pending = socketClient.connectChatSocket();
+    socketClient.disconnectChatSocket();
+    resolve('old-token');
+    await expect(pending).rejects.toMatchObject({ code: 'unauthorized-socket' });
+    expect(mockIo).not.toHaveBeenCalled();
+  });
+
 });

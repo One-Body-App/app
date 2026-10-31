@@ -40,6 +40,7 @@ import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { setChatAccount } from '@/src/services/chat/keyManager';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
 import {
   setLoginData,
@@ -1058,6 +1059,7 @@ function AppContent() {
 
   useLayoutEffect(() => {
     if (!token) {
+      setChatAccount(null);
       disconnectChatSocket();
       clearCachedPushToken().catch(() => undefined);
       return undefined;
@@ -1065,14 +1067,21 @@ function AppContent() {
 
     const profileData = authState.getProfileData;
     if (!profileData) {
+      setChatAccount(null);
       return undefined;
     }
 
     if (profileData.emailVerified !== true) {
+      setChatAccount(null);
       disconnectChatSocket();
       return undefined;
     }
 
+    if (!profileData._id) {
+      setChatAccount(null);
+      return undefined;
+    }
+    setChatAccount(String(profileData._id));
     const pushEnabled = profileData.pushNotificationsEnabled !== false;
     const shouldKeepSyncing = () => authState.getProfileData?.pushNotificationsEnabled !== false;
     let isMounted = true;
@@ -1085,7 +1094,7 @@ function AppContent() {
       }
 
       await syncIosDisplayedNotifications();
-      await ensureChatReady(token).catch(() => undefined);
+      if (isMounted) await ensureChatReady(token).catch(() => undefined);
     };
 
     bootstrapPush().catch(() => undefined);
@@ -1542,6 +1551,7 @@ function AppContent() {
 
   return (
     <NavigationContainer
+      key={authState.getProfileData?._id ?? 'signed-out'}
       ref={navigationRef}
       linking={linking}
       theme={scheme === 'dark' ? darkTheme : theme}

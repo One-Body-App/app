@@ -1,6 +1,7 @@
 // --------------- LIBRARIES ---------------
 import { call, put, select, takeEvery, takeLatest } from 'redux-saga/effects';
 import { Alert } from 'react-native';
+import { setChatAccount } from '@/src/services/chat/keyManager';
 import { setAccountType, setLoader } from '../actions/GeneralActions';
 
 // --------------- ASSETS ---------------
@@ -414,6 +415,7 @@ export function* logoutSaga(params: {
   };
   type: string;
 }) {
+  setChatAccount(null);
   const destination = params.data?.destination ?? 'Intro';
   const revokeServerSession = params.data?.revokeServerSession !== false;
   const shouldSignOutProviders = params.data?.signOutProviders !== false;

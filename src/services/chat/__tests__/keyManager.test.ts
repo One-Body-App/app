@@ -1,202 +1,76 @@
-const mockGetGenericPassword = jest.fn();
-const mockSetGenericPassword = jest.fn();
-const mockRegisterChatPublicKey = jest.fn();
-const mockFetchUserChatPublicKey = jest.fn();
-const mockFetchUserChatDeviceKeys = jest.fn();
-const mockCryptoBoxKeypair = jest.fn();
-const mockToBase64 = jest.fn();
-const mockReady = Promise.resolve();
-
-jest.mock('react-native-keychain', () => ({
-  ACCESSIBLE: {
-    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
-  },
-  getGenericPassword: (...args: any[]) => mockGetGenericPassword(...args),
-  setGenericPassword: (...args: any[]) => mockSetGenericPassword(...args),
-}));
-
-jest.mock('react-native-device-info', () => ({
-  getUniqueIdSync: () => 'device-123',
-}));
-
-jest.mock('../api', () => ({
-  registerChatPublicKey: (...args: any[]) => mockRegisterChatPublicKey(...args),
-  fetchUserChatPublicKey: (...args: any[]) => mockFetchUserChatPublicKey(...args),
-  fetchUserChatDeviceKeys: (...args: any[]) => mockFetchUserChatDeviceKeys(...args),
-}));
-
-jest.mock('react-native-libsodium', () => ({
-  ready: mockReady,
-  base64_variants: {
-    ORIGINAL: 'ORIGINAL',
-  },
-  crypto_box_keypair: (...args: any[]) => mockCryptoBoxKeypair(...args),
-  to_base64: (...args: any[]) => mockToBase64(...args),
-}));
-
-describe('chat keyManager', () => {
-  beforeEach(() => {
-    jest.resetModules();
-    mockGetGenericPassword.mockReset();
-    mockSetGenericPassword.mockReset();
-    mockRegisterChatPublicKey.mockReset();
-    mockFetchUserChatPublicKey.mockReset();
-    mockFetchUserChatDeviceKeys.mockReset();
-    mockCryptoBoxKeypair.mockReset();
-    mockToBase64.mockReset();
-
-    mockGetGenericPassword.mockResolvedValue(null);
-    mockCryptoBoxKeypair.mockReturnValue({
-      publicKey: Uint8Array.from([1, 2, 3]),
-      privateKey: Uint8Array.from([4, 5, 6]),
-    });
-    mockToBase64.mockReturnValueOnce('public-key-b64').mockReturnValueOnce('private-key-b64');
-    mockRegisterChatPublicKey.mockResolvedValue({
-      status: 200,
-      response: { data: {} },
-    });
-  });
-
-  it('fetches a peer device key and caches the first active key', async () => {
-    mockFetchUserChatDeviceKeys.mockResolvedValue({
-      status: 200,
-      response: {
-        data: [
-          {
-            deviceId: 'old-phone',
-            publicKey: 'inactive-peer-public-key',
-            keyVersion: 3,
-            isActive: false,
-          },
-          {
-            deviceId: 'phone',
-            publicKey: 'peer-public-key',
-            keyVersion: 2,
-          },
-        ],
-      },
-    });
-
-    // eslint-disable-next-line global-require
-    const keyManager = require('../keyManager') as typeof import('../keyManager');
-
-    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).resolves.toEqual({
-      publicKey: 'peer-public-key',
-      keyVersion: 2,
-    });
-    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).resolves.toEqual({
-      publicKey: 'peer-public-key',
-      keyVersion: 2,
-    });
-
-    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
-    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledWith('peer-user-id', 'token-123');
-    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
-  });
-
-  it('throws a missing public key error when the device key list is empty', async () => {
-    mockFetchUserChatDeviceKeys.mockResolvedValue({
-      status: 200,
-      response: {
-        data: [],
-      },
-    });
-
-    // eslint-disable-next-line global-require
-    const keyManager = require('../keyManager') as typeof import('../keyManager');
-
-    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
-      'Public key not found for user'
-    );
-
-    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
-    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
-  });
-
-  it('uses a short negative cache for repeated missing public key checks', async () => {
-    mockFetchUserChatDeviceKeys.mockResolvedValue({
-      status: 200,
-      response: {
-        data: [],
-      },
-    });
-
-    // eslint-disable-next-line global-require
-    const keyManager = require('../keyManager') as typeof import('../keyManager');
-
-    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
-      'Public key not found for user'
-    );
-    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
-      'Public key not found for user'
-    );
-
-    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
-    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
-  });
-
-  it('preserves direct-message-disabled errors from the device key endpoint', async () => {
-    mockFetchUserChatDeviceKeys.mockResolvedValue({
-      status: 403,
-      response: {
-        message: 'Direct messages are disabled for this user',
-      },
-    });
-
-    // eslint-disable-next-line global-require
-    const keyManager = require('../keyManager') as typeof import('../keyManager');
-
-    await expect(keyManager.getPeerPublicKey('peer-user-id', 'token-123')).rejects.toThrow(
-      'Direct messages are disabled for this user'
-    );
-
-    expect(mockFetchUserChatDeviceKeys).toHaveBeenCalledTimes(1);
-    expect(mockFetchUserChatPublicKey).not.toHaveBeenCalled();
-  });
-
-  it('generates and registers a keypair using named libsodium exports', async () => {
-    // eslint-disable-next-line global-require
-    const keyManager = require('../keyManager') as typeof import('../keyManager');
-
-    const result = await keyManager.ensureChatKeypair({ forceRotate: true });
-
-    expect(mockCryptoBoxKeypair).toHaveBeenCalledTimes(1);
-    expect(mockToBase64).toHaveBeenNthCalledWith(1, Uint8Array.from([1, 2, 3]), 'ORIGINAL');
-    expect(mockToBase64).toHaveBeenNthCalledWith(2, Uint8Array.from([4, 5, 6]), 'ORIGINAL');
-    expect(mockRegisterChatPublicKey).toHaveBeenCalledWith(
-      expect.objectContaining({
-        publicKey: 'public-key-b64',
-        algorithm: 'x25519',
-        keyVersion: 1,
-        deviceId: 'device-123',
-      }),
-      undefined
-    );
-    expect(result).toEqual(
-      expect.objectContaining({
-        publicKey: 'public-key-b64',
-        privateKey: 'private-key-b64',
-        algorithm: 'x25519',
-      })
-    );
-  });
-
-  it('throws an actionable error when key generation bindings are unavailable', async () => {
-    jest.resetModules();
-    jest.doMock('react-native-libsodium', () => ({
-      ready: mockReady,
-      base64_variants: {
-        ORIGINAL: 'ORIGINAL',
-      },
-      crypto_box_keypair: undefined,
-      to_base64: (...args: any[]) => mockToBase64(...args),
-    }));
-
-    // eslint-disable-next-line global-require
-    const keyManager = require('../keyManager') as typeof import('../keyManager');
-
-    await expect(keyManager.ensureChatKeypair({ forceRotate: true })).rejects.toThrow(
-      'Secure messaging key setup is unavailable right now. Please restart the app and try again.'
-    );
-  });
+import * as keyManager from '../keyManager';
+const mockGet = jest.fn();
+const mockSet = jest.fn();
+const mockRegister = jest.fn();
+const mockOwn = jest.fn();
+const mockPeer = jest.fn();
+const mockDisconnect = jest.fn();
+let mockSequence = 0;
+jest.mock('react-native-keychain', () => ({ ACCESSIBLE: { WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'secure' },
+  getGenericPassword: (...args: unknown[]) => mockGet(...args), setGenericPassword: (...args: unknown[]) => mockSet(...args) }));
+jest.mock('@/src/services/constants', () => ({ BASE_URL: 'https://api.test/api' }));
+jest.mock('../socketClient', () => ({ disconnectChatSocket: () => mockDisconnect() }));
+jest.mock('../api', () => ({ registerChatPublicKey: (...args: unknown[]) => mockRegister(...args),
+  fetchOwnChatDeviceKeys: (...args: unknown[]) => mockOwn(...args), fetchUserChatDeviceKeys: (...args: unknown[]) => mockPeer(...args) }));
+jest.mock('react-native-libsodium', () => ({ ready: Promise.resolve(), base64_variants: { ORIGINAL: 'base64' },
+  crypto_box_keypair: () => ({ publicKey: Uint8Array.of(++mockSequence), privateKey: Uint8Array.of(++mockSequence) }),
+  to_base64: (bytes: Uint8Array) => Buffer.from(bytes).toString('base64') }));
+let storage: Map<string, string>;
+beforeEach(() => {
+  keyManager.setChatAccount(null);
+  jest.clearAllMocks();
+  storage = new Map();
+  mockGet.mockImplementation(async ({ service }) => storage.has(service) ? { password: storage.get(service) } : false);
+  mockSet.mockImplementation(async (_name, password, { service }) => { storage.set(service, password); return true; });
+  mockOwn.mockResolvedValue({ status: 200, response: { data: { userId: 'alice', keys: [] } } });
+  mockRegister.mockResolvedValue({ status: 200 });
+  mockPeer.mockResolvedValue({ status: 200, response: { data: [{ publicKey: 'peer', keyVersion: 1 }] } });
+  keyManager.setChatAccount('alice');
+});
+it('isolates accounts and retains the previous account history on return', async () => {
+  const alice = await keyManager.ensureChatKeypair();
+  keyManager.setChatAccount('bob');
+  await expect(keyManager.getMyChatKeypair()).rejects.toThrow();
+  const bob = await keyManager.ensureChatKeypair();
+  expect(bob.publicKey).not.toBe(alice.publicKey);
+  expect(bob.deviceId).not.toBe(alice.deviceId);
+  keyManager.setChatAccount('alice');
+  expect((await keyManager.getMyChatKeypair()).publicKey).toBe(alice.publicKey);
+  keyManager.setChatAccount(null);
+  await expect(keyManager.getMyChatKeypair()).rejects.toThrow('Sign in');
+  expect(mockDisconnect).toHaveBeenCalled();
+});
+it('migrates only keys whose public key is registered to this account and retains old decryption keys', async () => {
+  const old = { publicKey: 'old-public', privateKey: 'old-private', deviceId: 'old-device', keyVersion: 1 };
+  storage.set('com.onebody.chat.keys.v1', JSON.stringify(old));
+  mockOwn.mockResolvedValue({ status: 200, response: { data: { userId: 'alice', keys: [old] } } });
+  const result = await keyManager.ensureChatKeypair();
+  expect(result.retired?.[0].privateKey).toBe(old.privateKey);
+  expect(result.publicKey).not.toBe(old.publicKey);
+  expect(mockRegister).toHaveBeenCalledWith(expect.objectContaining({ retireDeviceIds: ['old-device'] }), undefined);
+  keyManager.setChatAccount('bob');
+  mockOwn.mockResolvedValue({ status: 200, response: { data: { userId: 'bob', keys: [] } } });
+  expect((await keyManager.ensureChatKeypair()).retired).toEqual([]);
+  expect(storage.has('com.onebody.chat.keys.v1')).toBe(true);
+});
+it('does not replace keys after a Keychain read failure', async () => {
+  mockGet.mockRejectedValueOnce(new Error('Keychain locked'));
+  await expect(keyManager.ensureChatKeypair()).rejects.toThrow('locked');
+  expect(mockSet).not.toHaveBeenCalled();
+  expect(mockRegister).not.toHaveBeenCalled();
+});
+it('rejects completion after logout and clears peer caches', async () => {
+  await keyManager.getPeerPublicKey('peer');
+  await keyManager.getPeerPublicKey('peer');
+  expect(mockPeer).toHaveBeenCalledTimes(1);
+  let resolve!: (value: boolean) => void;
+  mockGet.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+  const pending = keyManager.ensureChatKeypair();
+  keyManager.setChatAccount(null);
+  resolve(false);
+  await expect(pending).rejects.toThrow('changed');
+  expect(mockRegister).not.toHaveBeenCalled();
+  keyManager.setChatAccount('bob');
+  await keyManager.getPeerPublicKey('peer');
+  expect(mockPeer).toHaveBeenCalledTimes(2);
 });

@@ -6,35 +6,44 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions:
+  contents: read
 jobs:
   build:
+    permissions:
+      contents: write # Required only to record the release version bump.
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          token: ${{secrets.GH_TOKEN}}
+          token: ${{ github.token }}
       - name: Set up Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@215b7e5f829ab9cac114c149667e57dc1b70b4bc # v2
         with:
           distribution: 'zulu'
           java-version: 17
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 18
+          node-version: 22
           cache: 'yarn'
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1
         with:
           bundler-cache: true
 
       - name: 'Create env file'
+        env:
+          BUILD_ENV_VARS: ${{ vars.ENV_VARS }}
+          BUILD_ENV_SECRETS: ${{ secrets.ENV_SECRET_VARS }}
         run: |
-          echo "${{ vars.ENV_VARS }}" >> .env
-          cat .env
-          echo "${{ secrets.ENV_SECRET_VARS }}" >> .env
+          umask 077
+          printf '%s\n%s\n' "$BUILD_ENV_VARS" "$BUILD_ENV_SECRETS" > .env
       - name: 'Create key properties'
+        env:
+          ANDROID_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
         run: |
-          echo "${{secrets.ANDROID_KEY_PROPERTIES}}" >> android/key.properties
+          umask 077
+          printf '%s\n' "$ANDROID_PROPERTIES" > android/key.properties
       - run: yarn install --immutable
       - run: bundle install
       - run: bundle exec fastlane android beta
@@ -43,6 +52,7 @@ jobs:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
           KEY_ANDROID_JSON_DATA: ${{ secrets.KEY_ANDROID_JSON }}
-      - uses: stefanzweifel/git-auto-commit-action@v5
+      - uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 # v5
         with:
+          file_pattern: 'ios/onebody.xcodeproj/project.pbxproj ios/onebody/Info.plist android/app/build.gradle'
           commit_message: 'chore: bump android version for testing [skip ci]'

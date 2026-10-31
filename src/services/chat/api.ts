@@ -61,9 +61,21 @@ export const fetchUserChatPublicKey = async (userId: string, token?: string) => 
   });
 };
 
-export const fetchUserChatDeviceKeys = async (userId: string, token?: string) => {
+export const fetchOwnChatDeviceKeys = (token?: string) =>
+  ApiCall<ApiEnvelope<{ userId: string; keys: ChatUserDeviceKey[] }>>({
+    route: 'chat/keys/own',
+    verb: 'get',
+    token: withToken(token),
+    suppressErrorLog: true,
+  });
+
+export const fetchUserChatDeviceKeys = async (
+  userId: string,
+  token?: string,
+  includeRetired = false
+) => {
   return ApiCall<ApiEnvelope<ChatUserDeviceKey[]>>({
-    route: `chat/keys/${userId}/devices`,
+    route: `chat/keys/${userId}/devices${includeRetired ? '?includeRetired=true' : ''}`,
     verb: 'get',
     token: withToken(token),
     suppressErrorLog: true,

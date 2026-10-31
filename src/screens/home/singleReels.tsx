@@ -80,7 +80,6 @@ function SingleReels({ item, ref: parentRef }: SingleReelsProps) {
   //         application_name: 'One Body Inc', // (required) the name of your application
   //         // application_version: 1, // the version of your application (optional, but encouraged)
   //         data: {
-  //           env_key: 'rki2o54t3hd863rmub7pfo3mm', // (required)
   //           // player_software_version: '5.0.2', // (optional, but encouraged) the version of react-native-video that you are using
   //           player_name: 'React Native Player', // See metadata docs for available metadata fields https://docs.mux.com/docs/web-integration-guide#section-5-add-metadata
   //           video_id: '4PqGmTr702jsox5IW7zWgwnSvfwnLmqVMwGAVNFBcJm8',

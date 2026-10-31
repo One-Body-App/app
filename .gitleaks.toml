@@ -1,0 +1,28 @@
+[extend]
+useDefault = true
+
+# Firebase client config is distributed with the app; service-account private
+# keys remain covered by all default rules, including in these same files.
+[[allowlists]]
+targetRules = ["gcp-api-key", "generic-api-key"]
+description = "Public Firebase Android client configuration"
+condition = "AND"
+paths = ['''(^|/)android/app/(src/debug/)?google-services( \(1\))?\.json$''']
+regexTarget = "line"
+regexes = ['''"current_key"\s*:''']
+
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "Public Giphy mobile SDK identifier"
+condition = "AND"
+paths = ['''(^|/)src/navigator/AppContent\.tsx$''']
+regexTarget = "line"
+regexes = ['''GiphySDK\.configure\(\{\s*apiKey:''']
+
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "Public reCAPTCHA site identifier, never its server signing secret"
+condition = "AND"
+paths = ['''(^|/)src/screens/signup/index\.tsx$''']
+regexTarget = "line"
+regexes = ['''^\s*siteKey=''']

@@ -3,6 +3,8 @@ import { decryptE2EEMessage, encryptE2EEMessage } from './crypto';
 import { buildChatContentHash } from './contentHash';
 import {
   fetchConversationMessages,
+  fetchUserChatDeviceKeys,
+  fetchOwnChatDeviceKeys,
   fetchGroupConversationMessages,
   markChatConversationRead,
   updateChatConversationReadState,
@@ -25,6 +27,47 @@ export const ensureChatReady = async (token?: string) => {
   return ensureChatKeypair({ token });
 };
 
+async function encryptForDevices(
+  plaintext: string,
+  receiverId: string,
+  keys: Awaited<ReturnType<typeof getMyChatKeypair>>,
+  token?: string
+) {
+  if (!keys.owner) throw new Error('Chat account ownership is unavailable');
+  const [peer, own] = await Promise.all([
+    fetchUserChatDeviceKeys(receiverId, token),
+    fetchOwnChatDeviceKeys(token),
+  ]);
+  if (peer.status !== 200 || own.status !== 200) throw new Error('Unable to fetch device keys');
+  const targets = [
+    ...peer.response.data.map((k) => ({ ...k, userId: receiverId })),
+    ...own.response.data.keys
+      .filter((k) => k.isActive !== false)
+      .map((k) => ({ ...k, userId: keys.owner! })),
+    { ...keys, userId: keys.owner },
+  ];
+  const unique = [...new Map(targets.map((k) => [`${k.userId}:${k.deviceId}`, k])).values()];
+  const envelopes = await Promise.all(
+    unique.map(async (k) => {
+      const encrypted = await encryptE2EEMessage({
+        plaintext,
+        myPrivateKeyBase64: keys.privateKey,
+        peerPublicKeyBase64: k.publicKey,
+      });
+      return {
+        userId: k.userId,
+        deviceId: k.deviceId,
+        keyVersion: k.keyVersion,
+        encryptedPayload: encrypted.encryptedPayload,
+        nonce: encrypted.nonce,
+      };
+    })
+  );
+  if ((await getMyChatKeypair()).publicKey !== keys.publicKey)
+    throw new Error('Chat account changed');
+  return envelopes;
+}
+
 export const sendEncryptedTextMessage = async (args: {
   receiverId: string;
   text: string;
@@ -35,13 +78,17 @@ export const sendEncryptedTextMessage = async (args: {
     getPeerPublicKey(args.receiverId, args.token),
   ]);
 
-  const encrypted = await encryptE2EEMessage({
-    plaintext: args.text,
-    myPrivateKeyBase64: myKeys.privateKey,
-    peerPublicKeyBase64: peerKey.publicKey,
-  });
-
+  const [encrypted, recipientEnvelopes] = await Promise.all([
+    encryptE2EEMessage({
+      plaintext: args.text,
+      myPrivateKeyBase64: myKeys.privateKey,
+      peerPublicKeyBase64: peerKey.publicKey,
+    }),
+    encryptForDevices(args.text, args.receiverId, myKeys, args.token),
+  ]);
   return sendChatE2EEMessage({
+    senderPublicKey: myKeys.publicKey,
+    recipientEnvelopes,
     receiverId: args.receiverId,
     encryptedPayload: encrypted.encryptedPayload,
     nonce: encrypted.nonce,
@@ -86,52 +133,22 @@ export const loadAndDecryptConversation = async (args: {
     return [];
   }
 
-  let myKeys: Awaited<ReturnType<typeof getMyChatKeypair>> | null = null;
-  try {
-    myKeys = await getMyChatKeypair();
-  } catch {
-    return response.response.data.map((message) => ({
-      ...message,
-      plaintext: '[Encrypted message]',
-    }));
-  }
-
-  let peerKey: Awaited<ReturnType<typeof getPeerPublicKey>> | null = null;
-  try {
-    peerKey = await getPeerPublicKey(args.peerUserId, args.token);
-  } catch {
-    return response.response.data.map((message) => ({
-      ...message,
-      plaintext: '[Encrypted message]',
-    }));
-  }
-
-  const decryptedMessages = await Promise.all(
+  return Promise.all(
     response.response.data.map(async (message) => {
       try {
-        const plaintext = await decryptE2EEMessage({
-          encryptedPayload: message.encryptedPayload,
-          nonce: message.nonce,
-          authTag: message.authTag,
-          aad: message.aad,
-          myPrivateKeyBase64: myKeys!.privateKey,
-          peerPublicKeyBase64: peerKey!.publicKey,
-        });
-
         return {
           ...message,
-          plaintext,
+          plaintext: await decryptDirectMessageEnvelope({
+            message,
+            peerUserId: args.peerUserId,
+            token: args.token,
+          }),
         };
       } catch {
-        return {
-          ...message,
-          plaintext: '[Unable to decrypt message]',
-        };
+        return { ...message, plaintext: '[Unable to decrypt message]' };
       }
     })
   );
-
-  return decryptedMessages;
 };
 
 export const decryptDirectMessageEnvelope = async (args: {
@@ -139,19 +156,68 @@ export const decryptDirectMessageEnvelope = async (args: {
   peerUserId: string;
   token?: string;
 }) => {
-  const [myKeys, peerKey] = await Promise.all([
-    getMyChatKeypair(),
-    getPeerPublicKey(args.peerUserId, args.token),
-  ]);
-
-  return decryptE2EEMessage({
-    encryptedPayload: args.message.encryptedPayload,
-    nonce: args.message.nonce,
-    authTag: args.message.authTag,
-    aad: args.message.aad,
-    myPrivateKeyBase64: myKeys.privateKey,
-    peerPublicKeyBase64: peerKey.publicKey,
-  });
+  const myKeys = await getMyChatKeypair();
+  const { message } = args;
+  let peerKeys: string[] = [];
+  try {
+    peerKeys = [(await getPeerPublicKey(args.peerUserId, args.token)).publicKey];
+  } catch {
+    /* Sender snapshots may still decrypt. */
+  }
+  const open = (publicKeys: string[]) => {
+    const attempts = [myKeys, ...(myKeys.retired || [])].flatMap((key) => {
+      const envelope = message.recipientEnvelopes?.find(
+        (e) => e.userId === myKeys.owner && e.deviceId === key.deviceId
+      );
+      const candidates =
+        message.senderId !== myKeys.owner && message.senderPublicKey
+          ? [message.senderPublicKey]
+          : publicKeys;
+      const options: Parameters<typeof decryptE2EEMessage>[0][] = [];
+      if (envelope && message.senderPublicKey)
+        options.push({
+          ...message,
+          ...envelope,
+          authTag: 'box:v1',
+          myPrivateKeyBase64: key.privateKey,
+          peerPublicKeyBase64: message.senderPublicKey,
+        });
+      options.push(
+        ...candidates.map((publicKey) => ({
+          encryptedPayload: message.encryptedPayload,
+          nonce: message.nonce,
+          authTag: message.authTag,
+          aad: message.aad,
+          myPrivateKeyBase64: key.privateKey,
+          peerPublicKeyBase64: publicKey,
+        }))
+      );
+      return options;
+    });
+    // Stop after the first valid opening; decryption attempts are dependent.
+    async function tryOpening(
+      index: number
+    ): Promise<Awaited<ReturnType<typeof decryptE2EEMessage>> | null> {
+      const options = attempts[index];
+      if (!options) return null;
+      try {
+        return await decryptE2EEMessage(options);
+      } catch {
+        return tryOpening(index + 1);
+      }
+    }
+    return tryOpening(0);
+  };
+  let plaintext = await open(peerKeys);
+  if (plaintext === null) {
+    const historical = await fetchUserChatDeviceKeys(args.peerUserId, args.token, true);
+    if (historical.status === 200)
+      plaintext = await open((historical.response?.data || []).map((k) => k.publicKey));
+  }
+  if (plaintext === null) throw new Error('Unable to decrypt message');
+  if ((await getMyChatKeypair()).publicKey !== myKeys.publicKey)
+    throw new Error('Chat account changed');
+  return plaintext;
 };
 
 export const loadGroupConversation = async (args: {
@@ -259,13 +325,17 @@ export const sendEncryptedMediaMessage = async (args: {
             ...(normalizedText ? { text: normalizedText } : {}),
           });
 
-  const encrypted = await encryptE2EEMessage({
-    plaintext,
-    myPrivateKeyBase64: myKeys.privateKey,
-    peerPublicKeyBase64: peerKey.publicKey,
-  });
-
+  const [encrypted, recipientEnvelopes] = await Promise.all([
+    encryptE2EEMessage({
+      plaintext,
+      myPrivateKeyBase64: myKeys.privateKey,
+      peerPublicKeyBase64: peerKey.publicKey,
+    }),
+    encryptForDevices(plaintext, args.receiverId, myKeys, args.token),
+  ]);
   return sendChatE2EEMessage({
+    senderPublicKey: myKeys.publicKey,
+    recipientEnvelopes,
     receiverId: args.receiverId,
     encryptedPayload: encrypted.encryptedPayload,
     nonce: encrypted.nonce,

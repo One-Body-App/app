@@ -43,6 +43,11 @@ export class ChatTransportError extends Error {
   }
 }
 
+let generation = 0;
+const assertGeneration = (expected: number) => {
+  if (generation !== expected)
+    throw new ChatTransportError('Chat account changed', 'unauthorized-socket');
+};
 let socketRef: ChatSocket | null = null;
 let socketTokenRef = '';
 let connectPromise: Promise<ChatSocket> | null = null;
@@ -134,7 +139,9 @@ const applySocketAuth = (socket: ChatSocket, token: string) => {
 };
 
 const refreshSocketAuth = async (socket: ChatSocket) => {
+  const expected = generation;
   const latestToken = await getValidAccessToken();
+  assertGeneration(expected);
   if (!latestToken) {
     throw new ChatTransportError('Missing auth token for chat socket', 'unauthorized-socket');
   }
@@ -150,7 +157,9 @@ const attachReconnectAuthRefresh = (socket: ChatSocket) => {
 };
 
 const createSocket = async () => {
+  const expected = generation;
   const token = await getValidAccessToken();
+  assertGeneration(expected);
   if (!token) {
     throw new ChatTransportError('Missing auth token for chat socket', 'unauthorized-socket');
   }
@@ -178,18 +187,20 @@ const createSocket = async () => {
 };
 
 const getSocket = async () => {
+  const expected = generation;
   if (!socketRef) {
     return createSocket();
   }
 
   const latestToken = await getValidAccessToken();
+  assertGeneration(expected);
   if (!latestToken) {
     disconnectChatSocket();
     throw new ChatTransportError('Missing auth token for chat socket', 'unauthorized-socket');
   }
 
   if (socketTokenRef && socketTokenRef !== latestToken) {
-    disconnectChatSocket();
+    disconnectChatSocket(false);
     return createSocket();
   }
 
@@ -208,6 +219,7 @@ export const connectChatSocket = async () => {
     return connectPromise;
   }
 
+  const expected = generation;
   connectPromise = new Promise<ChatSocket>((resolve, reject) => {
     const timeout = setTimeout(() => {
       cleanup();
@@ -219,7 +231,7 @@ export const connectChatSocket = async () => {
       socket.off('connect', handleConnect);
       socket.off('connect_error', handleConnectError);
       socket.off('chat:error', handleChatError);
-      connectPromise = null;
+      if (generation === expected) connectPromise = null;
     };
 
     const handleConnect = () => {
@@ -243,6 +255,7 @@ export const connectChatSocket = async () => {
 
     refreshSocketAuth(socket)
       .then(() => {
+        assertGeneration(expected);
         socket.connect();
       })
       .catch((error) => {
@@ -254,7 +267,8 @@ export const connectChatSocket = async () => {
   return connectPromise;
 };
 
-export const disconnectChatSocket = () => {
+export const disconnectChatSocket = (invalidatePending = true) => {
+  if (invalidatePending) generation++;
   if (!socketRef) {
     socketTokenRef = '';
     connectPromise = null;
@@ -269,7 +283,9 @@ export const disconnectChatSocket = () => {
 };
 
 export const sendChatE2EEMessage = async (payload: SendE2EEMessagePayload) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
 
   return new Promise<ChatSendAck>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -323,7 +339,9 @@ export const sendChatE2EEMessage = async (payload: SendE2EEMessagePayload) => {
 };
 
 export const onChatMessage = async (listener: (payload: any) => void) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
   socket.on('chat:new_message', listener);
 
   return () => {
@@ -332,7 +350,9 @@ export const onChatMessage = async (listener: (payload: any) => void) => {
 };
 
 export const sendChatGroupMessage = async (payload: SendGroupMessagePayload) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
 
   return new Promise<ChatSendAck>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -386,7 +406,9 @@ export const sendChatGroupMessage = async (payload: SendGroupMessagePayload) => 
 };
 
 export const onChatGroupMessage = async (listener: (payload: any) => void) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
   socket.on('chat:new_group_message', listener);
 
   return () => {
@@ -395,7 +417,9 @@ export const onChatGroupMessage = async (listener: (payload: any) => void) => {
 };
 
 export const onChatMessageStatus = async (listener: (payload: any) => void) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
   socket.on('chat:message_status', listener);
 
   return () => {
@@ -404,7 +428,9 @@ export const onChatMessageStatus = async (listener: (payload: any) => void) => {
 };
 
 export const reactToChatMessage = async (payload: ReactChatMessagePayload) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
 
   return new Promise<ChatMessageReactionAck>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -464,7 +490,9 @@ export const reactToChatMessage = async (payload: ReactChatMessagePayload) => {
 export const onChatMessageReaction = async (
   listener: (payload: ChatMessageReactionUpdate) => void
 ) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
   socket.on('chat:message_reaction', listener);
 
   return () => {
@@ -473,17 +501,23 @@ export const onChatMessageReaction = async (
 };
 
 export const emitChatDelivered = async (messageId: string) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
   socket.emit('chat:message_delivered', { messageId });
 };
 
 export const emitChatRead = async (messageId: string) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
   socket.emit('chat:message_read', { messageId });
 };
 
 export const emitChatConversationRead = async (peerUserId: string) => {
+  const expected = generation;
   const socket = await connectChatSocket();
+  assertGeneration(expected);
 
   return new Promise<ChatConversationReadAck>((resolve, reject) => {
     const timeout = setTimeout(() => {

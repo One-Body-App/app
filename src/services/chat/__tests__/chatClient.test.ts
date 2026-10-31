@@ -234,7 +234,7 @@ describe('chatClient decryptDirectMessageEnvelope', () => {
       })
     ).resolves.toBe('hello from socket');
 
-    expect(mockGetMyChatKeypair).toHaveBeenCalledTimes(1);
+    expect(mockGetMyChatKeypair).toHaveBeenCalledTimes(2);
     expect(mockGetPeerPublicKey).toHaveBeenCalledWith('65f000000000000000000010', 'token');
     expect(mockDecryptE2EEMessage).toHaveBeenCalledWith({
       encryptedPayload: 'encrypted-payload',
@@ -245,4 +245,18 @@ describe('chatClient decryptDirectMessageEnvelope', () => {
       peerPublicKeyBase64: 'peer-public-key',
     });
   });
+  it('decrypts history using a retained device key and the stored sender public key', async () => {
+    mockGetMyChatKeypair.mockResolvedValue({ owner: 'me', deviceId: 'new', publicKey: 'new-public', privateKey: 'new-private',
+      retired: [{ deviceId: 'old', publicKey: 'old-public', privateKey: 'old-private' }] });
+    mockGetPeerPublicKey.mockResolvedValue({ publicKey: 'peer-current' });
+    mockDecryptE2EEMessage.mockImplementation(async (args) => {
+      if (args.myPrivateKeyBase64 === 'old-private' && args.peerPublicKeyBase64 === 'peer-original' && args.encryptedPayload === 'old-copy') return 'preserved history';
+      throw new Error('wrong key');
+    });
+    await expect(chatClient.decryptDirectMessageEnvelope({ peerUserId: 'peer', message: {
+      _id: 'old-message', senderId: 'peer', receiverId: 'me', encryptedPayload: 'legacy', nonce: 'nonce', authTag: 'box:v1', messageType: 'text', status: 'read',
+      senderPublicKey: 'peer-original', recipientEnvelopes: [{ userId: 'me', deviceId: 'old', keyVersion: 1, encryptedPayload: 'old-copy', nonce: 'old-nonce' }],
+    } })).resolves.toBe('preserved history');
+  });
+
 });

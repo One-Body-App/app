@@ -1,3 +1,11 @@
+export type ChatRecipientEnvelope = {
+  userId: string;
+  deviceId: string;
+  keyVersion: number;
+  encryptedPayload: string;
+  nonce: string;
+};
+
 export type ChatMessageStatus = 'sent' | 'delivered' | 'read';
 
 export type ChatReactionType =
@@ -34,6 +42,8 @@ export type ChatEnvelope = {
   updatedAt?: string;
   clientMessageId?: string;
   senderPublicKeyVersion?: number;
+  senderPublicKey?: string;
+  recipientEnvelopes?: ChatRecipientEnvelope[];
   senderName?: string;
   senderUsername?: string;
   senderAvatarUri?: string;
@@ -60,6 +70,7 @@ export type ChatUserDeviceKey = {
 };
 
 export type RegisterChatKeyPayload = {
+  retireDeviceIds?: string[];
   publicKey: string;
   algorithm?: 'x25519';
   keyVersion?: number;
@@ -81,6 +92,8 @@ export type SendE2EEMessagePayload = {
   messageType?: 'text' | 'image' | 'gif' | 'images';
   clientMessageId?: string;
   senderPublicKeyVersion?: number;
+  senderPublicKey?: string;
+  recipientEnvelopes?: ChatRecipientEnvelope[];
   contentHash?: string;
 };
 
